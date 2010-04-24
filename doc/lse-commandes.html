@@ -1,0 +1,330 @@
+<!doctype HTML PUBLIC "-//IEFT//DTD HTML//EN//3.2">
+<html>
+<head>
+
+    <title>L.S.E. - Commandes</title>
+
+    <meta http-equiv="Content-Type"
+          content="text/html; charset=iso-8859-1">
+
+    <meta name="author"
+         content="Pascal J. Bourguignon">
+
+    <meta http-equiv="Reply-to" 
+          name="Reply-to"
+          content="pjb@imaginet.fr">
+
+    <meta http-equiv="Description"  
+          name="description" 
+          content="Commandes de l'environnement L.S.E.">
+
+	<meta name="keywords"
+          content="L.S.E.,Langage Symbolique d'Enseignement,Commandes">
+
+</head>
+
+<body>
+<h1 align="center">L.S.E. - Commandes</h1>
+
+
+<p>Une console peut être dans l'un des trois états suivants :
+<ol>
+<li>État <i>dormant</i> : la console n'est pas en communication avec le système.
+<li>État <i>moniteur</i> : le dialogue de l'utilisateur avec le système se fait à l'aide des commandes.
+<li>État <i>exécution</i> : en mode exécution immédiate, la ligne d'instructioons est exécutée ; en mode exécution différée : le programme est exécuté.
+</ol>
+
+<p>Pour donner une commande au système, on tape les deux premières
+lettres de la commande, puis la combinaison de touches
+<code>CTRL-S</code> (X-OFF) pour la valider. Le système complète alors
+le libélé de la commande et attend éventuellement des paramètres
+supplémentaires (qui seront aussi validés par <code>CTRL-S</code>).
+
+
+<h2>Liste des commandes</h2>
+
+
+<h3>Connection &amp; déconnection</h3>
+
+<dl>
+
+<dt><code><b>BO</b>NJOUR</code>
+
+<dd>Permet de passer de l'état <i>dormant</i> à l'état <i>moniteur</i>.
+<br><br>
+
+
+<dt><code><b>AU</b> REVOIR</code>
+
+<dd>Permet de passe de l'état  <i>moniteur</i> à l'état
+<i>dormant</i>.   Le programme, toutes ses données, et tous
+les fichiers temporaires  sont effacés.
+<br><br>
+
+</dl>
+
+
+<h3>Commandes pour la programmation</h3>
+
+<dl>
+
+<dt><code><b>Numéro_de_ligne Instruction...</b></code>
+
+<dd>Toute ligne commençant par un numéro est interprétée comme une
+ligne d'instruction à mémoriser dans le programme courant, à la place
+d'une éventuelle ligne préexistante de même numéro.
+<br><br>
+
+
+<dt><code><b>LI</b>STER A PARTIR DE <b>N1</b>{<b>,N2</b>}</code>
+
+<dd>Affiche les lignes du programme, à partir de la ligne <b>N1</b>
+jusqu'à la ligne <b>N2</b> ou jusqu'à la fin. La touche <code>ESC</code> peut
+être utilisée pour arrêter le listage.
+<br><br>
+
+
+<dt><code><b>NU</b>MERO A PARTIR DE <b>N1</b>{<b>,N2</b>}</code>
+
+<dd>Affiche les numéro des lignes du programme courant, à partir de la
+ligne <b>N1</b> jusqu'à la ligne <b>N2</b> ou jusqu'à la fin. La
+touche <code>ESC</code> peut être utilisée pour arrêter le listage.
+<br><br>
+
+
+<dt><code><b>EF</b>FACER LIGNES <b>N1</b>{<b>,N2</b>{<b>,N3...</b>}}</code>
+
+<dd>Efface les lignes du programme dont les numéros sont donnés.
+
+
+<dt><code><b>EF</b>FACER LIGNES <b>N1 A N2</b></code> 
+
+<dd>Efface les lignes du programme dans l'intervale  <b>N1</b> à
+<b>N2</b> inclus.
+
+
+<dt><code><b>EF</b>FACER LIGNES <b>*</b></code>
+
+<dd>Efface tout le programme.
+<br><br>
+
+
+</dl>
+
+
+
+<h3>Commandes pour l'exécution et la mise au point</h3>
+
+<dl>
+
+<dt><code><b>EX</b>ECUTER A PARTIR DE <b>N1</b>{<b>,N2</b>}</code>
+
+<dd>Passe dans l'état <i>exécution</i>. Exécute le programme en
+commençant par la ligne <b>N1</b>. L'exécution continue jusqu'à ce
+qu'on arrive à la ligne <b>N2</b>, ou à une instruction
+<code>PAUSE</code> ou <code>TERMINER</code>, ou qu'une erreur
+survienne, ou que l'on appuit sur la touche <code>ESC</code>.
+<br><br>
+
+
+<dt><code><b>PA</b>S A PAS</code> 
+
+<dd>Peut être utilisé avant <code><b>EX</b>ECUTER</code>,
+<code><b>CO</b>NTInuer</code> ou <code><b>RE</b>PRENDRE</code>, afin
+de faire arrêter l'exécution à chaque ligne de programme. L'exécution
+peut être reprise en tapant <code>CTRL-S</code> ou en donnant la
+commande <code><b>CO</b>NTINUER</code>.  <br><br>
+
+
+<dt><code><b>NO</b>RMAL</code>
+
+<dd>Annule la commande <code><b>PA</b>S A PAS</code>.
+<br><br>
+
+
+<dt><code><b>CO</b>NTINUER</code>
+
+<dd>Continue l'exécution du programme interrompu par la commande
+<code><b>PA</b>S A PAS</code>, par une instruction <code>PAUSE</code>,
+ou par la toche <code>ESC</code>. L'exécution reprend à partir de l'endroit 
+où elle fut interrompue.
+<br><br>
+
+
+<dt><code><b>PO</b>URSUIVRE JUSQU'EN <b>N1</b></code>
+
+<dd>Continue l'exécution du programme comme <code><b>CO</b>NTINUER</code>, 
+mais en indiquant un arrêt sur la ligne <b>N1</b>.
+<br><br>
+
+
+<dt><code><b>RE</b>PRENDRE A PARTIR DE <b>N1</b>{<b>,N2</b>}</code>
+
+<dd>Permet de reprendre l'exécution à partir d'une ligne différente de
+celle où elle fut interrompue. Les paramètres <b>N1</b> et <b>N2</b>
+ont la même signification qu'avec la commande
+<code><b>EX</b>ECUTER</code>.
+<br><br>
+
+</dl>
+
+
+
+<h3>Commandes relatives aux rubans perforés</h3>
+
+<dl>
+
+<dt><code><b>AB</b>REGER</code>
+
+<dd>Supprime l'affichage le libélé complet des commandes. 
+(cf. <code><b>IN</b> EXTENSO</code>).
+<br><br>
+
+
+<dt><code><b>IN</b> EXTENSO</code>
+
+<dd>Annule la commande <code><b>AB</b>REGER</code>.
+<br><br>
+
+
+<dt><code><b>SI</b>LENCE</code>
+
+<dd>Supprime l'affichage de tout ce que l'utilisateur tape au clavier. 
+La touche <code>ESC</code> annule cette commande.
+<br><br>
+
+
+<dt><code><b>PE</b>RFORER A PARTIR DE <b>N1</b>{<b>,N2</b>}</code>
+
+<dd>Perfore les lignes du programme courant, à partir de la ligne N1
+jusqu'à la ligne <b>N2</b> ou jusqu'à la fin. La touche <code>ESC</code> peut
+être utilisée pour arrêter la perforation. Dans l'émulateur
+<code>EMULSE</code>, la perforation est virtuelle : on produit un
+ruban perforé virtuel rangé dans une armoire virtuelle. Le nom inscrit
+sur le ruban perforé virtuel est demandé à l'utilisateur avant la
+perforation.
+<br><br>
+
+
+<dt><code><b>RU</b>BAN</code>
+
+<dd>Cette commande déclanche le lecteur de ruban perforés. Dans
+l'émulateur <code>EMULSE</code>, les rubans perforés sont virtuels. La
+commande donne la liste des rubans perforés virtuels rangés dans une
+armoire virtuelle. L'utilisateur saisi le nom inscrit sur le ruban
+perforé virtuel qu'il veut lire.
+<br><br>
+
+</dl>
+
+
+<h3>Commandes de gestion des fichiers</h3>
+
+
+<p>La plupart des commandes de gestion des fichiers sont soumises à
+l'utilisation préalable de la commande <code><b>ID</b>ENTIFIER</code>.
+
+
+
+<dl>
+
+<dt><code><b>ID</b>ENTIFIER <b>XXXXX</b></code>
+
+<dd>La clé secrète <b>XXXXX</b> permet à l'utilisateur de s'identifier
+auprès du système qui l'autorisera (ou non) à donner les commandes de
+gestion des fichiers suivantes.
+<br><br>
+
+
+<dt><code><b>TA</b>BLE DES FICHIERS</code>
+
+<dd>Donne la liste des fichiers appartement à l'utilisateur.
+<br><br>
+
+
+<dt><code><b>UT</b>ILISATION DU DISQUE</code>
+
+<dd>Donne la liste de tous les fichiers se trouvant sur le disque dur.
+<br><br>
+
+
+<dt><code><b>AP</b>PELER <b>NOMPG</b></code>
+
+<dd>Cette commande charge un programme stocké sous le nom <b>NOMPG</b>.
+<br><br>
+
+
+<dt><code><b>LA</b>NCER <b>NOMPG</b></code>
+
+<dd>Cette commande charge et lance l'exécution d'un programme stocké 
+sous le nom <b>NOMPG</b>.
+<br><br>
+
+
+<dt><code><b>RA</b>NGER <b>NOMPG</b></code>
+
+<dd>Cette commande enregistre le programme courant dans un fichier de 
+nom <b>NOMPG</b>. Le fichier ne doit pas exister au préalable. (cf. 
+<code><b>MO</b>DIFIER <b>NOMPG</b></code>).
+<br><br>
+
+
+<dt><code><b>MO</b>DIFIER <b>NOMPG</b></code>
+
+<dd>Cette commande enregistre le programme courant dans le fichier programme 
+préexistant de nom <b>NOMPG</b>.
+<br><br>
+
+
+
+<dt><code><b>SU</b>PPRIMER <b>NOMFC,P</b></code>
+
+<dd>Supprime le fichier programme <b>NOMFC</b>.
+
+
+<dt><code><b>SU</b>PPRIMER <b>NOMFC,D</b></code>
+
+<dd>Supprime le fichier données permanent <b>NOMFC</b>.
+
+
+<dt><code><b>SU</b>PPRIMER <b>NOMFC,T</b></code>
+
+<dd>Supprime le fichier données temporaire <b>NOMFC</b>.
+
+
+<dt><code><b>SU</b>PPRIMER <b>*</b></code>
+
+<dd>Supprime tous les fichiers données temporaires.
+<br><br>
+
+
+<dt><code><b>CA</b>TALOGUER <b>NOMTE,NOMPE</b></code>
+
+<dd>Cette commande transforme le fichier temporaire <b>NOMTE</b> en fichier permanent de nom <b>NOMPE</b>.
+<br><br>
+
+
+<dt><code><b>DE</b>CODER <b>NOMFC</b>{<b>,N1</b>{<b>,N2</b>}</code>
+
+<dd>Enregistre dans un fichier donnée temporaire de nom <b>NOMFC</b>
+le source du programme courant, de la ligne <b>N1</b> à la ligne
+<b>N2</b> incluses.
+<br><br>
+
+
+<dt><code><b>EN</b>CODER <b>NOMFC</b>{<b>,N1</b>{<b>,N2</b>}</code>
+
+<dd>Charge les lignes sources présentes dans le fichier donnée 
+temporaire de nom <b>NOMFC</b> de la ligne <b>N1</b> à la ligne
+<b>N2</b> incluses.
+<br><br>
+
+
+</dl>
+
+
+
+
+</body>
+</html>
+

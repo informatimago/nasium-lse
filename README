@@ -1,0 +1,21 @@
+------------------------------------------------------------------------
+
+It is advised to put the darcs repository inside a project specific
+directory,  for the dependencies will be installed as brother directories:
+
+project_X/
+project_X/project_X_darcs_repo/
+project_X/project_X_darcs_repo/_darcs
+project_X/project_X_darcs_repo/Makefile
+project_X/project_X_darcs_repo/src/...
+project_X/dependency_1/
+project_X/dependency_2/
+project_X/...
+
+
+These dependencies may be unfreezed from tarballs, or checked-out from
+any revision control system by the Makefile inside the project darcs
+repository.
+
+------------------------------------------------------------------------
+

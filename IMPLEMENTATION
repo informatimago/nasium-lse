@@ -1,0 +1,161 @@
+
+
+Catalogue:
+
+    - Les liens symboliques dans le répertoire LSE ne sont pas admis.
+
+      (Common-Lisp DIRECTORY returns TRUENAME, which unix CL implementations
+       generally understand as the target path).
+
+
+
+COMMON-LISP Implementation
+==========================
+
+    We'll minimize the  CL implementation  specific  dependencies.
+    
+    Each task will be implemented in its own UNIX process.
+    A server process will listen to the socket, 
+    and will fork a new console process of each incoming session.
+    
+    A pipe between the server process and the console process will be
+    establised to allow for the transfer of state (PRENDRE ETAT CONSOLE)
+    between the consoles.
+
+
+Terminal I/O
+------------
+
+    Since we don't have serveral threads, we must do polling I/O.
+    
+    clisp provide extension functions for raw keyboard input.
+    
+    ESC --> stop current processing and revert to top-level repl
+            (note: execution of a running program could be continued with
+            the CONTINUE or ALLER A commands).
+
+    Ctrl-A --> the signal should be recoded asynchronously for the
+               ATT() function.
+
+    The only way to implement BOTH these features portably on unix
+    without threads seems to be with the use of an embedded virtual
+    machine where we could implement virtual threads or at least:
+        
+        (loop
+          (process-input (read-char-no-hang))
+          (execute-one-instruction))
+
+
+    If ESC is mapped to SIGINT, this is caught by clisp as a "User
+    Break", ie. system::simple-interrupt-condition, which can be
+    handled programmatically with handler-bind or handler-case.
+
+
+    (catch :exit
+      (let ((*status* :out) (counter 1)) (declare (special *status*))
+           (handler-bind 
+            ((system::simple-interrupt-condition
+              (lambda (condition)
+                (print (list :interupted *status* counter))
+                (decf counter)
+                (when (zerop counter) (throw :exit nil))
+                nil)))
+            (let ((*status* :in)) (declare (special *status*)) (loop)))))
+
+    --> (:INTERUPTED :IN 1) 
+    
+    
+    (catch :exit
+      (let ((*status* :out) (counter 1)) (declare (special *status*))
+        (handler-case (let ((*status* :in)) (declare (special *status*)) (loop))
+          (system::interrupt-condition
+           (condition)
+           (print (list :interupted *status* counter))
+           (decf counter)
+           (when (zerop counter) (throw :exit nil))))))
+
+    --> (:INTERUPTED :OUT 1) 
+
+
+    Conclusion:  Implement ESC with stty -intr ESC  
+                 and don't implement Ctrl-A/ATT().
+
+
+
+(defun make-xterm-io-stream ()
+  (let* ((pipe (with-open-stream (s (make-pipe-input-stream
+                                     "mktemp /tmp/clisp-x-io-XXXXXX"))
+                 (read-line s)))
+        (title "CLISP I/O")
+         tty-name xio
+         (clos::*warn-if-gf-already-called* nil))
+    (shell (format nil "rm -f ~a; mknod ~a p; ~
+                   xterm -n ~s -T ~s -e 'tty >> ~a; cat ~a' &"
+                   pipe pipe title title pipe pipe))
+    (setq tty-name
+          (with-open-file (s pipe :direction :input) (read-line s))
+          xio (make-two-way-stream
+               (open tty-name :direction :input)
+               (open tty-name :direction :output)))
+    (defmethod close :after ((x (eql xio)) &rest junk)
+      (declare (ignore x junk))
+      (with-open-file (s pipe :direction :output)
+        (write-line (TEXT "Bye.") s))
+      (delete-file pipe)
+      (close (two-way-stream-input-stream xio))
+      (close (two-way-stream-output-stream xio))
+      (let ((clos::*warn-if-gf-already-called* nil))
+        (remove-method #'close (find-method #'close '(:after) `((eql ,xio))))))
+    xio))
+
+
+
+LSE SYSTEM
+==========
+
+    emulse [configuration-file]
+
+    commands:
+
+    (connections max-number N)
+    (connections enable)
+    (connections disable)
+
+    (filter insert allow IP [BITS])
+    (filter insert deny  IP [BITS])
+    (filter append allow IP [BITS])
+    (filter append deny  IP [BITS])
+    (filter delete allow IP [BITS])
+    (filter delete deny  IP [BITS])
+
+    (filter insert allow all)
+    (filter insert deny  all)
+    (filter append allow all)
+    (filter append deny  all)
+    (filter delete allow all)
+    (filter delete deny  all)
+
+    (filter flush)
+
+    (filter list)
+    (filter list all)
+    (filter list deny)
+    (filter list allow)
+
+    (console kill all)
+    (console kill xterm)
+    (console kill socket)
+    (console kill N)
+    (console list)
+    (console list all)
+    (console list xterm)
+    (console list socket)
+
+    (console create xterm)
+    (console create xterm display D)
+
+    (configuration save)
+    (configuration load)
+
+;;;; IMPLEMENTATION                   --                     --          ;;;;
+

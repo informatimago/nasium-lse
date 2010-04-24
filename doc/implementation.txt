@@ -1,0 +1,89 @@
+               +--------------------------------------+
+               |    EMULSE - NOTES D'IMPLEMENTATION   |
+               +--------------------------------------+
+
+
+Gestion des consoles en Common Lisp
+===================================
+
+    Comme clisp ne fourni pas de threads, on a deux solutions pour
+    implémenter les consoles:
+    
+        - forked un processus par console, et implémenter un IPC entre
+          un processus maîtres et les processus consoles avec
+          transmission de l'état (commande PR), et des commandes (le
+          maître pouvant terminer une session des consoles
+          utilisateurs).
+
+        - implementer une machine virtuel multi-threads dans un seul
+          processus clisp.  
+
+    Dans les deux cas la gestion des E/S est critique (utilisation de
+    SOCKET:SOCKET-STATUS, avec gestion des flots d'E/S dans tous les
+    sens).
+
+    Reportont le choix entre les deux après analyse de l'interpréteur
+    LSE.
+
+
+
+Gestion des consoles en C (OBSOLETE)
+====================================
+
+    On veut  gérer toutes  les consoles dans  un seul  processus unix,
+    chaque utilisateur  ayant son  propre thread.  (Afin  de "simuler"
+    (de  façon  lointaine)  le   fonctionnement  du  système  LSE  sur
+    Mitra-15,  et aussi  d'étudier l'implémentation  d'un  tel système
+    multi-utilisateur).
+
+    Ceci nous permet également  d'implémenter la commande PRENDRE ETAT
+    CONSOLE directement,  sans passer par un fichier  "SWAP" comme sur
+    Mitra-15, et sans avoir à utiliser un autre IPC.
+
+    En conséquence,  on ne  peut pas utiliser  les signaux  pour gérer
+    certains états du terminal  (ESC <-> SIGQUIT, CTRL-A <-> SIGINTR),
+    car on ne saurait pas de quelle console le signal proviendrait.
+
+    Le système comportera donc deux threads par console :
+
+       - un thread d'exécution du système LSE (commandes et interprétation),
+
+       - un  thread d'E/S  console  qui recevra  les caractères  tapés
+         (stty min  1), et  qui génèrera un  "signal" spécifique  à la
+         console pour ESC et pour CTRL-A.
+
+       - une synchronisation spéciale aura lieu entre ces deux threads
+         lors de la lecture d'une entrée de la console.
+
+
+    Une console peut être connectée soit directement sur un xterm (via
+    pty) pour la  console principale, soit via un  socket sur un xterm
+    ou un autre émulateur de terminal configuré spécialement pour LSE.
+
+    # We need a font with an up arrow instead of the caret (^), 
+    # and with a left arrow instead of the underline (_).
+    # This dec font has these arrow characters, but mapped on 0xfc and 0xfb.
+    font='-dec-terminal-bold-r-normal-*-14-*-*-*-*-*-dec-dectech' 
+
+
+    # We reset the terminal to function as a LSE console.
+    # The intr signal is sent upon CTRL-A  key (used by ATT() function).
+    # The quit signal is sent upon ESC key key.
+    # Start, stop and susp signals are not mapped.
+    stty raw  \
+        olcuc -ocrnl -onlcr \
+        -echo -echoe -echok -echonl -echoprt -echoke -echoctl \
+        intr   0x00 \
+        start  0x00 \
+        stop   0x00 \
+        susp   0x00 \
+        quit   0x00 \
+        erase  0x00 \
+        kill   0x00 \
+        eof    0x00 \
+        eol    0x00 \
+        eol2   0x00 \
+        rprnt  0x00 \
+        werase 0x00 \
+        lnext  0x00 
+

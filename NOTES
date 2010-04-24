@@ -1,0 +1,237 @@
+TODO
+    Design the LSE interpreter (or compiler).
+    Reimplement the command interpreter.
+
+
+
+    - Appel de  PROCEDURE
+    - initialisation/terminaison des variables, EX, PAUSE, TERMINER, CO, RE, PO,
+      gestion (scope) des piles...
+      --> Générer un code intermédiaire ?!
+
+    - PRendre etat console
+        Mitra-15: copie le programme, les variables, et les fichiers
+        temporaires.
+        TRANSFERT FICHIERS TEMPORAIRES IMPOSSIBLE
+        !! Avec des threads, il faut bloquer les threads de la console source !!
+
+    - CHARGER/GARER mettre un sémaphore par fichier ; revoir les
+      autres resources.
+
+    - Programmmes à execution seule ? (Il faut l'ID du pgm pour le lister).
+
+
+    
+MODIFICATIONS
+    2005-08-24 <PJB> Implemented the LSE scanner.
+    2005-08-22 <PJB> Completed the LSE parser.
+
+
+FILES
+
+    loader.lisp         Men working.
+    server.lisp         Men working.
+    simple-server.lisp
+
+    parser-lse.zb       Complete.
+    scanner-lse.lisp    Complete.
+
+    error.lisp          Complete.
+    catalog.lisp        Conversion from C begun.
+    command.lisp        Conversion from C begun.
+    io.lisp             Conversion from C begun.
+    task.lisp           Conversion from C begun.
+
+    configuration.lisp
+    pmatch.lisp         Should use com.informatimago.common-lisp.pmatch 
+
+    
+    
+FILES AND DIRECTORIES IN ../lse/    
+    AFAIRE
+    BOURG
+
+    EXEMP
+
+    INSTALL
+    Makefile
+    Makefile.depend
+    README
+    VERSION
+    Version.h
+    bison.lisp
+    console
+    doc
+    emulse.sh
+    gdb
+
+
+    lse_version.h           inutile
+    pjb_objet.h             inutile -- on a GC & CLOS
+    pjb_tableau.h           inutile -- on a des tableaux en CL
+
+    lse_type.h              inutile -- Défini des valeurs étiquettées, 
+                                       comme en lisp: nombre, vecteur, 
+                                       tableau, chaine, symbole, booléen.
+                            Note: la VM LSE a des variables typées.
+
+    lse_cons.h              inutile -- on a des cons & listes en CL.
+    lse_pile.h              inutile -- pile.
+
+
+    lse_environnement.h     Environnement d'exécution (thread):
+                            programme, globales, locales, piles, 
+                            ligne courante, ligne reprise, pas-a-pas.
+
+
+    lse_cmd.h               Interpréteur des commandes, commandes.
+
+    lse_travail.h           Une Session: console, compte, E/S, terminal, 
+                            commandes, etc.
+
+
+
+    lse_compte.h            Gestion des comptes utilisateurs, droits d'accès.
+                            Convertir en premier!
+
+    lse_catalogue.h         Gestion des catalogues LSE.
+                            Convertir en premier!
+    lse_fichier.h           Gestion des fichiers LSE.
+                            Convertir en premier!
+
+    lse_fonction.h          Les fonctions en bibliothèque.
+                            Convertir en premier!
+
+
+    lse_programme.h         Un programme: instructions, procedures.
+
+
+    lse_cadre.h             stack-frame: next-frame, variables.
+
+    lse_parametre.h         Paramètre d'une procédure: identificateur, sorte.
+
+    lse_variable.h          Variable (binding): identificateur, valeur,
+                            propriétaire(passage par référence), locale
+
+    lse_primproc.h          inutile -- Superclasse primitives & procedures.
+    lse_primitive.h         inutile -- Table des primitives (meta-fonction): 
+                            identificateur, parametres, implémentation.
+
+    lse_procedure.h         Objet procedure: identificateur, parametres,
+                            variables locales, ligne, instructions.
+
+    lse_es.h                Entrées/Sorties
+                            Essentiel -- architecture du système.
+
+
+    lse_scanner.h           -- scanner
+    lse_parser.out.h        -- parser
+    lse_langage.h           Commandes de l'interpréteur, interpéteur.
+    lse_langage_debug.h     Lispeur.
+
+
+    lse_erreur.h            Messages d'erreur.
+    lse_configuration.h
+    lse_main.h
+
+
+    lex-to-lisp
+    lse-mode.el
+    lse-scanner-tables.lisp
+    lse_bison_simple.c
+    lse_cadre.c
+    lse_catalogue.c
+    lse_cmd.c
+    lse_compte.c
+    lse_cons.c
+    lse_environnement.c
+    lse_erreur.c
+    lse_es.c
+    lse_fichier.c
+    lse_fonction.c
+    lse_langage.c
+    lse_langage_debug.c
+    lse_langage_fonctions.awk
+    lse_langage_instructions.awk
+    lse_langage_opcons.awk
+    lse_main.c
+    lse_operators
+    lse_parametre.c
+    lse_parser.bison
+    lse_parser.sed
+    lse_pile.c
+    lse_primitive.c
+    lse_primproc.c
+    lse_procedure.c
+    lse_programme.c
+    lse_scanner.in
+    lse_scanner.sed
+    lse_travail.c
+    lse_type.c
+    lse_variable.c
+    lse_version.c
+    pjb_objet.c
+    pjb_tableau.c
+    prototype.el
+    scanner.lisp
+    test
+    trace
+    yacc-to-lalr.lisp
+
+URLS
+    
+    LSE83  
+    Jacques Arsac
+    Bulletin de l'EPI n° 38   
+    http://archive-edutice.ccsd.cnrs.fr/docs/00/03/06/74/PDF/b38p116.pdf 
+
+------------------------------------------------------------------------
+LEXER,PARSER
+
+    > maybe i don't understand the problem but there is a nice (and fast
+    > ;-) lexer in Michael Parkers CLAWK package. It is very portable (i
+    > tested it on CMUCL, CLisp, LWW & Corman) and produce (as Michael
+    > said) output that is compatible to parsers from LispWorks parser
+    > generator tool.
+
+    Indeed, they work nicely together.  A simple example:
+
+    (defpackage "CALC"
+      (:use "COMMON-LISP" "LEXER" "PARSERGEN")
+      (:export "CALC"))
+
+    (in-package "CALC")
+
+    (deflexer lex
+      ("[:digit:]+" (return (values 'number (num %0))))
+      ("\\+" (return 'plus))
+      ("-" (return 'minus))
+      ("\\*" (return 'times))
+      ("/" (return 'div))
+      ("\\(" (return 'lparen))
+      ("\\)" (return 'rparen))
+      ("[:space:]+"))
+
+    (defparser parse
+      ((expr sum) $1)
+      ((sum sum plus mult) `(+ ,$1 ,$3))
+      ((sum sum minus mult) `(- ,$1 ,$3))
+      ((sum mult) $1)
+      ((mult mult times atom) `(* ,$1 ,$3))
+      ((mult mult div atom) `(/ ,$1 ,$3))
+      ((mult atom) $1)
+      ((atom minus atom) `(- ,$2))
+      ((atom plus atom) `(+ ,$2))
+      ((atom number) $1)
+      ((atom lparen sum rparen) $2))
+
+    (defun calc ()
+      (eval (parse (lex (read-line)))))
+
+    CL-USER 29 > (calc:calc)
+    -(2 + 3 * -5) * 4 / 13
+    4
+
+    IMHO lexing is one of the (maybe exceptional) cases where regular
+    expressions are simply the Right Thing.
+------------------------------------------------------------------------

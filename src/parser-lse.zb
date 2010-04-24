@@ -1,0 +1,548 @@
+;; -*- mode: lisp -*-
+;;*****************************************************************************
+;;FILE:               parser-lse.zb
+;;LANGUAGE:           ANSI-C
+;;SYSTEM:             POSIX
+;;USER-INTERFACE:     POSIX
+;;DESCRIPTION
+;;    
+;;    EMULSE : L.S.E. [ EMULATION MITRA-15 ]
+;;    
+;;    An emultator of the CII MITRA-15 L.S.E. System 
+;;    and programming language interpreter.
+;;    
+;;    This file describes the syntax and grammar of the L.S.E. language.
+;;    
+;;AUTHORS
+;;    <PJB> Pascal J. Bourguignon
+;;MODIFICATIONS
+;;    2005-08-21 <PJB> Completed conversion to zebu.
+;;    2003-11-13 <PJB> Converted from bison to zebu.
+;;    2000-12-09 <PJB> Added this header comment.
+;;BUGS
+;;LEGAL
+;;    GPL
+;;    Copyright Pascal J. Bourguignon 2000 - 2005
+;;
+;;    This file is part of EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]
+;;
+;;    This  program is  free software;  you can  redistribute  it and/or
+;;    modify it  under the  terms of the  GNU General Public  License as
+;;    published by the Free Software Foundation; either version 2 of the
+;;    License, or (at your option) any later version.
+;;
+;;    This program  is distributed in the  hope that it  will be useful,
+;;    but  WITHOUT ANY WARRANTY;  without even  the implied  warranty of
+;;    MERCHANTABILITY or FITNESS FOR  A PARTICULAR PURPOSE.  See the GNU
+;;    General Public License for more details.
+;;
+;;    You should have received a  copy of the GNU General Public License
+;;    along with  this program; see the  file COPYING; if  not, write to
+;;    the Free  Software Foundation, Inc.,  59 Temple Place,  Suite 330,
+;;    Boston, MA 02111-1307 USA
+;;*****************************************************************************
+
+(
+ :name                      "LSE"
+ :package                   "COM.INFORMATIMAGO.LSE"
+ :identifier-start-chars    nil
+ :identifier-continue-chars nil
+ :intern-identifier         nil
+ :string-delimiter          nil
+ :symbol-delimiter          nil
+ :domain                    ()
+ :domain-file               "lse-domain"
+ :grammar                   "null-grammar"
+ :white-space               (#.(character " "))
+ ;; we don't keep newline because it's the eoln/end of statement
+ ;; and we don't keep tabulation because it's not valid.
+ :case-sensitive            t
+ :lex-cats (
+            ;; keywords
+            (tok-AFFICHER  "AFFICHER")
+            (tok-ALLER     "ALLER")
+            (tok-ALORS     "ALORS")
+            (tok-CHAINE    "CHAINE")
+            (tok-CHARGER   "CHARGER")
+            (tok-DEBUT     "DEBUT")
+            (tok-EN        "EN")
+            (tok-ET        "ET")
+            (tok-EXECUTER  "EXECUTER")
+            (tok-FIN       "FIN")
+            (tok-FAIRE     "FAIRE")
+            (tok-GARER     "GARER")
+            (tok-JUSQUA    "JUSQUA")
+            (tok-LIBERER   "LIBERER")
+            (tok-LIRE      "LIRE")
+            (tok-LOCAL     "LOCAL")
+            (tok-NON       "NON")
+            (tok-OU        "OU")
+            (tok-PAS       "PAS")
+            (tok-PAUSE     "PAUSE")
+            (tok-POUR      "POUR")
+            (tok-PROCEDURE "PROCEDURE")
+            (tok-QUE       "QUE")
+            (tok-RESULTAT  "RESULTAT")
+            (tok-RETOUR    "RETOUR")
+            (tok-SI        "SI")
+            (tok-SINON     "SINON")
+            (tok-SUPPRIMER "SUPPRIMER")
+            (tok-TABLEAU   "TABLEAU")
+            (tok-TANT      "TANT")
+            (tok-TERMINER  "TERMINER")
+            ;; keyword or identifier:            
+            (tok-x         "X")
+            (tok-C         "C")
+            (tok-L         "L")
+            (tok-f         "F")
+            (tok-e         "E")
+            (tok-u         "U")
+            ;; caractères spéciaux
+            (tok-GT        ">")
+            (tok-GE        ">=")
+            (tok-LT        "<")
+            (tok-LE        "<=")
+            (tok-NE        "#")
+            (tok-EQ        "=")
+            (tok-affic     "\\?")
+            (tok-plus      "\\+")
+            (tok-moins     "-")
+            (tok-concat    "!")
+            (tok-fois      "\\*")
+            (tok-divise    "/")
+            (tok-puissance "^")
+            (tok-virgule   ",")
+            (tok-point     "\\.")
+            (tok-pargauche "(")
+            (tok-pardroite ")")
+            (tok-crogauche "\\[")
+            (tok-crodroite "\\]")
+            (tok-fleche    "_")
+            (tok-ptvirg    ";")
+            ;; (tok-ligne          "{NEWLINE}") ;; #.(string #\newline))
+            ;; numero : chiffre {chiffre} .
+            ;; nombre : chiffre {chiffre} [ '.' {chiffre} ]
+            ;;                            [ 'E' ['+'|'-'] chiffre {chiffre} ] .
+            ;; chaine : ' { caractere_sauf_quote | '' } ' .
+            ;; ident : [ '&' ] lettre { lettre | chiffre } .
+            ;; commentaire    : '*' { car } tok_EOLN .
+            ;; Alternatives \| don't work!
+            (tok-numero         "{NUMERO}") ; "[0-9]+")
+            (tok-nombre         "{NOMBRE}")
+            ;; "[0-9]+\\(\\.[0-9]*\\)?\\(E[-+]?[0-9]+\\)?")
+            (tok-litchaine      "{CHAINE}")
+            ;; "\\('[^']*'\\)\\('[^']*'\\)*")
+             ;; "\\'[^']*\\'\\(\\'[^']*\\'\\)*")
+             ;; "\\'\\([^']*\\|\\(\\'\\'\\)\\)*\\'")
+             ;; "'\\([^']*\\(''\\)?\\)*'")
+            (tok-identificateur "{IDENTIFICATEUR}")
+            ;; "&?[A-Z][0-9A-Z]?[0-9A-Z]?[0-9A-Z]?[0-9A-Z]?")
+            (tok-commentaire    "{COMMENTAIRE}")
+            (tok-erreur         "{ERREUR}")
+            ;; "\\*.*$")
+            ))
+
+
+;; (defrule fichier-programme
+;;     := (fichier-programme ligne-programme tok-ligne)
+;;     :build (snoc fichier-programme ligne-programme)
+;;     := (ligne-programme tok-ligne)
+;;     :build (list ligne-programme))
+
+
+;; The LSE language is line based.  We parse sources line by line.
+;; Program files (tapes) can contain both lines and commands.
+;; The LSE compiler worked on punch cards, line by line too.
+(defrule start 
+    := liste-instruction :build (cons :liste-instruction liste-instruction)
+    := affic             :build (list :liste-instruction affic)
+    := ligne-programme
+    := tok-erreur :build (progn tok-erreur)
+    := ()         :build (progn nil))
+
+
+(defrule affic
+    := (affic/format liste-expression)
+    :build (nconc affic/format liste-expression)
+    := (tok-affic liste-expression)
+    :build (list* :afficher nil liste-expression)
+    := affic/format)
+
+(defrule affic/format
+    := (tok-affic format)                  :build (list :afficher format))
+
+
+(defrule identificateur
+    := tok-identificateur :build (progn tok-identificateur))
+
+
+(defrule expression
+    := (tok-moins terme)               :build (list :neg       terme)
+    := (expression tok-moins  terme)   :build (list :moins     expression terme)
+    := (expression tok-plus   terme)   :build (list :plus      expression terme)
+    := (expression tok-concat terme)   :build (list :concat    expression terme)
+    := terme)
+
+
+(defrule terme
+    := (terme   tok-fois      facteur) :build (list :fois      terme   facteur)
+    := (terme   tok-divise    facteur) :build (list :divise    terme   facteur)
+    := facteur)
+
+
+(defrule facteur
+    := (facteur tok-puissance simple)  :build (list :puissance facteur simple)
+    := simple)
+
+
+(defrule simple
+    := (tok-SI disjonction tok-ALORS expression.1 tok-SINON expression.2)
+    :build (list :xi disjonction expression.1 expression.2)
+    := (identificateur tok-pargauche tok-pardroite)
+    :build (list :fonction identificateur)
+    := (identificateur tok-pargauche liste-expression tok-pardroite)
+    :build (list* :fonction identificateur liste-expression)
+    := tok-litchaine :build (progn tok-litchaine)
+    := (tok-pargauche expression tok-pardroite) :build (progn expression)
+    := reference
+    := tok-nombre :build (progn tok-nombre)
+    := tok-numero :build (progn tok-numero))
+
+
+(defrule liste-expression
+    := (liste-expression tok-virgule expression)
+    :build (snoc liste-expression expression)
+    := expression
+    :build (list expression))
+
+
+(defrule liste-identificateur
+    := (liste-identificateur tok-virgule identificateur)
+    :build (snoc liste-identificateur identificateur)
+    := identificateur
+    :build (list identificateur))
+
+
+(defrule disjonction
+    := (disjonction tok-OU conjonction)
+    :build (list :ou disjonction conjonction)
+    := conjonction
+    :build (progn conjonction))
+
+
+(defrule conjonction
+    := (conjonction tok-ET condition)
+    :build (list :et conjonction condition)
+    := condition
+    :build (progn condition))
+
+
+(defrule condition
+    := (tok-NON condition) :build (list :non condition)
+    := (tok-pargauche disjonction tok-pardroite) :build (progn disjonction)
+    := (expression.1 tok-LT expression.2)
+    :build (list :lt expression.1 expression.2)
+    :=  (expression.1 tok-LE expression.2)
+    :build (list :le expression.1 expression.2)
+    :=  (expression.1 tok-NE expression.2)
+    :build (list :ne expression.1 expression.2)
+    :=  (expression.1 tok-EQ expression.2)
+    :build (list :eg expression.1 expression.2)
+    :=  (expression.1 tok-GT expression.2)
+    :build (list :gt expression.1 expression.2)
+    :=  (expression.1 tok-GE expression.2)
+    :build (list :ge expression.1 expression.2))
+
+
+(defrule ligne-programme
+    := (tok-numero liste-inst-ou-decl)
+    :build (list* :ligne-programme tok-numero liste-inst-ou-decl)
+    := (tok-numero tok-commentaire)
+    :build (list :ligne-programme tok-numero (list :commentaire tok-commentaire))
+    := (ligne-decl-procedure/0 tok-ptvirg liste-inst-ou-decl)
+    :build (nconc ligne-decl-procedure/0 liste-inst-ou-decl)
+    := ligne-decl-procedure/0)
+
+(defrule ligne-decl-procedure/0
+    := (tok-numero decl-procedure)
+    :build (list :ligne-programme tok-numero
+                 (list :decl-procedure  decl-procedure)))
+
+
+(defrule liste-inst-ou-decl
+    := (liste-inst-ou-decl tok-ptvirg instruction)
+    :build (snoc liste-inst-ou-decl instruction)
+    := (liste-inst-ou-decl tok-ptvirg decl)
+    :build (snoc liste-inst-ou-decl decl)
+    := instruction       :build (list instruction)
+    := decl              :build (list decl)
+    := tok-commentaire   :build (list :commentaire tok-commentaire))
+
+
+(defrule liste-instruction
+    := (liste-instruction tok-ptvirg instruction)
+    :build (snoc liste-instruction instruction)
+    := (instruction tok-ptvirg tok-commentaire)
+    :build (list instruction (list :commentaire tok-commentaire))
+    := instruction
+    :build (list instruction))
+
+
+(defrule decl
+    := decl-chaine 
+    := decl-tableau)
+
+
+(defrule instruction
+    := liberation    
+    := affectation   
+    := lire          
+    := afficher      
+    := aller-en       
+    := si-alors-sinon  
+    := terminer      
+    := pause         
+    := debut-fin      
+    := faire-jusqu-a   
+    := faire-tant-que  
+    := retour        
+    := resultat      
+    := appel         
+    := garer         
+    := charger       
+    := supprimer     
+    := executer)
+
+
+(defrule liberation
+    := (tok-LIBERER liste-identificateur)
+    :build (cons :liberer liste-identificateur))
+
+
+(defrule decl-chaine
+    := (tok-CHAINE liste-identificateur)
+    :build (cons :chaine liste-identificateur))
+
+
+(defrule decl-tableau
+    := (tok-TABLEAU liste-decl-tabl)
+    :build (cons :tableau liste-decl-tabl))
+
+
+(defrule liste-decl-tabl
+    := (liste-decl-tabl tok-virgule decl-tabl)
+    :build (snoc liste-decl-tabl decl-tabl)
+    := decl-tabl
+    :build (list decl-tabl))
+
+
+(defrule decl-tabl
+    := (decl-tabl/1 tok-virgule expression tok-crodroite)
+    :build (snoc decl-tabl/1 expression)
+    := (decl-tabl/1 tok-crodroite)
+    :build (progn decl-tabl/1))
+
+(defrule decl-tabl/1    
+    := (identificateur tok-crogauche expression)
+    :build (list :adecl identificateur expression))
+
+
+(defrule decl-procedure
+    := decl-procedure/0
+    :build (snoc decl-procedure/0 nil)
+    := (decl-procedure/0 decl-local)
+    :build (snoc decl-procedure/0 decl-local)
+    := decl-procedure/n
+    :build (snoc decl-procedure/n nil)
+    := (decl-procedure/n decl-local)
+    :build (snoc decl-procedure/n decl-local))
+
+(defrule decl-procedure/0
+    := (decl-procedure/tete tok-pardroite)
+    :build (snoc decl-procedure/tete nil))
+
+(defrule decl-procedure/n
+    := (decl-procedure/tete liste-identificateur tok-pardroite)
+    :build (snoc decl-procedure/tete liste-identificateur))
+
+(defrule decl-procedure/tete
+    := (tok-PROCEDURE identificateur tok-pargauche)
+    :build (list :procedure identificateur))
+    
+(defrule decl-local
+    := (tok-LOCAL liste-identificateur) :build (progn liste-identificateur))
+
+
+(defrule reference
+    := (reference/vecteur tok-virgule expression tok-crodroite)
+    :build (snoc reference/vecteur expression)
+    := (reference/vecteur tok-crodroite) :build (progn reference/vecteur)
+    := identificateur                    :build (list :vref identificateur))
+
+(defrule reference/vecteur
+    := (identificateur tok-crogauche expression)
+    :build (list :aref identificateur expression))
+
+(defrule liste-reference
+    := (liste-reference tok-virgule reference)
+    :build (snoc liste-reference reference)
+    := reference
+    :build (list reference))
+
+
+(defrule affectation
+    := (reference tok-fleche expression)
+    :build (list :affectation reference expression))
+
+
+(defrule lire := (tok-LIRE liste-reference) :build (cons :lire liste-reference))
+
+
+(defrule afficher
+    := (tok-AFFICHER        liste-expression)
+    :build (list* :afficher nil liste-expression)
+    := (afficher/format liste-expression)
+    :build (nconc afficher/format liste-expression)
+    := afficher/format)
+
+(defrule afficher/format
+    := (tok-AFFICHER format) :build (list :afficher format))
+    
+(defrule format
+    := (tok-crogauche liste-spec tok-crodroite) :build (progn liste-spec))
+
+
+(defrule liste-spec
+    := (liste-spec tok-virgule specification)
+    :build (snoc liste-spec specification)
+    := specification
+    :build (list specification))
+
+
+(defrule specification
+    ;; Afin d'éviter une abiguité sur first(spec-rep-num) inter first(spec-rep),
+    ;; on distingue les deux cas:
+    ;; * sans facteur de répétition:
+    := tok-litchaine :build (list :spec-chaine '(:rep-1)  tok-litchaine)
+    := tok-divise :build (list :spec-slash  '(:rep-1))
+    := tok-X      :build (list :spec-space  '(:rep-1))
+    := tok-C      :build (list :spec-cr     '(:rep-1))
+    := tok-L      :build (list :spec-nl     '(:rep-1))
+    := tok-U      :build (list :spec-u      '(:rep-1))
+    := (tok-F tok-numero.1 tok-point tok-numero.2)
+    :build (list :spec-f '(:rep-1) tok-numero.1  tok-numero.2)
+    := (tok-E tok-numero.1 tok-point tok-numero.2)
+    :build (list :spec-e '(:rep-1) tok-numero.1  tok-numero.2)
+    ;; * avec facteur de répétition:
+    := (spec-rep tok-litchaine) :build (list :spec-chaine spec-rep tok-litchaine)
+    := (spec-rep tok-divise) :build (list :spec-slash spec-rep)
+    := (spec-rep tok-X)      :build (list :spec-space spec-rep)
+    := (spec-rep tok-C)      :build (list :spec-cr    spec-rep)
+    := (spec-rep tok-L)      :build (list :spec-nl    spec-rep)
+    := (spec-rep-num tok-U)  :build (list :spec-u spec-rep-num)
+    := (spec-rep-num tok-F tok-numero.1 tok-point tok-numero.2)
+    :build (list :spec-f spec-rep-num tok-numero.1  tok-numero.2)
+    := (spec-rep-num tok-E tok-numero.1 tok-point tok-numero.2)
+    :build (list :spec-e spec-rep-num tok-numero.1  tok-numero.2))
+
+
+(defrule spec-rep-num
+    := tok-numero  :build (list :rep tok-numero))
+
+(defrule spec-rep
+    := spec-rep-num 
+    := tok-fois    :build (list :rep-var))
+
+
+(defrule aller-en
+    := (tok-ALLER tok-EN expression)
+    :build (list :aller-en  expression))
+
+
+(defrule si-alors-sinon
+    := (si-alors tok-SINON instruction)
+    :build (snoc si-alors instruction)
+    := si-alors)
+
+(defrule si-alors
+    := (tok-SI disjonction tok-ALORS instruction)
+    :build (list :si disjonction instruction))
+
+
+(defrule terminer := tok-TERMINER :build (list :terminer))
+(defrule pause    := tok-PAUSE    :build (list :pause))
+(defrule debut-fin
+    := (tok-DEBUT liste-inst-ou-decl tok-FIN)
+    :build (cons :debut liste-inst-ou-decl))
+
+
+(defrule faire-jusqu-a
+    := (faire-pour-pas tok-JUSQUA expression)
+    :build (cons :faire-jusqu-a  (snoc faire-pour-pas expression)))
+    
+
+(defrule faire-tant-que
+    := (faire-pour-pas tok-TANT tok-QUE disjonction)
+    :build (cons :faire-tant-que (snoc faire-pour-pas disjonction)))
+
+
+(defrule faire-pour-pas
+    := (faire-pour tok-PAS expression) :build (snoc faire-pour expression)
+    := faire-pour                      :build (snoc faire-pour nil))
+
+(defrule faire-pour
+    := (tok-FAIRE tok-numero tok-POUR identificateur tok-fleche expression)
+    :build (list  tok-numero identificateur expression))
+
+(defrule retour
+    := tok-RETOUR                      :build (list :retour)
+    := (tok-RETOUR tok-EN expression)  :build (list :retour-en expression))
+
+
+(defrule resultat
+    := (tok-RESULTAT expression)       :build (list :resultat expression))
+
+
+(defrule appel
+    := (appel/1 liste-expression tok-pardroite)
+    :build (nconc appel/1 liste-expression)
+    := (appel/1 tok-pardroite)
+    :build (progn appel/1))
+
+(defrule appel/1
+    := (identificateur tok-pargauche) :build (list :appel identificateur))
+
+(defrule garer
+    := (tok-GARER identificateur tok-virgule expression.1 tok-virgule
+                  expression.2)
+    :build (list :garer identificateur expression.1 expression.2))
+
+
+(defrule charger
+    := (charger/1 tok-virgule identificateur)
+    :build  (snoc charger/1 identificateur)
+    := charger/1)
+
+(defrule charger/1
+    := (tok-CHARGER identificateur tok-virgule expression.1
+                    tok-virgule expression.2)
+    :build  (list :charger identificateur expression.1 expression.2))
+
+
+(defrule supprimer
+    := (supprimer/1 tok-virgule expression) :build  (snoc supprimer/1 expression)
+    := supprimer/1)
+
+(defrule supprimer/1
+    := (tok-SUPPRIMER expression)           :build  (list :supprimer expression))
+
+
+(defrule executer
+    := (executer/1 tok-virgule expression)  :build  (snoc executer/1 expression)
+    := executer/1)
+
+(defrule executer/1
+    := (tok-EXECUTER expression)            :build  (list :executer expression))
+
+
+

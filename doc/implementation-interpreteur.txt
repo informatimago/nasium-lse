@@ -1,0 +1,105 @@
+
+
+
+start ::= ligne_programme | instruction | '?' expression .
+
+
+
+numero ::= chiffre {chiffre} .
+nombre ::= chiffre {chiffre} [ . {chiffre} ] 
+            [ 'E' ['+'|'-'] chiffre {chiffre} ] .
+
+chaine ::= "'" { caractere_sauf_quote | "''" } "'" .
+
+identificateur ::= [ '&' ] lettre { lettre | chiffre } .
+
+
+expression  ::= expression ['-'|'+'|'!'] terme_signe .
+expression  ::= terme_signe .
+
+terme_signe ::= '-' terme .
+terme_signe ::= terme .
+
+terme       ::= terme ['*'|'/'] facteur .
+terme       ::= facteur .
+
+facteur     ::= facteur '^' exposant .
+facteur     ::= simple .
+
+simple      ::= identificateur '(' [ expression  { ',' expression } ] ')' .
+simple      ::= identificateur .
+simple      ::= nombre .
+simple      ::= chaine .
+simple      ::= '(' expression ')' .
+
+
+
+disjonction ::= conjonction { 'OU' conjonction } .
+conjonction ::= condition   { 'ET' condition   } .
+condition   ::= 'NON' condition .
+condition   ::= '(' disjonction ')' .
+condition   ::= comparaison .
+comparaison ::= expression [ '<'|'<='|'#'|'='|'>='|'>' ] expression .
+
+
+ligne_programme ::= numero ' ' liste_instruction 'X-OFF' .
+ligne_programme ::= numero '*' commentaire 'X-OFF' .
+ligne_programme ::= numero declaration_procedure { ';' instruction } .
+commentaires    ::= { caractere } .
+
+liste_instruction ::= instruction|declaration { ';' instruction|declaration } .
+
+declaration     ::= declaration_chaine | declaration_tableau .
+instruction     ::= liberation
+                | lire | afficher | alleren | sialors | sialorssinon 
+                | terminer | pause | debutfin | fairejusqua | fairetantque 
+                | retour | resultat | appel 
+                | garer | charger | supprimer | executer .
+
+
+
+declaration_chaine ::= 'CHAINE' identificateur { ',' identificateur } .
+
+declaration_tableau ::= 'TABLEAU' 
+                        identificateur '[' expression [ ',' expression ] ']' 
+                 { ','  identificateur '[' expression [ ',' expression ] ']' } .
+
+liberation  ::= 'LIBERER' identificateur .
+
+declaration_procedure ::= 'PROCEDURE' identificateur 
+                            '(' [ identificateur { ',' identificateur } ] ')'
+                            [ 'LOCAL' identificateur { ',' identificateur } ] .
+
+affectation ::= identificateur [ '[' expression [ ',' expression ] ']' ]
+                    '_' expression .
+
+
+lire            ::= 'LIRE' identificateur { ',' identificateur } .
+afficher        ::= 'AFFICHER'          expression { ',' expression } .
+afficher        ::= 'AFFICHER' format [ expression { ',' expression } ] .
+format          ::= '[' specification { ',' specification } ']' 
+specification   ::= [ numero | '*' ] '/' | 'X' | 'C' | 'L' | chaine .
+specification   ::= [ numero ] 'F' numero '.' numero | 'E' numero '.' numero 
+                               | 'U' .
+alleren         ::= 'ALLER' 'EN' expression .
+sialors         ::= 'SI' disjonction 'ALORS' instruction .
+sialorssinon    ::= 'SI' disjonction 'ALORS' instruction 'SINON' instruction .
+terminer        ::= 'TERMINER' .
+pause           ::= 'PAUSE' .
+debutfin        ::= 'DEBUT' instruction { ',' instruction } 'FIN' .
+fairejusqua     ::= 'FAIRE' numero 'POUR' identificateur '_' expression 
+                        [ 'PAS' expression ] 'JUSQUA' expression .
+fairetantque    ::= 'FAIRE' numero 'POUR' identificateur '_' expression 
+                        [ 'PAS' expression ] 'TANT' 'QUE' disjonction .
+retour          ::= 'RETOUR' .
+retour          ::= 'RETOUR' 'EN' expression .
+resultat        ::= 'RESULTAT' expression .
+appel           ::= identificateur '(' [ expression { ',' expression } ] ')' .
+
+garer           ::= 'GARER'   identificateur ',' expression ',' expression .
+charger         ::= 'CHARGER' identificateur ',' expression ',' expression 
+                        [ ',' identificateur ] .
+supprimer       ::= 'SUPPRIMER' expression [ ',' expression ] .
+executer        ::= 'EXECUTER' expression [ ',' expression ] .
+
+

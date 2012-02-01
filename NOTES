@@ -22,7 +22,7 @@ TODO
     - Programmmes à execution seule ? (Il faut l'ID du pgm pour le lister).
 
 
-    
+
 MODIFICATIONS
     2005-08-24 <PJB> Implemented the LSE scanner.
     2005-08-22 <PJB> Completed the LSE parser.

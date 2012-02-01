@@ -130,17 +130,17 @@
             (token-kind self) (token-text self)))
   self)
 
-(defclass erreur         (token) ())
-(defclass commentaire    (token) ())
-(defclass motcle         (token) ())
+(defclass tok-erreur         (token) ())
+(defclass tok-commentaire    (token) ())
+(defclass tok-motcle         (token) ())
 
-(defclass identificateur (token)
+(defclass tok-identificateur (token)
   ((nom        :accessor identificateur-nom
                :initarg :nom
                :initform nil
                :type     symbol)))
 
-(defmethod initialize-instance :after ((self identificateur) &rest args)
+(defmethod initialize-instance :after ((self tok-identificateur) &rest args)
   (declare (ignore args))
   (setf (identificateur-nom self)
         (intern (slot-value self 'text)
@@ -148,40 +148,40 @@
         (token-text self) "")
   self)
 
-(defmethod token-text ((self identificateur))
+(defmethod token-text ((self tok-identificateur))
   (symbol-name (identificateur-nom self)))
 
-(defclass numero (token)
+(defclass tok-numero (token)
   ((valeur     :accessor numero-valeur
                :initarg :valeur
                :initform 0
                :type     (integer 0))))
 
-(defmethod initialize-instance :after ((self numero) &rest args)
+(defmethod initialize-instance :after ((self tok-numero) &rest args)
   (declare (ignore args))
   (setf (numero-valeur self) (parse-integer (token-text self)))
   self)
 
 
-(defclass nombre (token)
+(defclass tok-nombre (token)
   ((valeur     :accessor nombre-valeur
                :initarg :valeur
                :initform 0.0
                :type     double-float)))
 
-(defmethod initialize-instance :after ((self nombre) &rest args)
+(defmethod initialize-instance :after ((self tok-nombre) &rest args)
   (declare (ignore args))
   (setf (nombre-valeur self) (read-from-string (token-text self)))
   self)
 
 
-(defclass chaine (token)
+(defclass tok-chaine (token)
   ((valeur     :accessor chaine-valeur
                :initarg :value
                :initform ""
                :type     string)))
 
-(defmethod initialize-instance :after ((self chaine) &rest args)
+(defmethod initialize-instance :after ((self tok-chaine) &rest args)
   (declare (ignore args))
   (setf (chaine-valeur self)
         (loop
@@ -201,7 +201,7 @@
         (token-text self) "")
   self)
 
-(defmethod token-text ((self chaine))
+(defmethod token-text ((self tok-chaine))
   (with-output-to-string (out)
     (princ "'" out)
     (loop for ch across (chaine-valeur self) do
@@ -212,10 +212,10 @@
 
 
 (defmethod eolp ((self t))       nil)
-(defmethod eolp ((self motcle))  (eq (token-kind self) 'tok-eol))
+(defmethod eolp ((self tok-motcle))  (eq (token-kind self) 'tok-eol))
 
 (defmethod eofp ((self t))       nil)
-(defmethod eofp ((self motcle))  (eq (token-kind self) 'tok-eof))
+(defmethod eofp ((self tok-motcle))  (eq (token-kind self) 'tok-eof))
 
 
 (defclass SCANNER ()
@@ -223,7 +223,8 @@
                :INITARG :SOURCE
                :TYPE (or null STREAM))
    (buffer     :accessor buffer
-               :type     (or null string))
+               :type     (or null string)
+               :initform nil)
    (column     :accessor column
                :initform 0
                :type (integer 0))
@@ -530,12 +531,12 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                        :column start
                        :line   (line self)))
                    (make-instance  (case (tsymb tok-desc)
-                                     (tok-identificateur 'identificateur)
-                                     (tok-numero         'numero)
-                                     (tok-nombre         'nombre)
-                                     (tok-litchaine      'chaine)
-                                     (tok-commentaire    'commentaire)
-                                     (otherwise          'motcle))
+                                     (tok-identificateur 'tok-identificateur)
+                                     (tok-numero         'tok-numero)
+                                     (tok-nombre         'tok-nombre)
+                                     (tok-litchaine      'tok-chaine)
+                                     (tok-commentaire    'tok-commentaire)
+                                     (otherwise          'tok-motcle))
                      :kind   (tsymb tok-desc)
                      :index  (tcode tok-desc)
                      :text   (case (tsymb tok-desc)

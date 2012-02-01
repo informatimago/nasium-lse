@@ -125,15 +125,18 @@
 
 
 (cl:defmacro defcops (cl:&key numeric)
-  `(progn ,@(cl:loop
-             for i from 0
-             for s in *cops*
-             collect `(cl:defconstant ,s ,(cl:if numeric i `,s)))))
+  `(cl:progn ,@(cl:loop
+                :for i :from 0
+                :for s :in *cops*
+                :collect `(cl:defconstant ,s ,(cl:if numeric i `,s)))))
 
 (cl:eval-when (:compile-toplevel :load-toplevel)
   (defcops :numeric t))
 
-(cl:in-package "LSE")
+
+
+
+(cl:in-package "COM.INFORMATIMAGO.LSE")
 
 
 (defmacro gen (&rest items)

@@ -1,21 +1,18 @@
 ------------------------------------------------------------------------
 
-It is advised to put the darcs repository inside a project specific
-directory,  for the dependencies will be installed as brother directories:
+See doc/EMULSE.TXT
 
-project_X/
-project_X/project_X_darcs_repo/
-project_X/project_X_darcs_repo/_darcs
-project_X/project_X_darcs_repo/Makefile
-project_X/project_X_darcs_repo/src/...
-project_X/dependency_1/
-project_X/dependency_2/
-project_X/...
+doc/                Documentation.
+dependencies/       Dependencies (zebu-3.5.5-pjb, etc)
+src/                Sources of the LSE interpreter and system.
 
 
-These dependencies may be unfreezed from tarballs, or checked-out from
-any revision control system by the Makefile inside the project darcs
-repository.
+The dependencies and src are loaded with ASD files:
+
+(cd #P "~/src/pjb/lse-cl/src/")
+(push #P"~/src/pjb/lse-cl/dependencies/zebu-3.5.5-pjb/" asdf:*central-registry*)
+(push #P "~/src/pjb/lse-cl/src/"                        asdf:*central-registry*)
+(asdf-load :com.informatimago.lse)
 
 ------------------------------------------------------------------------
 

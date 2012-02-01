@@ -1,3 +1,41 @@
+;;;; -*- mode:lisp;coding:utf-8 -*-
+;;;;**************************************************************************
+;;;;FILE:               simple-server.lisp
+;;;;LANGUAGE:           Common-Lisp
+;;;;SYSTEM:             Common-Lisp
+;;;;USER-INTERFACE:     NONE
+;;;;DESCRIPTION
+;;;;    
+;;;;    Implements a simple server.
+;;;;    
+;;;;AUTHORS
+;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
+;;;;MODIFICATIONS
+;;;;    2012-02-01 <PJB> Added this header.
+;;;;BUGS
+;;;;LEGAL
+;;;;    GPL
+;;;;    
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    
+;;;;    This program is free software; you can redistribute it and/or
+;;;;    modify it under the terms of the GNU General Public License
+;;;;    as published by the Free Software Foundation; either version
+;;;;    2 of the License, or (at your option) any later version.
+;;;;    
+;;;;    This program is distributed in the hope that it will be
+;;;;    useful, but WITHOUT ANY WARRANTY; without even the implied
+;;;;    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;;;;    PURPOSE.  See the GNU General Public License for more details.
+;;;;    
+;;;;    You should have received a copy of the GNU General Public
+;;;;    License along with this program; if not, write to the Free
+;;;;    Software Foundation, Inc., 59 Temple Place, Suite 330,
+;;;;    Boston, MA 02111-1307 USA
+;;;;**************************************************************************
+
+(in-package "COM.INFORMATIMAGO.LSE")
+
 #||
 (progn
 ;;(load "/local/html/local/arauko-pmatch.lisp")
@@ -30,89 +68,87 @@
   (class 'xterm      :type (member xterm socket))
   (number 0          :type (integer 0 99))
   (state  "LIMBO"    :type string)
-  (date   "00/00/00" :type string));;console
+  (date   "00/00/00" :type string))
 
 
 
-(DEFUN LIST-INSERT-SEPARATOR (LIST SEPARATOR)
+(defun list-insert-separator (list separator)
   "
 RETURN:  A list composed of all the elements in `list'
          with `separator' in-between.
 EXAMPLE: (list-insert-separator '(a b (d e f)  c) 'x)
          ==> (a x b x (d e f) x c)
 "
-  (DO ((RESULT (IF LIST (LIST (CAR LIST))))
-       (LIST (CDR LIST) (CDR LIST)))
-      ((NULL LIST) (NREVERSE RESULT))
-    (PUSH SEPARATOR RESULT)
-    (PUSH (CAR LIST) RESULT))
-  );;LIST-INSERT-SEPARATOR
+  (do ((result (if list (list (car list))))
+       (list (cdr list) (cdr list)))
+      ((null list) (nreverse result))
+    (push separator result)
+    (push (car list) result)))
 
 
-(DEFMACRO WHILE (CONDITION &BODY BODY) `(DO () ((NOT ,CONDITION)) ,@BODY))
+(defmacro while (condition &body body) `(do () ((not ,condition)) ,@body))
 
 
-(DEFUN CHAR-OR-STRING-P (OBJECT)
-  (OR (CHARACTERP OBJECT) (STRINGP OBJECT)))
+(defun char-or-string-p (object)
+  (or (characterp object) (stringp object)))
 
 
-(DEFUN PJB-UNSPLIT-STRING (STRING-LIST &REST SEPARATOR)
+(defun pjb-unsplit-string (string-list &rest separator)
   "Does the inverse than pjb-split-string. If no separator is provided 
 then a simple space is used."
-  (COND
-   ((NULL SEPARATOR)         (SETQ SEPARATOR " "))
-   ((/= 1 (LENGTH SEPARATOR)) 
-    (ERROR "pjb-unsplit-string: Too many separator arguments."))
-   ((NOT (CHAR-OR-STRING-P (CAR SEPARATOR)))
-    (ERROR "pjb-unsplit-string: separator must be a string or a char."))
-   (T (SETQ SEPARATOR (CAR SEPARATOR))))
-  (APPLY 'CONCATENATE 'STRING
-         (MAPCAR (LAMBDA (OBJECT)
-                   (IF (STRINGP OBJECT) 
-                     OBJECT
-                     (FORMAT NIL "~A" OBJECT)))
-                 (LIST-INSERT-SEPARATOR STRING-LIST SEPARATOR)))
-  );;PJB-UNSPLIT-STRING
+  (cond
+   ((null separator)         (setq separator " "))
+   ((/= 1 (length separator)) 
+    (error "pjb-unsplit-string: Too many separator arguments."))
+   ((not (char-or-string-p (car separator)))
+    (error "pjb-unsplit-string: separator must be a string or a char."))
+   (t (setq separator (car separator))))
+  (apply 'concatenate 'string
+         (mapcar (lambda (object)
+                   (if (stringp object) 
+                     object
+                     (format nil "~A" object)))
+                 (list-insert-separator string-list separator))))
 
 
-(DEFUN PJB-SPLIT-STRING (STRING &OPTIONAL SEPARATORS)
+(defun pjb-split-string (string &optional separators)
   "
 note:   current implementation only accepts as separators
         a string containing only one character.
 "
-  (SETQ SEPARATORS (OR SEPARATORS " ")
-        STRING (STRING STRING))
-  (LET ((SEP (AREF SEPARATORS 0))
-        (CHUNKS  '())
-        (POSITION 0)
-        (NEXTPOS  0)
-        (STRLEN   (LENGTH STRING)) )
-    (WHILE (<= POSITION STRLEN)
-      (WHILE (AND (< NEXTPOS STRLEN)
-                  (CHAR/= SEP (AREF STRING NEXTPOS)))
-        (SETQ NEXTPOS (1+ NEXTPOS)))
-      (SETQ CHUNKS (CONS (SUBSEQ STRING POSITION NEXTPOS) CHUNKS))
-      (SETQ POSITION (1+ NEXTPOS))
-      (SETQ NEXTPOS  POSITION) )
-    (NREVERSE CHUNKS)));;PJB-SPLIT-STRING
+  (setq separators (or separators " ")
+        string (string string))
+  (let ((sep (aref separators 0))
+        (chunks  '())
+        (position 0)
+        (nextpos  0)
+        (strlen   (length string)) )
+    (while (<= position strlen)
+      (while (and (< nextpos strlen)
+                  (char/= sep (aref string nextpos)))
+        (setq nextpos (1+ nextpos)))
+      (setq chunks (cons (subseq string position nextpos) chunks))
+      (setq position (1+ nextpos))
+      (setq nextpos  position) )
+    (nreverse chunks)))
 
 
-(DEFUN IPV4-ADDRESS-P (ADDRESS)
+(defun ipv4-address-p (address)
   "
 PRE:     (or (string address) (symbol address))
 RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 "
-  (LET ((BYTES (PJB-SPLIT-STRING (STRING ADDRESS) ".")))
-    (AND (= 4 (LENGTH BYTES))
-         (BLOCK :CONVERT
-           (NREVERSE
-            (MAPCAR (LAMBDA (BYTE)
-                      (MULTIPLE-VALUE-BIND (VAL EATEN) (READ-FROM-STRING BYTE)
-                        (IF (AND (= EATEN (LENGTH BYTE)) (INTEGERP VAL) 
-                                 (<= 0 VAL 255))
-                          VAL
-                          (RETURN-FROM :CONVERT NIL))))
-                    (PJB-SPLIT-STRING ADDRESS ".")))))));;IPV4-ADDRESS-P
+  (let ((bytes (pjb-split-string (string address) ".")))
+    (and (= 4 (length bytes))
+         (block :convert
+           (nreverse
+            (mapcar (lambda (byte)
+                      (multiple-value-bind (val eaten) (read-from-string byte)
+                        (if (and (= eaten (length byte)) (integerp val) 
+                                 (<= 0 val 255))
+                          val
+                          (return-from :convert nil))))
+                    (pjb-split-string address ".")))))))
 
 
 
@@ -450,7 +486,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
      (ERROR (ERR)
             (apply (function format) *error-output*
                    (simple-condition-format-control err)
-                   (simple-condition-format-arguments err)))));;handling-errors
+                   (simple-condition-format-arguments err)))))
 
 
 
@@ -470,7 +506,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
          (setf *** **   ** *   * (first /))
          (format *standard-output* "~& --> ~{~S~^ ;~%     ~}~%" /)
          (repl-start)
-         /))));;repl-input
+         /))))
 
 (defstruct iotask  stream process-event name)
 
@@ -700,4 +736,4 @@ in clisp, we do it with a socket."
 ;; eval: (cl-indent 'match-case  1)
 ;; End:
 
-;;;; lisp-server.lisp                 --                     --          ;;;;
+;;;; THE END ;;;;

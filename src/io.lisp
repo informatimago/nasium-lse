@@ -1,45 +1,47 @@
-;;****************************************************************************
-;;FILE:               io.lisp
-;;LANGUAGE:           Common-Lisp
-;;SYSTEM:             Common-Lisp
-;;USER-INTERFACE:     NONE
-;;DESCRIPTION
-;;    
-;;    EMULSE : L.S.E. [ EMULATION MITRA-15 ]
-;;    
-;;    An emultator of the CII MITRA-15 L.S.E. System 
-;;    and programming language interpreter.
-;;    
-;;    This is the L.S.E. I/O module.
-;;
-;;AUTHORS
-;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
-;;MODIFICATIONS
-;;    2004-08-02 <PJB> Converted to Common-Lisp.
-;;    2000-12-09 <PJB> Added this header comment.
-;;BUGS
-;;LEGAL
-;;    GPL
-;;    
-;;    This file is part of EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]
-;;
-;;    Copyright Pascal J. Bourguignon 2000 - 2004
-;;    
-;;    This program is free software; you can redistribute it and/or
-;;    modify it under the terms of the GNU General Public License
-;;    as published by the Free Software Foundation; either version
-;;    2 of the License, or (at your option) any later version.
-;;    
-;;    This program is distributed in the hope that it will be
-;;    useful, but WITHOUT ANY WARRANTY; without even the implied
-;;    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-;;    PURPOSE.  See the GNU General Public License for more details.
-;;    
-;;    You should have received a copy of the GNU General Public
-;;    License along with this program; if not, write to the Free
-;;    Software Foundation, Inc., 59 Temple Place, Suite 330,
-;;    Boston, MA 02111-1307 USA
-;;****************************************************************************
+;;;;****************************************************************************
+;;;;FILE:               io.lisp
+;;;;LANGUAGE:           Common-Lisp
+;;;;SYSTEM:             Common-Lisp
+;;;;USER-INTERFACE:     NONE
+;;;;DESCRIPTION
+;;;;    
+;;;;    EMULSE : L.S.E. [ EMULATION MITRA-15 ]
+;;;;    
+;;;;    An emultator of the CII MITRA-15 L.S.E. System 
+;;;;    and programming language interpreter.
+;;;;    
+;;;;    This is the L.S.E. I/O module.
+;;;;
+;;;;AUTHORS
+;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
+;;;;MODIFICATIONS
+;;;;    2004-08-02 <PJB> Converted to Common-Lisp.
+;;;;    2000-12-09 <PJB> Added this header comment.
+;;;;BUGS
+;;;;LEGAL
+;;;;    GPL
+;;;;    
+;;;;    This file is part of EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]
+;;;;
+;;;;    Copyright Pascal J. Bourguignon 2000 - 2004
+;;;;    
+;;;;    This program is free software; you can redistribute it and/or
+;;;;    modify it under the terms of the GNU General Public License
+;;;;    as published by the Free Software Foundation; either version
+;;;;    2 of the License, or (at your option) any later version.
+;;;;    
+;;;;    This program is distributed in the hope that it will be
+;;;;    useful, but WITHOUT ANY WARRANTY; without even the implied
+;;;;    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;;;;    PURPOSE.  See the GNU General Public License for more details.
+;;;;    
+;;;;    You should have received a copy of the GNU General Public
+;;;;    License along with this program; if not, write to the Free
+;;;;    Software Foundation, Inc., 59 Temple Place, Suite 330,
+;;;;    Boston, MA 02111-1307 USA
+;;;;****************************************************************************
+
+(in-package "COM.INFORMATIMAGO.LSE")
 
 (defconstant +NUL+    0)
 (defconstant +SOH+    1)

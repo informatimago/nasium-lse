@@ -1,45 +1,46 @@
-;;****************************************************************************
-;;FILE:               scanner-lse.lisp
-;;LANGUAGE:           Common-Lisp
-;;SYSTEM:             Common-Lisp
-;;USER-INTERFACE:     NONE
-;;DESCRIPTION
-;;    
-;;    EMULSE : L.S.E. [ EMULATION MITRA-15 ]
-;;    
-;;    An emultator of the CII MITRA-15 L.S.E. System 
-;;    and programming language interpreter.
-;;    
-;;    A scanner for LSE.
-;;    
-;;AUTHORS
-;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
-;;MODIFICATIONS
-;;    2005-08-21 <PJB> Created
-;;BUGS
-;;LEGAL
-;;    GPL
-;;    
-;;    Copyright Pascal Bourguignon 2005 - 2005
-;;
-;;    This file is part of EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]
-;;    
-;;    This program is free software; you can redistribute it and/or
-;;    modify it under the terms of the GNU General Public License
-;;    as published by the Free Software Foundation; either version
-;;    2 of the License, or (at your option) any later version.
-;;    
-;;    This program is distributed in the hope that it will be
-;;    useful, but WITHOUT ANY WARRANTY; without even the implied
-;;    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-;;    PURPOSE.  See the GNU General Public License for more details.
-;;    
-;;    You should have received a copy of the GNU General Public
-;;    License along with this program; if not, write to the Free
-;;    Software Foundation, Inc., 59 Temple Place, Suite 330,
-;;    Boston, MA 02111-1307 USA
-;;****************************************************************************
+;;;;****************************************************************************
+;;;;FILE:               scanner-lse.lisp
+;;;;LANGUAGE:           Common-Lisp
+;;;;SYSTEM:             Common-Lisp
+;;;;USER-INTERFACE:     NONE
+;;;;DESCRIPTION
+;;;;    
+;;;;    EMULSE : L.S.E. [ EMULATION MITRA-15 ]
+;;;;    
+;;;;    An emultator of the CII MITRA-15 L.S.E. System 
+;;;;    and programming language interpreter.
+;;;;    
+;;;;    A scanner for LSE.
+;;;;    
+;;;;AUTHORS
+;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
+;;;;MODIFICATIONS
+;;;;    2005-08-21 <PJB> Created
+;;;;BUGS
+;;;;LEGAL
+;;;;    GPL
+;;;;    
+;;;;    Copyright Pascal Bourguignon 2005 - 2005
+;;;;
+;;;;    This file is part of EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]
+;;;;    
+;;;;    This program is free software; you can redistribute it and/or
+;;;;    modify it under the terms of the GNU General Public License
+;;;;    as published by the Free Software Foundation; either version
+;;;;    2 of the License, or (at your option) any later version.
+;;;;    
+;;;;    This program is distributed in the hope that it will be
+;;;;    useful, but WITHOUT ANY WARRANTY; without even the implied
+;;;;    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;;;;    PURPOSE.  See the GNU General Public License for more details.
+;;;;    
+;;;;    You should have received a copy of the GNU General Public
+;;;;    License along with this program; if not, write to the Free
+;;;;    Software Foundation, Inc., 59 Temple Place, Suite 330,
+;;;;    Boston, MA 02111-1307 USA
+;;;;****************************************************************************
 
+(in-package "COM.INFORMATIMAGO.LSE")
 
 (defconstant +maybe-commentaire+ 0 "LSE Scanner State")
 (defconstant +not-commentaire+   1 "LSE Scanner State")
@@ -56,9 +57,10 @@
 (let* ((grammar     (or (find-grammar "LSE")
                         (error "JE NE TROUVE PAS MA GRAMMAIRE LSE")))
        (end-index   (zebu::grammar-end-symbol-index grammar))
+       (lexicon     (zebu::grammar-lexicon grammar))
        (lex-cat-map (zebu::grammar-lex-cat-map      grammar))
        (lexic (mapcar
-               (lambda (x) (List (first x) (delete (character "\\") (second x))))
+               (lambda (x) (list (first x) (remove (character "\\") (second x))))
                (zebu::grammar-lex-cats grammar)))
        (tokenp (lambda (item)
                  (and (char= (character "{") (char (second item) 0))
@@ -68,15 +70,19 @@
        (motcles (remove-if     tokenp lexic))
        (tokens  (remove-if-not tokenp lexic)))
   (labels ((lex-cat (tok)
-             (find (ignore-errors (symbol-function (first tok)))
-                   lex-cat-map :key (function cdr)))
+             ;; (find (ignore-errors (symbol-function (first tok)))
+             ;;       lex-cat-map :key (function cdr))
+             (position (first tok) lexicon))
            (enter (slot tok table)
              (let ((lex-cat (lex-cat tok)))
                (unless (or lex-cat (eq (first tok) 'tok-erreur))
                  (error "JE NE TROUVE PAS LE LEXEME <~A>" (first tok)))
                (setf (gethash (funcall slot tok) table)
-                     (list (or (car lex-cat) 0) (first tok)
-                           (second tok) (or (cdr lex-cat) (constantly nil)))))))
+                     (list (or lex-cat 0)
+                           (first tok)
+                           (second tok)
+                           (or (cdr (assoc lex-cat lex-cat-map))
+                               (constantly nil)))))))
     (setf *motcle-map* (make-hash-table :test (function equal))
           *token-map*  (make-hash-table :test (function eq)))
     (dolist (tok motcles) (enter (function second) tok *motcle-map*))
@@ -85,7 +91,7 @@
           (gethash 'tok-eof *token-map*) (list end-index 'tok-eof "{EOF}" nil))
     ;; The following forbid loading this file twice after parser-lse.zb...
     (dolist (tok lexic)
-      (let ((lex-cat (lex-cat tok)))
+      (let ((lex-cat (assoc (lex-cat tok) lex-cat-map)))
         (setf (cdr lex-cat)
               (let ((fun (cdr lex-cat)))
                 (lambda (STRING &OPTIONAL (START 0) (END (LENGTH STRING)))
@@ -663,3 +669,4 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
 
 
 
+;;;; THE END ;;;;

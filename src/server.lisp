@@ -1,37 +1,39 @@
-;;****************************************************************************
-;;FILE:               server.lisp
-;;LANGUAGE:           Common-Lisp
-;;SYSTEM:             Common-Lisp
-;;USER-INTERFACE:     NONE
-;;DESCRIPTION
-;;    
-;;    XXX
-;;    
-;;AUTHORS
-;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
-;;MODIFICATIONS
-;;    2005-08-24 <PJB> Added this header.
-;;BUGS
-;;LEGAL
-;;    GPL
-;;    
-;;    Copyright Pascal Bourguignon 2005 - 2005
-;;    
-;;    This program is free software; you can redistribute it and/or
-;;    modify it under the terms of the GNU General Public License
-;;    as published by the Free Software Foundation; either version
-;;    2 of the License, or (at your option) any later version.
-;;    
-;;    This program is distributed in the hope that it will be
-;;    useful, but WITHOUT ANY WARRANTY; without even the implied
-;;    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-;;    PURPOSE.  See the GNU General Public License for more details.
-;;    
-;;    You should have received a copy of the GNU General Public
-;;    License along with this program; if not, write to the Free
-;;    Software Foundation, Inc., 59 Temple Place, Suite 330,
-;;    Boston, MA 02111-1307 USA
-;;****************************************************************************
+;;;;****************************************************************************
+;;;;FILE:               server.lisp
+;;;;LANGUAGE:           Common-Lisp
+;;;;SYSTEM:             Common-Lisp
+;;;;USER-INTERFACE:     NONE
+;;;;DESCRIPTION
+;;;;    
+;;;;    XXX
+;;;;    
+;;;;AUTHORS
+;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
+;;;;MODIFICATIONS
+;;;;    2005-08-24 <PJB> Added this header.
+;;;;BUGS
+;;;;LEGAL
+;;;;    GPL
+;;;;    
+;;;;    Copyright Pascal Bourguignon 2005 - 2005
+;;;;    
+;;;;    This program is free software; you can redistribute it and/or
+;;;;    modify it under the terms of the GNU General Public License
+;;;;    as published by the Free Software Foundation; either version
+;;;;    2 of the License, or (at your option) any later version.
+;;;;    
+;;;;    This program is distributed in the hope that it will be
+;;;;    useful, but WITHOUT ANY WARRANTY; without even the implied
+;;;;    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;;;;    PURPOSE.  See the GNU General Public License for more details.
+;;;;    
+;;;;    You should have received a copy of the GNU General Public
+;;;;    License along with this program; if not, write to the Free
+;;;;    Software Foundation, Inc., 59 Temple Place, Suite 330,
+;;;;    Boston, MA 02111-1307 USA
+;;;;****************************************************************************
+
+(in-package "COM.INFORMATIMAGO.LSE")
 
 (defun server-start-listening ())
 (defun server-stop-listening ())
@@ -54,83 +56,83 @@
 
 
 
-(DEFUN LIST-INSERT-SEPARATOR (LIST SEPARATOR)
+(defun list-insert-separator (list separator)
   "
 RETURN:  A list composed of all the elements in `list'
          with `separator' in-between.
 EXAMPLE: (list-insert-separator '(a b (d e f)  c) 'x)
          ==> (a x b x (d e f) x c)
 "
-  (DO ((RESULT (IF LIST (LIST (CAR LIST))))
-       (LIST (CDR LIST) (CDR LIST)))
-      ((NULL LIST) (NREVERSE RESULT))
-    (PUSH SEPARATOR RESULT)
-    (PUSH (CAR LIST) RESULT)))
+  (do ((result (if list (list (car list))))
+       (list (cdr list) (cdr list)))
+      ((null list) (nreverse result))
+    (push separator result)
+    (push (car list) result)))
 
 
-(DEFMACRO WHILE (CONDITION &BODY BODY) `(DO () ((NOT ,CONDITION)) ,@BODY))
+(defmacro while (condition &body body) `(do () ((not ,condition)) ,@body))
 
 
-(DEFUN CHAR-OR-STRING-P (OBJECT)
-  (OR (CHARACTERP OBJECT) (STRINGP OBJECT)))
+(defun char-or-string-p (object)
+  (or (characterp object) (stringp object)))
 
 
-(DEFUN PJB-UNSPLIT-STRING (STRING-LIST &REST SEPARATOR)
+(defun pjb-unsplit-string (string-list &rest separator)
   "Does the inverse than pjb-split-string. If no separator is provided 
 then a simple space is used."
-  (COND
-   ((NULL SEPARATOR)         (SETQ SEPARATOR " "))
-   ((/= 1 (LENGTH SEPARATOR)) 
-    (ERROR "pjb-unsplit-string: Too many separator arguments."))
-   ((NOT (CHAR-OR-STRING-P (CAR SEPARATOR)))
-    (ERROR "pjb-unsplit-string: separator must be a string or a char."))
-   (T (SETQ SEPARATOR (CAR SEPARATOR))))
-  (APPLY 'CONCATENATE 'STRING
-         (MAPCAR (LAMBDA (OBJECT)
-                   (IF (STRINGP OBJECT) 
-                     OBJECT
-                     (FORMAT NIL "~A" OBJECT)))
-                 (LIST-INSERT-SEPARATOR STRING-LIST SEPARATOR))))
+  (cond
+   ((null separator)         (setq separator " "))
+   ((/= 1 (length separator)) 
+    (error "pjb-unsplit-string: Too many separator arguments."))
+   ((not (char-or-string-p (car separator)))
+    (error "pjb-unsplit-string: separator must be a string or a char."))
+   (t (setq separator (car separator))))
+  (apply 'concatenate 'string
+         (mapcar (lambda (object)
+                   (if (stringp object) 
+                     object
+                     (format nil "~A" object)))
+                 (list-insert-separator string-list separator))))
 
 
-(DEFUN PJB-SPLIT-STRING (STRING &OPTIONAL SEPARATORS)
+(defun pjb-split-string (string &optional separators)
   "
 note:   current implementation only accepts as separators
         a string containing only one character.
 "
-  (SETQ SEPARATORS (OR SEPARATORS " ")
-        STRING (STRING STRING))
-  (LET ((SEP (AREF SEPARATORS 0))
-        (CHUNKS  '())
-        (POSITION 0)
-        (NEXTPOS  0)
-        (STRLEN   (LENGTH STRING)) )
-    (WHILE (<= POSITION STRLEN)
-      (WHILE (AND (< NEXTPOS STRLEN)
-                  (CHAR/= SEP (AREF STRING NEXTPOS)))
-        (SETQ NEXTPOS (1+ NEXTPOS)))
-      (SETQ CHUNKS (CONS (SUBSEQ STRING POSITION NEXTPOS) CHUNKS))
-      (SETQ POSITION (1+ NEXTPOS))
-      (SETQ NEXTPOS  POSITION) )
-    (NREVERSE CHUNKS)))
+  (setq separators (or separators " ")
+        string (string string))
+  (let ((sep (aref separators 0))
+        (chunks  '())
+        (position 0)
+        (nextpos  0)
+        (strlen   (length string)) )
+    (while (<= position strlen)
+      (while (and (< nextpos strlen)
+                  (char/= sep (aref string nextpos)))
+        (setq nextpos (1+ nextpos)))
+      (setq chunks (cons (subseq string position nextpos) chunks))
+      (setq position (1+ nextpos))
+      (setq nextpos  position) )
+    (nreverse chunks)))
 
 
-(DEFUN IPV4-ADDRESS-P (ADDRESS)
+(defun ipv4-address-p (address)
   "
 PRE:     (or (string address) (symbol address))
 RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 "
-  (LET ((BYTES (PJB-SPLIT-STRING (STRING ADDRESS) ".")))
-    (AND (= 4 (LENGTH BYTES))
-         (BLOCK :CONVERT
-           (NREVERSE
-            (MAPCAR (LAMBDA (BYTE)
-                      (MULTIPLE-VALUE-BIND (VAL EATEN) (READ-FROM-STRING BYTE)
-                        (IF (AND (= EATEN (LENGTH BYTE)) (INTEGERP VAL) 
-                                 (<= 0 VAL 255))
-                          VAL
-                          (RETURN-FROM :CONVERT NIL))))
-                    (PJB-SPLIT-STRING ADDRESS ".")))))))
+  (let ((bytes (pjb-split-string (string address) ".")))
+    (and (= 4 (length bytes))
+         (block :convert
+           (nreverse
+            (mapcar (lambda (byte)
+                      (multiple-value-bind (val eaten) (read-from-string byte)
+                        (if (and (= eaten (length byte)) (integerp val) 
+                                 (<= 0 val 255))
+                          val
+                          (return-from :convert nil))))
+                    (pjb-split-string address ".")))))))
 
 
 
@@ -212,7 +214,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
   (store))
 
 
-(defcommand (connection log (?? (?x FILE)))
+(defcommand (connection log (?? (?x file)))
   (if file
     (let (stream)
       (unless (and (stringp file)
@@ -335,7 +337,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
       (store))))
 
 
-(defcommand (configuration save (?? (?x FILE)))
+(defcommand (configuration save (?? (?x file)))
   (setf file (or file (configuration-file *configuration*)))
   (print `(saving  to ,file))
 ;;  (server-repl)
@@ -352,7 +354,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
       (print statement))))
 
 
-(defcommand (configuration load (?? (?x FILE)))
+(defcommand (configuration load (?? (?x file)))
   (setf file (or file (configuration-file *configuration*)))
   (print `(loading from ,file))
 ;;  (server-repl)
@@ -376,8 +378,8 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 
 
 (defmacro handling-errors (&body body)
-  `(HANDLER-CASE (progn ,@body)
-     (ERROR (ERR)
+  `(handler-case (progn ,@body)
+     (error (err)
             (apply (function format) *error-output*
                    (simple-condition-format-control err)
                    (simple-condition-format-arguments err)))))
@@ -427,8 +429,8 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
        (if sexp
          (if debugging
            (parse-one-command sexp)
-           (HANDLER-CASE (parse-one-command sexp)
-             (ERROR (ERR)
+           (handler-case (parse-one-command sexp)
+             (error (err)
                     (apply (function format) *error-output*
                            (simple-condition-format-control err)
                            (simple-condition-format-arguments err)))))
@@ -445,8 +447,8 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
     (unless (eq +eof+ sexp)
       (if *debugging*
         (parse-one-command sexp)
-        (HANDLER-CASE (parse-one-command sexp)
-          (ERROR (ERR)
+        (handler-case (parse-one-command sexp)
+          (error (err)
                  (apply (function format) *error-output*
                         (simple-condition-format-control err)
                         (simple-condition-format-arguments err)))))
@@ -533,16 +535,16 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
                (ch  (system::input-character-char ich)))
           (cond 
            ((null ch))
-           ((= (char-code ch) +CR+)
+           ((= (char-code ch) +cr+)
             (terpri)
             (funcall process-input 
                      task (subseq buffer 0 (fill-pointer buffer)))
             (setf (fill-pointer buffer) 0))
-           ((or (= (char-code ch) +BS+) (= (char-code ch) +DEL+))
+           ((or (= (char-code ch) +bs+) (= (char-code ch) +del+))
             (when (< 0 (fill-pointer buffer))
-              (princ (code-char +BS+))
+              (princ (code-char +bs+))
               (princ " ")
-              (princ (code-char +BS+))
+              (princ (code-char +bs+))
               (decf (fill-pointer buffer))))
            (t
             (princ ch)
@@ -599,7 +601,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
     (defmethod close :after ((x (eql xio)) &rest junk)
       (declare (ignore x junk))
       (with-open-file (s pipe :direction :output)
-        (write-line (TEXT "Bye.") s))
+        (write-line (text "Bye.") s))
       (delete-file pipe)
       (close (two-way-stream-input-stream xio))
       (close (two-way-stream-output-stream xio))
@@ -623,17 +625,17 @@ in clisp, we do it with a socket."
         (bsock))
     (setf asock (socket:socket-connect (socket:socket-server-port lsock)
                                        (socket:socket-server-host lsock)
-                                       :ELEMENT-TYPE 'character
-                                       :EXTERNAL-FORMAT *external-format*
-                                       :BUFFERED nil
-                                       :TIMEOUT 5))
+                                       :element-type 'character
+                                       :external-format *external-format*
+                                       :buffered nil
+                                       :timeout 5))
     (if (socket:socket-wait lsock 5)
       (progn
         (setf bsock (socket:socket-accept lsock 
-                                          :ELEMENT-TYPE 'character
-                                          :EXTERNAL-FORMAT *external-format*
-                                          :BUFFERED nil
-                                          :TIMEOUT 5))
+                                          :element-type 'character
+                                          :external-format *external-format*
+                                          :buffered nil
+                                          :timeout 5))
         (if bsock
           (values asock bsock)
           (values nil nil)))
@@ -687,4 +689,4 @@ in clisp, we do it with a socket."
 ;; eval: (cl-indent 'match-case  1)
 ;; End:
 
-;;;; server.lisp                      --                     --          ;;;;
+;;;; THE END ;;;;

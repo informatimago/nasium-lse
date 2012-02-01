@@ -4,7 +4,7 @@
 (asdf-load :com.informatimago.lse)
 
 
-(load  "PACKAGES:COM;INFORMATIMAGO;COMMON-LISP;PMATCH")
+(in-package "COM.INFORMATIMAGO.LSE")
 
 (directory "/home/pjb/src/pjb/projects/lse/EXEMP/*.lse")
 (dolist (src  (directory "/home/pjb/src/pjb/projects/lse/BOURG/*.LSE"))

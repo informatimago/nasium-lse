@@ -58,7 +58,7 @@ Used by the DEFINE-GRAMMAR macro in command.lisp")
         (COM.HP.ZEBU::*ALLOW-CONFLICTS* T))
     (COM.HP.ZEBU::ZEBU-COMPILE-FILE
      (make-pathname :name "PARSER-LSE" :type "ZB" :case :common)
-     :VERBOSE nil)))
+     :VERBOSE t)))
 
 
 ;; Load the grammar:

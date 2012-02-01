@@ -45,8 +45,8 @@
 (
  :name                      "LSE"
  :package                   "COM.INFORMATIMAGO.LSE"
- :identifier-start-chars    nil
- :identifier-continue-chars nil
+ :identifier-start-chars    "" ; type string
+ :identifier-continue-chars "" ; type string
  :intern-identifier         nil
  ;; :string-delimiter          nil ; type character…
  ;; :symbol-delimiter          nil ; type character…

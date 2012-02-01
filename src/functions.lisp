@@ -1,38 +1,39 @@
-;;****************************************************************************
-;;FILE:               fonctions.lisp
-;;LANGUAGE:           Common-Lisp
-;;SYSTEM:             Common-Lisp
-;;USER-INTERFACE:     NONE
-;;DESCRIPTION
-;;    
-;;    LSE functions.
-;;    
-;;AUTHORS
-;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
-;;MODIFICATIONS
-;;    2005-08-24 <PJB> Created.
-;;BUGS
-;;LEGAL
-;;    GPL
-;;    
-;;    Copyright Pascal Bourguignon 2005 - 2005
-;;    
-;;    This program is free software; you can redistribute it and/or
-;;    modify it under the terms of the GNU General Public License
-;;    as published by the Free Software Foundation; either version
-;;    2 of the License, or (at your option) any later version.
-;;    
-;;    This program is distributed in the hope that it will be
-;;    useful, but WITHOUT ANY WARRANTY; without even the implied
-;;    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-;;    PURPOSE.  See the GNU General Public License for more details.
-;;    
-;;    You should have received a copy of the GNU General Public
-;;    License along with this program; if not, write to the Free
-;;    Software Foundation, Inc., 59 Temple Place, Suite 330,
-;;    Boston, MA 02111-1307 USA
-;;****************************************************************************
+;;;;****************************************************************************
+;;;;FILE:               fonctions.lisp
+;;;;LANGUAGE:           Common-Lisp
+;;;;SYSTEM:             Common-Lisp
+;;;;USER-INTERFACE:     NONE
+;;;;DESCRIPTION
+;;;;    
+;;;;    LSE functions.
+;;;;    
+;;;;AUTHORS
+;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
+;;;;MODIFICATIONS
+;;;;    2005-08-24 <PJB> Created.
+;;;;BUGS
+;;;;LEGAL
+;;;;    GPL
+;;;;    
+;;;;    Copyright Pascal Bourguignon 2005 - 2005
+;;;;    
+;;;;    This program is free software; you can redistribute it and/or
+;;;;    modify it under the terms of the GNU General Public License
+;;;;    as published by the Free Software Foundation; either version
+;;;;    2 of the License, or (at your option) any later version.
+;;;;    
+;;;;    This program is distributed in the hope that it will be
+;;;;    useful, but WITHOUT ANY WARRANTY; without even the implied
+;;;;    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;;;;    PURPOSE.  See the GNU General Public License for more details.
+;;;;    
+;;;;    You should have received a copy of the GNU General Public
+;;;;    License along with this program; if not, write to the Free
+;;;;    Software Foundation, Inc., 59 Temple Place, Suite 330,
+;;;;    Boston, MA 02111-1307 USA
+;;;;****************************************************************************
 
+(in-package "COM.INFORMATIMAGO.LSE")
 
 (defun   indefini-p (x) (eq x :unbound))
 (deftype indefini   () '(satisfies indefini-p))
@@ -408,7 +409,7 @@
             (assert (eql (and res 0.0)
                          (ignore-errors
                            (pos "Hello World" (un-nombre deb) "Planet")))))
-          (com.informatimago.common-lisp.list:iota 20 -4)
+          (iota 20 -4)
           '(nil nil nil nil nil 7.0 7.0 7.0 7.0 7.0 7.0 7.0
             0.0 0.0 0.0 0.0 0.0 0.0))
   (format t "EQN EQC~%")
@@ -423,7 +424,7 @@
              (assert (equal res (ignore-errors
                                   (multiple-value-list
                                    (cnb "123456789" (un-nombre i)))))))
-       (com.informatimago.common-lisp.list:iota 11)
+       (iota 11)
        '(nil (1.2345679E8 10.0) (2.3456788E7 10.0) (3456789.0 10.0)
          (456789.0 10.0) (56789.0 10.0) (6789.0 10.0) (789.0 10.0) (89.0 10.0)
          (9.0 10.0) NIL))

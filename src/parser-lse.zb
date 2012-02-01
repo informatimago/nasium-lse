@@ -48,8 +48,8 @@
  :identifier-start-chars    nil
  :identifier-continue-chars nil
  :intern-identifier         nil
- :string-delimiter          nil
- :symbol-delimiter          nil
+ ;; :string-delimiter          nil ; type characterâ€¦
+ ;; :symbol-delimiter          nil ; type characterâ€¦
  :domain                    ()
  :domain-file               "lse-domain"
  :grammar                   "null-grammar"
@@ -97,7 +97,7 @@
             (tok-f         "F")
             (tok-e         "E")
             (tok-u         "U")
-            ;; caractères spéciaux
+            ;; caractÃ¨res spÃ©ciaux
             (tok-GT        ">")
             (tok-GE        ">=")
             (tok-LT        "<")
@@ -420,9 +420,9 @@
 
 
 (defrule specification
-    ;; Afin d'éviter une abiguité sur first(spec-rep-num) inter first(spec-rep),
+    ;; Afin d'Ã©viter une abiguitÃ© sur first(spec-rep-num) inter first(spec-rep),
     ;; on distingue les deux cas:
-    ;; * sans facteur de répétition:
+    ;; * sans facteur de rÃ©pÃ©tition:
     := tok-litchaine :build (list :spec-chaine '(:rep-1)  tok-litchaine)
     := tok-divise :build (list :spec-slash  '(:rep-1))
     := tok-X      :build (list :spec-space  '(:rep-1))
@@ -433,7 +433,7 @@
     :build (list :spec-f '(:rep-1) tok-numero.1  tok-numero.2)
     := (tok-E tok-numero.1 tok-point tok-numero.2)
     :build (list :spec-e '(:rep-1) tok-numero.1  tok-numero.2)
-    ;; * avec facteur de répétition:
+    ;; * avec facteur de rÃ©pÃ©tition:
     := (spec-rep tok-litchaine) :build (list :spec-chaine spec-rep tok-litchaine)
     := (spec-rep tok-divise) :build (list :spec-slash spec-rep)
     := (spec-rep tok-X)      :build (list :spec-space spec-rep)

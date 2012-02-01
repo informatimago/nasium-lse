@@ -15,14 +15,14 @@ Gestion des consoles en Common Lisp
           maître pouvant terminer une session des consoles
           utilisateurs).
 
-        - implementer une machine virtuel multi-threads dans un seul
+        - implementer une machine virtuelle multi-threads dans un seul
           processus clisp.  
 
     Dans les deux cas la gestion des E/S est critique (utilisation de
     SOCKET:SOCKET-STATUS, avec gestion des flots d'E/S dans tous les
     sens).
 
-    Reportont le choix entre les deux après analyse de l'interpréteur
+    Reportons le choix entre les deux après analyse de l'interpréteur
     LSE.
 
 

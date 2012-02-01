@@ -1,0 +1,479 @@
+
+zebu-empty-st.lisp,48
+(defun calculate-empty-string-derivers 26,1094
+
+zebu-first.lisp,201
+(defun calculate-first-sets 35,1512
+(defun first-set-insert! 75,3095
+(defun first-set-add-depender! 83,3424
+(defun cruise-first-sets 89,3689
+(defun first-seq 101,4048
+(defun first-seq-1 115,4505
+
+zebu-follow.lisp,120
+(defun calculate-follow-sets 28,1124
+(defun compute-follow-dependers 38,1478
+(defun follow-insert-first-sets 53,2048
+
+zebu-g-symbol.lisp,221
+(defstruct (g-symbol 51,1967
+(defun g-symbol-non-terminal? 70,2670
+(defmacro new-g-symbol 73,2754
+(defun g-symbol-order-function 78,2909
+(defun g-symbol-add-production 89,3209
+(defvar g1 97,3471
+(defvar g2 98,3506
+
+zebu-lr0-sets.lisp,465
+(defvar *lr0-item-set-count*)33,1316
+(defvar *lr0-item-sets*)34,1346
+(defvar *lr0-start-state-index*)35,1371
+(defstruct (item-set 44,1706
+(defun item-set-print-kernel 53,1907
+(defun goto-map-order-function 64,2249
+(defun new-item-set 67,2354
+(defun item-set-order-function 74,2552
+(defun make-lr0-collection 108,3679
+(defun lr0-insert-item-set! 134,4688
+(defun item-set-get-closure! 163,5824
+(defun item-set-flush-closure 170,6049
+(defun goto 179,6373
+
+zebu-package.lisp,124
+(defpackage "PSGRAPH"26,814
+(defpackage "PSGRAPH"30,877
+(defpackage "ZEBU"33,926
+(defparameter zb:*zebu-version*97,3443
+
+zebu-driver.lisp,757
+(defvar *CURRENT-GRAMMAR* 123,5927
+(defvar *terminal-alist-SEQ*)125,5970
+(defvar *lexer-debug* 127,6001
+(defmacro if-debugging-lexer 135,6108
+(defun upcased-subseq 151,6776
+(defun lr-parse 189,8392
+(defun possible-tokens 362,18069
+(defun unrecognized-token-error 376,18437
+(defun undef-action-error 383,18679
+(defun vec-bs-assoc 398,19204
+(defun vec-bs-assoc 419,20003
+(defun categorize 498,22975
+(defun end-of-tokens-category 522,23837
+(defun unrecognized-token-category 526,23976
+(defun list-parser 534,24303
+(defun read-parser 576,26126
+(defun recognize-kwd 914,44469
+(defvar *comment-brackets* 984,48717
+(defvar *comment-start* 985,48763
+(defun file-parser 987,48794
+(defun file-parser-aux 995,49071
+(defun debug-parser 1063,51181
+
+zebu-loadgram.lisp,1211
+(defvar *Kleene+-rules* 43,1860
+(defvar *symbols*)112,4634
+(defvar *symbol-array*)113,4685
+(defvar *productions*)114,4755
+(defvar *production-count*)115,4778
+(defvar *g-symbol-count*)116,4806
+(defvar *g-symbol-alist*)117,4832
+(defvar *start-symbol*)118,4858
+(defvar *empty-string-g-symbol*)119,4882
+(defvar *augmented-start-g-symbol*)120,4915
+(defvar *the-end-g-symbol*)121,4951
+(defvar *grammar-options*)123,4980
+(defvar *ignore* 136,5283
+(defmacro post-inc 141,5591
+(defun initialize-grammar 150,5875
+(defun g-symbol-intern 173,6551
+(defun process-production 191,7200
+(defun pre-process-rules 227,8596
+(defun expand-Kleene-constituent 322,12358
+(defun default-separator? 401,15149
+(defun encode-separator 404,15238
+(defun decode-kleene-name 415,15528
+(defun constituent-name 422,15751
+(defun feat-term-substitute 438,16272
+(defun parse-defrule 446,16539
+(defun cons-avm 506,18541
+(defun process-semantics 523,19035
+(defun generate-form 559,20226
+(defvar *dummy-count* 578,20798
+(defun next-dummy 580,20824
+(defun make-lambda-list 588,21008
+(defun search-list 602,21465
+(defun get-grammar-options-key 632,22517
+(defun load-grammar 637,22695
+(defun dump-domain-file 712,25367
+
+zebu-regex.lisp,275
+(defvar *regex-special-chars* 75,2995
+(defvar *regex-debug* 83,3316
+(defmacro info 85,3380
+(defun regex 97,3689
+(defun regex-compile 125,4511
+(defun regex-quoted 451,16063
+(defun match-beginning 508,20023
+(defun match-end 511,20087
+(defun def-regex-parser 515,20150
+
+zebu-dump.lisp,145
+(defun dump-tables 46,1879
+(defun compile-slr-grammar 132,4783
+(defun compile-lalr1-grammar 138,4925
+(defun compile-zebu-grammar-aux145,5110
+
+ZEBU-init.lisp,397
+(defparameter *ZEBU-directory*37,1298
+(defparameter *ZEBU-binary-directory*53,1811
+(defvar *load-binary-pathname-types* 58,1970
+(defvar *load-binary-pathname-types* 60,2026
+(defvar *load-source-pathname-types* 67,2262
+(defvar *load-binary-pathname-types* 69,2360
+(defparameter zb:*zebu-version*105,3665
+(defun zb:zebu 120,4055
+(defun zb:zebu-compiler 152,5237
+(defun zb:zebu-rr 189,6847
+
+zebu-lalr1.lisp,247
+(defun lalr1-add-lookahead 40,1775
+(defun lalr1-add-depender 52,2176
+(defun lalr1-do-lookaheads 84,3713
+(defun oset-find 176,7505
+(defun copy-lr0-item 182,7682
+(defun lalr1-tables-from-grammar 189,7922
+(define (lalr1-do-lookaheads)203,8408
+
+test/avm-p.lisp,136
+(defun print-FEAT-TERM 19,634
+(defun print-General-Var 26,815
+(defun print-Label-value-pair 32,950
+(defun PRINT-TAGGED-TERM 39,1135
+
+test/exercise.lisp,657
+(defparameter *ZEBU-test-directory*32,1124
+(defparameter *ZEBU-test-binary-directory*36,1264
+(defparameter *ZEBU-compile-domain*40,1418
+(defun PRINT-FACTOR 184,6779
+(defun print-factor 207,7564
+(defpackage "ZEBU-TEST"440,16034
+(def-tree-attributes Atomic-Wff456,16402
+(def-tree-attributes Role-Argument-Pair460,16469
+(def-tree-attributes Boolean-And464,16577
+(def-tree-attributes Atomic-Wff479,16979
+(defclass e-mail-address 682,25086
+(defclass host 685,25203
+(defclass phone-number 687,25285
+(defvar *ZEBRA-DIRECTORY* 744,27432
+(defvar *ZEBRA-DIRECTORY* 749,27642
+(defun zebra-read-string 784,28727
+(defun compile-load-test-file 859,31987
+
+test/pc1-p.lisp,183
+(defun PRINT-PROPOSITIONAL-VARIABLE 19,631
+(defun PRINT-BOOLEAN-OR 25,787
+(defun PRINT-BOOLEAN-AND 32,959
+(defun print-atomic-wff 39,1133
+(defun print-role-argument-pair 46,1317
+
+test/regextst.lisp,111
+(defun match-beginning 19,698
+(defun match-end 22,764
+(defun regex-test 25,825
+(defun regex-test1 126,3548
+
+zebu-slr.lisp,39
+(defun slr-tables-from-grammar 25,940
+
+zebu-tree-attributes.lisp,1063
+(defun KB-tree-attributes 27,1012
+(defun define-tree-attributes 37,1468
+(defmacro def-tree-attributes 53,1941
+(defmacro def-tree-attributes 73,2511
+(defmacro def-tree-attributes 96,3096
+(defvar *KB-TREE-ATTRIBUTES* 135,4439
+(defun KB-TREE-ATTRIBUTES 139,4575
+(defun define-tree-attributes 151,5062
+(defvar *KB-SLOT-types* 168,5587
+(defun KB-set-valued-slot-p 172,5715
+(defun KB-def-slot-type 175,5800
+(defun kids 185,6129
+(defun subexpressions 208,6896
+(defun for-each-kid 219,7243
+(defun for-each-kid! 235,7903
+(defun preorder-transform 273,9447
+(defun preorder-transform 329,11550
+(defun postorder-transform 393,13947
+(defun descendants 486,16978
+(defun descendants 498,17245
+(defun for-each-descendant 525,18109
+(defmacro %copy-structure 553,19023
+(defun %copy-structure 557,19095
+(defun KB-copy 566,19389
+(defun KB-equal 630,21669
+(defun KB-compare 706,24429
+(def-tree-attributes kb-sequence787,27470
+(defparameter *local-accessor-hashtable* 801,28104
+(defun labelnode2accessor 803,28179
+(defun prepare-tree-attributes 815,28606
+
+ZEBU-sys.lisp,246
+(defparameter *ZEBU-directory*43,1465
+(defpackage "ZEBU-TEST"73,2502
+(ds:defsystem "ZEBU-KERNEL"86,3045
+(ds:defsystem "ZEBU"100,3511
+(ds:defsystem "ZEBU-COMPILER"112,3952
+(ds:defsystem "ZEBU-RR"152,5718
+(ds:defsystem zb::ZEBU-Test164,6106
+
+zebu-loader.lisp,892
+(defvar *identifier-continue-chars*83,3644
+(defvar *identifier-start-chars* 87,3843
+(defvar *string-delimiter* 105,4799
+(defvar *symbol-delimiter* 108,4886
+(defvar *preserve-case* 111,4973
+(defvar *case-sensitive* 114,5077
+(defvar *disallow-packages* 118,5228
+(defstruct (grammar 125,5453
+(defvar *NULL-Grammar* 172,7329
+(defun print-grammar 174,7390
+(defvar *all-grammars*181,7727
+(defun find-grammar 184,7813
+(defvar *identifier-continue-chars-V*)190,8111
+(defun identifier-continue-char-p 192,8196
+(defvar *identifier-start-chars-V*)196,8330
+(defun identifier-start-char-p 198,8409
+(defun add-to-lex-cat-map 213,8980
+(defvar *grammar-debug* 235,9863
+(defmacro if-debugging 238,9965
+(defun zebu-load-file 255,10390
+(defun read-parser-actions 404,16145
+(defun vectorize-vector-of-lists 436,17133
+(defun load-from-command-line 457,17877
+(defun zebu-load-top 495,19089
+
+zebu-aux.lisp,717
+(defvar *KEYWORD-PACKAGE* 42,1536
+(defvar *generate-domain* 44,1589
+(defvar *ZEBU-PACKAGE* 48,1741
+(defvar *open-categories* 50,1788
+(defun list->vector 58,2106
+(deftype IDENTIFIER 65,2276
+(defun identifierp 67,2327
+(defvar *regex-groups* 76,2679
+(defvar *regex-groupings* 77,2719
+(defvar *zb-rules*)83,2955
+(defstruct zb-rule85,3038
+(defstruct (production 97,3532
+(defun check-grammar-options 111,3997
+(defstruct (kb-domain 165,6224
+(defstruct (type-tree-node171,6497
+(defvar *domain-type-hierarchy*)183,6743
+(defvar *domain-HT* 184,6796
+(defvar *lex-cats* 190,7130
+(defun prepare-domain 196,7355
+(defun add-to-domain 213,7886
+(defun new-domain-node 226,8373
+(defun def-kb-domain-type 239,8810
+
+zebu-compile.lisp,176
+(defvar *warn-conflicts* 24,813
+(defvar *compiler-grammar* 25,843
+(defun zebu-compile-file 29,992
+(defun compile-from-command-line 63,2191
+(defun zebu-compile-top 96,3095
+
+zebu-mg-hierarchy.lisp,504
+(DEFSTRUCT (ZEBU-MG 25,942
+(defvar *kb-sequence-separator* 32,1231
+(defstruct (KB-SEQUENCE 35,1324
+(defun KB-SEQUENCE-print 40,1459
+(DEFSTRUCT (FEAT-TERM 65,2278
+(DEFSTRUCT (LABEL-VALUE-PAIR 79,2581
+(DEFSTRUCT (GENERAL-VAR 94,2924
+(DEFSTRUCT (TAGGED-TERM 106,3157
+(DEFSTRUCT (PRODUCTION-RHS 125,3650
+(defun print-production-rhs 134,3818
+(DEFSTRUCT (Kleene 141,4008
+(DEFSTRUCT (Kleene* 145,4096
+(DEFSTRUCT (Kleene+ 146,4137
+(defstruct (domain-type 152,4387
+(defun cons-domain-type 155,4474
+
+COMPILE-ZEBU.lisp,250
+(defparameter *ZEBU-directory*30,1019
+(defvar *ZEBU-directory*40,1300
+(defparameter *ZEBU-binary-directory*46,1410
+(defvar *ZEBU-binary-directory*50,1557
+(defvar *load-source-pathname-types* 82,2816
+(defvar *load-binary-pathname-types* 91,3076
+
+zebu-oset.lisp,624
+(defstruct (oset 36,1466
+(defun oset-empty? 43,1646
+(defun integer-order-function 48,1805
+(defun oset-insert! 56,2041
+(defun oset-insert-2! 94,3489
+(defun oset-insert-list! 130,4864
+(defun oset-order-function 137,5086
+(defun oset-select-subsets 171,6383
+(defun oset-for-each 190,7099
+(defun oset-memq 194,7224
+(defun oset-copy 197,7300
+(defun oset-union 204,7491
+(defun oset-delete 219,7965
+(defun oset-empty! 228,8249
+(defstruct (item 251,9100
+(defun dot-at-right-end? 261,9417
+(defun symbol-after-dot 267,9658
+(defun advance-dot 280,10138
+(defun new-item 292,10529
+(defun item-order-function 300,10780
+
+zebu-actions.lisp,265
+(defun identity* 25,970
+(defun EMPTY-SEQ 27,1001
+(defun SEQ-CONS 28,1025
+(defun EMPTY-SET 30,1065
+(defun SET-CONS 31,1089
+(defun K-4-3 33,1130
+(defun K-2-1 38,1293
+(defun K-2-2 43,1426
+(defun K-3-2 48,1557
+(defun CONS-1-3 53,1704
+(defun CONS-2-3 57,1776
+
+zebra-debug.lisp,122
+(defun show-kb-hierarchy 23,945
+(defun kb-tree2list 48,1918
+(defun kb-kids2list 57,2228
+(defun print-readform 67,2575
+
+zebu-closure.lisp,193
+(defun closure 27,1163
+(defun closure 52,1879
+(defun single-item-closure-1 80,2917
+(defun closure-1! 90,3278
+(defun closure-1-insert-item! 106,3842
+(defun closure-1-insert-item! 136,4991
+
+zebu-generator.lisp,1516
+(defun generate-domain-file 40,1367
+(defun defstruct-name 81,2801
+(defun defstruct-super 85,2881
+(defun defstruct-slots 91,3037
+(defun generate-domain 101,3367
+(defun process-domain-definition 144,4784
+(defun Non-terminal-p 194,6610
+(defun 1-constituent-production-p 202,6863
+(defun first-nt-constituent 206,6954
+(defun gen-printers 215,7247
+(defun gen-KB-sequence-printers 329,11759
+(defun decode-separator 346,12425
+(defun add-print-fn 364,13057
+(defstruct (clause)381,13477
+(defun gen-print-case 393,13809
+(defconstant *vars-to-use* 424,14969
+(defun gen-clauses 426,15046
+(defun path-to-form 508,17649
+(defun insert-clause 517,17909
+(defun same-print-syntax 573,20221
+(defun make-format-string-list 599,21362
+(defun escape-tilde 648,22903
+(defun parse-id/number? 666,23378
+(defun continues-token? 694,24025
+(defun insert-seperator? 704,24253
+(defun white-space-p 738,25323
+(defun insert-seperator-before? 743,25499
+(defun insert-seperator-after? 753,25755
+(defun simplify-cond-clauses 771,26271
+(defun type->predicate 793,27035
+(defun infer-type-predicate 801,27256
+(defun infer-type 822,27818
+(defun is-subtype-of 835,28128
+(defun kb-subtypep 848,28517
+(defun check-domain-type 865,28953
+(defun infer-type-disj 869,29060
+(defun adjoin-type-disj 895,30000
+(defun infer-type-disj-of-expr 902,30182
+(defun find-path 917,30706
+(defun partition-set 947,31570
+(defun partition-set-by-selection-fn 1004,33243
+(defun follow-terminal 1028,33944
+(defun first-terminal 1034,34075
+
+zebu-tables.lisp,250
+(defvar *action-array*)35,1461
+(defvar *goto-array*)36,1485
+(defun integer-function-order-function 40,1612
+(defun build-parse-tables 46,1868
+(defvar *allow-conflicts* 102,4089
+(defun parse-table-insert! 105,4156
+(defun get-print-name 119,4793
+
+zebu-printers.lisp,432
+(defun print-actions 24,886
+(defun print-production 39,1461
+(defun print-productions 45,1642
+(defun print-symbols 49,1745
+(defun print-own-productions 54,1878
+(defun print-rhs-productions 58,1995
+(defun cruise-symbols 62,2112
+(defun cruise-symbols-2 76,2532
+(defun cruise-follow-sets 84,2738
+(defun print-collection 94,3034
+(defun item-print 115,3705
+(defun item-list-print 135,4404
+(defun cruise-parse-tables 143,4582
+
+zebu-kb-domain.lisp,241
+(defun for-each-supertype 27,948
+(defun KB-legal-slot-p 43,1441
+(defun KB-slot-type 62,2032
+(defun kb-slots 82,2617
+(defun kb-supertype 96,2999
+(defun kb-subtypes 110,3402
+(defun KB-type-error 117,3584
+(defun KB-type-name-p 120,3651
+
+zmg-dom.lisp,460
+(DEFUN MORE-RHS277 8,119
+(DEFUN CONSTITUENT278 11,209
+(DEFUN CONSTITUENT279 14,344
+(DEFUN RHS1280 17,479
+(DEFUN RHS1281 20,564
+(DEFUN ZB-RULE282 24,727
+(DEFUN LABEL-VALUE-PAIR283 28,866
+(DEFUN LABEL-VALUE-PAIR284 32,1026
+(DEFUN FEAT-TERM285 35,1157
+(DEFUN FEAT-TERM286 38,1279
+(DEFUN FEAT-TERM287 41,1401
+(DEFUN CONJ288 43,1460
+(DEFUN TYPED-CONJ289 46,1561
+(DEFUN PRINT-FUNCTION290 49,1682
+(DEFUN DEF-TYPE291 52,1793
+(DEFUN DEF-TYPE292 56,1956
+
+compile-zebu.lisp,250
+(defparameter *ZEBU-directory*30,1019
+(defvar *ZEBU-directory*40,1300
+(defparameter *ZEBU-binary-directory*46,1410
+(defvar *ZEBU-binary-directory*50,1557
+(defvar *load-source-pathname-types* 82,2816
+(defvar *load-binary-pathname-types* 91,3076
+
+zebu-init.lisp,397
+(defparameter *ZEBU-directory*37,1298
+(defparameter *ZEBU-binary-directory*53,1811
+(defvar *load-binary-pathname-types* 58,1970
+(defvar *load-binary-pathname-types* 60,2026
+(defvar *load-source-pathname-types* 67,2262
+(defvar *load-binary-pathname-types* 69,2360
+(defparameter zb:*zebu-version*105,3665
+(defun zb:zebu 120,4055
+(defun zb:zebu-compiler 152,5237
+(defun zb:zebu-rr 189,6847
+
+test/dYoung.lisp,0
+
+Compile.lisp,0

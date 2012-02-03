@@ -245,7 +245,7 @@
 
 
 (defmethod make-eol ((self scanner))
-  (make-instance 'motcle
+  (make-instance 'tok-motcle
     :kind    'tok-eol
     :index   (first (gethash 'tok-eol *token-map*))
     :text    (third  (gethash 'tok-eol *token-map*))
@@ -254,7 +254,7 @@
 
 
 (defmethod make-eof ((self scanner))
-  (make-instance 'motcle
+  (make-instance 'tok-motcle
     :kind    'tok-eof
     :index   (first (gethash 'tok-eof *token-map*))
     :text    (third  (gethash 'tok-eof *token-map*))

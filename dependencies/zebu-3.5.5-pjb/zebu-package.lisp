@@ -40,7 +40,7 @@
   #+LUCID (:use "LISP" "LUCID-COMMON-LISP")
   #+LUCID (:import-from "SYSTEM" "*KEYWORD-PACKAGE*")
   #+LUCID (:import-from "LCL" "DECLAIM")
-  (:import-from "PSGRAPH" PSGRAPH::PSGRAPH)
+  #+LUCID (:import-from "PSGRAPH" PSGRAPH::PSGRAPH)
   #+MCL   (:use "COMMON-LISP" "CCL")
   #+KCL   (:use "LISP")
   #+ALLEGRO (:use "COMMON-LISP" "EXCL")

@@ -125,7 +125,7 @@
 (defvar *terminal-alist-SEQ*)
 
 (defvar *lexer-debug* nil)
-(eval-when (compile)
+(eval-when (:compile-toplevell)
   (setq *lexer-debug* nil))
 
 #|

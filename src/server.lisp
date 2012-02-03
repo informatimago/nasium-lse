@@ -33,88 +33,74 @@
 ;;;;    Boston, MA 02111-1307 USA
 ;;;;****************************************************************************
 
-(in-package "COM.INFORMATIMAGO.LSE")
+(in-package "COM.INFORMATIMAGO.LSE.SERVER")
 
-(defun server-start-listening ())
-(defun server-stop-listening ())
+(defparameter *version* "1.0.0-0.585-CL")
 
-(defun server-start-log (log-stream))
-(defun server-stop-log ())
 
-(defun server-kill-console-class (cclass))
-(defun server-kill-console       (console-num))
-(defun server-console (console-num))
-(defun server-console-list (cclass))
+(defun current-date ()
+  (multiple-value-bind (se mi ho da mo ye) (decode-universal-time (get-universal-time))
+    (declare (ignore se mi ho))
+    (format nil "~2,'0D/~2,'0D/~2,'0D" da mo (mod ye 100))))
 
 
 
-(defstruct console
-  (class 'xterm      :type (member xterm socket))
-  (number 0          :type (integer 0 99))
-  (state  "LIMBO"    :type string)
-  (date   "00/00/00" :type string))
+(defclass lse-console-client (client)
+  ((console :initarg :console :accessor client-console)))
 
 
+(defmethod client-send-initial-message ((client lse-console-client))
+  (client-send-response client "~2%EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]
+VERSION : ~A
+COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
 
-(defun list-insert-separator (list separator)
-  "
-RETURN:  A list composed of all the elements in `list'
-         with `separator' in-between.
-EXAMPLE: (list-insert-separator '(a b (d e f)  c) 'x)
-         ==> (a x b x (d e f) x c)
+CONSOLE NO. ~2,'0D
+
+Type LSE to enter the LSE system.
 "
-  (do ((result (if list (list (car list))))
-       (list (cdr list) (cdr list)))
-      ((null list) (nreverse result))
-    (push separator result)
-    (push (car list) result)))
+                        *version* (console-number (client-console client))))
 
 
-(defmacro while (condition &body body) `(do () ((not ,condition)) ,@body))
+(defmethod client-send-prompt ((client lse-console-client))
+  (client-send-response client "~%~V,,,'_A~C~A" 79 "" #\Return
+                        (console-prompt (client-console client))))
+
+
+(defmethod client-receive-message ((client lse-console-client) message)
+  (let ((text (message-text message)))
+    (format t "LSE received ~S~%" text)
+    (configuration-repl-input text))
+  (client-send-prompt client))
+
+
+
+
+(defun main (&key (port 15001))
+  (let* ((*event-base*         (make-instance 'event-base))
+         (server (start-server (make-instance 'tcp-ipv4-end-point :interface #(127 0 0 1) :port port)
+                               :name "test"
+                               ;; :data-received-callback (lambda (data server client) 
+                               ;;                           (logger :data-received-callback :debug
+                               ;;                                   "Received data ~S from ~A~%" data client))
+                               :client-class 'lse-console-client
+                               :client-connected (lambda (server client client-socket)
+                                                   (declare (ignore client-socket))
+                                                   (logger :client-connected :info "Client connected ~A~%" client)
+                                                   (setf (client-console client)
+                                                         (make-console :class 'socket
+                                                                       :number 0
+                                                                       :date (current-date)))
+                                                   (client-send-initial-message client)
+                                                   (client-send-prompt client)))))
+    (unwind-protect
+         (event-loop)
+      (close-server server))))
+
+
 
 
 (defun char-or-string-p (object)
   (or (characterp object) (stringp object)))
-
-
-(defun pjb-unsplit-string (string-list &rest separator)
-  "Does the inverse than pjb-split-string. If no separator is provided 
-then a simple space is used."
-  (cond
-   ((null separator)         (setq separator " "))
-   ((/= 1 (length separator)) 
-    (error "pjb-unsplit-string: Too many separator arguments."))
-   ((not (char-or-string-p (car separator)))
-    (error "pjb-unsplit-string: separator must be a string or a char."))
-   (t (setq separator (car separator))))
-  (apply 'concatenate 'string
-         (mapcar (lambda (object)
-                   (if (stringp object) 
-                     object
-                     (format nil "~A" object)))
-                 (list-insert-separator string-list separator))))
-
-
-(defun pjb-split-string (string &optional separators)
-  "
-note:   current implementation only accepts as separators
-        a string containing only one character.
-"
-  (setq separators (or separators " ")
-        string (string string))
-  (let ((sep (aref separators 0))
-        (chunks  '())
-        (position 0)
-        (nextpos  0)
-        (strlen   (length string)) )
-    (while (<= position strlen)
-      (while (and (< nextpos strlen)
-                  (char/= sep (aref string nextpos)))
-        (setq nextpos (1+ nextpos)))
-      (setq chunks (cons (subseq string position nextpos) chunks))
-      (setq position (1+ nextpos))
-      (setq nextpos  position) )
-    (nreverse chunks)))
 
 
 (defun ipv4-address-p (address)
@@ -122,7 +108,7 @@ note:   current implementation only accepts as separators
 PRE:     (or (string address) (symbol address))
 RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 "
-  (let ((bytes (pjb-split-string (string address) ".")))
+  (let ((bytes (split-string (string address) ".")))
     (and (= 4 (length bytes))
          (block :convert
            (nreverse
@@ -132,393 +118,12 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
                                  (<= 0 val 255))
                           val
                           (return-from :convert nil))))
-                    (pjb-split-string address ".")))))))
+                    (split-string address ".")))))))
 
 
 
 
 
-;; console numbers: from 00 to 99.
-;; socket consoles: from 00 to (- 99 max-number).
-;; xterm  consoles: from max-number to 99.
-;; ==> 0<=max-number<=89, we reserve 10 xterm consoles.
-
-
-(defparameter *prompt* "EMULSE>")
-
-
-(defstruct configuration
-  (max-number           0   :type (integer 0 89))
-  (connection-enabled   nil :type boolean)
-  (connection-log       nil) ;; nil, path of log file or :standard-output
-  (filters              ()  :type list)
-  (file                 nil) ;; nil, or path of configuration file.
-  (statements           ()  :type list))
-
-
-(defun configuration-add-statement (configuration statement)
-  (setf (configuration-statements configuration) 
-        (nconc (configuration-statements configuration)  (list statement))))
-        
-
-(defparameter *configuration* (make-configuration)
-  "The current EMULSE SYSTEM configuration")
-
-
-(defparameter *commands* '())
-
-
-(defmacro defcommand (pattern &body body)
-  (let ((command (find pattern *commands* 
-                                 :key (function car)
-                                 :test (function equal))))
-    (if command
-      (setf (cdr command) body)
-      (push (cons pattern body) *commands*)))
-  nil)
-
-
-(defmacro parse-command (command)
-  (let ((cmdvar (gensym "COMMAND")))
-    `(let ((,cmdvar ,command))
-       (macrolet
-         ((store () '(configuration-add-statement *configuration* ,cmdvar)))
-         (match-case ,cmdvar
-           ,@(reverse *commands*)
-           (otherwise (error "Invalid command: ~S" ,cmdvar)))))))
-
-
-(defcommand (connections max-number (?x n))
-  (unless (and (integerp n) (<= 0 n 89))
-    (error "Invalid maximum number of connection: ~S" n))
-  (setf (configuration-max-number *configuration*) n)
-  (store))
-
-    
-(defcommand (connections enable)
-  (unless (configuration-connection-enabled *configuration*)
-    (server-start-listening))
-  (setf (configuration-connection-enabled *configuration*) t)
-  (store))
-
-
-(defcommand (connections disable)
-  (when (configuration-connection-enabled *configuration*)
-    (server-stop-listening))
-  (setf (configuration-connection-enabled *configuration*) nil)
-  (store))
-
-
-(defcommand (connection log none)
-  (server-stop-log)
-  (store))
-
-
-(defcommand (connection log (?? (?x file)))
-  (if file
-    (let (stream)
-      (unless (and (stringp file)
-                   (ensure-directories-exist file)
-                   (setf stream (open file :direction :output
-                                    :if-does-not-exist :create
-                                    :if-exists :append)))
-        (error "Cannot open the log file ~S" file))
-      (server-start-log stream)
-      (store))
-    (progn (server-start-log *trace-output*)
-           (store))))
-
-
-(defcommand (filter (?x cmd) (?x dir) all)
-  (unless (member cmd '(insert append delete))
-    (error "Invalid filter command: ~S (expected one of: insert append delete)" 
-           cmd))
-  (unless (member dir '(allow deny))
-    (error "Invalid filter direction: ~S (expected one of: allow deny)" dir))
-  (case cmd
-    ((insert) 
-     (push (list dir 'all) (configuration-filters *configuration*)))
-    ((append) 
-     (setf (configuration-filters *configuration*)
-           (nconc (configuration-filters *configuration*)
-                  (list (list dir 'all)))))
-    ((delete)
-     (setf (configuration-filters *configuration*)
-           (delete (list dir 'all)  (configuration-filters *configuration*)
-                   :test (function equal)))))
-  (store))
-
-
-(defcommand (filter (?x cmd) (?x dir) (?x ip) (?? (?x bits)))
-  (setf bits (or bits 32))
-  (unless (member cmd '(insert append delete))
-    (error "Invalid filter command: ~S (expected one of: insert append delete)" 
-           cmd))
-  (unless (member dir '(allow deny))
-    (error "Invalid filter direction: ~S (expected one of: allow deny)" dir))
-  (unless (ipv4-address-p ip)
-    (error "Invalid IPv4 address: ~S (expected a string like: \"192.168.0.1\")"
-           ip))
-  (unless (and (integerp bits) (<= 0 bits 32))
-    (error
-     "Invalid network mask bits: ~S (expected an integer between 0 and 32)" 
-     bits))
-  (case cmd
-    ((insert) 
-     (push (list dir ip bits) (configuration-filters *configuration*)))
-    ((append) 
-     (setf (configuration-filters *configuration*)
-           (nconc (configuration-filters *configuration*)
-                  (list (list dir ip bits)))))
-    ((delete)
-     (setf (configuration-filters *configuration*)
-           (delete (list dir ip bits)  (configuration-filters *configuration*)
-                   :test (function equal)))))
-  (store))
-
-
-(defcommand (filter flush)
-  (setf (configuration-filters *configuration*) nil)
-  (store))
-
-
-(defcommand (filter list (?? (?x dir)))
-  (setf dir (or dir 'all))
-  (unless (member dir '(all deny allow))
-    (error "Invalid filter direction: ~S (expected one of: all allow deny)" 
-           dir))
-  (dolist (filter (configuration-filters *configuration*))
-    (when (or (eq dir 'all) (eq dir (first filter)))
-      (print filter)))
-  (terpri))
-
-
-(defcommand (console kill all (?? (?x cclass)))
-  (setf cclass (or cclass 'all))
-  (unless (member cclass '(all xterm socket))
-    (error "Invalid console class: ~S (expected one of: all xterm socket)" 
-           cclass))
-  (server-kill-consoles cclass)
-  (store))
-
-
-(defcommand (console kill (?x n))
-  (unless (and (integerp n) (<= 0 n 99))
-    (error "Invalid console number: ~S (expected an integer between 0 and 99)"
-           n))
-  (unless (server-console n)
-    (error "There is no console ~D active." n))
-  (server-kill-console n))
-
-
-(defun print-console (console &optional (stream t))
-  (format stream "Console ~2,'0D  ~[xterm ~;socket~]  ~12A ~12A~%"
-          (console-number console)
-          (eq 'socket (console-class console))
-          (console-state console)
-          (console-date console)))
-
-
-(defcommand (console list (?? (?x cclass)))
-  (setf cclass (or cclass 'all))
-  (unless (member cclass '(all xterm socket))
-    (error "Invalid console class: ~S (expected one of: all xterm socket)" 
-           cclass))
-  (dolist (console (server-console-list cclass))
-    (when (or (eq 'all cclass) (eq cclass (console-class console)))
-      (print-console console))))
-
-
-(defcommand (console create xterm (?? display (?x display)))
-  (setf display (or display ":0.0"))
-  (let ((console (server-create-xterm-console-on-display display)))
-    (when console
-      (print-console console)
-      (store))))
-
-
-(defcommand (configuration save (?? (?x file)))
-  (setf file (or file (configuration-file *configuration*)))
-  (print `(saving  to ,file))
-;;  (server-repl)
-  (if file
-    (progn
-      (ensure-directories-exist file)
-      (with-open-stream (stream (open file :direction :output 
-                                      :if-does-not-exist :create
-                                      :if-exists :supersede))
-        (dolist (statement (configuration-statements *configuration*))
-          (print statement stream)))
-      (setf (configuration-file *configuration*) file))
-    (dolist (statement (configuration-statements *configuration*))
-      (print statement))))
-
-
-(defcommand (configuration load (?? (?x file)))
-  (setf file (or file (configuration-file *configuration*)))
-  (print `(loading from ,file))
-;;  (server-repl)
-  (unless file
-    (error "Please specify a configuration file."))
-  (setf *configuration*
-        (let ((*configuration* (make-configuration))
-              (*read-eval* nil)
-              (+eof+ (gensym)))
-          (declare (special *configuration*))
-          (with-open-file (stream file :direction :input
-                                  :if-does-not-exist :error)
-            (loop for sexp = (read stream nil +eof+ )
-                  until (eq sexp +eof+)
-                  do (parse-one-command sexp)))
-          *configuration*)))
-
-
-(defcommand (configuration print)
-  (parse-one-command '(configuration save)))
-
-
-(defmacro handling-errors (&body body)
-  `(handler-case (progn ,@body)
-     (error (err)
-            (apply (function format) *error-output*
-                   (simple-condition-format-control err)
-                   (simple-condition-format-arguments err)))))
-
-
-(defun server-repl ()
-  (do ((hist 1 (1+ hist))
-       (+eof+ (gensym)))
-      (nil)
-    (format t "~%~A[~D]> " (package-name *package*) hist)
-    (handling-errors
-     (setf +++ ++   ++ +   + -   - (read *standard-input* nil +eof+))
-     (when (or (eq - +eof+)
-               (member - '((quit)(exit)(continue)) :test (function equal)))
-       (return-from server-repl))
-     (setf /// //   // /   / (multiple-value-list (eval -)))
-     (setf *** **   ** *   * (first /))
-     (format t "~& --> ~{~S~^ ;~%     ~}~%" /))))
-
-
-(defcommand (repl)
-  (server-repl))
-
-
-(defcommand (help)
-  (dolist (command *commands*) (print (first command))))
-
-
-(defcommand (quit)
-  (throw :configuration-repl-exit nil))
-
-
-(defun parse-one-command (command)  
-  "This must be after all the DEFCOMMAND to gather them!"
-  (parse-command command))
-
-
-(defvar +eof+       (gensym))
-(defvar *debugging* nil)
-
-
-(defun configuration-repl (&key (debugging *debugging*))
-  (catch :configuration-repl-exit
-    (loop
-     (format t "~&~A " *prompt*) (finish-output)
-     (let ((sexp (read *standard-input* nil +eof+)))
-       (if sexp
-         (if debugging
-           (parse-one-command sexp)
-           (handler-case (parse-one-command sexp)
-             (error (err)
-                    (apply (function format) *error-output*
-                           (simple-condition-format-control err)
-                           (simple-condition-format-arguments err)))))
-         (throw :configuration-repl-exit nil))))))
-
-
-(defun configuration-repl-start ()
-  (format t "~&~A " *prompt*) 
-  (finish-output))
-
-
-(defun configuration-repl-input (line)
-  (let ((sexp (read-from-string line nil +eof+)))
-    (unless (eq +eof+ sexp)
-      (if *debugging*
-        (parse-one-command sexp)
-        (handler-case (parse-one-command sexp)
-          (error (err)
-                 (apply (function format) *error-output*
-                        (simple-condition-format-control err)
-                        (simple-condition-format-arguments err)))))
-      (configuration-repl-start))))
-  
-
-(when nil
-  (load "loader.lisp")
-  (configuration-repl :debugging t)
-  (filter append allow "127.0.0.1")
-  (filter append deny all)
-  (connections max-number 40)
-  (connections enable)
-  (configuration save "/tmp/server.conf")
-  (repl)
-  )
-
-
-
-
-(defstruct iotask  stream process-event name)
-
-
-(defparameter *iotasks*   '())
-(defparameter *bon-grain* '()
-  "Sublist of *iotask* which can be handled by socket:socket-wait.")
-(defparameter *ivray*     '() 
-  "Sublist of *iotask* which cannot be handled by socket:socket-wait.")
-
-
-(defun iotask-enqueue (stream process-event &optional name)
-  (let ((task (make-iotask :stream stream 
-                           :process-event process-event
-                           :name name)))
-    (push task *iotasks*)
-    (handler-case (socket:socket-status (iotask-stream task) 0)
-      (error     ()                           (push task *ivray*))
-      (:no-error (s n) (declare (ignore s n)) (push task *bon-grain*)))))
-
-
-
-(defun iotask-dequeue (task)
-  (setf *iotasks*   (delete task *iotasks*))
-  (setf *bon-grain* (delete task *bon-grain*))
-  (setf *ivray*     (delete task *ivray*)))
-
-
-(defun iotask-poll-loop ()
-  (loop ;; each 0.1 seconds, see second argument of socket-status.
-   (when (null *iotasks*) (return))
-   (map nil 
-        (lambda (task status)
-          (when status (funcall (iotask-process-event task) task status)))
-        *ivray*
-        (mapcar (lambda (task)
-                  (let ((stream (iotask-stream task)))
-                    (cond
-                     ((input-stream-p stream)  
-                      (if (listen stream)
-                        :input
-                        (if (output-stream-p stream :output nil))))
-                     ((output-stream-p stream) :output)
-                     (t  nil))))
-                *ivray*))
-   (map nil
-        (lambda (task status)
-          (when status (funcall (iotask-process-event task) task status)))
-        *bon-grain*
-        (socket:socket-status
-         (mapcar (function iotask-stream) *bon-grain*) 0.1))))
 
 
 (defun make-buffered-discipline (process-input)
@@ -532,7 +137,8 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
     (lambda (task event)
       (when (eq :input event)
         (let* ((ich (read-char (iotask-stream task)))
-               (ch  (system::input-character-char ich)))
+               (ch  #+clisp (system::input-character-char ich)
+                    #-clisp ich))
           (cond 
            ((null ch))
            ((= (char-code ch) +cr+)
@@ -552,7 +158,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
         (finish-output)))))
 
 
- 
+
 (defun server-input (task line)
   (if (string-equal "(QUIT)" line)
     (iotask-dequeue task)
@@ -573,16 +179,26 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
                       "xterm")
       (configuration-repl-start)
       (iotask-poll-loop))
-    (ext:with-keyboard
-     (let ((*standard-input* ext:*keyboard-input*))
-       (iotask-enqueue ext:*keyboard-input* 
-                       (make-keyboard-discipline (function server-input))
-                       "keyboard")
-       (configuration-repl-start)
-       (iotask-poll-loop)))))
+    #+clisp (ext:with-keyboard
+                (let ((*standard-input* ext:*keyboard-input*))
+                  (iotask-enqueue ext:*keyboard-input* 
+                                  (make-keyboard-discipline (function server-input))
+                                  "keyboard")
+                  (configuration-repl-start)
+                  (iotask-poll-loop)))
+    #-clisp (progn
+              (iotask-enqueue *standard-input* 
+                              (make-keyboard-discipline (function server-input))
+                              "keyboard")
+              (configuration-repl-start)
+              (iotask-poll-loop))))
 
 
+
+                                       
+   
 (defun make-xterm-io-stream (&key display)
+  #+clisp
   (let* ((pipe (with-open-stream (s (ext:make-pipe-input-stream
                                      "mktemp /tmp/clisp-x-io-XXXXXX"))
                  (read-line s)))
@@ -607,86 +223,89 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
       (close (two-way-stream-output-stream xio))
       (let ((clos::*warn-if-gf-already-called* nil))
         (remove-method #'close (find-method #'close '(:after) `((eql ,xio))))))
-    xio))
+    xio)
+  #-clisp
+  (error "no xterm in ~A" (lisp-implementation-type)))
 
 
 
-(defvar *external-format* (ext:make-encoding 
-                           :charset 'charset:iso-8859-1
-                           :line-terminator :unix))
+(defvar *external-format*
+  #+clisp (ext:make-encoding 
+           :charset 'charset:iso-8859-1
+           :line-terminator :unix)
+  #-clisp :iso-8859-1)
 
 
 (defun make-pipe ()
   "RETURN: two interconnected IPC streams.
 This would be a couple of pipes, but since we don't have internal pipes
 in clisp, we do it with a socket."
-  (let ((lsock (socket:socket-server))
-        (asock)
-        (bsock))
-    (setf asock (socket:socket-connect (socket:socket-server-port lsock)
-                                       (socket:socket-server-host lsock)
-                                       :element-type 'character
-                                       :external-format *external-format*
-                                       :buffered nil
-                                       :timeout 5))
-    (if (socket:socket-wait lsock 5)
-      (progn
-        (setf bsock (socket:socket-accept lsock 
-                                          :element-type 'character
-                                          :external-format *external-format*
-                                          :buffered nil
-                                          :timeout 5))
-        (if bsock
-          (values asock bsock)
-          (values nil nil)))
-      (values nil nil))))
-                                       
-   
+  ;; (let ((lsock (lse-sock:socket-server))
+  ;;       (asock)
+  ;;       (bsock))
+  ;;   (setf asock (lse-sock:socket-connect (lse-sock:socket-server-port lsock)
+  ;;                                      (lse-sock:socket-server-host lsock)
+  ;;                                      :element-type 'character
+  ;;                                      :external-format *external-format*
+  ;;                                      :buffered nil
+  ;;                                      :timeout 5))
+  ;;   (if (lse-sock:socket-wait lsock 5)
+  ;;     (progn
+  ;;       (setf bsock (lse-sock:socket-accept lsock 
+  ;;                                         :element-type 'character
+  ;;                                         :external-format *external-format*
+  ;;                                         :buffered nil
+  ;;                                         :timeout 5))
+  ;;       (if bsock
+  ;;         (values asock bsock)
+  ;;         (values nil nil)))
+  ;;     (values nil nil)))
+  )
+
 
 (defparameter +server-port+ 15000)
 
 (defun server ()
-  (let ((lsock (socket:socket-server +server-port+)))
-    (unwind-protect
-        (loop
-         (when (socket:socket-wait lsock 0)
-           (let ((remote (socket:socket-accept lsock
-                                               :element-type 'character
-                                               ;; :external-format 
-                                               :buffered t
-                                               :timeout 1)))
-             (when remote
-               ;; got an incoming connection, let's fork a worker
-               ;; but first, create a socket and connect to it to be
-               ;; able to communicate with this worker.
-               (let ((pid #+linux(linux:fork) #-linux 0))
-                 (cond
-                  ((< pid 0) ;; error
-                   (error "Could not fork a worker."))
-                  ((= pid 0) ;; child
-                   )
-                  (t ;; parent
-                   (register-worker pid)
-                   (format t "~& "))))
-               ))))
-      (close lsock))))
-
-
-#||
-(progn (ext:with-keyboard 
-        (socket:socket-status (list ext:*keyboard-input*) nil) 
-        (unread-char  (system::input-character-char 
-                       (read-char ext:*keyboard-input*))
-                      *standard-input*))
-       (print (read-line)))
-||#
+  ;; (let ((lsock (lse-sock:socket-server +server-port+)))
+  ;;   (unwind-protect
+  ;;       (loop
+  ;;        (when (lse-sock:socket-wait lsock 0)
+  ;;          (let ((remote (lse-sock:socket-accept lsock
+  ;;                                              :element-type 'character
+  ;;                                              ;; :external-format 
+  ;;                                              :buffered t
+  ;;                                              :timeout 1)))
+  ;;            (when remote
+  ;;              ;; got an incoming connection, let's fork a worker
+  ;;              ;; but first, create a socket and connect to it to be
+  ;;              ;; able to communicate with this worker.
+  ;;              (let ((pid #+linux(linux:fork) #-linux 0))
+  ;;                (cond
+  ;;                 ((< pid 0) ;; error
+  ;;                  (error "Could not fork a worker."))
+  ;;                 ((= pid 0) ;; child
+  ;;                  )
+  ;;                 (t ;; parent
+  ;;                  (register-worker pid)
+  ;;                  (format t "~& "))))
+  ;;              ))))
+  ;;     (close lsock)))
+  )
 
 
 
 
-;; Local Variables:
-;; eval: (cl-indent 'pmatch:match-case  1
-;; eval: (cl-indent 'match-case  1)
-;; End:
+
+(defun server-start-listening ())
+(defun server-stop-listening ())
+
+(defun server-start-log (log-stream))
+(defun server-stop-log ())
+
+(defun server-kill-console-class (cclass))
+(defun server-kill-console       (console-num))
+(defun server-console (console-num))
+(defun server-console-list (cclass))
+(defun server-create-xterm-console-on-display (display))
 
 ;;;; THE END ;;;;

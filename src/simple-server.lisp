@@ -187,13 +187,12 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 
 
 (defmacro defcommand (pattern &body body)
-  (let ((command (find pattern *commands* 
-                                 :key (function car)
-                                 :test (function equal))))
-    (if command
-      (setf (cdr command) body)
-      (push (cons pattern body) *commands*)))
-  nil);;defcommand
+  `(let ((command (find ',pattern *commands* 
+                        :key (function car)
+                        :test (function equal))))
+     (if command
+         (setf (cdr command) ',body)
+         (push (cons ',pattern ',body) *commands*))))
 
 
 (defmacro parse-command (command)

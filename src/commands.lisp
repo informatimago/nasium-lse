@@ -149,8 +149,7 @@
 
 
 (define-grammar numero-de-ligne
-    (
-     :white-space (#.(character " "))
+    (:white-space (#.(character " "))
                   :lex-cats    ((tok-numero  "{NUMERO}")))
 
   (defrule numero-de-ligne

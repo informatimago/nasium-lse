@@ -86,7 +86,7 @@
   (if *regex-debug*
       `(format *standard-output* ,message ,@args)))
 
-(eval-when (compile)
+(eval-when (:compile-toplevel)
   (setq *regex-debug* nil))
 
 ;;;

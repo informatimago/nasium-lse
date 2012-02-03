@@ -38,7 +38,7 @@
 (asdf:defsystem :com.informatimago.lse
     :description  "LSE interpreter."
     :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
-    :version "1.0.1"
+    :version "1.0.2"
     :licence "GPL"
     :properties ((#:author-email                   . "pjb@informatimago.com")
                  (#:date                           . "Winter 2012")
@@ -49,16 +49,33 @@
                  ((#:albert #:docbook #:textcolor) . "black"))
 
     :depends-on (:split-sequence
+                 :alexandria
+                 
+                 :iolib.base
+                 :iolib
 
                  #+clisp :com.informatimago.clisp
                  #+clisp :com.informatimago.susv3
-                 
+
                  :com.informatimago.common-lisp
 
                  :com.hp.zebu
                  )
     :serial t
-    :components ((:file "patch-zebu")
+    :components (
+                 ;; Some generic utility
+                 (:file "logger")
+                 (:file "signal")
+                 (:file "environment")
+                 (:file "iolib-message")
+                 (:file "iolib-end-point")
+                 (:file "iolib-utils"   :depends-on ("logger" "signal" "iolib-message"))
+                 (:file "iolib-server"  :depends-on ("logger" "iolib-utils" "iolib-message"))
+                 (:file "iolib-client"  :depends-on ("logger" "iolib-utils" "iolib-message"))
+                 ;;----------------------
+
+                 ;; LSE language
+                 (:file "patch-zebu")
                  (:file "packages")
                  (:file "grammar")
                  (:file "lse-domain")
@@ -77,9 +94,10 @@
 
                  (:file "commands")
 
-                 (:file "pmatch")
+                 ;; LSE server
+                 (:file "server-commands")
                  (:file "server")
-                 (:file "simple-server")
+                 ;; (:file "simple-server")
                  ;; (:file "vm")
 
                  (:file "main")

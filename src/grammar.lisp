@@ -44,7 +44,7 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
 
   (defvar *grammar-directory*
-    (make-pathname :directory '(:relative "GRAMMARS") :case :common)
+    (make-pathname :directory '(:relative "grammars") :case :common)
     "The directory where the grammars files are stored.
 Used by the DEFINE-GRAMMAR macro in command.lisp")
 

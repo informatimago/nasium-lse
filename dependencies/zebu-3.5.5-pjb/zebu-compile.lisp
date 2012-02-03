@@ -27,31 +27,27 @@
 By default this is the Null-Grammar.")
 
 (defun zebu-compile-file (grammar-file
-			  &key (grammar *null-grammar*)
-			  output-file
-			  verbose
-			  (compile-domain t))
+                          &key (grammar *null-grammar*)
+                          output-file
+                          verbose
+                          (compile-domain t))
   "Compiles the LALR(1) grammar in file GRAMMAR-FILE."
-  (assert (probe-file (setq grammar-file
-                        (merge-pathnames grammar-file
-                                         (merge-pathnames
-					  (make-pathname :type "zb")))))
-	  (grammar-file)
-	  "Cannot find grammar file: ~A" grammar-file)
-  (setq output-file
-	(let ((tab (make-pathname :type "tab")))
-          (if output-file    
-	      (merge-pathnames (pathname output-file) tab)
-            (merge-pathnames tab grammar-file))))
+  (assert (probe-file (setq grammar-file (make-pathname :type "zb" :defaults grammar-file)))
+          (grammar-file)
+          "Cannot find grammar file: ~A" grammar-file)
+  (setq output-file (make-pathname :type "tab"
+                                   :defaults (if output-file    
+                                                 (pathname output-file)
+                                                 grammar-file)))
   (when (probe-file output-file) (delete-file output-file))
   (format t "~%; Zebu Compiling (Version ~A)~%; ~S to ~S~%"
-	  *zebu-version* grammar-file output-file)
+          *zebu-version* grammar-file output-file)
   (let ((*warn-conflicts* verbose))
     (compile-lalr1-grammar grammar-file
-			   :output-file output-file
-			   :grammar grammar
-			   :verbose verbose
-			   :compile-domain compile-domain)))
+                           :output-file output-file
+                           :grammar grammar
+                           :verbose verbose
+                           :compile-domain compile-domain)))
 
 
 ;;----------------------------------------------------------------------------;

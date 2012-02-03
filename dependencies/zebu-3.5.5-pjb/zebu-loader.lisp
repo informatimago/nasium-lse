@@ -244,12 +244,12 @@ looking for the next token (default false).")
                  x
                  'nil)))
 
-(eval-when (compile)
+(eval-when (:compile-toplevel)
   (setq *grammar-debug* nil))
 
 #||
-(eval-when (eval)
-(setq *grammar-debug* T))
+(eval-when (:execute)
+  (setq *grammar-debug* T))
 ||#
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -259,9 +259,7 @@ looking for the next token (default false).")
 (defun zebu-load-file (filename &key (verbose t)
                        &aux lexicon terminal-indices (*package* *package*))
   ;; returns a grammar and registers this grammar on *all-grammars*
-  (let ((path (probe-file (merge-pathnames
-                           filename
-                           (merge-pathnames (make-pathname :type "tab")))))
+  (let ((path (probe-file (make-pathname :type "tab" :defaults filename)))
         (*load-verbose* verbose))
     (if path
         (when verbose
@@ -272,7 +270,7 @@ looking for the next token (default false).")
         (cerror "~S is now compiled."
                 "~S is not a Zebu output!~%;;; Compile ~S first!"
                 name filename name)
-        (setf path (merge-pathnames (make-pathname :type "tab") path)
+        (setf path  (make-pathname :type "tab" :defaults path)
               filename (namestring path))))
     (with-open-file (port path :direction :input)
       (let ((options			; 1: read grammar-options

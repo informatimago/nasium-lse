@@ -210,8 +210,7 @@ Return the number of bytes read, and whether the message is complete.
      (setf (message-data message) (make-buffer (length data)))
      (buffer-append (message-data message) data (length data)))
     (textp
-     (let* ((len (or (position  #\newline text) (length text)))
-            (data (babel:string-to-octets text :encoding :utf-8 :end len :use-bom nil)))
+     (let ((data (babel:string-to-octets text :encoding :utf-8)))
        (setf (message-data message) (make-buffer (length data)))
        (buffer-append (message-data message) data (length data))))
     (t

@@ -96,7 +96,7 @@
               (let ((fun (cdr lex-cat)))
                 (lambda (STRING &OPTIONAL (START 0) (END (LENGTH STRING)))
                   (format *trace-output*
-                    "~&FONCTION DU DOMAINE LSE ~S APPELEE~%" fun)
+                          "~&FONCTION DU DOMAINE LSE ~S APPELEE~%" fun)
                   (funcall fun string start end))))))
     (values)))
 
@@ -123,16 +123,30 @@
                :initform 0
                :type (integer 0))))
 
+
+(defun token-kind-label (kind)
+  (case kind
+    (tok-chaine         'chaine)
+    (tok-commentaire    'commentaire)
+    (tok-erreur         'erreur)
+    (tok-identificateur 'identificateur)
+    (tok-motcle         'motcle)
+    (tok-nombre         'nombre)
+    (tok-numero         'numero)
+    (otherwise          kind)))
+
+
 (defmethod print-object ((self token) stream)
-  (print-unreadable-object (self stream :type t :identity t)
-    (format stream "~D:~D: <~A> ~S"
-            (token-line self) (token-column self)
-            (token-kind self) (token-text self)))
+  (flet ((inprint ()
+           (format stream "~D:~D: ~A ~S"
+                 (token-line self) (token-column self)
+                 (token-kind-label (token-kind self)) (token-text self))))
+   (if *print-escape*
+       (print-unreadable-object (self stream :type t :identity t)
+         (inprint))
+       (inprint)))
   self)
 
-(defclass tok-erreur         (token) ())
-(defclass tok-commentaire    (token) ())
-(defclass tok-motcle         (token) ())
 
 (defclass tok-identificateur (token)
   ((nom        :accessor identificateur-nom
@@ -246,20 +260,20 @@
 
 (defmethod make-eol ((self scanner))
   (make-instance 'tok-motcle
-    :kind    'tok-eol
-    :index   (first (gethash 'tok-eol *token-map*))
-    :text    (third  (gethash 'tok-eol *token-map*))
-    :column  (column self)
-    :line    (line   self)))
+      :kind    'tok-eol
+      :index   (first (gethash 'tok-eol *token-map*))
+      :text    (third  (gethash 'tok-eol *token-map*))
+      :column  (column self)
+      :line    (line   self)))
 
 
 (defmethod make-eof ((self scanner))
   (make-instance 'tok-motcle
-    :kind    'tok-eof
-    :index   (first (gethash 'tok-eof *token-map*))
-    :text    (third  (gethash 'tok-eof *token-map*))
-    :column  (column self)
-    :line    (line   self)))
+      :kind    'tok-eof
+      :index   (first (gethash 'tok-eof *token-map*))
+      :text    (third  (gethash 'tok-eof *token-map*))
+      :column  (column self)
+      :line    (line   self)))
 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -326,7 +340,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                          ,(generate-state-transition codevar (cdr transition))))
                     transitions)))))))
 
-                                                                
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
   ;; Needed at macro-expansion-time:
   (defun ! (&rest args) (apply (function concatenate) 'string args))
@@ -457,7 +471,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                    (shift nombre-signed-exponent))
         (digits    (shift nombre-signed-exponent))
         (others (scan-error "CARACTERE '~C' (~D) INVALIDE DANS UN NOMBRE '~A'"
-                             (code-char code) code
+                            (code-char code) code
                             (subseq buffer start (1+ index)))))
        (nombre-signed-exponent
         (digits    (advance (token tok-nombre)))
@@ -500,12 +514,12 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
 
 (defmethod print-error ((self scanner) start end message &rest args)
   (format *error-output*
-    "~&~A~%~VA~A~%~:[~:*~A:~D:~D: ~;~2*~]~A~%"
-    (buffer self) start "" (make-string (- end start)
-                                        :initial-element (character "^"))
-    (ignore-errors (pathname (source self)))
-    (line self) (column self)
-    (apply (function format) nil message args)))
+          "~&~A~%~VA~A~%~:[~:*~A:~D:~D: ~;~2*~]~A~%"
+          (buffer self) start "" (make-string (- end start)
+                                              :initial-element (character "^"))
+          (ignore-errors (pathname (source self)))
+          (line self) (column self)
+          (apply (function format) nil message args)))
 
 
 (defmethod advance-token ((self scanner))
@@ -522,14 +536,14 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                         (tmatf (x) `(fourth ,x)))
                (if (eq (tsymb tok-desc) 'tok-erreur)
                    (progn
-                     (print-error self start end errorstr)
+                     (print-error self start end errstr)
                      (incf (column self))
-                     (make-instance 'erreur
-                       :kind   'tok-erreur
-                       :index  (second (gethash 'tok-erreur *token-map*))
-                       :text   errstr
-                       :column start
-                       :line   (line self)))
+                     (make-instance 'tok-erreur
+                         :kind   (second (gethash 'tok-erreur *token-map*))
+                         :index  (first  (gethash 'tok-erreur *token-map*))
+                         :text   errstr
+                         :column start
+                         :line   (line self)))
                    (make-instance  (case (tsymb tok-desc)
                                      (tok-identificateur 'tok-identificateur)
                                      (tok-numero         'tok-numero)
@@ -537,18 +551,18 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                                      (tok-litchaine      'tok-chaine)
                                      (tok-commentaire    'tok-commentaire)
                                      (otherwise          'tok-motcle))
-                     :kind   (tsymb tok-desc)
-                     :index  (tcode tok-desc)
-                     :text   (case (tsymb tok-desc)
-                                      ((tok-numero tok-nombre tok-identificateur
-                                                   tok-litchaine tok-commentaire)
-                                       (make-array  (- end start)
-                                                    :element-type 'character
-                                                    :displaced-to (buffer self)
-                                                    :displaced-index-offset start))
-                                      (otherwise (ttext tok-desc)))
-                     :column start
-                     :line   (line self))))))))
+                       :kind   (tsymb tok-desc)
+                       :index  (tcode tok-desc)
+                       :text   (case (tsymb tok-desc)
+                                 ((tok-numero tok-nombre tok-identificateur
+                                              tok-litchaine tok-commentaire)
+                                  (make-array  (- end start)
+                                               :element-type 'character
+                                               :displaced-to (buffer self)
+                                               :displaced-index-offset start))
+                                 (otherwise (ttext tok-desc)))
+                       :column start
+                       :line   (line self))))))))
   (token self))
 
 
@@ -628,44 +642,25 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
            (loop
               with last-token = nil
               until (eolp (token scanner)) do
-              (case  (token-kind (token scanner))
-                (tok-ptvirg
-                 (setf (state scanner) +maybe-commentaire+))
-                (tok-crogauche
-                 (if (or (eq 'tok-afficher last-token)
-                         (eq 'tok-affic last-token))
-                     (setf (state scanner) +in-format+)
-                     (setf (state scanner) +not-commentaire+)))
-                (tok-crodroite
-                 (setf (state scanner) +not-commentaire+))
-                (otherwise
-                 (when (eql (state scanner) +maybe-commentaire+)
-                   (setf (state scanner) +not-commentaire+))))
-              (setf last-token (token-kind (token scanner)))
-              (format t "~&~A ~A~%" (state scanner) (token scanner))
-              (advance-token scanner)
+                (case  (token-kind (token scanner))
+                  (tok-ptvirg
+                   (setf (state scanner) +maybe-commentaire+))
+                  (tok-crogauche
+                   (if (or (eq 'tok-afficher last-token)
+                           (eq 'tok-affic last-token))
+                       (setf (state scanner) +in-format+)
+                       (setf (state scanner) +not-commentaire+)))
+                  (tok-crodroite
+                   (setf (state scanner) +not-commentaire+))
+                  (otherwise
+                   (when (eql (state scanner) +maybe-commentaire+)
+                     (setf (state scanner) +not-commentaire+))))
+                (setf last-token (token-kind (token scanner)))
+                (format t "~&~A ~A~%" (state scanner) (token scanner))
+                (advance-token scanner)
               finally (format t "~&~A ~A~%" (state scanner) (token scanner)))
            (advance-line scanner) (advance-token scanner)
          finally (format t "~&~A ~A~%" (state scanner) (token scanner))))))
-
-
-
-(defun test-parse-file (path)
-  (with-open-file (src path)
-    (terpri)
-    (let* ((scanner    (make-instance 'scanner :source src))
-           (next-token (get-next-token-function scanner)))
-      (loop do
-           (advance-line scanner)
-           (when (eofp (token scanner)) (loop-finish))
-           (format t "~2%~A~%" (buffer scanner))
-           (restart-case
-               ;; stuff
-               (format t "~&~S~%" (lr-parse next-token
-                                            (lambda (msg) (error "ERREUR: ~A" msg))
-                                            (find-grammar "LSE")))
-             (advance-line ()
-               :report "PASSER A LA LIGNE SUIVANTE"))))))
 
 
 

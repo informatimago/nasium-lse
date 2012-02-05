@@ -4,7 +4,7 @@
 (REQUIRE "zebu-package")
 (USE-PACKAGE "ZEBU")
 
-(DEFUN IDENT222 (TOK-IDENTIFICATEUR)
+(DEFUN IDENT112 (TOK-IDENTIFICATEUR)
   (PROGN (UNLESS (AND (CHAR= (CHARACTER "&")
                              (AREF
                               (TOKEN-TEXT TOK-IDENTIFICATEUR)

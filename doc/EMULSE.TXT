@@ -272,6 +272,24 @@ L.S.E.  UNE INTRODUCTION AU LANGAGE L.S.E.
 
 
 
+::
+
+      *
+      |
+      |
+      V
+  +--------+  connecter     +----------+   BOnjour     +----------+
+  | Limbo  |--------------->| Sleeping |-------------->| Active   |
+  |        |                |          |  /preparer    |          |
+  |        |                |          |               |          |
+  |        |   ADieux/      |          |               |          |
+  |        |   deconnecter  |          |   AUrevoir    |          |
+  |        |<---------------|          |<--------------|          |
+  +--------+                +----------+  /nettoyer    +----------+
+      ^                                                     |
+      |               etat_cmd_changer(0)                   |
+      +-----------------------------------------------------+
+                       /nettoyer
 
 
 

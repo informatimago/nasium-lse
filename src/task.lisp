@@ -305,6 +305,7 @@ Retourne un task qui était inlimbo (il est maintant aconnecter).
 ;;      +-----------------------------------------------------+
 ;;                       /nettoyer
 
+
  
 #||
     void lse_task_connecter(lse_task_t* task,int entree,int sortie)

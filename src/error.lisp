@@ -142,7 +142,7 @@
       "INSTRUCTION INCONNUE" )
     ( :cons-es-impossible
       "INTERNE - E/S D'UN CONS IMPOSSIBLE" )
-    ));;+code-message-assoc+
+    ))
 
 
 (defun error-signal (code &rest args)
@@ -154,7 +154,7 @@
     (let ((entry (assoc code +code-message-assoc+)))
       (if entry
         (error-format task "~S" code)
-        (error-format task "~A" (second entry))))));;error-report
+        (error-format task "~A" (second entry))))))
 
 
 (defun error-format (task format-str &rest args)
@@ -189,7 +189,7 @@
                (subseq message i pos))
     (io-new-line task))
   (io-finish-output task)
-  (values));;error-format
+  (values))
 
 
 (defun error-panic (format-str &rest args)
@@ -206,7 +206,8 @@
         (io-standard-redirect task)
         (io-format task "~A" message)))
     (lse-terminate)
-    (lse-exit 13)));;error-panic
+    (lse-exit 13)))
 
 
-;;;; error.lisp                       --                     --          ;;;;
+;;;; THE END ;;;;
+

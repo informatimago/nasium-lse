@@ -382,9 +382,9 @@
                            (command-initials command)
                            (subseq (command-name command) 2)
                            (command-documentation command)))
-              (io-format *task*    "~&POUR ENTRER UNE COMMANDE, TAPEZ SES DEUX ~
-                            PREMIERES LETTRES, SUIVIES DE CTRL-S.~
-                          ~&POUR ANNULER UN CARACTERE, TAPEZ \\.~%"))
+              (io-format *task* "~&POUR ENTRER UNE COMMANDE, TAPEZ SES DEUX ~
+                                   PREMIERES LETTRES, SUIVIES DE CTRL-S.~
+                                 ~&POUR ANNULER UN CARACTERE, TAPEZ \\.~%"))
   
 
   (defcommand "IDENTIFICATION" un-numero (identification)
@@ -482,12 +482,13 @@
                 (return-from cmd-droits))
               (io-newline *task*) (io-format *task* "            ANCIEN  NOUVEAU  ") ;
               (io-newline *task*) (io-format *task* "NO.COMPTE    PDAF     PDAF   ") ;
-              (loop with account = -1
-                 for line = (progn (io-newline *task*)
-                                   (io-format *task* "COMPTE NO. : ") ;
-                                   (io-read-line *task* :xoff t))
-                 until (string= line "FIN")
-                 do
+              (loop
+                 :with account = -1
+                 :for line = (progn (io-newline *task*)
+                                    (io-format *task* "COMPTE NO. : ") ;
+                                    (io-read-line *task* :xoff t))
+                 :until (string= line "FIN")
+                 :do
                    (setf account (if (zerop (length line))
                                      (mod (1+ account) 100)
                                      (parse-integer line :junk-allowed nil)))
@@ -1035,7 +1036,41 @@
                   (io-format task "ETAT DORMANT"))))))))
 
 
+
+(defun cmd-interprete-line (task line)
+  (cond
+    ((and (= 2 (length line)) (alpha-char-p (aref line 0)))
+     ;; looks like a command
+     (let ((entry (assoc line 
+                         (if (task-state-sleeping-p task)
+                             +sleeping-commands+ 
+                             +awake-commands+)
+                         :test (lambda (x y) (string= x y :end2 2)))))
+       (if (null entry)
+           (error-format task "COMMAND INCONNUE")
+           (progn
+             (unless (task-abreger task)
+               (io-beginning-of-line task)
+               (io-format task "~A" (first entry)))
+             (funcall (second entry) task)))))
+    ((< 0 (length line))
+     ;; soit une instruction, soit une ligne de programme... 
+     (if (task-state-awake-p task)
+         (lse-compile-and-execute task line)
+         (io-format task "ETAT DORMANT")))))
+
+
+
+  ;; (loop while (task-state-awake-p (task-state task))
+  ;;    do
+  ;;      (setf (task-interruption task) nil)
+  ;;      (unless (task-silence task) (io-new-line task))
+  ;;      (let ((line (io-read-line task
+  ;;                                :beep (not (task-silence task))
+  ;;                                :xoff t)))
+  ;;        (unless (task-interruption task)
+  ;;          )))
+
 ;;----------------------------------------------------------------------
 
-;; Local Variables:
-;; eval: (progn (cl-indent 'defcommand 3) (cl-indent 'define-command-group 2))
+;;;; THE END ;;;;

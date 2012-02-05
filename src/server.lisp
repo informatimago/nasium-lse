@@ -35,7 +35,35 @@
 
 (in-package "COM.INFORMATIMAGO.LSE.SERVER")
 
-(defparameter *version* "1.0.0-0.585-CL")
+(defvar *server* nil "For debugging we keep the current server instance in this global.")
+(defvar *client* nil "Bound to the current client while running configuration or lse commands.")
+(defvar *server-port* 15001 "Default port the server will listen to.")
+
+(defvar *version* "1.0.0-0.585-CL"
+  "The version of the EMULSE system.")
+
+
+
+(defvar *limbo-banner* "
+EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]
+VERSION : ~A
+COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
+
+CONSOLE NO. ~2,'0D
+"
+  "A format control string taking a version and a console number arguments,
+displayed at the start of the EMULSE Limbo session.")
+
+
+(defvar *limbo-help*
+  "
+Commandes du sous-système Limbo de EMULSE :
+
+DECONNECTER    Ferme la connexion.
+LSE            Entre dans le sous-systeme L.S.E.
+CONFIGURER     Configure le server EMULSE.
+")
+
 
 
 (defun current-date ()
@@ -50,15 +78,8 @@
 
 
 (defmethod client-send-initial-message ((client lse-console-client))
-  (client-send-response client "~2%EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]
-VERSION : ~A
-COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
-
-CONSOLE NO. ~2,'0D
-
-Type LSE to enter the LSE system.
-"
-                        *version* (console-number (client-console client))))
+  (client-send-response client "~%~?~%" *limbo-banner*
+                        (list *version* (console-number (client-console client)))))
 
 
 (defmethod client-send-prompt ((client lse-console-client))
@@ -66,37 +87,86 @@ Type LSE to enter the LSE system.
                         (console-prompt (client-console client))))
 
 
+
 (defmethod client-receive-message ((client lse-console-client) message)
-  (let ((text (message-text message)))
+  (let ((text (message-text message))
+        (*client* client))
     (format t "LSE received ~S~%" text)
-    (configuration-repl-input text))
+    (ecase (console-state (client-console client))
+      (:limbo
+       (cond
+         ((string-equal text "deconnecter")
+          (server-remove-client (client-server client) client)
+          (return-from client-receive-message))
+         ((string-equal text "lse")
+          (setf (console-state (client-console client)) :sleeping))
+         ((string-equal text "configurer")
+          (setf (console-state (client-console client)) :configuration))
+         (t
+          (client-send-response client "~%~A~%" *limbo-help*))))
+      (:configuration
+       (client-send-response client "~A"
+                             (with-output-to-string (*standard-output*)
+                               (let ((*error-output* *standard-output*)
+                                     (*standard-input* (make-string-input-stream ""))
+                                     (*terminal-io*    (make-two-way-stream *standard-input*
+                                                                            *standard-output*))
+                                     (*query-io*       *query-io*))
+                                 (configuration-repl-input text)))))
+      ((:sleeping :awake)
+       (client-send-response client "~A"
+                             (with-output-to-string (*standard-output*)
+                               (let ((*error-output* *standard-output*)
+                                     (*standard-input* (make-string-input-stream ""))
+                                     (*terminal-io*    (make-two-way-stream *standard-input*
+                                                                            *standard-output*))
+                                     (*query-io*       *query-io*))
+                                 (lse-repl text)))))))
   (client-send-prompt client))
 
 
 
 
-(defun main (&key (port 15001))
-  (let* ((*event-base*         (make-instance 'event-base))
-         (server (start-server (make-instance 'tcp-ipv4-end-point :interface #(127 0 0 1) :port port)
-                               :name "test"
-                               ;; :data-received-callback (lambda (data server client) 
-                               ;;                           (logger :data-received-callback :debug
-                               ;;                                   "Received data ~S from ~A~%" data client))
-                               :client-class 'lse-console-client
-                               :client-connected (lambda (server client client-socket)
-                                                   (declare (ignore client-socket))
-                                                   (logger :client-connected :info "Client connected ~A~%" client)
-                                                   (setf (client-console client)
-                                                         (make-console :class 'socket
-                                                                       :number 0
-                                                                       :date (current-date)))
-                                                   (client-send-initial-message client)
-                                                   (client-send-prompt client)))))
+(defun main (&key (port *server-port*))
+  (let* ((*event-base* (make-instance 'event-base)))
+    (setf *server* (start-server (make-instance 'tcp-ipv4-end-point :interface #(127 0 0 1) :port port)
+                                 :name "test"
+                                 ;; :data-received-callback (lambda (data server client) 
+                                 ;;                           (logger :data-received-callback :debug
+                                 ;;                                   "Received data ~S from ~A~%" data client))
+                                 :client-class 'lse-console-client
+                                 :client-connected (lambda (server client client-socket)
+                                                     (declare (ignore client-socket))
+                                                     (logger :client-connected :info "Client connected ~A~%" client)
+                                                     (setf (client-console client)
+                                                           (make-console :class 'socket
+                                                                         :number 0
+                                                                         :date (current-date)))
+                                                     (client-send-initial-message client)
+                                                     (client-send-prompt client))))
     (unwind-protect
          (event-loop)
-      (close-server server))))
+      (close-server *server*)
+      (setf *server* nil))))
+
+;;----------------------------------------------------------------------
 
 
+(defun server-start-listening ())
+(defun server-stop-listening ())
+
+(defun server-start-log (log-stream))
+(defun server-stop-log ())
+
+(defun server-kill-console-class (cclass))
+(defun server-kill-console       (console-num))
+(defun server-console (console-num))
+(defun server-console-list (cclass))
+(defun server-create-xterm-console-on-display (display))
+
+
+
+;;----------------------------------------------------------------------
 
 
 (defun char-or-string-p (object)
@@ -263,7 +333,7 @@ in clisp, we do it with a socket."
   )
 
 
-(defparameter +server-port+ 15000)
+
 
 (defun server ()
   ;; (let ((lsock (lse-sock:socket-server +server-port+)))
@@ -293,19 +363,5 @@ in clisp, we do it with a socket."
   )
 
 
-
-
-
-(defun server-start-listening ())
-(defun server-stop-listening ())
-
-(defun server-start-log (log-stream))
-(defun server-stop-log ())
-
-(defun server-kill-console-class (cclass))
-(defun server-kill-console       (console-num))
-(defun server-console (console-num))
-(defun server-console-list (cclass))
-(defun server-create-xterm-console-on-display (display))
 
 ;;;; THE END ;;;;

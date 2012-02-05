@@ -52,7 +52,7 @@
 (defstruct console
   (class 'xterm      :type (member xterm socket))
   (number 0          :type (integer 0 99))
-  (state  :limbo     :type symbol)
+  (state  :limbo     :type (member :limbo :configuration :sleeping :awake))
   (date   "00/00/00" :type string))
 
 
@@ -74,57 +74,115 @@
 
 
 
+
 (defstruct configuration
   (max-number           0   :type (integer 0 89))
   (connection-enabled   nil :type boolean)
-  (connection-log       nil) ;; nil, path of log file or :standard-output
-  (filters              ()  :type list)
+  (connection-log       nil) ;; nil, or path of log file, or :standard-output
+  (filters              ()  :type list) ; remote IP address filter.
   (file                 nil) ;; nil, or path of configuration file.
-  (statements           ()  :type list))
+  (statements           ()  :type list)) ; configuration expressions.
 
 
 (defun configuration-add-statement (configuration statement)
   (setf (configuration-statements configuration) 
         (nconc (configuration-statements configuration)  (list statement))))
-        
+
 
 (defparameter *configuration* (make-configuration)
   "The current EMULSE SYSTEM configuration")
 
 
-(defparameter *commands* '())
+
+
+(defparameter *command* nil
+  "The current configuration command (sexp).")
+
+(defun store ()
+  "Store the current *command* into the current *configuration*."
+  (configuration-add-statement *configuration* *command*))
+
+
+
+(defparameter *commands* '()
+  "A list of couples (pattern command-function).")
+
+
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun make-command-function (pattern body)
+    `(lambda (bindings)
+       (let ((*command* ',pattern)
+             ,@(mapcar (lambda (var) `(,var (cdr (assoc ',var bindings))))
+                       (collect-variables pattern)))
+         ,@body))))
+
 
 
 (defmacro defcommand (pattern &body body)
+  ;; Note: we keep the *commands* in the order of defcommands.
   `(let ((command (find ',pattern *commands* 
                         :key (function car)
                         :test (function equal))))
      (if command
-         (setf (cdr command) ',body)
-         (push (cons ',pattern ',body) *commands*))))
+         (setf (cdr command)   ,(make-command-function pattern body))
+         (setf *commands* (nconc *commands* (list (list ',pattern
+                                                        ,(make-command-function pattern body))))))))
 
-
-(defvar *cached-commands*)
-(defvar *command*)
-(defun store (command)
-  (configuration-add-statement *configuration* *command*))
 
 (defun parse-command (command)
-  (let ((*command* command))
-    (when (or (null *cached-commands*)
-              (not (eql (car *cached-commands*) *commands*)))
-      (setf *cached-comamnds*
-            (cons *commands*
-                  (reverse (cons `(otherwise ,(lambda () (error "Invalid command: ~S" *command*)))
-                                 *commands*)))))
-    (match-case* command (cdr *cached-commands*))))
+  "Parse the COMMAND expressions and calls the corresponding command function."
+  (match-case* command *commands*))
+
+
+
+;; (defvar *debugging* nil)
+;; 
+;; 
+;; (defun configuration-repl (&key (debugging *debugging*))
+;;   (catch :configuration-repl-exit
+;;     (loop
+;;      (format t "~&~A " *prompt*) (finish-output)
+;;      (let ((sexp (read *standard-input* nil +eof+)))
+;;        (if sexp
+;;          (if debugging
+;;            (parse-command sexp)
+;;            (handler-case (parse-command sexp)
+;;              (error (err)
+;;                     (apply (function format) *error-output*
+;;                            (simple-condition-format-control err)
+;;                            (simple-condition-format-arguments err)))))
+;;          (throw :configuration-repl-exit nil))))))
+;; 
+;; 
+;; (defun configuration-repl-start ()
+;;   (format t "~&~A " *prompt*) 
+;;   (finish-output))
+
+
+(defparameter +eof+ (gensym))
+
+(defun configuration-repl-input (line)
+  (let ((sexp (read-from-string line nil +eof+)))
+    (unless (eq +eof+ sexp)
+      (catch :configuration-repl-exit
+        (handler-case (parse-command sexp)
+          (error (err)
+            (princ err *error-output*)))))))
+
+
+
+
+;;----------------------------------------------------------------------
+;; Configuration Commands
+;;----------------------------------------------------------------------
 
 
 (defcommand (connections max-number (?x n))
-  (unless (and (integerp n) (<= 0 n 89))
-    (error "Invalid maximum number of connection: ~S" n))
+    (unless (and (integerp n) (<= 0 n 89))
+      (error "Invalid maximum number of connection: ~S" n))
   (setf (configuration-max-number *configuration*) n)
   (store))
+
 
     
 (defcommand (connections enable)
@@ -272,18 +330,18 @@
 (defcommand (configuration save (?? (?x file)))
   (setf file (or file (configuration-file *configuration*)))
   (print `(saving  to ,file))
-;;  (server-repl)
   (if file
-    (progn
-      (ensure-directories-exist file)
-      (with-open-stream (stream (open file :direction :output 
-                                      :if-does-not-exist :create
-                                      :if-exists :supersede))
-        (dolist (statement (configuration-statements *configuration*))
-          (print statement stream)))
-      (setf (configuration-file *configuration*) file))
-    (dolist (statement (configuration-statements *configuration*))
-      (print statement))))
+      (progn
+        (ensure-directories-exist file)
+        (with-open-stream (stream (open file :direction :output 
+                                        :if-does-not-exist :create
+                                        :if-exists :supersede))
+          
+          (dolist (statement (configuration-statements *configuration*))
+            (print statement stream)))
+        (setf (configuration-file *configuration*) file))
+      (dolist (statement (configuration-statements *configuration*))
+        (print statement))))
 
 
 (defcommand (configuration load (?? (?x file)))
@@ -301,12 +359,12 @@
                                   :if-does-not-exist :error)
             (loop for sexp = (read stream nil +eof+ )
                   until (eq sexp +eof+)
-                  do (parse-one-command sexp)))
+                  do (parse-command sexp)))
           *configuration*)))
 
 
 (defcommand (configuration print)
-  (parse-one-command '(configuration save)))
+  (parse-command '(configuration save)))
 
 
 (defmacro handling-errors (&body body)
@@ -337,53 +395,13 @@
 
 
 (defcommand (help)
-  (dolist (command *commands*) (print (first command))))
+    (format t "~(~:{~A~%~}~)" *commands*))
+
 
 
 (defcommand (quit)
+    (setf (console-state (client-console *client*)) :limbo)
   (throw :configuration-repl-exit nil))
-
-
-(defun parse-one-command (command)  
-  "This must be after all the DEFCOMMAND to gather them!"
-  (parse-command command))
-
-
-(defvar +eof+       (gensym))
-(defvar *debugging* nil)
-
-
-(defun configuration-repl (&key (debugging *debugging*))
-  (catch :configuration-repl-exit
-    (loop
-     (format t "~&~A " *prompt*) (finish-output)
-     (let ((sexp (read *standard-input* nil +eof+)))
-       (if sexp
-         (if debugging
-           (parse-one-command sexp)
-           (handler-case (parse-one-command sexp)
-             (error (err)
-                    (apply (function format) *error-output*
-                           (simple-condition-format-control err)
-                           (simple-condition-format-arguments err)))))
-         (throw :configuration-repl-exit nil))))))
-
-
-(defun configuration-repl-start ()
-  (format t "~&~A " *prompt*) 
-  (finish-output))
-
-
-(defun configuration-repl-input (line)
-  (let ((sexp (read-from-string line nil +eof+)))
-    (unless (eq +eof+ sexp)
-      (catch :configuration-repl-exit
-        (parse-one-command sexp)
-        (handler-case (parse-one-command sexp)
-          (error (err)
-            (apply (function format) *error-output*
-                   (simple-condition-format-control err)
-                   (simple-condition-format-arguments err))))))))
   
 
 

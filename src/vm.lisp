@@ -64,6 +64,127 @@
 (defun put-line (vm lino code) (setf (gethash lino (vm-cv vm)) code))
 
 
+(defun run-step (vm)
+  (catch 'done
+    (handler-case
+        (let ((stack (vm-stack vm))
+              (code  (vm-code  vm)))
+          (flet ((spush  (val) (vector-push-extend val stack))
+                 (spop   ()    (vector-pop stack))
+                 (pfetch ()    (prog1 (aref code (vm-pc.offset vm))
+                                 (incf (vm-pc.offset vm)))))
+            (declare (inline spush spop pfetch))
+            (macrolet ((op-0   (op) `(,op))
+                       (op-1   (op) `(spush (,op (spop))))
+                       (op-2   (op) `(spush (let ((b (spop))) (,op (spop) b))))
+                       (op-3   (op) `(spush (let ((c (spop)) (b (spop))) (,op (spop) b c))))
+                       (op-0/1 (op) `(,op (pfetch)))
+                       (op-1/1 (op) `(spush (,op (spop) (pfetch))))
+                       (op-2/1 (op) `(spush (let ((b (spop))) (,op (spop) b (pfetch)))))
+                       (op-3/1 (op) `(spush (let ((c (spop)) (b (spop))) (,op (spop) b c (pfetch)))))
+                       (op-4/1 (op) `(spush (let ((d (spop)) (c (spop)) (b (spop))) (,op (spop) b c d (pfetch)))))
+                       (op-0/2 (op) `(,op (pfetch) (pfetch))))
+              (let ((cop (pfetch)))
+
+                (case cop
+
+                  (:dup    (let ((a (spop))) (spush a) (spush a)))
+                  
+                  (:non    (op-1 non))
+                  (:et     (op-2 et))
+                  (:ou     (op-2 ou))
+
+                  (:eg     (op-2 eg))
+                  (:ne     (op-2 ne))
+                  (:le     (op-2 le))
+                  (:lt     (op-2 lt))
+                  (:ge     (op-2 ge))
+                  (:gt     (op-2 gt))
+
+                  (:concat (op-2 concatenation))
+
+                  (:neg    (op-1 neg))
+                  (:add    (op-2 add))
+                  (:sub    (op-2 sub))
+                  (:mul    (op-2 mul))
+                  (:div    (op-2 div))
+                  (:pow    (op-2 pow))
+
+                  (:afficher-e       (op-3 afficher-e))
+                  (:afficher-f       (op-3 afficher-f))
+                  (:afficher-cr      (op-1 afficher-cr))
+                  (:afficher-newline (op-1 afficher-newline))
+                  (:afficher-nl      (op-1 afficher-nl))
+                  (:afficher-space   (op-1 afficher-space))
+                  (:afficher-u       (op-1 afficher-u))
+                  
+
+                  (:LIRE&PUSH        (op-0* LIRE&PUSH))
+
+                  (:next-line        (op-0* next-line))
+                  (:retour           (op-0* retour))
+                  (:retour-en        (op-1* retour-en))
+                  (:result           (op-1* result))
+                  (:goto             (op-1* goto))
+
+
+                  (:tant-que                  (op-1* tant-que))
+                  (:charger                   (op-2 charger))
+                  (:supprimer-enregistrement  (op-2 supprimer-enregistrement))
+                  (:supprimer-fichier         (op-1 supprimer-fichier))
+                  (:executer                  (op-2* executer))
+                  (:pause          (op-0* pause))
+                  (:terminer       (op-0* terminer))
+                  
+                  (:AREF1&PUSH-REF (op-1/1* AREF1&PUSH-REF))
+                  (:AREF1&PUSH-VAL (op-1/1* AREF1&PUSH-VAL))
+                  (:AREF2&PUSH-REF (op-2/1* AREF2&PUSH-REF))
+                  (:AREF2&PUSH-VAL (op-2/1* AREF2&PUSH-VAL))
+
+                  (:POP&ASTORE1    (op-2/1* POP&ASTORE1))
+                  (:POP&ASTORE2    (op-3/1* POP&ASTORE2))
+                  (:POP&STORE      (op-1/1* POP&STORE))
+
+                  (:push-ref       (op-0/1* push-ref))
+                  (:push-val       (op-0/1* push-val))
+                  (:pushi          (op-0/1* pushi))
+
+                  (:chaine         (op-0/1* chaine))
+                  (:tableau1       (op-1/1* tableau1))
+                  (:tableau2       (op-2/1* tableau2))
+                  (:liberer        (op-0/1* liberer))
+
+                  
+                  (:balways        (op-0/1* balways))
+                  (:btrue          (op-1/1* btrue))
+                  (:bfalse         (op-1/1* bfalse))
+                  (:bnever         (op-0/1* bnever))
+
+                  (:faire-jusqu-a  (op-4/1* faire-jusqu-a))
+
+                  (:call           (op-0/2* call))
+                  (:faire-tant-que (op-3/1* faire-tant-que))
+                  (:garer          (op-2/1 garer))
+
+
+                  ;; (:liberer   (liberer      (prog1 (aref code pc.offset) (incf pc.offset))))
+                  ;; (:chaine    (decl-chaine  (prog1 (aref code pc.offset) (incf pc.offset))))
+                  ;; (:tableau1  (decl-tableau (prog1 (aref code pc.offset) (incf pc.offset)) 
+                  ;;                           (spop)))
+                  ;; (:tableau2  (let ((b (spop)))
+                  ;;               (decl-tableau (prog1 (aref code pc.offset) (incf pc.offset))
+                  ;;                             (spop) b)))
+                  ;; (:pause    -->complete-pause)
+                  ;; (:terminer -->complete-terminer)
+                  
+                  (otherwise (error "COP INCONNU: ~S" cop)))))))
+
+      
+      (error (err)
+        (report err)
+        (pause)))))
+
+
 #||
 
 (:liste-instruction inst . rest) --> inst (:list-instruction rest)
@@ -73,54 +194,8 @@ gestion des erreurs:
 - handler-case at each vm instruction.
   When an error occurs, report it and --> :pause
 
-(case (catch 'done
-        (loop
-          (handler-case
-            (case cop
-------------------------------------------------------------------------
-:neg  (spush (neg (spop)))
-:add  (spush (let ((b (spop))) (add (spop) b)))
-:sub  (spush (let ((b (spop))) (sub (spop) b)))
-:mul  (spush (let ((b (spop))) (mul (spop) b)))
-:div  (spush (let ((b (spop))) (div (spop) b)))
-
-:liberer   (liberer      (prog1 (aref code pc.offset) (incf pc.offset)))
-:chaine    (decl-chaine  (prog1 (aref code pc.offset) (incf pc.offset)))
-:tableau1  (decl-tableau (prog1 (aref code pc.offset) (incf pc.offset))
-                         (spop))
-:tableau2  (let ((b (spop)))
-             (decl-tableau (prog1 (aref code pc.offset) (incf pc.offset))
-                           (spop) b))
-------------------------------------------------------------------------
-            (otherwise (error 'unknown-cop)))
-         (error (err) (report err) (pause)))))
-  (:pause    -->complete-pause)
-  (:terminer -->complete-terminer))
-
 
 ------------------------------------------------------------------------
-(:neg       a)   --> a :neg
-(:moins     a b) --> a b :sub
-(:plus      a b) --> a b :add
-(:concat    a b) --> a b :concat
-(:fois      a b) --> a b :mul
-(:divise    a b) --> a b :div
-(:puissance a b) --> a b :pow
-(:xi test then else)       --> test :bfalse offset.t then  :balways offset.e else 
-tok-litchain              --> :pushi tok-litchain
-tok-nombre                --> :pushi tok-nombre
-tok-numero                --> :pushi tok-numero
-(:ou expr...)             --> expr expr :ou {expr :ou} ...
-(:et expr...)             --> expr expr :et {expr :et} ...
-(:non expr)               --> expr :non
-(:lt a b) --> a b :lt
-(:le a b) --> a b :le
-(:gt a b) --> a b :gt
-(:ge a b) --> a b :ge
-(:eg a b) --> a b :eg
-(:ne a b) --> a b :ne
-(:commentaire c) --> (:comment c)
-
 
 (:Ligne-Programme numero instr...)
 ==> compile instr... and store vector in lino.

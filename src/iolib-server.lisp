@@ -39,6 +39,7 @@
         "SPLIT-SEQUENCE"
         "ALEXANDRIA"
         "IOLIB"
+        "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.STRING"
         "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.QUEUE"
         "COM.INFORMATIMAGO.LOGGER"
         "COM.INFORMATIMAGO.IOLIB.MESSAGE"
@@ -46,7 +47,8 @@
         "COM.INFORMATIMAGO.IOLIB.UTILS")
   (:export "ENQUEUE-MESSAGE"
            "+CLIENT-INPUT-BUFFER-SIZE+"
-           "CLIENT"
+           "CLIENT" "CLIENT-SERVER" "CLIENT-STATE" "CLIENT-SOCKET" "CLIENT-LOCAL-END-POINT"
+           "CLIENT-REMOTE-END-POINT" 
            "CLIENT-RESPONSE-QUEUE-LENGTH"
            "CLIENT-RECEIVE-MESSAGE"
            "RECEIVE-BYTES"
@@ -55,15 +57,18 @@
            "CLIENT-HELLO-MESSAGE"
            "CLIENT-CLOSE"
            "SERVER"
+           "SERVER-NAME" "SERVER-STATE" "SERVER-SOCKET" "SERVER-CLIENTS"
+           "SERVER-DATA-INPUT-QUEUE" "SERVER-DATA-RECEIVED-CALLBACK"
            "SERVER-ADD-CLIENT"
            "SERVER-REMOVE-CLIENT"
            "START-SERVER"
            "CLOSE-SERVER"
            "SERVER-STATE"
-           "RECEIVE-DATA"
-           "RECEIVE-COMMAND"
+           ;; "RECEIVE-DATA"
+           ;; "RECEIVE-COMMAND"
            "SERVER-RECEIVE-MESSAGE"
-           "SERVER-SEND-RESPONSE")
+           ;; "SERVER-SEND-RESPONSE"
+           )
   (:documentation "
 
 "))
@@ -152,7 +157,7 @@
                                                    (send-to socket #() :dont-wait t))))
                               :process-error (lambda (condition)
                                                (logger :com.informatimago.iolib.server :error "Error while sending ~A to ~A:~% ~A~%"
-                                                       (message-data (slot-value (slot-value client 'response-sender) 'message))
+                                                       (ignore-errors (message-data (slot-value (slot-value client 'response-sender) 'message)))
                                                        client
                                                        condition)))
           receptor (make-instance 'receptor
@@ -160,7 +165,7 @@
                                           (client-receive-message client message))
                        :process-error (lambda (condition)
                                         (logger :com.informatimago.iolib.server :error "Error while receiving ~A from ~A:~% ~A~%"
-                                                (message-data (slot-value (slot-value client 'response-sender) 'message))
+                                                (ignore-errors (message-data (slot-value (slot-value client 'response-sender) 'message)))
                                                 client
                                                 condition))))))
 
@@ -194,17 +199,20 @@
     (enqueue-message response-sender message)))
 
 
+
 (defmethod client-send-response ((client client) (control-string string) &rest arguments)
-  (with-slots (response-sender last-index) client
-    (dolist (line (split-sequence #\newline (apply (function format) nil control-string arguments)))
-      (client-send-response client
-                            (make-instance 'line-message
-                                :data (babel:string-to-octets line :encoding :utf-8)
-                                :index (incf last-index)
-                                :message-sent (lambda (message)
-                                                (logger :com.informatimago.iolib.server :info
-                                                        "Sent RESPONSE ~A to ~A~%"
-                                                        (message-data message) client)))))))
+  (with-slots (last-index) client
+    (client-send-response
+     client
+     (make-instance 'line-message
+         :text (UNSPLIT-STRING
+                (split-sequence #\newline (apply (function format) nil control-string arguments))
+                #.(coerce (vector (code-char 13) (code-char 10)) 'string))
+         :index (incf last-index)
+         :message-sent (lambda (message)
+                         (logger :com.informatimago.iolib.server :info
+                                 "Sent RESPONSE ~A to ~A~%"
+                                 (message-data message) client))))))
 
 
 (defmethod send-bytes ((client client))
@@ -244,6 +252,10 @@
 
 (defmethod client-close ((client client))
   (setf (slot-value client 'state) :closed)
+  (ignore-errors (remove-fd-handlers *event-base*
+                                     (socket-os-fd (client-socket client))
+                                     :read t :write t :error t))
+  (shutdown (client-socket client) :read t :write t)
   (close (client-socket client))
   (values))
 
@@ -292,12 +304,11 @@ and then receive data messages from clients, and sends answers to them."))
 
 (defmethod print-object ((server server) stream)
   (print-unreadable-object (server stream :identity *print-escape* :type t)
-    (ignore-errors
-      (format stream (if *print-escape*
-                         ":name ~S :state ~S"
-                         "~A [~A]")
-              (server-name server)
-              (server-state server))))
+    (format stream (if *print-escape*
+                       ":name ~S :state ~S"
+                       "~A [~A]")
+            (server-name server)
+            (server-state server)))
   server)
 
 
@@ -306,7 +317,8 @@ and then receive data messages from clients, and sends answers to them."))
 
 (defmethod server-remove-client ((server server) (client client))
   (client-close client)
-  (deletef (server-clients server) client))
+  (deletef (server-clients server) client)
+  (logger :com.informatimago.iolib.server :notice "Client disconnected ~A" client))
 
 
 
@@ -407,10 +419,9 @@ NOTE:                   The CLIENT-RECEIVE-MESSAGE method is called
 
 
 (defmethod server-state ((server server))
-  (with-slots (data-input-queue command-input-queue clients state) server
+  (with-slots (data-input-queue clients state) server
     (list state
-          (+ (queue-length data-input-queue)
-             (queue-length command-input-queue))
+          (queue-length data-input-queue)
           (mapcar (lambda (client)
                     (list
                      (client-remote-end-point client)
@@ -418,20 +429,20 @@ NOTE:                   The CLIENT-RECEIVE-MESSAGE method is called
                   clients))))
 
 
-(defmethod receive-data ((server server))
-  (with-slots (data-input-queue) server
-    (if (queue-empty-p data-input-queue)
-        (values nil nil nil)
-        (destructuring-bind (client data) (queue-dequeue data-input-queue)
-          (values data client t)))))
-
-
-(defmethod receive-command ((server server))
-  (with-slots (command-input-queue) server
-    (if (queue-empty-p command-input-queue)
-        (values nil nil nil)
-        (destructuring-bind (client command) (queue-dequeue command-input-queue)
-          (values command client t)))))
+;; (defmethod receive-data ((server server))
+;;   (with-slots (data-input-queue) server
+;;     (if (queue-empty-p data-input-queue)
+;;         (values nil nil nil)
+;;         (destructuring-bind (client data) (queue-dequeue data-input-queue)
+;;           (values data client t)))))
+;; 
+;; 
+;; (defmethod receive-command ((server server))
+;;   (with-slots (command-input-queue) server
+;;     (if (queue-empty-p command-input-queue)
+;;         (values nil nil nil)
+;;         (destructuring-bind (client command) (queue-dequeue command-input-queue)
+;;           (values command client t)))))
 
 
 (defmethod server-receive-message ((server server) (client client) message)
@@ -442,21 +453,21 @@ NOTE:                   The CLIENT-RECEIVE-MESSAGE method is called
       (receive data-received-callback data-input-queue (message-data message)))))
 
 
-(defmethod server-send-response ((server server) (client client) response &key sent-callback)
-  (assert (member client (server-clients server)))
-  (with-slots (response-sender) client
-    (enqueue-message response-sender
-                     (make-instance 'line-message
-                         :data (babel:string-to-octets (with-standard-io-syntax
-                                                           (prin1-to-string response))
-                                                         :encoding :utf-8)
-                         :message-sent (lambda (message)
-                                         (declare (ignore message))
-                                         (when sent-callback
-                                           (funcall sent-callback response server client)))))))
+;; (defmethod server-send-response ((server server) (client client) response &key sent-callback)
+;;   (assert (member client (server-clients server)))
+;;   (client-send-response client "~A" (with-standard-io-syntax (prin1-to-string response)))
+;;   ;; (with-slots (response-sender last-index) client
+;;   ;;   (enqueue-message response-sender
+;;   ;;                    (make-instance 'line-message
+;;   ;;                        :text 
+;;   ;;                        :index (incf last-index)
+;;   ;;                        :message-sent (lambda (message)
+;;   ;;                                        (declare (ignore message))
+;;   ;;                                        (when sent-callback
+;;   ;;                                          (funcall sent-callback response server client))))))
+;;   )
 
 
 
 
 ;;;; THE END ;;;;
-

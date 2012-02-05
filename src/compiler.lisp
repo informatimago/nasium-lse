@@ -34,92 +34,104 @@
 ;;;;    Boston, MA 02111-1307 USA
 ;;;;****************************************************************************
 
-(in-package "COM.INFORMATIMAGO.LSE.BYTE-CODE")
+;;----------------------------------------------------------------------
+(cl:in-package "COM.INFORMATIMAGO.LSE.BYTE-CODE")
+;;----------------------------------------------------------------------
+
+;; We define a stack machine byte code.  Each opcode may take 0, 1 or
+;; 2 parameter form the stack and push back results on the stack.
+;; opcode may also have zero or more literal parameters following the
+;; opcode in the byte-code vector.
+
 
 (cl:eval-when (:compile-toplevel :load-toplevel :execute)
   (cl:defparameter *branches* '(
-                                BALWAYS
-                                BTRUE
-                                BFALSE
-                                BNEVER
+                                BALWAYS ;       BALWAYS offset
+                                BTRUE   ; test  BTRUE   offset
+                                BFALSE  ; test  BFALSE  offset
+                                BNEVER  ;       BNEVER  offset
                                 ))
   (cl:defparameter *0* '(
-                         DUP
+                         DUP ; arg DUP
 
-                         NON
-                         OU
-                         ET
+                         NON ; arg NON 
+                         OU  ; arg1 arg2 OU
+                         ET  ; arg1 arg2 ET
 
-                         EG
-                         NE
-                         LE
-                         LT
-                         GE
-                         GT
+                         EG  ; arg1 arg2 EG
+                         NE  ; arg1 arg2 NE
+                         LE  ; arg1 arg2 LE
+                         LT  ; arg1 arg2 LT
+                         GE  ; arg1 arg2 GE
+                         GT  ; arg1 arg2 GT
 
-                         CONCAT
+                         CONCAT ; arg1 arg2 CONCAT
 
-                         NEG
-                         ADD
-                         SUB
-                         MUL
-                         DIV
-                         POW
+                         NEG ; arg NEG
+                         ADD ; arg1 arg2 ADD
+                         SUB ; arg1 arg2 SUB
+                         MUL ; arg1 arg2 MUL
+                         DIV ; arg1 arg2 DIV
+                         POW ; arg1 arg2 POW
 
 
-                         AFFICHER-CR
-                         AFFICHER-E
-                         AFFICHER-F
-                         AFFICHER-NEWLINE
-                         AFFICHER-NL
-                         AFFICHER-SPACE
-                         AFFICHER-U
-                         LIRE&PUSH
+                         AFFICHER-E        ; arg1 arg2 arg3 AFFICHER-E
+                         AFFICHER-F        ; arg1 arg2 arg3 AFFICHER-F
+                         AFFICHER-CR       ; arg AFFICHER-CR
+                         AFFICHER-NEWLINE  ; arg AFFICHER-NEWLINE
+                         AFFICHER-NL       ; arg AFFICHER-NL
+                         AFFICHER-SPACE    ; arg AFFICHER-SPACE
+                         AFFICHER-U        ; arg AFFICHER-U
+                         LIRE&PUSH         ; LIRE&PUSH
 
-                         RESULT
-                         RETURN
+                         NEXT-LINE  ; NEXT-LINE
+                         RETOUR     ; RETOUR
+                         RETOUR-EN  ; line RETOUR-EN
+                         RESULT     ; arg RESULT
+                         GOTO       ; line GOTO
 
-                         TANT-QUE
-                         CHARGER
-                         SUPPRIMER-ENREGISTREMENT
-                         SUPPRIMER-FICHIER
-                         EXECUTER
-                         PAUSE
-                         TERMINER
+                         TANT-QUE                 ; test TANT-QUE
+                         CHARGER                  ; enr fic CHARGER
+                         SUPPRIMER-ENREGISTREMENT ; enr fic SUPPRIMER-ENREGISTREMENT
+                         SUPPRIMER-FICHIER        ;     fic SUPPRIMER-FICHIER
+                         EXECUTER  ; fic lin EXECUTED
+                         PAUSE     ; PAUSE
+                         TERMINER  ; TERMINER
+
                          ))
 
   (cl:defparameter *1* '(
-                         AREF1&PUSH-REF
-                         AREF1&PUSH-VAL
-                         AREF2&PUSH-REF
-                         AREF2&PUSH-VAL
+                         AREF1&PUSH-REF ; idx AREF1&PUSH-REF identifier
+                         AREF1&PUSH-VAL ; idx AREF1&PUSH-VAL identifier
+                         AREF2&PUSH-REF ; idx1 idx2 AREF2&PUSH-REF identifier
+                         AREF2&PUSH-VAL ; idx1 idx2 AREF2&PUSH-VAL identifier
 
-                         POP&ASTORE1
-                         POP&ASTORE2
-                         POP&STORE
+                         POP&ASTORE1    ; val idx POP&ASTORE1 identifier
+                         POP&ASTORE2    ; val idx1 idx2 POP&ASTORE2 identifier
+                         POP&STORE      ; val POP&STORE identifier
 
-                         PUSH-REF
-                         PUSH-VAL
-                         PUSHI
+                         PUSH-REF       ; PUSH-REF identifier
+                         PUSH-VAL       ; PUSH-REF identifier
+                         PUSHI          ; PUSHI immediate-value
 
-                         CHAINE
-                         TABLEAU1
-                         TABLEAU2
-                         LIBERER
+                         CHAINE         ; CHAINE identifier
+                         TABLEAU1       ; dim TABLEAU1 identifier
+                         TABLEAU2       ; dim1 dim2 TABLEAU2 identifier
+                         LIBERER        ; LIBERER identifier
 
+                         BALWAYS    ;      BALWAYS offset
+                         BTRUE      ; test BTRUE   offset
+                         BFALSE     ; test BFALSE  offset
+                         BNEVER     ;      BNEVER  offset
 
-                         BALWAYS
-                         BTRUE
-                         BFALSE
-                         BNEVER
-                         GOTO
-                         RETURN&GO
+                         FAIRE-JUSQU-A   ; lino init pas jusqua FAIRE-JUSQU-A ident
+                         FAIRE-TANT-QUE  ; lino init pas FAIRE-TANT-QUE ident
+                                         ; test TANT-QUE
+                         GARER           ; enr fic GARER identificateur
+                         ))
 
-                         FAIRE-JUSQU-A))
-
-  (cl:defparameter *2* '(CALL
-                         FAIRE-TANT-QUE
-                         GARER))
+  (cl:defparameter *2* '(CALL            ; CALL identificateur-procedure nombre-d-argument
+                         ))
 
   (cl:defparameter *cops* (cl:append *0* *1* *2*)))
 
@@ -128,36 +140,15 @@
   `(cl:progn ,@(cl:loop
                 :for i :from 0
                 :for s :in *cops*
-                :collect `(cl:defconstant ,s ,(cl:if numeric i `,s)))))
+                :collect `(cl:defparameter ,s ,(cl:if numeric i `,s)))))
 
-(cl:eval-when (:compile-toplevel :load-toplevel)
+(cl:eval-when (:compile-toplevel :load-toplevel :execute)
   (defcops :numeric t))
 
 
-
-
+;;----------------------------------------------------------------------
 (cl:in-package "COM.INFORMATIMAGO.LSE")
-
-
-(defmacro gen (&rest items)
-  (cond
-    ((null (cdr items)) (car items))
-    ((or (numberp (car items))
-         (and (symbolp (car items))
-              (eq (symbol-package (car items)) (find-package "BC"))))
-         `(cons ,(car items) (gen ,@(cdr items))))
-     ((and (symbolp (car items))
-           (eq (symbol-package (car items)) (find-package "ID")))
-      `(cons (quote ,(car items)) (gen ,@(cdr items))))
-     (t
-      ` (generate-statement ,(car items) (gen ,@(cdr items))))))
-
-;;(ext:expand-form '(gen bc::neg next))
-;;(ext:expand-form '(gen (second stat) bc::neg next))
-;;(ext:expand-form '(gen (second stat) bc::neg (third stat) bc::neg next))
-;;(ext:expand-form '(gen bc::pushi (chaine-valeur stat) next))
-;;(ext:expand-form '(gen bc::liberer id::ident next))
-;;(ext:expand-form '(gen item next))
+;;----------------------------------------------------------------------
 
 
 (defun cons-position (cons list &key (start 0) (end nil))
@@ -176,7 +167,23 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                 (t
                  (incf start)
                  (setf current (cdr current)))))))
-        
+
+
+
+(defun gen (&rest items)
+  (cond
+    ((null (cdr items))
+     (car items))
+    ((or (numberp (car items))
+         (stringp (car items))
+         (and (symbolp (car items))
+              (or (eq (symbol-package (car items)) (find-package "BC"))
+                  (eq (symbol-package (car items)) (find-package "ID")))))
+     (cons (car items) (apply (function gen) (cdr items))))
+    (t
+      (generate-statement (car items) (apply (function gen) (cdr items))))))
+
+
 
 (defun generate-statement (stat next)
   (etypecase stat
@@ -184,9 +191,9 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
      (cons stat next))
     (token
      (ecase (token-kind stat)
-       (tok-litchain  (gen bc::pushi (chaine-valeur stat) next))
-       (tok-nombre    (gen bc::pushi (nombre-valeur stat) next))
-       (tok-numero    (gen bc::pushi (numero-valeur stat) next))))
+       (tok-litchaine  (gen bc::pushi (chaine-valeur stat) next))
+       (tok-nombre     (gen bc::pushi (nombre-valeur stat) next))
+       (tok-numero     (gen bc::pushi (numero-valeur stat) next))))
     (cons
      (ecase (first stat)
 
@@ -218,29 +225,30 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
           (gen (second stat) bc::bfalse offset.t then)))
        ((:ou :et)
         (loop
-           with suite = next
-           for item in (reverse (cddr stat))
-           do (setf suite (gen item (case (first stat)
+           :with suite = next
+           :for item :in (reverse (cddr stat))
+           :do (setf suite (gen item (case (first stat)
                                       (:ou bc::ou)
                                       (:et bc::et)) suite))
-           finally (return (gen (second stat) (case (first stat)
+           :finally (return (gen (second stat) (case (first stat)
                                                 (:ou bc::ou)
                                                 (:et bc::et)) suite))))
 
        (:commentaire next)
        ((:liberer :chaine)
-        (loop with suite = next
-           for item in (reverse (rest stat))
-           do n(setf suite (gen (case (first stat)
+        (loop
+           :with suite = next
+           :for item :in (reverse (rest stat))
+           :do (setf suite (gen (case (first stat)
                                   (:liberer bc::liberer)
                                   (:chaine  bc::chaine))
                                 (identificateur-nom item) suite))
-           finally (return suite)))
+           :finally (return suite)))
        (:tableau
         (loop
-           for item in (reverse (rest stat))
-           do (setf next (generate-statement item next))
-           finally (return next)))
+           :for item :in (reverse (rest stat))
+           :do (setf next (generate-statement item next))
+           :finally (return next)))
        (:adecl
         (if (null (cdddr stat))
             (gen (third stat) bc::tableau1
@@ -265,12 +273,13 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                (:vval bc::push-val)
                (:vref bc::push-ref)) (identificateur-nom (second stat)) next))
 
-       ((:function :appel)
-        (loop with suite = (gen bc::call (identificateur-nom (second stat))
-                                (length (cddr stat)) next)
-           for item in (reverse (cddr stat))
-           do (setf suite (gen item suite))
-           finally (return suite)))
+       ((:fonction :appel)
+        (loop
+           :with suite = (gen bc::call (identificateur-nom (second stat))
+                              (length (cddr stat)) next)
+           :for item :in (reverse (cddr stat))
+           :do (setf suite (gen item suite))
+           :finally (return suite)))
        #||
        (:procedure ident nil       nil)
        (:procedure ident (fpid...) nil)
@@ -283,24 +292,22 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
        ||#
 
        (:resultat   (gen (second stat) bc::result next))
-       (:retour-en  (gen (second stat) bc::return&go next))
-       (:retour     (gen bc::return next))
+       (:retour-en  (gen (second stat) bc::retour-en next))
+       (:retour     (gen bc::retour next))
 
-       #||
-       :result             OR  :return&go      OR   :return
-       -------------------     ---------------     ------------
-       result    <-- :pop  OR  goto <-- :pop   OR   nothing
-
-       return-pc <-- sf.return-pc
-       next-sf   <-- sf.next-sf
-       argcnt    <-- sf.argcnt
-       sf        <-- next-sf
-       :pop-sf
-       :pop-n argcnt
-                      
-       :push  result              --                 --
-       pc <-- return-pc       OR  pc <-- goto     or pc <-- return-pc
-       ||#
+       ;; :result             OR  :retour-en      OR   :retour
+       ;; -------------------     ---------------     ------------
+       ;; result    <-- :pop  OR  goto <-- :pop   OR   nothing
+       ;; 
+       ;; return-pc <-- sf.return-pc
+       ;; next-sf   <-- sf.next-sf
+       ;; argcnt    <-- sf.argcnt
+       ;; sf        <-- next-sf
+       ;; :pop-sf
+       ;; :pop-n argcnt
+       ;;                
+       ;; :push  result              --                 --
+       ;; pc <-- return-pc       OR  pc <-- goto     or pc <-- return-pc
 
        (:affectation
         ;; (:vref ident) expression) --> expression :pop&store ident
@@ -321,8 +328,8 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
         ;; (:aref ident expr) --> :lire&push expr :pop&astore1 ident
         ;; (:aref ident expr.1 expr.2) --> :lire&push expr.1 expr.2 :pop&astore2 ident
         (loop
-           for item in (reverse (rest stat))
-           do (setf next 
+           :for item :in (reverse (rest stat))
+           :do (setf next 
                     (case (length item)
                       (2 (gen bc::lire&push bc::pop&store
                               (identificateur-nom (second item)) next))
@@ -332,12 +339,12 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                       (4  (gen bc::lire&push
                                (third item) (fourth item)  bc::pop&astore2
                                (identificateur-nom (second item)) next))))
-           finally (return next)))
+           :finally (return next)))
 
        (:rep-1     (gen bc::pushi 1 next))
        (:rep       (gen bc::pushi (numero-valeur (second stat)) next))
-       (:rep-var   (gen bc::push-val id::$index bc::dup bc::pushi 1 bc::add
-                        bc::pop&store id::$index bc::aref2&push-val id::$vals
+       (:rep-var   (gen bc::push-val 'id::$index bc::dup bc::pushi 1 bc::add
+                        bc::pop&store 'id::$index bc::aref2&push-val 'id::$vals
                         next))
        (:afficher
         ;; (:afficher nil expr...)      --> :pushi n expr... :afficher-u
@@ -345,8 +352,8 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
         ;; (:afficher (form...))
         (if (second stat)
             (loop
-               for format in (reverse (second stat))
-               do (setf next
+               :for format :in (reverse (second stat))
+               :do (setf next
                         (case (first format)
                           (:spec-chaine
                            (gen (second format)
@@ -372,15 +379,17 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
             ;; (5) AFFICHER[{n}U]expr...
             (setf next (gen bc::pushi (length (cddr stat)) bc::afficher-u next)))
         ;; (4) set $index to 1
-        (setf next (gen bc::pushi 1 bc::pop&store id::$index next))
+        (setf next (gen bc::pushi 1 bc::pop&store 'id::$index next))
         ;; (3) pop the N expression and store them in $vals[$index]
-        (loop for i from 1 to (length (cddr stat)) 
-           do (setf next (gen  bc::pushi i bc::pop&astore1 id::$vals next)))
+        (loop
+           :for i :from 1 :to (length (cddr stat)) 
+           :do (setf next (gen  bc::pushi i bc::pop&astore1 'id::$vals next)))
         ;; (2) push the N expressions (first pushed first)
-        (loop for expr in (reverse (cddr stat))
-           do (setf next (generate-statement expr next)))
+        (loop
+           :for expr :in (reverse (cddr stat))
+           :do (setf next (generate-statement expr next)))
         ;; (1) declare the tableau $vals[N]
-        (gen  bc::pushi (length (cddr stat)) BC::TABLEAU1 ID::$VALS next))
+        (gen  bc::pushi (length (cddr stat)) BC::TABLEAU1 'ID::$VALS next))
 
        ;; rep :affiche-u -- 
        ;; 
@@ -402,7 +411,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                    (then (gen (third stat) bc::balways  offset.e else))
                    (offset.t (cons-position else then)))
               (gen (second stat) bc::bfalse offset.t then))
-            (let* ((then (gen (third stat) bc::balways  offset.e else))
+            (let* ((then (gen (third stat) next))
                    (offset.t (cons-position next then)))
               (gen (second stat) bc::bfalse offset.t then))))
 
@@ -449,16 +458,17 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
             (gen (second stat) bc::pushi 1   bc::executer next)))
 
        (:debut
-        (loop for i in (reverse (cdr stat))
-           do (setf next (generate-statement i next))
-             finally (return next)))
-       ))))
+        (loop
+           :for i :in (reverse (cdr stat))
+           :do (setf next (generate-statement i next))
+           :finally (return next)))))))
 
 
 (defun generate-slist (slist)    ; generate bytes for a statement list
-  (and slist
-       (generate-statement (car slist)
-                           (generate-slist (cdr slist)))))
+  (if slist
+      (generate-statement (car slist)
+                          (generate-slist (cdr slist)))
+      (list BC::NEXT-LINE)))
                           
 
 
@@ -481,7 +491,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
       (let ((parse-tree (lr-parse next-token
                                   (lambda (msg) (error "ERREUR: ~A" msg))
                                   (find-grammar "LSE"))))
-        (print parse-tree)
+        (terpri) (print parse-tree)
         (cond
           ((null parse-tree))           ; nothing to do
           ((and (typep parse-tree 'token)
@@ -492,51 +502,64 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
            (format *error-output*
              "~&ERREUR: JE TROUVE UN ATOME: ~S~%" parse-tree))
           ((eq (car parse-tree) :liste-instructions)
-           (print
-            (compile-slist (cdr parse-tree))
-            ))
+           (compile-slist (cdr parse-tree)))
           ((eq (car parse-tree) :ligne-programme)
-           (print
-            (compile-slist (cddr parse-tree))
-            ))
+           (compile-slist (cddr parse-tree)))
           (t
            (format *error-output*
              "~&ERREUR: JE TROUVE UNE LISTE INVALIDE: ~S~%" parse-tree)))))))
             
 
+(defparameter *cop-info*
+  (let ((table (make-hash-table)))
+    (dolist (c bc::*0*) (setf (gethash (symbol-value c) table) (cons c 0)))
+    (dolist (c bc::*1*) (setf (gethash (symbol-value c) table) (cons c 1)))
+    (dolist (c bc::*2*) (setf (gethash (symbol-value c) table) (cons c 2)))
+    table)
+  "Maps the code operation to a (cons symbol number-of-parameters).")
+
+
 
 (defun disassemble-lse (byte-code)
-  (let ((nboph (make-hash-table)))
-    (dolist (c bc::*0*) (setf (gethash (symbol-value c) nboph) 0))
-    (dolist (c bc::*1*) (setf (gethash (symbol-value c) nboph) 1))
-    (dolist (c bc::*2*) (setf (gethash (symbol-value c) nboph) 2))
-    ;; (print nboph)
-    (flet ((nbop (cop) (gethash cop nboph 0)))
-      (let ((pc 0)
-            (listing '())
-            (labels '()))
-        (loop while (< pc (length byte-code)) do
-             (let ((cop (list (aref byte-code pc))))
-               (incf pc)
-               (dotimes (n (nbop (first cop)))
-                 (setf cop (nconc cop (list (aref byte-code pc))))
-                 (incf pc))
-               (push cop listing)
-               (when (member (first cop) bc::*branches*)
-                 (push (+ pc (second cop)) labels))))
-        (setf listing (nreverse listing))
-        (loop
-           initially (format t "~&")
-           with pc = 0
-           for line in listing
-           do (progn (if (member pc labels)
-                         (format t "@~6:A " pc)
-                         (format t "        "))
-                     (if (member (first line) bc::*branches*)
-                         (format t "~32:A ; @~A~%" line
-                                 (+ pc (length line) (second line)))
-                         (format t "~32:A~%" line))
-                     (incf pc (length line))))))))
+  (flet ((nbop (cop) (cdr (gethash cop *cop-info* '(0 . 0))))
+         (disa (cop) (car (gethash cop *cop-info* (cons cop 0)))))
+    (let ((pc 0)
+          (listing '())
+          (labels '()))
+      (loop :while (< pc (length byte-code)) :do
+         (let ((cop (list (disa (aref byte-code pc))))
+               (noa       (nbop (aref byte-code pc))))
+           (incf pc)
+           (dotimes (n noa)
+             (setf cop (nconc cop (list (aref byte-code pc))))
+             (incf pc))
+           (push cop listing)
+           (when (member (first cop) bc::*branches*)
+             (push (+ pc (second cop)) labels))))
+      (setf listing (nreverse listing))
+      (loop
+         :initially (format t "~&")
+         :with pc = 0
+         :for line :in listing
+         :do (progn (if (member pc labels)
+                        (format t "@~6:A " pc)
+                        (format t "        "))
+                    (format t "~32:A"
+                            (with-output-to-string (out)
+                              (princ "(" out)
+                              (let ((first t))
+                                (dolist (item line)
+                                  (if first
+                                      (setf first nil)
+                                      (princ " " out))
+                                  (if (symbolp item)
+                                      (princ item out)
+                                      (prin1 item out))))
+                              (princ ")" out)))
+                    (if (member (first line) bc::*branches*)
+                        (format t " ; @~A~%"  (+ pc (length line) (second line)))
+                        (format t "~%"))
+                    (incf pc (length line)))))))
 
 ;;(progn (terpri)(disassemble-lse bc))
 
@@ -555,14 +578,36 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
     (terpri)
     (let* ((scanner    (make-instance 'scanner :source src))
            (next-token (get-next-token-function scanner)))
-      (loop do
-           (advance-line scanner)
-           (when (eofp (token scanner)) (loop-finish))
-           (format t "~2%~A~%" (buffer scanner))
-           (restart-case
-               ;; stuff
-               (format t "~&~S~%" (lr-parse next-token
-                                            (lambda (msg) (error "ERREUR: ~A" msg))
-                                            (find-grammar "LSE")))
-             (advance-line ()
-               :report "PASSER A LA LIGNE SUIVANTE"))))))
+      (loop :do
+         (advance-line scanner)
+         (when (eofp (token scanner)) (loop-finish))
+         (format t "~2%~A~%" (buffer scanner))
+         (restart-case
+             ;; stuff
+             (format t "~&~S~%" (lr-parse next-token
+                                          (lambda (msg) (error "ERREUR: ~A" msg))
+                                          (find-grammar "LSE")))
+           (advance-line ()
+             :report "PASSER A LA LIGNE SUIVANTE"))))))
+
+
+(defun test-compile-file (path)
+  (with-open-file (src path)
+    (loop
+       :for line = (read-line src nil nil)
+       :for comp = (and line (compile-line line))
+       :while line
+       :do (print comp)
+       :do (print (disassemble-lse comp))
+       :finally (terpri) (return (values)))))
+
+
+;; (test-parse-file #P "~/src/pjb/lse-cl/SYNTERR.LSE")
+;; (test-parse-file #P "~/src/pjb/lse/BOURG/BOUR.LSE")
+
+;; (test-compile-file #P "~/src/pjb/lse/BOURG/BOUR.LSE")
+;; (test-compile-file #P "~/src/pjb/lse-cl/TESTCOMP.LSE")
+
+
+
+;;;; THE END ;;;;

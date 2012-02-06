@@ -75,14 +75,14 @@
                          POW ; arg1 arg2 POW
 
 
-                         AFFICHER-E        ; arg1 arg2 arg3 AFFICHER-E
-                         AFFICHER-F        ; arg1 arg2 arg3 AFFICHER-F
-                         AFFICHER-CR       ; arg AFFICHER-CR
-                         AFFICHER-NEWLINE  ; arg AFFICHER-NEWLINE
-                         AFFICHER-NL       ; arg AFFICHER-NL
-                         AFFICHER-SPACE    ; arg AFFICHER-SPACE
-                         AFFICHER-U        ; arg AFFICHER-U
-                         LIRE&PUSH         ; LIRE&PUSH
+                         AFFICHER-E        ; rep e f AFFICHER-E
+                         AFFICHER-F        ; rep e f AFFICHER-F
+                         AFFICHER-CR       ; rep AFFICHER-CR
+                         AFFICHER-CHAINE   ; rep chaine AFFICHER-CHAINE
+                         AFFICHER-NEWLINE  ; rep AFFICHER-NEWLINE
+                         AFFICHER-NL       ; rep AFFICHER-NL
+                         AFFICHER-SPACE    ; rep AFFICHER-SPACE
+                         AFFICHER-U        ; nexpr AFFICHER-U
 
                          NEXT-LINE  ; NEXT-LINE
                          RETOUR     ; RETOUR
@@ -98,6 +98,7 @@
                          PAUSE     ; PAUSE
                          TERMINER  ; TERMINER
 
+                         PROCEDURE
                          ))
 
   (cl:defparameter *1* '(
@@ -114,6 +115,10 @@
                          PUSH-VAL       ; PUSH-REF identifier
                          PUSHI          ; PUSHI immediate-value
 
+                         LIRE&STORE        ; LIRE&STORE ident
+                         LIRE&ASTORE1      ; index LIRE&ASTORE1 ident
+                         LIRE&ASTORE2      ; idx1 idx2 LIRE&ASTORE1 ident
+
                          CHAINE         ; CHAINE identifier
                          TABLEAU1       ; dim TABLEAU1 identifier
                          TABLEAU2       ; dim1 dim2 TABLEAU2 identifier
@@ -126,7 +131,7 @@
 
                          FAIRE-JUSQU-A   ; lino init pas jusqua FAIRE-JUSQU-A ident
                          FAIRE-TANT-QUE  ; lino init pas FAIRE-TANT-QUE ident
-                                         ; test TANT-QUE
+                                        ; test TANT-QUE
                          GARER           ; enr fic GARER identificateur
                          ))
 
@@ -163,7 +168,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                  (return-from cons-position start))
                 ((or (and end (<= end start))
                      (null (cdr current)))
-                   (return-from cons-position nil))
+                 (return-from cons-position nil))
                 (t
                  (incf start)
                  (setf current (cdr current)))))))
@@ -181,7 +186,8 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                   (eq (symbol-package (car items)) (find-package "ID")))))
      (cons (car items) (apply (function gen) (cdr items))))
     (t
-      (generate-statement (car items) (apply (function gen) (cdr items))))))
+     (generate-statement (car items) (apply (function gen) (cdr items))))))
+
 
 
 
@@ -228,11 +234,11 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
            :with suite = next
            :for item :in (reverse (cddr stat))
            :do (setf suite (gen item (case (first stat)
-                                      (:ou bc::ou)
-                                      (:et bc::et)) suite))
+                                       (:ou bc::ou)
+                                       (:et bc::et)) suite))
            :finally (return (gen (second stat) (case (first stat)
-                                                (:ou bc::ou)
-                                                (:et bc::et)) suite))))
+                                                 (:ou bc::ou)
+                                                 (:et bc::et)) suite))))
 
        (:commentaire next)
        ((:liberer :chaine)
@@ -271,7 +277,8 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
        ((:vval :vref)
         (gen (case (first stat)
                (:vval bc::push-val)
-               (:vref bc::push-ref)) (identificateur-nom (second stat)) next))
+               (:vref bc::push-ref))
+             (identificateur-nom (second stat)) next))
 
        ((:fonction :appel)
         (loop
@@ -280,17 +287,28 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
            :for item :in (reverse (cddr stat))
            :do (setf suite (gen item suite))
            :finally (return suite)))
-       #||
-       (:procedure ident nil       nil)
-       (:procedure ident (fpid...) nil)
-       (:procedure ident nil       locid...)
-       (:procedure ident (fpid...) locid...)
-       --> :trap-proc-reached *
-       ==> fpid inter locid == arguments par valeur    ==> copier
-       ==> fpid diff  locid == arguments par reference
-       ==> locid diff fpid  == variable locales --> table variable locale pour la proc.
-       ||#
 
+       
+       ;; (:procedure ident nil       nil)
+       ;; (:procedure ident (fpid...) nil)
+       ;; (:procedure ident nil       (locid...))
+       ;; (:procedure ident (fpid...) (locid...))
+       ;; --> :trap-proc-reached *
+       ;; ==> fpid inter locid == arguments par valeur  ==> copier
+       ;; ==> fpid diff  locid == arguments par reference
+       ;; ==> locid diff fpid  == variable locales --> table variable locale pour la proc.
+
+       ;; Parameters by reference
+       ;; Parameters by value       = Local variables
+       ;; Global Variables
+       ;; Local Variables
+
+       
+       (:procedure
+        ;; Les procedures ne sont pas executable, bc::procedure generates an error.
+        
+        (gen bc::procedure next))
+       
        (:resultat   (gen (second stat) bc::result next))
        (:retour-en  (gen (second stat) bc::retour-en next))
        (:retour     (gen bc::retour next))
@@ -324,72 +342,171 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                    bc::pop&astore2  next))))
 
        (:lire
-        ;; (:vref ident) --> :lire&push :pop&store ident
-        ;; (:aref ident expr) --> :lire&push expr :pop&astore1 ident
-        ;; (:aref ident expr.1 expr.2) --> :lire&push expr.1 expr.2 :pop&astore2 ident
+        ;; (:vref ident) --> :lire&store ident
+        ;; (:aref ident expr) -->  expr :lire&astore1 ident
+        ;; (:aref ident expr.1 expr.2) -->  expr.1 expr.2 :lire&astore2 ident
         (loop
            :for item :in (reverse (rest stat))
            :do (setf next 
-                    (case (length item)
-                      (2 (gen bc::lire&push bc::pop&store
-                              (identificateur-nom (second item)) next))
-                      (3  (gen bc::lire&push
-                               (third item)  bc::pop&astore1
-                               (identificateur-nom (second item)) next))
-                      (4  (gen bc::lire&push
-                               (third item) (fourth item)  bc::pop&astore2
-                               (identificateur-nom (second item)) next))))
+                     (case (length item)
+                       (2  (gen bc::lire&store
+                                (identificateur-nom (second item)) next))
+                       (3  (gen (third item) bc::lire&astore1
+                                (identificateur-nom (second item)) next))
+                       (4  (gen (third item) (fourth item) bc::lire&astore2
+                                (identificateur-nom (second item)) next))))
            :finally (return next)))
 
        (:rep-1     (gen bc::pushi 1 next))
        (:rep       (gen bc::pushi (numero-valeur (second stat)) next))
        (:rep-var   (gen bc::push-val 'id::$index bc::dup bc::pushi 1 bc::add
-                        bc::pop&store 'id::$index bc::aref2&push-val 'id::$vals
+                        bc::pop&store 'id::$index bc::aref1&push-val 'id::$vals
                         next))
+
+
+       ;; AFFICHER expr…
+       ;; --> (:afficher nil expr…)
+       ;;
+       ;; AFFICHER [spec…] expr…
+       ;; --> (:afficher (spec…) expr…)                 
+
+       ;; First, the expr… are evaluated and stored in a TABLEAU $VALS[number of expr…]
+       ;; Then $INDEX is set to 1,
+       ;; and finally the :afficher-* codops are generated.
+       ;; Each :afficher-* operation should use $VALS[$INDEX] and up, incrementing $INDEX.
+       
+       ;; ['litchaine']
+       ;; --> spec ::= (:spec-chaine (:rep-1) litchaine)    ==> (rep litchaine :afficher-u)
+       ;; [42'litchaine']
+       ;; --> spec ::= (:spec-chaine (:rep 42) litchaine)   ==> (rep litchaine :afficher-u)
+       ;; [*'litchaine']
+       ;; --> spec ::= (:spec-chaine (:rep-var) litchaine)  ==> (rep litchaine :afficher-u)
+
+       ;; [/]
+       ;; --> spec ::= (:spec-slash (:rep-1))      ==> (rep :afficher-newline)
+       ;; [42/]
+       ;; --> spec ::= (:spec-slash (:rep 42))     ==> (rep :afficher-newline)
+       ;; [*/]
+       ;; --> spec ::= (:spec-slash (:rep-var))    ==> (rep :afficher-newline)
+
+       ;; X --> :spec-space    ==> (rep :afficher-space)
+       ;; C --> :spec-cr       ==> (rep :afficher-cr)
+       ;; L --> :spec-nl       ==> (rep :afficher-nl)
+
+       ;; For the following specifiers, only fixed repeatitions are allowed: :rep-1 and (:rep n)
+       ;; U --> :spec-u        ==> (rep :afficher-u)
+       ;; Fe.d --> (:spec-f rep e d) ==> (rep e d :afficher-f)
+       ;; Ee.d --> (:spec-d rep e d) ==> (rep e d :afficher-e)
+       
+       ;; This rules means that the number of expressions processed is
+       ;; known at compilation time.
+       
+       ;; The format specifiers and the expressions are processed in
+       ;; parallel, threfore the following program:
+       ;;
+       ;; 10 AFFICHER['(',U,')']&P(42)
+       ;; 11 TERMINER
+       ;; 100 PROCEDURE &P(X)
+       ;; 101 AFFICHER['[',U,']']X
+       ;; 102 RESULTAT X
+       ;;
+       ;; should print:
+       ;;
+       ;; ([42]42)
+
        (:afficher
         ;; (:afficher nil expr...)      --> :pushi n expr... :afficher-u
         ;; (:afficher (form...) expr...)
         ;; (:afficher (form...))
-        (if (second stat)
-            (loop
-               :for format :in (reverse (second stat))
-               :do (setf next
-                        (case (first format)
-                          (:spec-chaine
-                           (gen (second format)
-                                bc::pushi (third format)
-                                bc::afficher-u next))
-                          ((:spec-slash :spec-space :spec-cr :spec-nl :spec-u)
-                           (gen (second format)
-                                (case (first format)
-                                  (:spec-slash bc::afficher-newline)
-                                  (:spec-space bc::afficher-space)
-                                  (:spec-cr    bc::afficher-cr)
-                                  (:spec-nl    bc::afficher-nl)
-                                  (:spec-u     bc::afficher-u))
-                                next))
-                          ((:spec-f :spec-e)
-                           (gen (second format)
-                                (third format)
-                                (fourth format)
-                                (case (first format)
-                                  (:spec-f bc::afficher-f)
-                                  (:spec-e bc::afficher-e))
-                                next)))))
-            ;; (5) AFFICHER[{n}U]expr...
-            (setf next (gen bc::pushi (length (cddr stat)) bc::afficher-u next)))
-        ;; (4) set $index to 1
-        (setf next (gen bc::pushi 1 bc::pop&store 'id::$index next))
-        ;; (3) pop the N expression and store them in $vals[$index]
-        (loop
-           :for i :from 1 :to (length (cddr stat)) 
-           :do (setf next (gen  bc::pushi i bc::pop&astore1 'id::$vals next)))
-        ;; (2) push the N expressions (first pushed first)
-        (loop
-           :for expr :in (reverse (cddr stat))
-           :do (setf next (generate-statement expr next)))
-        ;; (1) declare the tableau $vals[N]
-        (gen  bc::pushi (length (cddr stat)) BC::TABLEAU1 'ID::$VALS next))
+
+        ;; TODO: the $INDEX and $VALS variables should be "local"
+        ;; (gen  BC::LIBERER 'ID::$VALS next)
+        (let ((result '())
+              (exprs (cddr stat)))
+          (labels ((collect (code)
+                     (setf result (nconc result (copy-list code))))
+                   (spec-simple (spec format)
+                     (cond
+                       ((eql  spec :rep-1)
+                        (collect (gen bc::pushi 1 nil)))
+                       ((and (consp spec)
+                             (eql (first spec) :rep))
+                        (collect (gen bc::pushi (numero-valeur (second spec)) nil)))
+                       ((eql  spec :rep-var)
+                        (when (null exprs)
+                          (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
+                        (collect (generate-statement (pop exprs) nil)))
+                       (t
+                        (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format))))
+                   (spec-expr (spec op format)
+                     (cond
+                       ((eql  spec :rep-1)
+                        (when (null exprs)
+                          (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
+                        (collect (generate-statement (pop exprs) nil))
+                        (collect op))
+                       ((and (consp spec)
+                             (eql (first spec) :rep))
+                        (loop
+                           :repeat (numero-valeur (second spec))
+                           :do (progn
+                                 (when (null exprs)
+                                   (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
+                                 (collect (generate-statement (pop exprs) nil))
+                                 (collect op))))
+                       (t
+                        (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)))))
+            (if (second stat)
+                (loop
+                   :for format :in (second stat)
+                   :do (ecase (first format)
+                         (:spec-chaine
+                          (spec-simple (second format) format)
+                          (collect (gen bc::pushi (third format) bc::afficher-chaine nil)))
+                         ((:spec-slash :spec-space :spec-cr :spec-nl)
+                          (spec-simple (second format) format)
+                          (collect (gen (case (first format)
+                                          (:spec-slash bc::afficher-newline)
+                                          (:spec-space bc::afficher-space)
+                                          (:spec-cr    bc::afficher-cr)
+                                          (:spec-nl    bc::afficher-nl))
+                                        nil)))
+                         ((:spec-f :spec-e)
+                          (spec-expr (second format) (gen (third format)
+                                                          (fourth format)
+                                                          (case (first format)
+                                                            (:spec-f bc::afficher-f)
+                                                            (:spec-e bc::afficher-e))
+                                                          nil) format))
+                         (:spec-u
+                          (spec-expr (second format) (gen bc::afficher-u nil) format)))
+                   :finally (loop
+                               :for expr :in exprs
+                               :do (collect (gen (generate-statement expr nil) bc::afficher-u nil))))
+                ;; (5) afficher[{n}u]expr...
+                (loop
+                   :for expr :in (cddr stat)
+                   :do (progn
+                         (collect (generate-statement expr nil))
+                         (collect (gen bc::afficher-u nil))))))
+          (nconc result next)))
+
+       
+       ;; (setf next (gen bc::pushi (length (cddr stat)) bc::pop&store 'id::$valscnt next))
+       ;; (setf next (gen bc::pushi 1 bc::pop&store 'id::$index next))
+       ;; (4) set $index to 1
+       ;; to avoid too much stack usage, we evalute each expression
+       ;; and store it into $vals in turn.
+       ;; (3) pop one expression and store them in $vals[$index]
+       ;; (2) push one expression 
+       ;; (loop
+       ;;    :for expr :in (reverse (cddr stat))
+       ;;    :for i :from (length (cddr stat)) :downto 1 
+       ;;    :do (setf next (gen  bc::pushi i bc::pop&astore1 'id::$vals next))
+       ;;    :do (setf next (generate-statement expr next)))
+       ;; (1) declare the tableau $vals[n]
+       ;; (gen  bc::pushi (length (cddr stat)) bc::tableau1 'id::$vals next)
+
 
        ;; rep :affiche-u -- 
        ;; 
@@ -464,12 +581,15 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
            :finally (return next)))))))
 
 
+
+
+
 (defun generate-slist (slist)    ; generate bytes for a statement list
   (if slist
       (generate-statement (car slist)
                           (generate-slist (cdr slist)))
       (list BC::NEXT-LINE)))
-                          
+
 
 
 
@@ -488,27 +608,30 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
     (with-input-from-string (source source-line)
       (setf (source scanner) source)
       (advance-line scanner)
-      (let ((parse-tree (lr-parse next-token
-                                  (lambda (msg) (error "ERREUR: ~A" msg))
-                                  (find-grammar "LSE"))))
-        (terpri) (print parse-tree)
+      (let ((parse-tree (handler-case (lr-parse next-token
+                                    (lambda (msg) (error "ERREUR: ~A" msg))
+                                    (find-grammar "LSE"))
+                          (error (err)
+                            (format t "Parsing error ~A" err)
+                            (signal err)))))
+        (let ((*print-pretty* nil)) (terpri) (princ "Parse tree: ") (prin1 parse-tree))
         (cond
           ((null parse-tree))           ; nothing to do
           ((and (typep parse-tree 'token)
                 (eq (token-kind parse-tree) 'tok-erreur))
            (format *error-output*
-             "~&ERREUR: ~S~%" (token-text parse-tree)))
+                   "~&ERREUR: ~S~%" (token-text parse-tree)))
           ((atom parse-tree)
            (format *error-output*
-             "~&ERREUR: JE TROUVE UN ATOME: ~S~%" parse-tree))
+                   "~&ERREUR: JE TROUVE UN ATOME: ~S~%" parse-tree))
           ((eq (car parse-tree) :liste-instructions)
            (compile-slist (cdr parse-tree)))
           ((eq (car parse-tree) :ligne-programme)
            (compile-slist (cddr parse-tree)))
           (t
            (format *error-output*
-             "~&ERREUR: JE TROUVE UNE LISTE INVALIDE: ~S~%" parse-tree)))))))
-            
+                   "~&ERREUR: JE TROUVE UNE LISTE INVALIDE: ~S~%" parse-tree)))))))
+
 
 (defparameter *cop-info*
   (let ((table (make-hash-table)))
@@ -559,7 +682,8 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                     (if (member (first line) bc::*branches*)
                         (format t " ; @~A~%"  (+ pc (length line) (second line)))
                         (format t "~%"))
-                    (incf pc (length line)))))))
+                    (incf pc (length line))))))
+  (values))
 
 ;;(progn (terpri)(disassemble-lse bc))
 
@@ -588,18 +712,21 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                                           (lambda (msg) (error "ERREUR: ~A" msg))
                                           (find-grammar "LSE")))
            (advance-line ()
-             :report "PASSER A LA LIGNE SUIVANTE"))))))
+             :report "PASSER A LA LIGNE SUIVANTE")))))
+  (values))
 
 
 (defun test-compile-file (path)
   (with-open-file (src path)
     (loop
        :for line = (read-line src nil nil)
-       :for comp = (and line (compile-line line))
+       :do (terpri) (princ ";; |  ") (write-string line)
        :while line
-       :do (print comp)
-       :do (print (disassemble-lse comp))
-       :finally (terpri) (return (values)))))
+       :do (let ((comp (compile-line line)))
+             (print comp)
+             (print (disassemble-lse comp)))
+       :finally (terpri) (finish-output)))
+  (values))
 
 
 ;; (test-parse-file #P "~/src/pjb/lse-cl/SYNTERR.LSE")

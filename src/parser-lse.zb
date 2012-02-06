@@ -154,8 +154,8 @@
 ;; Program files (tapes) can contain both lines and commands.
 ;; The LSE compiler worked on punch cards, line by line too.
 (defrule start 
-    := liste-instruction :build (cons :liste-instruction liste-instruction)
-    := affic             :build (list :liste-instruction affic)
+    := liste-instruction :build (cons :liste-instructions liste-instruction)
+    := affic             :build (list :liste-instructions affic)
     := ligne-programme
     := tok-erreur :build (progn tok-erreur)
     := ()         :build (progn nil))
@@ -204,7 +204,7 @@
     :build (list* :fonction identificateur liste-expression)
     := tok-litchaine :build (progn tok-litchaine)
     := (tok-pargauche expression tok-pardroite) :build (progn expression)
-    := reference
+    := left-reference
     := tok-nombre :build (progn tok-nombre)
     := tok-numero :build (progn tok-numero))
 
@@ -373,29 +373,42 @@
     := (tok-LOCAL liste-identificateur) :build (progn liste-identificateur))
 
 
-(defrule reference
-    := (reference/vecteur tok-virgule expression tok-crodroite)
-    :build (snoc reference/vecteur expression)
-    := (reference/vecteur tok-crodroite) :build (progn reference/vecteur)
-    := identificateur                    :build (list :vref identificateur))
+(defrule right-reference
+    := (right-reference/vecteur tok-virgule expression tok-crodroite)
+    :build (snoc right-reference/vecteur expression)
+    := (right-reference/vecteur tok-crodroite) :build (progn right-reference/vecteur)
+    := identificateur                          :build (list :vval identificateur))
 
-(defrule reference/vecteur
+(defrule right-reference/vecteur
     := (identificateur tok-crogauche expression)
-    :build (list :aref identificateur expression))
+    :build (list :aval identificateur expression))
 
-(defrule liste-reference
-    := (liste-reference tok-virgule reference)
-    :build (snoc liste-reference reference)
-    := reference
-    :build (list reference))
+
+
+;; (defrule left-reference
+;;     := (left-reference/vecteur tok-virgule expression tok-crodroite)
+;;     :build (snoc left-reference/vecteur expression)
+;;     := (left-reference/vecteur tok-crodroite) :build (progn left-reference/vecteur)
+;;     := identificateur                         :build (list :vref identificateur))
+;; 
+;; (defrule left-reference/vecteur
+;;     := (identificateur tok-crogauche expression)
+;;     :build (list :aref identificateur expression))
+;; 
+;; (defrule liste-left-reference
+;;     := (liste-left-reference tok-virgule left-reference)
+;;     :build (snoc liste-left-reference left-reference)
+;;     := left-reference
+;;     :build (list left-reference))
+
 
 
 (defrule affectation
-    := (reference tok-fleche expression)
-    :build (list :affectation reference expression))
+    := (left-reference tok-fleche expression)
+    :build (list :affectation left-reference expression))
 
 
-(defrule lire := (tok-LIRE liste-reference) :build (cons :lire liste-reference))
+(defrule lire := (tok-LIRE liste-left-reference) :build (cons :lire liste-left-reference))
 
 
 (defrule afficher
@@ -419,27 +432,28 @@
     :build (list specification))
 
 
+
 (defrule specification
     ;; Afin d'éviter une abiguité sur first(spec-rep-num) inter first(spec-rep),
     ;; on distingue les deux cas:
     ;; * sans facteur de répétition:
     := tok-litchaine :build (list :spec-chaine '(:rep-1)  tok-litchaine)
-    := tok-divise :build (list :spec-slash  '(:rep-1))
-    := tok-X      :build (list :spec-space  '(:rep-1))
-    := tok-C      :build (list :spec-cr     '(:rep-1))
-    := tok-L      :build (list :spec-nl     '(:rep-1))
-    := tok-U      :build (list :spec-u      '(:rep-1))
+    := tok-divise    :build (list :spec-slash  '(:rep-1))
+    := tok-X         :build (list :spec-space  '(:rep-1))
+    := tok-C         :build (list :spec-cr     '(:rep-1))
+    := tok-L         :build (list :spec-nl     '(:rep-1))
+    := tok-U         :build (list :spec-u      '(:rep-1))
     := (tok-F tok-numero.1 tok-point tok-numero.2)
     :build (list :spec-f '(:rep-1) tok-numero.1  tok-numero.2)
     := (tok-E tok-numero.1 tok-point tok-numero.2)
     :build (list :spec-e '(:rep-1) tok-numero.1  tok-numero.2)
     ;; * avec facteur de répétition:
     := (spec-rep tok-litchaine) :build (list :spec-chaine spec-rep tok-litchaine)
-    := (spec-rep tok-divise) :build (list :spec-slash spec-rep)
-    := (spec-rep tok-X)      :build (list :spec-space spec-rep)
-    := (spec-rep tok-C)      :build (list :spec-cr    spec-rep)
-    := (spec-rep tok-L)      :build (list :spec-nl    spec-rep)
-    := (spec-rep-num tok-U)  :build (list :spec-u spec-rep-num)
+    := (spec-rep tok-divise)    :build (list :spec-slash spec-rep)
+    := (spec-rep tok-X)         :build (list :spec-space spec-rep)
+    := (spec-rep tok-C)         :build (list :spec-cr    spec-rep)
+    := (spec-rep tok-L)         :build (list :spec-nl    spec-rep)
+    := (spec-rep-num tok-U)     :build (list :spec-u spec-rep-num)
     := (spec-rep-num tok-F tok-numero.1 tok-point tok-numero.2)
     :build (list :spec-f spec-rep-num tok-numero.1  tok-numero.2)
     := (spec-rep-num tok-E tok-numero.1 tok-point tok-numero.2)

@@ -105,23 +105,21 @@
                      :direction :output
                      :if-exists :supersede
                      :if-does-not-exist :create)
-      (print
-       `(
-         :name     ,(string name)
-                   :package  ,(string (if packagep package (package-name *package*)))
-                   :identifier-start-chars     ,identifier-start-chars    
-                   :identifier-continue-chars  ,identifier-continue-chars 
-                   :intern-identifier          ,intern-identifier         
-                   :string-delimiter           ,string-delimiter          
-                   :symbol-delimiter           ,symbol-delimiter          
-                   :case-sensitive             ,case-sensitive            
-                   :grammar                    ,grammar                   
-                   :domain                     ,domain                    
-                   :domain-file ,(if domain-file-p
-                                     domain-file
-                                     (format nil "~(~A~)-domain" name))
-                   ,@(when white-space-p `(:white-space ,white-space))
-                   :lex-cats ,lex-cats))
+      (print `(:name ,(string name)
+                     :package  ,(string (if packagep package (package-name *package*)))
+                     :identifier-start-chars     ,identifier-start-chars    
+                     :identifier-continue-chars  ,identifier-continue-chars 
+                     :intern-identifier          ,intern-identifier         
+                     :string-delimiter           ,string-delimiter          
+                     :symbol-delimiter           ,symbol-delimiter          
+                     :case-sensitive             ,case-sensitive            
+                     :grammar                    ,grammar                   
+                     :domain                     ,domain                    
+                     :domain-file ,(if domain-file-p
+                                       domain-file
+                                       (format nil "~(~A~)-domain" name))
+                     ,@(when white-space-p `(:white-space ,white-space))
+                     :lex-cats ,lex-cats))
       (dolist (rule rules)
         (if (and (consp rule) (eq (first rule) 'insert-rule))
             (if (gethash (second rule) *rules*)
@@ -131,10 +129,15 @@
     (LET ((COM.HP.ZEBU::*WARN-CONFLICTS*  T)
           (COM.HP.ZEBU::*ALLOW-CONFLICTS* T))
       (zebu-compile-file grammar-file :output-file output-file))
-    `(eval-when (:compile-topleve :load-toplevel :execute)
-       (zebu:delete-grammar ,(string name))
-       (zebu-load-file ',output-file)
-       (defparameter ,name (find-grammar ,(string name))))))
+    `(progn
+       (eval-when (:compile-toplevel)
+         (zebu:delete-grammar ,(string name))
+         ;; (zebu-load-file ',output-file)
+         (defparameter ,name nil))
+       (eval-when (::load-toplevel :execute)
+         (zebu:delete-grammar ,(string name))
+         (zebu-load-file ',output-file)
+         (defparameter ,name (find-grammar ,(string name)))))))
 
 
 

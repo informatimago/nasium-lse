@@ -35,27 +35,33 @@
 
 (in-package "COM.INFORMATIMAGO.LSE")
 
-(defun   indefini-p (x) (eq x :unbound))
-(deftype indefini   () '(satisfies indefini-p))
+(defun   indefinip  (x) (eq x :unbound))
+(deftype indefini   () '(satisfies indefinip))
 
-(defun   nombre-p   (x) (typep x 'single-float))
+(defun   nombrep    (x) (typep x 'single-float))
 (deftype nombre     () 'single-float)
 
-(defun   vecteur-p  (x) (typep x '(vector single-float)))
+(defun   vecteurp   (x) (typep x '(vector single-float)))
 (deftype vecteur    (&optional (s '*)) `(vector single-float ,s))
 
-(defun   tableau-p  (x) (typep x '(array single-float (* *))))
+(defun   tableaup   (x) (typep x '(array single-float (* *))))
 (deftype tableau    (&optional (w '*) (h '*)) `(array single-float (,w ,h)))
 
-(defconstant chaine-maximum 256)
-(defun   chaine-p   (x)  (and (stringp x)
-                              (<= (length x) chaine-maximum)))
-(deftype chaine     ()   '(satisfies chaine-p))
 
-(defun   identificateur-p (x)  (and (symbolp x)
+;; On T1600, chaines are limited to 256 characters, but on Mitra-15 they're "unlimited".
+#+t1600-lse (defconstant chaine-maximum 256)
+#+t1600-lse (defun   chainep    (x)  (and (stringp x) (<= (length x) chaine-maximum)))
+#+t1600-lse (deftype chaine     ()   '(satisfies chainep))
+
+#-t1600-lse (defconstant chaine-maximum array-dimension-limit)
+#-t1600-lse (defun   chainep    (x)   (stringp x))
+#-t1600-lse (deftype chaine     ()   'string)
+
+
+(defun   identificateurp  (x)  (and (symbolp x)
                                     (eq (symbol-package x)
                                         (find-package "LSE-USER"))))
-(deftype identificateur   () '(satisfies identificateur-p))
+(deftype identificateur   () '(satisfies identificateurp))
 
 (defstruct booleen value)
 (defparameter vrai (make-booleen :value :vrai))

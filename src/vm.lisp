@@ -44,141 +44,641 @@
 
 
 
-
-(defstruct vm
-  (cv        (make-hash-table :test (function eql) :size 256))
-  (gv        (make-hash-table :test (function eql) :size 256))
-  (stack     (make-array '(256)
-                     :element-type t
-                     :adjustable t
-                     :fill-pointer 0))
-  (pc.line   0)
-  (pc.offset 0)
-  (fp        0)
-  (sp        0)
-  ;; cache:
-  (code      #() :type vector))
+;; Parameters by reference
+;; Parameters by value       = Local variables
+;; Global Variables
+;; Local Variables
 
 
-(defun rem-line (vm lino)      (remhash lino (vm-cv vm)))
-(defun put-line (vm lino code) (setf (gethash lino (vm-cv vm)) code))
+;; There are two kinds of variables: global variables, and local
+;; variables.  Local variables are allocated in each
+;; procedure/function frame.  But in both cases, instructions may
+;; refer either ones depending on what is currently running.
+;; Scoping rules are therefore quite complex.
+;;
+;; 10 A_1
+;; 20 AFFICHER A
+;; 30 SI A>0 ALORS &P SINON RETOUR
+;; 40 TERMINER
+;; 100 PROCEDURE P () LOCAL A
+;; 105 A_0
+;; 110 ALLER EN 20
+;; 
+;; should produce:
+;; 
+;; 1 0
+;; 
+;; which shows that AFFICHER A refered first the global variable, and then the LOCAL variable of P.
 
 
+;; Furthermore, procedures may have parameters by reference or parameters
+;; by value.  Parameters by value are basically the same as local
+;; variables (only they're initialized from procedure arguments).
+;; 
+;; However, parameters by references mean that we need a way to reference
+;; variables in their scope:
+
+;; 10 Y=1
+;; 20 N=1
+;; 30 &F(Y)
+;; 40 &F(N)
+;; 50 TERMINER
+;; 100 PROCEDURE &F(X) LOCAL Z
+;; 110 Z_X-1
+;; 120 &P(X,Y,Z)
+;; 130 RETOUR
+;; 200 PROCEDURE &P(A,B,C) ; * ALL PARAMETERS BY REFERENCE
+;; 210 A_A+1; B_B+1; C_C+1
+;; 220 * SHOULD INCREMENT Y OR N DEPENDING ON THE CALL FROM 30 OR 40,
+;; 221 * AND Y, AND THE LOCAL VARIABLE Z.
+;; 230 RETOUR
+
+
+
+(defclass frame ()
+  ((variables :initarg :variables :initform '() :accessor frame-variables)))
+
+(defmethod print-object ((frame frame) stream)
+  (print-unreadable-object (frame stream :identity t :type t)
+    (format stream "with ~D variables: ~(~A~^ ~)"
+            (length (frame-variables frame))
+            (sort (mapcar (function variable-name) (frame-variables frame))
+                  (function string<))))
+  frame)
+
+(defmethod find-variable ((frame frame) (ident symbol))
+  (values (cdr (assoc ident (frame-variables frame))) frame))
+
+(defmethod add-variable ((frame frame) var)
+  (setf (frame-variables frame) (acons (variable-name var) var (frame-variables frame)))
+  var)
+
+(defmethod remove-variable ((frame frame) var)
+  (setf (frame-variables frame) (remove (variable-name var) (frame-variables)
+                                        :key (function car)))
+  var)
+
+
+
+
+;; SLOTS:
+
+(defgeneric variable-value (slot))
+(defgeneric (setf variable-value) (new-value slot))
+
+(defgeneric variable-type (slot)
+  (:documentation "
+variable-type may be:
+    :undefined
+    procedure              -- can be only a reference-parameter.
+    nombre
+    chaine
+    (vecteur dim)
+    (tableau dim1 dim2)
+"))
+
+(defclass slot ()
+  ())
+
+
+;; NAMED-SLOTS:
+
+(defgeneric variable-name (named-slot))
+(defgeneric (setf variable-type) (new-type named-slot))
+
+(defclass named-slot (slot)
+  ((name :initarg :name :accessor variable-name)))
+
+(defmethod print-object ((slot named-slot) stream)
+  (print-unreadable-object (slot stream :identity t :type t)
+    (format stream "~A" (variable-name slot)))
+  slot)
+
+
+;; LSE-VARIABLES;
+
+(defclass lse-variable (named-slot)
+  ((type :initarg :type :accessor variable-type :initform 'nombre)
+   (value :initarg :value :accessor variable-value :initform :unbound)))
+
+
+;; REFERENCE-PARAMETERS:
+
+(defclass reference-parameter (named-slot)
+  (reference :initarg :reference :accessor parameter-reference))
+
+(defmethod variable-type ((par reference-parameter))
+  (variable-type (parameter-reference par)))
+
+(defmethod (setf variable-type) (new-type (par reference-parameter))
+  (setf (variable-type (parameter-reference par)) new-type))
+
+(defmethod variable-value ((par reference-parameter))
+  (variable-value (parameter-reference par)))
+
+(defmethod (setf variable-value) (new-value (par reference-parameter))
+  (setf (variable-value (parameter-reference par)) new-value))
+
+
+;; VECTEUR-REFS:
+
+(defclass vecteur-ref (named-slot) ; for print-object; could just be slot
+  ((vecteur :initarg :vecteur :reader reference-vecteur)
+   (index :initarg :index :accessor reference-index)))
+
+(defmethod print-object ((slot vecteur-ref) stream)
+  (print-unreadable-object (slot stream :identity t :type t)
+    (format stream "~A[~A]" (variable-name slot) (reference-index slot)))
+  slot)
+
+(defmethod variable-type ((self vecteur-ref))
+  'nombre)
+
+(defmethod variable-value ((self vecteur-ref))
+  (aref (reference-vecteur self) (reference-index self)))
+
+(defmethod (setf variable-value) (new-value (self vecteur-ref))
+  (setf (aref (reference-vecteur self) (reference-index self)) new-value))
+
+
+
+;; TABLEAU-REFS:
+
+(defclass tableau-ref (named-slot) ; for print-object; could just be slot
+  ((tableau :initarg :tableau :reader reference-tableau)
+   (index1 :initarg :index1 :accessor reference-index1)
+   (index2 :initarg :index2 :accessor reference-index2)))
+
+(defmethod print-object ((slot tableau-ref) stream)
+  (print-unreadable-object (slot stream :identity t :type t)
+    (format stream "~A[~A,~A]" (variable-name slot) (reference-index1 slot) (reference-index2 slot)))
+  slot)
+
+(defmethod variable-type ((self tableau-ref))
+  'nombre)
+
+(defmethod variable-value ((self tableau-ref))
+  (aref (reference-tableau self) (reference-index1 self) (reference-index2 self)))
+
+(defmethod (setf variable-value) (new-value (self tableau-ref))
+  (setf (aref (reference-tableau self) (reference-index1 self) (reference-index2 self)) new-value))
+
+
+
+
+;;; The LSE Virtual Machine
+
+(defclass lse-vm ()
+  ((global-frame :initform (make-instance 'frame) :type frame :reader vm-global-frame)
+   (local-frame-stack :initform '() :type list :accessor vm-local-frame-stack)
+   (code-vectors :initform (make-hash-table :test (function eql) :size 256) :reader vm-code-vectors)
+   (stack :initform (make-array '(256)
+                                :element-type t
+                                :adjustable t
+                                :fill-pointer 0) :type vector :reader vm-stack)
+   (pc.line   :initform 0 :type (integer 0) :accessor vm-pc.line)
+   (pc.offset :initform 0 :type (integer 0) :accessor vm-pc.offset)
+   ;; current code vector:
+   (code :initform  #(bc::next-line) :type vector :accessor vm-code)))
+
+(defmethod print-object ((vm lse-vm) stream)
+  (print-unreadable-object (vm stream :identity t :type t)
+    (format t "~D global variable~:*~P, ~D local frame~:*~P, ~D line~:*~P, current line ~D"
+            (length (frame-variables (vm-global-frame vm)))
+            (length (vm-local-frame-stack vm))
+            (length (vm-code-vectors vm))
+            (vm-pc.line vm)))
+  vm)
+
+(defmethod find-variable ((vm lse-vm) ident)
+  "
+RETURN: The variable; the frame it belongs to,
+        or NIL if the variable cannot be found.
+"
+  (multiple-value-bind (var frame) (find-variable (vm-global-frame vm) ident)
+    (if var
+        (values var frame)
+        (and (vm-local-frame-stack vm)
+             (find-variable (vm-local-frame-stack vm))))))
+
+
+(defmethod add-global-variable ((vm lse-vm) var)
+  (add-variable (vm-global-frame vm) var))
+
+
+(defmethod rem-line ((vm lse-vm) lino)      (remhash lino (vm-code-vectors vm)))
+(defmethod put-line ((vm lse-vm) lino code) (setf (gethash lino (vm-code-vectors vm)) code))
+
+
+
+
+(defvar *vm* nil "Current LSE-VM.")
+
+
+
+
+
+(defun afficher-nl      (vm rep) (format t "~V,,,VA" rep LF ""))
+(defun afficher-cr      (vm rep) (format t "~V,,,VA" rep CR ""))
+(defun afficher-space   (vm rep) (format t "~VA" rep ""))
+(defun afficher-newline (vm rep) (format t "~V%" rep))
+
+(defun afficher-chaine (vm rep val)
+  (check-type rep nombre)
+  (check-type val chaine)
+  (loop :repeat (round rep) :do (princ val)))
+
+(defun afficher-e (vm rep e d)
+  )
+
+(defun afficher-f (vm rep e d)
+  )
+
+
+(defun afficher-u (vm nexpr)
+  ()
+  )
+
+;; (:LIRE&store        (op-0/1 LIRE&store))
+;; (:LIRE&astore1        (op-1/1 LIRE&astore1))
+;; (:LIRE&astore2        (op-2/1 LIRE&astore2))
+
+
+(defun declare-chaine (vm ident)
+  (check-type ident identificateur)
+  (let ((var (find-variable vm ident)))
+    (if var
+        (if (member (variable-type var) '(:undefined chaine))
+            (setf (variable-type  var) 'chaine
+                  (variable-value var) :unbound)
+            (lse-error "LA VARIABLE ~A EXISTE DEJA ET N'EST PAS UNE CHAINE" ident))
+        (add-global-variable vm (make-instance 'lse-variable
+                                      :name ident
+                                      :type 'chaine
+                                      :value :unbound)))))
+
+(defun declare-tableau1 (vm dim ident)
+  (check-type ident identificateur)
+  (check-type dim nombre)
+  (let ((dim (round dim))
+        (var (find-variable vm ident)))
+    (flet ((init-value (dim)
+             (make-array dim :element-type 'nombre :initial-element 0.0f0)))
+      (if var
+          (if (or (eql (variable-type var) ':undefined)
+                  (and (consp (variable-type var))
+                       (member (first (variable-type var)) '(vecteur tableau))))
+              (setf (variable-type  var) `(vecteur ,dim)
+                    (variable-value var) (init-value dim))
+              (lse-error "LA VARIABLE ~A EXISTE DEJA ET N'EST PAS UN TABLEAU" ident))
+          (add-global-variable vm (make-instance 'lse-variable
+                                        :name  ident
+                                        :type  `(vecteur ,dim)
+                                        :value (init-value dim)))))))
+
+(defun declare-tableau2 (vm dim1 dim2 ident)
+  (check-type ident identificateur)
+  (check-type dim1 nombre)
+  (check-type dim2 nombre)
+  (let ((dim1 (round dim1))
+        (dim2 (round dim2))
+        (var (find-variable vm ident)))
+    (flet ((init-value (dim1 dim2)
+             (make-array (list dim1 dim2) :element-type 'nombre :initial-element 0.0f0)))
+      (if var
+          (if (or (eql (variable-type var) ':undefined)
+                  (and (consp (variable-type var))
+                       (member (first (variable-type var)) '(vecteur tableau))))
+              (setf (variable-type  var) `(tableau ,dim1 ,dim2)
+                    (variable-value var) (init-value dim1 dim2))
+              (lse-error "LA VARIABLE ~A EXISTE DEJA ET N'EST PAS UN TABLEAU" ident))
+          (add-global-variable vm (make-instance 'lse-variable
+                                        :name  ident
+                                        :type  `(tableau ,dim1 ,dim2)
+                                        :value (init-value dim1 dim2)))))))
+
+
+(defun declare-liberer (vm ident)
+  "
+NOTE: on ne peut pas liberer un parametre par reference.
+"
+  (check-type ident identificateur)
+  (multiple-value-bind (var frame) (find-variable vm ident)
+    (if var
+        (etypecase var
+          (lse-variable
+           (remove-variable frame var))
+          (reference-parameter
+           (lse-error "LA VARIABLE ~A EST UN PARAMETRE PAR REFERENCE ET NE PEUT PAS ETRE LIBEREE" ident)))
+        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+
+
+
+;; references are either lse-variable or vecteur-ref or tableau-ref.
+;; see about procedure in parameters by reference?
+
+(defun push-ref (vm ident)
+  (check-type ident identificateur)
+  (let ((var (find-variable vm ident)))
+    (if var
+        (etypecase var
+          (lse-variable          (push var (vm-stack vm)))
+          (reference-parameter   (push (reference-variable var) (vm-stack vm))))
+        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+
+(defun push-val (vm ident)
+  (check-type ident identificateur)
+  (let ((var (find-variable vm ident)))
+    (if var
+        (let ((val (variable-value var)))
+          (if (indefinip val)
+              (lse-error "LA VARIABLE ~A N'A PAS ETE INITIALISEE")
+              (push val (vm-stack vm))))
+        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+
+(defun pushi (vm val)
+  (push val (vm-stack vm)))
+
+
+
+(defun POP&ASTORE1 (vm val index ident)
+  (check-type ident identificateur)
+  (check-type index nombre)
+  (check-type val nombre)
+  (let ((index (round index))
+        (var (find-variable vm ident)))
+    (if var
+        (if (and (consp (variable-type var))
+                 (eql (first (variable-type var)) 'vecteur))
+            (setf (aref (variable-value var) index) val)
+            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 1" ident))
+        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+
+
+(defun POP&ASTORE2 (vm val index1 index2 ident)
+  (check-type ident identificateur)
+  (check-type index1 nombre)
+  (check-type index2 nombre)
+  (check-type val nombre)
+  (let ((index1 (round index1))
+        (index2 (round index2))
+        (var (find-variable vm ident)))
+    (if var
+        (if (and (consp (variable-type var))
+                 (eql (first (variable-type var)) 'tableau))
+            (setf (aref (variable-value var) index1 index2) val)
+            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
+        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+
+
+(defun POP&STORE (vm val ident)
+  (check-type ident identificateur)
+  (check-type val (or nombre chaine))
+  (let ((var (find-variable vm ident)))
+    (if var
+        (case (variable-type var)
+          (nombre
+           (if (nombrep val)
+               (setf (variable-value var) val)
+               (lse-error "LA VARIABLE ~A N'EST PAS UNE CHAINE" ident)))
+          (chaine
+           (if (chainep val)
+               (setf (variable-value var) val)
+               (lse-error "LA VARIABLE ~A EST UNE CHAINE" ident)))
+          (t
+           (lse-error "LA VARIABLE ~A N'EST PAS ~A" ident
+                      (if (nombrep val) "UN NOMBRE" "UNE CHAINE"))))
+        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+
+
+(defun AREF1&PUSH-VAL (vm index ident)
+  (check-type ident identificateur)
+  (check-type index nombre)
+  (let ((index (round index))
+        (var (find-variable vm ident)))
+    (if var
+        (if (and (consp (variable-type var))
+                 (eql (first (variable-type var)) 'vecteur))
+            (if (<= 1 index (array-dimension (variable-value var) 0))
+                (push (aref (variable-value var) index) (vm-stack vm))
+                (lse-error "DEPASSEMENT DES BORNES ~A[~A] EST INVALIDE" ident index))
+            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 1" ident))
+        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+
+
+(defun AREF2&PUSH-VAL (vm index1 index2 ident)
+  (check-type ident identificateur)
+  (check-type index1 nombre)
+  (check-type index2 nombre)
+  (let ((index1 (round index1))
+        (index2 (round index2))
+        (var (find-variable vm ident)))
+    (if var
+        (if (and (consp (variable-type var))
+                 (eql (first (variable-type var)) 'tableau))
+            (if (and (<= 1 index1 (array-dimension (variable-value var) 0))
+                     (<= 1 index2 (array-dimension (variable-value var) 1)))
+                (push (aref (variable-value var) index1 index2) (vm-stack vm))
+                (lse-error "DEPASSEMENT DES BORNES ~A[~A,~A] EST INVALIDE" ident index1 index2))
+            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
+        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+
+
+(defun AREF1&PUSH-REF (vm index ident)
+  (check-type ident identificateur)
+  (check-type index nombre)
+  (let ((index (round index))
+        (var (find-variable vm ident)))
+    (if var
+        (if (and (consp (variable-type var))
+                 (eql (first (variable-type var)) 'vecteur))
+            (if (<= 1 index (array-dimension (variable-value var) 0))
+                (push (make-instance 'vecteur-ref
+                          :name ident
+                          :vecteur (variable-value var)
+                          :index index)
+                      (vm-stack vm))
+                (lse-error "DEPASSEMENT DES BORNES ~A[~A] EST INVALIDE" ident index))
+            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 1" ident))
+        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+
+
+(defun AREF2&PUSH-REF (vm index1 index2 ident)
+  (check-type ident identificateur)
+  (check-type index1 nombre)
+  (check-type index2 nombre)
+  (let ((index1 (round index1))
+        (index2 (round index2))
+        (var (find-variable vm ident)))
+    (if var
+        (if (and (consp (variable-type var))
+                 (eql (first (variable-type var)) 'tableau))
+            (if (and (<= 1 index1 (array-dimension (variable-value var) 0))
+                     (<= 1 index2 (array-dimension (variable-value var) 1)))
+                (push (make-instance 'tableau-ref
+                       :name ident
+                       :tableau (variable-value var)
+                       :index1 index1
+                       :index2 index2)
+                   (vm-stack vm))
+                (lse-error "DEPASSEMENT DES BORNES ~A[~A,~A] EST INVALIDE" ident index1 index2))
+            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
+        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+
+
+(defun balways (vm offset)
+  (incf (vm-pc.offset vm) offset))
+
+(defun btrue (vm val offset)
+  (if (booleenp val)
+      (when (eq vrai val)
+        (incf (vm-pc.offset vm) offset))
+      (lse-error "LE TEST N'EST PAS UN BOOLEEN MAIS ~A" val)))
+
+(defun bfalse (vm val offset)
+  (if (booleenp val)
+      (when (eq faux val)
+        (incf (vm-pc.offset vm) offset))
+      (lse-error "LE TEST N'EST PAS UN BOOLEEN MAIS ~A" val)))
+
+(defun bnever (vm offset)
+  (declare (ignore vm offset)))
+
+
+;; (:faire-jusqu-a  (op-4/1 faire-jusqu-a))
+;; (:faire-tant-que (op-3/1 faire-tant-que))
+;; (:tant-que                  (op-1 tant-que))
+;; 
+;; (:pause          (op-0 pause))
+;; (:terminer       (op-0 terminer))
+;; 
+;; (:next-line        (op-0 next-line))
+;; (:goto             (op-1 goto))
+;; (:call           (op-0/2 call))
+;; (:retour           (op-0 retour))
+;; (:retour-en        (op-1 retour-en))
+;; (:result           (op-1 result))
+;; 
+;; (:garer          (op-2/1 garer))
+;; (:charger                   (op-2 charger))
+;; (:supprimer-enregistrement  (op-2 supprimer-enregistrement))
+;; (:supprimer-fichier         (op-1 supprimer-fichier))
+;; (:executer                  (op-2 executer))
+
+
+
+                  
+
+                 
 (defun run-step (vm)
   (catch 'done
     (handler-case
         (let ((stack (vm-stack vm))
-              (code  (vm-code  vm)))
+              (code  (vm-code  vm))
+              (*vm*  vm))
           (flet ((spush  (val) (vector-push-extend val stack))
                  (spop   ()    (vector-pop stack))
                  (pfetch ()    (prog1 (aref code (vm-pc.offset vm))
                                  (incf (vm-pc.offset vm)))))
             (declare (inline spush spop pfetch))
-            (macrolet ((op-0   (op) `(,op))
-                       (op-1   (op) `(spush (,op (spop))))
-                       (op-2   (op) `(spush (let ((b (spop))) (,op (spop) b))))
-                       (op-3   (op) `(spush (let ((c (spop)) (b (spop))) (,op (spop) b c))))
-                       (op-0/1 (op) `(,op (pfetch)))
-                       (op-1/1 (op) `(spush (,op (spop) (pfetch))))
-                       (op-2/1 (op) `(spush (let ((b (spop))) (,op (spop) b (pfetch)))))
-                       (op-3/1 (op) `(spush (let ((c (spop)) (b (spop))) (,op (spop) b c (pfetch)))))
-                       (op-4/1 (op) `(spush (let ((d (spop)) (c (spop)) (b (spop))) (,op (spop) b c d (pfetch)))))
-                       (op-0/2 (op) `(,op (pfetch) (pfetch))))
+            (macrolet ((op-1*   (op) `(spush (,op (spop))))
+                       (op-2*   (op) `(spush (let ((b (spop))) (,op (spop) b))))
+                       (op-0   (op) `(,op vm))
+                       (op-1   (op) `(spush (,op vm (spop))))
+                       (op-2   (op) `(spush (let ((b (spop))) (,op vm (spop) b))))
+                       (op-3   (op) `(spush (let ((c (spop)) (b (spop))) (,op vm (spop) b c))))
+                       (op-0/1 (op) `(,op vm (pfetch)))
+                       (op-1/1 (op) `(spush (,op vm (spop) (pfetch))))
+                       (op-2/1 (op) `(spush (let ((b (spop))) (,op vm (spop) b (pfetch)))))
+                       (op-3/1 (op) `(spush (let ((c (spop)) (b (spop))) (,op vm (spop) b c (pfetch)))))
+                       (op-4/1 (op) `(spush (let ((d (spop)) (c (spop)) (b (spop))) (,op vm (spop) b c d (pfetch)))))
+                       (op-0/2 (op) `(,op vm (pfetch) (pfetch))))
               (let ((cop (pfetch)))
 
                 (case cop
 
                   (:dup    (let ((a (spop))) (spush a) (spush a)))
                   
-                  (:non    (op-1 non))
-                  (:et     (op-2 et))
-                  (:ou     (op-2 ou))
+                  (:non    (op-1* non))
+                  (:et     (op-2* et))
+                  (:ou     (op-2* ou))
 
-                  (:eg     (op-2 eg))
-                  (:ne     (op-2 ne))
-                  (:le     (op-2 le))
-                  (:lt     (op-2 lt))
-                  (:ge     (op-2 ge))
-                  (:gt     (op-2 gt))
+                  (:eg     (op-2* eg))
+                  (:ne     (op-2* ne))
+                  (:le     (op-2* le))
+                  (:lt     (op-2* lt))
+                  (:ge     (op-2* ge))
+                  (:gt     (op-2* gt))
 
-                  (:concat (op-2 concatenation))
+                  (:concat (op-2* concatenation))
 
-                  (:neg    (op-1 neg))
-                  (:add    (op-2 add))
-                  (:sub    (op-2 sub))
-                  (:mul    (op-2 mul))
-                  (:div    (op-2 div))
-                  (:pow    (op-2 pow))
+                  (:neg    (op-1* neg))
+                  (:add    (op-2* add))
+                  (:sub    (op-2* sub))
+                  (:mul    (op-2* mul))
+                  (:div    (op-2* div))
+                  (:pow    (op-2* pow))
 
                   (:afficher-e       (op-3 afficher-e))
                   (:afficher-f       (op-3 afficher-f))
                   (:afficher-cr      (op-1 afficher-cr))
-                  (:afficher-newline (op-1 afficher-newline))
                   (:afficher-nl      (op-1 afficher-nl))
                   (:afficher-space   (op-1 afficher-space))
+                  (:afficher-newline (op-1 afficher-newline))
+                  (:afficher-chaine  (op-2 afficher-chaine))
                   (:afficher-u       (op-1 afficher-u))
                   
 
-                  (:LIRE&PUSH        (op-0* LIRE&PUSH))
+                  (:LIRE&STORE       (op-0/1 LIRE&STORE))
+                  (:LIRE&ASTORE1     (op-1/1 LIRE&ASTORE1))
+                  (:LIRE&ASTORE2     (op-2/1 LIRE&ASTORE2))
 
-                  (:next-line        (op-0* next-line))
-                  (:retour           (op-0* retour))
-                  (:retour-en        (op-1* retour-en))
-                  (:result           (op-1* result))
-                  (:goto             (op-1* goto))
+                  (:next-line        (op-0 next-line))
+                  (:retour           (op-0 retour))
+                  (:retour-en        (op-1 retour-en))
+                  (:result           (op-1 result))
+                  (:goto             (op-1 goto))
 
 
-                  (:tant-que                  (op-1* tant-que))
+                  (:tant-que                  (op-1 tant-que))
                   (:charger                   (op-2 charger))
                   (:supprimer-enregistrement  (op-2 supprimer-enregistrement))
                   (:supprimer-fichier         (op-1 supprimer-fichier))
-                  (:executer                  (op-2* executer))
-                  (:pause          (op-0* pause))
-                  (:terminer       (op-0* terminer))
+                  (:executer                  (op-2 executer))
+                  (:pause          (op-0 pause))
+                  (:terminer       (op-0 terminer))
                   
-                  (:AREF1&PUSH-REF (op-1/1* AREF1&PUSH-REF))
-                  (:AREF1&PUSH-VAL (op-1/1* AREF1&PUSH-VAL))
-                  (:AREF2&PUSH-REF (op-2/1* AREF2&PUSH-REF))
-                  (:AREF2&PUSH-VAL (op-2/1* AREF2&PUSH-VAL))
+                  (:AREF1&PUSH-REF (op-1/1 AREF1&PUSH-REF))
+                  (:AREF1&PUSH-VAL (op-1/1 AREF1&PUSH-VAL))
+                  (:AREF2&PUSH-REF (op-2/1 AREF2&PUSH-REF))
+                  (:AREF2&PUSH-VAL (op-2/1 AREF2&PUSH-VAL))
 
-                  (:POP&ASTORE1    (op-2/1* POP&ASTORE1))
-                  (:POP&ASTORE2    (op-3/1* POP&ASTORE2))
-                  (:POP&STORE      (op-1/1* POP&STORE))
+                  (:POP&ASTORE1    (op-2/1 POP&ASTORE1))
+                  (:POP&ASTORE2    (op-3/1 POP&ASTORE2))
+                  (:POP&STORE      (op-1/1 POP&STORE))
 
-                  (:push-ref       (op-0/1* push-ref))
-                  (:push-val       (op-0/1* push-val))
-                  (:pushi          (op-0/1* pushi))
+                  (:push-ref       (op-0/1 push-ref))
+                  (:push-val       (op-0/1 push-val))
+                  (:pushi          (op-0/1 pushi))
 
-                  (:chaine         (op-0/1* chaine))
-                  (:tableau1       (op-1/1* tableau1))
-                  (:tableau2       (op-2/1* tableau2))
-                  (:liberer        (op-0/1* liberer))
+                  (:chaine         (op-0/1 declare-chaine))
+                  (:tableau1       (op-1/1 declare-tableau1))
+                  (:tableau2       (op-2/1 declare-tableau2))
+                  (:liberer        (op-0/1 declare-liberer))
 
                   
-                  (:balways        (op-0/1* balways))
-                  (:btrue          (op-1/1* btrue))
-                  (:bfalse         (op-1/1* bfalse))
-                  (:bnever         (op-0/1* bnever))
+                  (:balways        (op-0/1 balways))
+                  (:btrue          (op-1/1 btrue))
+                  (:bfalse         (op-1/1 bfalse))
+                  (:bnever         (op-0/1 bnever))
 
-                  (:faire-jusqu-a  (op-4/1* faire-jusqu-a))
+                  (:faire-jusqu-a  (op-4/1 faire-jusqu-a))
 
-                  (:call           (op-0/2* call))
-                  (:faire-tant-que (op-3/1* faire-tant-que))
+                  (:call           (op-0/2 call))
+                  (:faire-tant-que (op-3/1 faire-tant-que))
                   (:garer          (op-2/1 garer))
 
-
-                  ;; (:liberer   (liberer      (prog1 (aref code pc.offset) (incf pc.offset))))
-                  ;; (:chaine    (decl-chaine  (prog1 (aref code pc.offset) (incf pc.offset))))
-                  ;; (:tableau1  (decl-tableau (prog1 (aref code pc.offset) (incf pc.offset)) 
-                  ;;                           (spop)))
-                  ;; (:tableau2  (let ((b (spop)))
-                  ;;               (decl-tableau (prog1 (aref code pc.offset) (incf pc.offset))
-                  ;;                             (spop) b)))
-                  ;; (:pause    -->complete-pause)
-                  ;; (:terminer -->complete-terminer)
-                  
                   (otherwise (error "COP INCONNU: ~S" cop)))))))
-
       
       (error (err)
         (report err)
@@ -271,9 +771,9 @@ va references are :pop&store'd
 
 
 (:lire liste-reference)
-  --> {:lire ident}...
-  --> :lire&push expr :pop&astore1 ident
-  --> :lire&push expr.1 expr.2 :pop&astore2 ident
+  --> :lire&sore ident
+  --> expr :lire&astore1 ident
+  --> expr.1 expr.2 :lire&astore2 ident
 
 
 (:afficher nil expr...)      --> :pushi n expr... :afficher-u

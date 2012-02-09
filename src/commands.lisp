@@ -1,3 +1,4 @@
+;;;; -*- mode:lisp;coding:utf-8 -*-
 ;;;;****************************************************************************
 ;;;;FILE:               commands.lisp
 ;;;;LANGUAGE:           Common-Lisp
@@ -10,6 +11,8 @@
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
+;;;;    2012-02-07 <PJB> Converted the grammars to rdp
+;;;;                     (zebu uses too much files for the grammars).
 ;;;;    2005-08-26 <PJB> Distiled form C 'lse_cmd.c'.
 ;;;;    2002-02-12 <PJB> Extracted from lse_main.c
 ;;;;BUGS
@@ -59,17 +62,19 @@
 ;;;  instead of .zb files.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
+#-(and)
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defvar *rules* (make-hash-table)))
 
 
+#-(and)
 (defmacro defrule (&whole rule   name &rest args )
   (declare (ignore args))
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (setf (gethash ',name *rules*) ',rule)
      ',name))
 
+#-(and)
 (defmacro define-grammar (name
                           (&key (grammar-file nil grammar-file-p)
                                 (output-file  nil output-file-p)
@@ -151,125 +156,127 @@
 ;; and we don't keep tabulation because it's not valid.
 
 
-(define-grammar numero-de-ligne
-    (:white-space (#.(character " "))
-                  :lex-cats    ((tok-numero  "{NUMERO}")))
+(defgrammar numero-de-ligne
+    :terminals    ((tok-numero  "[0-9]+"))
+    :start numero-de-ligne
+    :rules ((--> numero-de-ligne
+                 tok-numero :action (progn
+                                      (unless (valid-line-number (numero-valeur $1))
+                                        (error "NUMERO DE LIGNE INVALIDE: ~A"
+                                               (token-text $1)))
+                                      $1))))
 
-  (defrule numero-de-ligne
-      := (tok-numero)
-      :build (progn (unless (valid-line-number (numero-valeur tok-numero))
-                      (error "NUMERO DE LIGNE INVALIDE: ~A"
-                             (token-text tok-numero)))
-                    tok-numero)))
-
-
-(define-grammar un-numero
-    (
-     :white-space (#.(character " "))
-                  :lex-cats    ((tok-numero  "{NUMERO}")))
-
-  (defrule un-numero
-      := (tok-numero)))
+(defgrammar un-numero
+    :terminals ((tok-numero  "[0-9]+"))
+    :start un-numero
+    :rules ((--> un-numero
+                 tok-numero)))
 
 
-(defrule deux-numeros
-    := (tok-numero.1 tok-virgule tok-numero.2)
-    :build (progn (list tok-numero.1 tok-numero.2)))
+(defgrammar deux-numeros
+    :terminals ((tok-virgule ",")
+                (tok-numero  "[0-9]+"))
+    :start deux-numeros
+    :rules ((--> deux-numeros
+                 (seq tok-numero tok-virgule tok-numero :action (list $1 $3)))))
 
 
-(define-grammar deux-numeros
-    (
-     :white-space (#.(character " "))
-                  :lex-cats    ((tok-virgule ",")(tok-numero  "{NUMERO}")))
-
-  (insert-rule deux-numeros))
-
-
-(define-grammar deux-numeros-optionels
-    (
-     :white-space (#.(character " "))
-                  :lex-cats    ((tok-virgule ",")(tok-numero  "{NUMERO}")))
-
-  (defrule deux-numeros-optionels
-      := (tok-numero.1 tok-virgule tok-numero.2)
-      :build (progn (list tok-numero.1 tok-numero.2))
-      := ()
-      :build (progn (list 1 nil))))
+(defgrammar deux-numeros-optionels
+    :terminals ((tok-virgule ",")
+                (tok-numero  "[0-9]+"))
+    :start deux-numeros-optionels
+    :rules ((--> deux-numeros-optionels
+                 (alt
+                  (seq tok-numero tok-virgule tok-numero :action (list $1 $3))
+                  (seq :action (list 1 nil))))))
 
 
-(define-grammar liste-de-numeros
-    (
-     :white-space (#.(character " "))
-                  :lex-cats    ((tok-virgule ",")
-                                (tok-fois    "\\*")
-                                (tok-a       "A")
-                                (tok-numero  "{NUMERO}")))
+(defgrammar liste-de-numeros
+    :terminals ((tok-virgule ",")
+                (tok-fois    "\\*")
+                (tok-a       "A")
+                (tok-numero  "[0-9]+"))
+    :start liste-de-numeros
+    :rules (
+            (--> liste-de-numeros
+                 (alt (seq tok-fois :action (progn :all))
+                      (seq          :action (progn nil))
+                      liste-d-intervales))
 
-  (defrule liste-de-numeros
-      := (tok-fois) :build (progn :all)
-      := () :build (progn nil)
-      := (liste-d-intervales))
+            (--> liste-d-intervales
+                 (alt (seq intervale-de-numeros tok-virgule liste-d-intervales
+                           :action (cons $1 $3))
+                      (seq intervale-de-numeros
+                           :action (list $1))))
+            
+            (--> intervale-de-numeros
+                 (alt (seq numero-de-ligne tok-a numero-de-ligne
+                           :action (progn  `(interval ,$1 ,$3)))
+                      (seq numero-de-ligne :action (progn  $1))))
 
-  (defrule liste-d-intervales
-      := (intervale-de-numeros tok-virgule liste-d-intervales)
-      :build (cons intervale-de-numeros liste-d-intervales)
-      := (intervale-de-numeros)
-      :build (list intervale-de-numeros))
-  
-  (defrule intervale-de-numeros
-      := (numero-de-ligne.1 tok-a numero-de-ligne.2)
-      :build (progn  `(interval ,numero-de-ligne.1 ,numero-de-ligne.2))
-      := (numero-de-ligne)
-      :build (progn  numero-de-ligne)))
-
-
-(defrule ident
-    := (tok-identificateur)
-    :build (progn
-             (unless (and (char= (character "&")
-                                 (aref (token-text tok-identificateur) 0))
-                          (<= (length  (token-text tok-identificateur) 5)))
-               (error "IDENTIFICATEUR INVALIDE: ~A"
-                      (token-text tok-identificateur)))
-             tok-identificateur))
+            (--> numero-de-ligne
+                 tok-numero :action (progn
+                                      (unless (valid-line-number (numero-valeur $1))
+                                        (error "NUMERO DE LIGNE INVALIDE: ~A"
+                                               (token-text $1)))
+                                      $1))))
 
 
-(define-grammar un-programme
-    (
-     :white-space (#.(character " "))
-                  :lex-cats    ((tok-identificateur "{IDENTIFICATEUR}")))
+(defgrammar un-programme
+    :terminals ((tok-identificateur "[A-Za-z][A-Z-az0-9]*"))
+    :start un-programme
+    :rules (
+            (--> un-programme
+                 ident)
 
-  (defrule un-programme
-      := (ident))
-
-  (insert-rule ident))
-
-
-(define-grammar deux-fichiers
-    (
-     :white-space (#.(character " "))
-                  :lex-cats    ((tok-virgule ",")(tok-identificateur "{IDENTIFICATEUR}")))
-
-  (defrule deux-fichiers
-      := (ident.1 tok-virgule ident.2)
-      :build (list ident.1 ident.2))
-  
-  (insert-rule ident))
+            (--> ident
+                 (seq tok-identificateur
+                      :action (progn
+                                (unless (and (char= (character "&")
+                                                    (aref (token-text $1) 0))
+                                             (<= (length  (token-text $1)) 5))
+                                  (error "IDENTIFICATEUR INVALIDE: ~A" (token-text $1)))
+                                $1)))))
 
 
-(define-grammar un-fichier-et-deux-numeros
-    (
-     :white-space (#.(character " "))
-                  :lex-cats    ((tok-virgule ",")
-                                (tok-numero  "{NUMERO}")
-                                (tok-identificateur "{IDENTIFICATEUR}")))
+(defgrammar deux-fichiers
+    :terminals ((tok-virgule ",")
+                (tok-identificateur "[A-Za-z][A-Z-az0-9]*"))
+    :start deux-fichiers
+    :rules ((--> deux-fichiers
+                 (seq ident tok-virgule ident
+                      :action (list $1 $3)))
+            
+            (--> ident
+                 (seq tok-identificateur
+                      :action (progn
+                                (unless (and (char= (character "&")
+                                                    (aref (token-text $1) 0))
+                                             (<= (length  (token-text $1)) 5))
+                                  (error "IDENTIFICATEUR INVALIDE: ~A" (token-text $1)))
+                                $1)))))
 
-  (defrule un-fichier-et-deux-numeros
-      := (ident tok-virgule deux-numeros)
-      :build (cons ident deux-numeros))
 
-  (insert-rule ident)
-  (insert-rule deux-numeros))
+(defgrammar un-fichier-et-deux-numeros
+    :terminals  ((tok-virgule ",")
+                 (tok-numero  "[0-9]+")
+                 (tok-identificateur "[A-Za-z][A-Za-z0-9]*"))
+    :start un-fichier-et-deux-numeros
+    :rules (
+            (--> un-fichier-et-deux-numeros
+                 (seq ident tok-virgule deux-numeros :action (cons $1 $3)))
+
+            (--> ident
+                 (seq tok-identificateur
+                      :action (progn
+                                (unless (and (char= (character "&")
+                                                    (aref (token-text $1) 0))
+                                             (<= (length (token-text $1)) 5))
+                                  (error "IDENTIFICATEUR INVALIDE: ~A" (token-text $1)))
+                                $1)))
+
+            (--> deux-numeros
+                 (seq tok-numero tok-virgule tok-numero :action (list $1 $3)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -279,7 +286,7 @@
 
 (defvar *command-scanner*
   (let ((scanner (make-instance 'scanner :source (MAKE-STRING-INPUT-STREAM ""))))
-    (advance-token scanner)
+    ;; (advance-token scanner)
     scanner))
 
 
@@ -296,10 +303,10 @@
   `(make-command
     :initials       (subseq ,name 0 2)
     :name          ,name
-    :grammar       ,(when grammar (find-grammar (string grammar)))
-    :arguments    ',arguments
+    :grammar       ',grammar ;; (when grammar (find-grammar (string grammar)))
+    :arguments     ',arguments
     :documentation ,(if (stringp (first body)) (first body) "")
-    :function       (lambda ,(flatten arguments) ,@body)))
+    :function       (lambda ,(flatten arguments) (block ,(intern name) ,@body))))
 
 
 (defstruct command-group
@@ -356,7 +363,7 @@
 ;; ---------------------
 ;;  Compte
 ;; ---------------------
-;;  numero : entier  -----[ numero = XXXNN : XXX est caché ; NN est affiché ]
+;;  numero : entier  -----[ numero = XXXNN : XXX est cachÃ© ; NN est affichÃ© ]
 ;;  droit_pgm : bool  ----[a:creation, modification, suppression de programmes]
 ;;  droit_per : bool  ----[b:creation, modification, suppression de permanents]
 ;;  droit_tau : bool    ----[c:augmentation dynamique de l'espace temporaire]
@@ -370,8 +377,8 @@
 ;;  [d: allocation d'un espace temporaire fixe superieur]
 ;;  Les combinaisons possibles sont :
 ;;   Combinaison de droits :  a    b    ab   c    ac   bc   abc  d    bd   abd
-;;   Codes à   utiliser       1    2    3    4    5    6    7    8    :     ;
-;;    en quatrième colone :   A    B    C    D    E    F    G    H    J     K
+;;   Codes Ã    utiliser       1    2    3    4    5    6    7    8    :     ;
+;;    en quatriÃ¨me colone :   A    B    C    D    E    F    G    H    J     K
 ;;                                           d    ad   bd   adb
 
 
@@ -458,8 +465,8 @@
               ;;                 lse_ecrire_format(travail,"\r\n???");
               ;;             }
               ;;         }else if(disponible<requis
-              ;;                  /*cas ou  l'identification demandée correspondait a
-              ;;                    un espace temporaire supérieur à celui restant*/){
+              ;;                  /*cas ou  l'identification demandÃ©e correspondait a
+              ;;                    un espace temporaire supÃ©rieur Ã  celui restant*/){
               ;;             lse_ecrire_format(travail,
               ;;                               "\r\nESPACE TEMPORAIRE REDUIT A %d SECTEURS.",
               ;;                               disponible);
@@ -482,7 +489,7 @@
               (io-format *task* " ")
               (unless (string= (io-read-line *task* :echo nil :xoff t) +PASSWORD+)
                 (error-report *task* +error-bad-identifier+)
-                (return-from cmd-droits))
+                (return-from droits))
               (io-newline *task*) (io-format *task* "            ANCIEN  NOUVEAU  ") ;
               (io-newline *task*) (io-format *task* "NO.COMPTE    PDAF     PDAF   ") ;
               (loop
@@ -564,10 +571,11 @@
 
 
   (defcommand "PERFORER A PARTIR DE" deux-numeros-optionels ((from to))
-              (lse_es_activer_perforateur_de_ruban travail)
-              (lse_langage_perforer travail (first from-to) (second from-to))
-              (lse_es_arreter_perforateur_de_ruban travail)
-              (lse_ecrire_format travail "\r\nPERFORATION EFFECTUEE."))
+              ;; (lse_es_activer_perforateur_de_ruban travail)
+              ;; (lse_langage_perforer travail (first from-to) (second from-to))
+              ;; (lse_es_arreter_perforateur_de_ruban travail)
+              ;; (lse_ecrire_format travail "\r\nPERFORATION EFFECTUEE.")
+              )
 
 
   (defcommand "LP LISTER   LISP"     deux-numeros-optionels ((from to))
@@ -576,10 +584,11 @@
 
 
   (defcommand "PP PERFORER LISP"     deux-numeros-optionels ((from to))
-              (lse_es_activer_perforateur_de_ruban travail)
-              (lse_langage_lispeur travail (first from-to) (second from-to))
-              (lse_es_arreter_perforateur_de_ruban travail)
-              (lse_ecrire_format travail "\r\nPERFORATION EFFECTUEE."))
+              ;; (lse_es_activer_perforateur_de_ruban travail)
+              ;; (lse_langage_lispeur travail (first from-to) (second from-to))
+              ;; (lse_es_arreter_perforateur_de_ruban travail)
+              ;; (lse_ecrire_format travail "\r\nPERFORATION EFFECTUEE.")
+              )
 
 
   (defcommand "NUMERO A PARTIR DE"   deux-numeros-optionels ((from to))
@@ -1008,6 +1017,13 @@
 
 
 
+(defun sleeping-commands ()
+  (mapcar (function command-name) (command-group-commands sleeping)))
+
+(defun awake-commands ()
+  (mapcar (function command-name) (command-group-commands awake)))
+
+
 (defun cmd-interprete (task)
   (loop while (task-state-awake-p (task-state task))
      do
@@ -1022,8 +1038,8 @@
               ;; looks like a command
               (let ((entry (assoc line 
                                   (if (task-state-sleeping-p task)
-                                      +sleeping-commands+ 
-                                      +awake-commands+)
+                                      (sleeping-commands)
+                                      (awake-commands))
                                   :test (lambda (x y) (string= x y :end2 2)))))
                 (if (null entry)
                     (error-format task "COMMAND INCONNUE")
@@ -1046,8 +1062,8 @@
      ;; looks like a command
      (let ((entry (assoc line 
                          (if (task-state-sleeping-p task)
-                             +sleeping-commands+ 
-                             +awake-commands+)
+                             (sleeping-commands)
+                             (awake-commands))
                          :test (lambda (x y) (string= x y :end2 2)))))
        (if (null entry)
            (error-format task "COMMAND INCONNUE")

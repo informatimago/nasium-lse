@@ -1,4 +1,4 @@
-;;;; -*- mode:lisp;coding:utf-8 -*-
+;;;; -*- mode:lisp; coding:utf-8 -*-
 ;;;;**************************************************************************
 ;;;;FILE:               iolib-message.lisp
 ;;;;LANGUAGE:           Common-Lisp

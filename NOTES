@@ -6,9 +6,23 @@ TODO
 
 
     - Appel de  PROCEDURE
+
+      We cannot generate vref or vval for parameters of PROCEDUREs
+      before knowing what parameters are by reference and what are by
+      value, therefore before having seen the PROCEDURE declaration in
+      the source.
+
+      ‚ö† Therefore we can generate the code only globally, just before we
+        run the program.  Chaining or loading parts of the program while
+        running means we need to recompile it.
+
+
     - initialisation/terminaison des variables, EX, PAUSE, TERMINER, CO, RE, PO,
       gestion (scope) des piles...
-      --> GÈnÈrer un code intermÈdiaire ?!
+      --> G√©n√©rer un code interm√©diaire ?!
+
+
+
 
     - PRendre etat console
         Mitra-15: copie le programme, les variables, et les fichiers
@@ -16,10 +30,10 @@ TODO
         TRANSFERT FICHIERS TEMPORAIRES IMPOSSIBLE
         !! Avec des threads, il faut bloquer les threads de la console source !!
 
-    - CHARGER/GARER mettre un sÈmaphore par fichier ; revoir les
+    - CHARGER/GARER mettre un s√©maphore par fichier ; revoir les
       autres resources.
 
-    - Programmmes ‡ execution seule ? (Il faut l'ID du pgm pour le lister).
+    - Programmmes √† execution seule ? (Il faut l'ID du pgm pour le lister).
 
 
 
@@ -71,28 +85,28 @@ FILES AND DIRECTORIES IN ../lse/
     pjb_objet.h             inutile -- on a GC & CLOS
     pjb_tableau.h           inutile -- on a des tableaux en CL
 
-    lse_type.h              inutile -- DÈfini des valeurs ÈtiquettÈes, 
+    lse_type.h              inutile -- D√©fini des valeurs √©tiquett√©es, 
                                        comme en lisp: nombre, vecteur, 
-                                       tableau, chaine, symbole, boolÈen.
-                            Note: la VM LSE a des variables typÈes.
+                                       tableau, chaine, symbole, bool√©en.
+                            Note: la VM LSE a des variables typ√©es.
 
     lse_cons.h              inutile -- on a des cons & listes en CL.
     lse_pile.h              inutile -- pile.
 
 
-    lse_environnement.h     Environnement d'exÈcution (thread):
+    lse_environnement.h     Environnement d'ex√©cution (thread):
                             programme, globales, locales, piles, 
                             ligne courante, ligne reprise, pas-a-pas.
 
 
-    lse_cmd.h               InterprÈteur des commandes, commandes.
+    lse_cmd.h               Interpr√©teur des commandes, commandes.
 
     lse_travail.h           Une Session: console, compte, E/S, terminal, 
                             commandes, etc.
 
 
 
-    lse_compte.h            Gestion des comptes utilisateurs, droits d'accËs.
+    lse_compte.h            Gestion des comptes utilisateurs, droits d'acc√®s.
                             Convertir en premier!
 
     lse_catalogue.h         Gestion des catalogues LSE.
@@ -100,7 +114,7 @@ FILES AND DIRECTORIES IN ../lse/
     lse_fichier.h           Gestion des fichiers LSE.
                             Convertir en premier!
 
-    lse_fonction.h          Les fonctions en bibliothËque.
+    lse_fonction.h          Les fonctions en biblioth√®que.
                             Convertir en premier!
 
 
@@ -109,25 +123,25 @@ FILES AND DIRECTORIES IN ../lse/
 
     lse_cadre.h             stack-frame: next-frame, variables.
 
-    lse_parametre.h         ParamËtre d'une procÈdure: identificateur, sorte.
+    lse_parametre.h         Param√®tre d'une proc√©dure: identificateur, sorte.
 
     lse_variable.h          Variable (binding): identificateur, valeur,
-                            propriÈtaire(passage par rÈfÈrence), locale
+                            propri√©taire(passage par r√©f√©rence), locale
 
     lse_primproc.h          inutile -- Superclasse primitives & procedures.
     lse_primitive.h         inutile -- Table des primitives (meta-fonction): 
-                            identificateur, parametres, implÈmentation.
+                            identificateur, parametres, impl√©mentation.
 
     lse_procedure.h         Objet procedure: identificateur, parametres,
                             variables locales, ligne, instructions.
 
-    lse_es.h                EntrÈes/Sorties
-                            Essentiel -- architecture du systËme.
+    lse_es.h                Entr√©es/Sorties
+                            Essentiel -- architecture du syst√®me.
 
 
     lse_scanner.h           -- scanner
     lse_parser.out.h        -- parser
-    lse_langage.h           Commandes de l'interprÈteur, interpÈteur.
+    lse_langage.h           Commandes de l'interpr√©teur, interp√©teur.
     lse_langage_debug.h     Lispeur.
 
 
@@ -183,7 +197,7 @@ URLS
     
     LSE83  
     Jacques Arsac
-    Bulletin de l'EPI n∞ 38   
+    Bulletin de l'EPI n¬∞ 38   
     http://archive-edutice.ccsd.cnrs.fr/docs/00/03/06/74/PDF/b38p116.pdf 
 
 ------------------------------------------------------------------------

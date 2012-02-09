@@ -1,3 +1,4 @@
+;;;; -*- mode:lisp;coding:utf-8 -*-
 ;;;;****************************************************************************
 ;;;;FILE:               server.lisp
 ;;;;LANGUAGE:           Common-Lisp
@@ -57,7 +58,7 @@ displayed at the start of the EMULSE Limbo session.")
 
 (defvar *limbo-help*
   "
-Commandes du sous-système Limbo de EMULSE :
+Commandes du sous-systÃ¨me Limbo de EMULSE :
 
 DECONNECTER    Ferme la connexion.
 LSE            Entre dans le sous-systeme L.S.E.

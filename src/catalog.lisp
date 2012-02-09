@@ -1,3 +1,4 @@
+;;;; -*- mode:lisp; coding:utf-8 -*-
 ;;;;****************************************************************************
 ;;;;FILE:               catalog.lisp
 ;;;;LANGUAGE:           Common-Lisp
@@ -244,7 +245,7 @@
 
     static int selectionner_repertoire(const struct dirent* entree_rep)
         /*
-            RETURN: selectionner_repertoire "/" entree_rep est un répertoire.
+            RETURN: selectionner_repertoire "/" entree_rep est un rÃ©pertoire.
         */
     {
         char*       chemin=selectionner_repertoire_courant;
@@ -527,8 +528,8 @@
 
     void lse_catalogue_synchroniser(void)
 extern void lse_catalogue_synchroniser(void);
-/* charge les création/suppression de fichier du disque, et 
-   enregistre le catalogue mémoire sur disque, */
+/* charge les crÃ©ation/suppression de fichier du disque, et 
+   enregistre le catalogue mÃ©moire sur disque, */
 
     {
         if(0<lse_catalogue_obtenir_nouvelles_entrees(catalogue_permanent)){
@@ -541,7 +542,7 @@ extern void lse_catalogue_synchroniser(void);
 
 
     void lse_catalogue_terminer(void)
-    /* appelle lse_catalogue_synchroniser et nettoie la mémoire */
+    /* appelle lse_catalogue_synchroniser et nettoie la mÃ©moire */
     {
         lse_catalogue_synchroniser();
         pjb_objet_relacher(catalogue_permanent);

@@ -1,3 +1,4 @@
+;;;; -*- mode:lisp; coding:utf-8 -*-
 ;;;;****************************************************************************
 ;;;;FILE:               compiler.lisp
 ;;;;LANGUAGE:           Common-Lisp
@@ -197,9 +198,10 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
      (cons stat next))
     (token
      (ecase (token-kind stat)
-       (tok-litchaine  (gen bc::pushi (chaine-valeur stat) next))
-       (tok-nombre     (gen bc::pushi (nombre-valeur stat) next))
-       (tok-numero     (gen bc::pushi (numero-valeur stat) next))))
+       (tok-chaine      (gen bc::pushi (chaine-valeur stat) next))
+       (tok-nombre      (gen bc::pushi (nombre-valeur stat) next))
+       (tok-numero      (gen bc::pushi (numero-valeur stat) next))
+       (tok-commentaire #|nothing|#)))
     (cons
      (ecase (first stat)
 
@@ -304,7 +306,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
        ;; Local Variables
 
        
-       (:procedure
+       (:decl-procedure
         ;; Les procedures ne sont pas executable, bc::procedure generates an error.
         
         (gen bc::procedure next))
@@ -602,35 +604,50 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
     (make-array (length bytes) :initial-contents bytes)))
 
 
-(defun compile-line (source-line)
-  (let* ((scanner (task-scanner *task*))
-         (next-token (get-next-token-function scanner)))
-    (with-input-from-string (source source-line)
-      (setf (source scanner) source)
+(defun compile-lse-line-parse-tree (parse-tree)
+  (let ((*print-pretty* nil)) (terpri) (princ "Parse tree: ") (prin1 parse-tree) (terpri))
+  (cond
+    ((null parse-tree))           ; nothing to do
+    ((atom parse-tree)
+     (format *error-output* "~&ERREUR: JE TROUVE UN ATOME: ~S~%" parse-tree))
+    ((eq (car parse-tree) :liste-instructions)
+     (compile-slist (cdr parse-tree)))
+    ((eq (car parse-tree) :ligne-programme)
+     (compile-slist (cddr parse-tree)))
+    (t
+     (format *error-output* "~&ERREUR: JE TROUVE UNE LISTE INVALIDE: ~S~%" parse-tree))))
+
+
+
+;; zebu:
+#-(and) 
+(defun parse-lse (scanner)
+  (handler-case
+      (lr-parse (progn
+                  (advance-line)
+                  (lambda (parser-data)
+                    (scan-next-token scanner parser-data)))
+                (lambda (msg) (error "ERREUR: ~A" msg))
+                (find-grammar "LSE"))
+    (error (err)
+      (format t "Parsing error ~A" err)
+      (signal err))))
+
+
+(defun compile-lse-line (source-line)
+  (let ((parse-tree (parse-lse (make-instance 'lse-scanner :source source-line))))
+    (compile-lse-line-parse-tree parse-tree)))
+
+
+(defun compile-lse-file (source)
+  (with-open-file (stream source)
+    (let ((scanner (make-instance 'lse-scanner :source stream)))
       (advance-line scanner)
-      (let ((parse-tree (handler-case (lr-parse next-token
-                                    (lambda (msg) (error "ERREUR: ~A" msg))
-                                    (find-grammar "LSE"))
-                          (error (err)
-                            (format t "Parsing error ~A" err)
-                            (signal err)))))
-        (let ((*print-pretty* nil)) (terpri) (princ "Parse tree: ") (prin1 parse-tree))
-        (cond
-          ((null parse-tree))           ; nothing to do
-          ((and (typep parse-tree 'token)
-                (eq (token-kind parse-tree) 'tok-erreur))
-           (format *error-output*
-                   "~&ERREUR: ~S~%" (token-text parse-tree)))
-          ((atom parse-tree)
-           (format *error-output*
-                   "~&ERREUR: JE TROUVE UN ATOME: ~S~%" parse-tree))
-          ((eq (car parse-tree) :liste-instructions)
-           (compile-slist (cdr parse-tree)))
-          ((eq (car parse-tree) :ligne-programme)
-           (compile-slist (cddr parse-tree)))
-          (t
-           (format *error-output*
-                   "~&ERREUR: JE TROUVE UNE LISTE INVALIDE: ~S~%" parse-tree)))))))
+      (loop
+        :until (typep (scanner-current-token scanner) 'tok-eof)
+        :collect (let ((parse-tree (parse-lse scanner)))
+                   (compile-lse-line-parse-tree parse-tree))))))
+
 
 
 (defparameter *cop-info*
@@ -708,21 +725,22 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
          (format t "~2%~A~%" (buffer scanner))
          (restart-case
              ;; stuff
-             (format t "~&~S~%" (lr-parse next-token
-                                          (lambda (msg) (error "ERREUR: ~A" msg))
-                                          (find-grammar "LSE")))
+             (format t "~&~S~%" ;; (lr-parse next-token
+                                ;;           (lambda (msg) (error "ERREUR: ~A" msg))
+                                ;;           (find-grammar "LSE"))
+                     (parse-lse next-token))
            (advance-line ()
              :report "PASSER A LA LIGNE SUIVANTE")))))
   (values))
 
 
-(defun test-compile-file (path)
+(defun test-compile-lse-file (path)
   (with-open-file (src path)
     (loop
        :for line = (read-line src nil nil)
        :do (terpri) (princ ";; |  ") (write-string line)
        :while line
-       :do (let ((comp (compile-line line)))
+       :do (let ((comp (compile-lse-line line)))
              (print comp)
              (print (disassemble-lse comp)))
        :finally (terpri) (finish-output)))
@@ -733,7 +751,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;; (test-parse-file #P "~/src/pjb/lse/BOURG/BOUR.LSE")
 
 ;; (test-compile-file #P "~/src/pjb/lse/BOURG/BOUR.LSE")
-;; (test-compile-file #P "~/src/pjb/lse-cl/TESTCOMP.LSE")
+;; (compile-lse-file #P "~/src/pjb/lse-cl/TESTCOMP.LSE")
 
 
 

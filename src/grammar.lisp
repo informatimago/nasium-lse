@@ -1,4 +1,4 @@
-;;;; -*- mode:lisp;coding:utf-8 -*-
+;;;; -*- mode:lisp; coding:utf-8 -*-
 ;;;;**************************************************************************
 ;;;;FILE:               grammar.lisp
 ;;;;LANGUAGE:           Common-Lisp

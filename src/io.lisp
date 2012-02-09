@@ -1,3 +1,4 @@
+;;;; -*- mode:lisp; coding:utf-8 -*-
 ;;;;****************************************************************************
 ;;;;FILE:               io.lisp
 ;;;;LANGUAGE:           Common-Lisp
@@ -149,7 +150,7 @@ RETURN: Whether name is a string with the following format:
        ((char= (character "/") (char name i))
         (setf i (1+ i) state :first))
        (t
-        (return-from 'io-valid-tape-name-p nil))))));;io-valid-tape-name-p
+        (return-from io-valid-tape-name-p nil))))))
 
 
 #||
@@ -388,15 +389,15 @@ RETURN: Whether name is a string with the following format:
 ;; les aiguille :
 ;;     - interuption (ESC),
 ;;     - signal (CTRL-A),
-;;     - tampon_entree lorsque le thread principal attend une entrée terminal,
-;;     - /dev/null lorsque le thread principal n'attend pas d'entrée terminal,
+;;     - tampon_entree lorsque le thread principal attend une entrÃ©e terminal,
+;;     - /dev/null lorsque le thread principal n'attend pas d'entrÃ©e terminal,
 ;;     - echo sur le terminal lorsqu'on est pas en mode SILENCE.
-;;     - fin de l'entrée et signal du thread principal sur terminateur.
+;;     - fin de l'entrÃ©e et signal du thread principal sur terminateur.
 ;;
 ;; On va faire lire le ruban  par le thread terminal. Il fera un poll
-;; (on pourrait avoir  plus de 32 descripteurs ouverts  en même temps
+;; (on pourrait avoir  plus de 32 descripteurs ouverts  en mÃªme temps
 ;; avec 16  consoles+rubans) sur  le terminal et  le ruban.  Quand le
-;; ruban est lu,  on ignore toute entrée sur  le terminal sauf CTRL-A
+;; ruban est lu,  on ignore toute entrÃ©e sur  le terminal sauf CTRL-A
 ;; et ESC.
 
 

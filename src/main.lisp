@@ -39,43 +39,43 @@
 
 (SETF *TASK* (MAKE-TASK))
 
-(defun parse-lse (path)
-  (let ((zebu:*current-grammar*
-         (or (find-grammar "LSE")
-             (error "JE TROUVE PAS MA GRAMMAIRE LSE"))))
-    (with-open-file (src path :direction :input)
-      (loop for line = (read-line src nil nil)
-         while line
-         do (print (read-parser line))))))
+;; (defun parse-lse (path)
+;;   (let ((zebu:*current-grammar*
+;;          (or (find-grammar "LSE")
+;;              (error "JE TROUVE PAS MA GRAMMAIRE LSE"))))
+;;     (with-open-file (src path :direction :input)
+;;       (loop for line = (read-line src nil nil)
+;;          while line
+;;          do (print (read-parser line))))))
     
 
-(defun parse-lse-file (path)
-  (with-open-file (src path)
-    (let ((scanner (make-instance 'scanner :source src))
-          (first-time t))
-      (lr-parse
-       (lambda ()
-         (if first-time
-             (setf first-time nil)
-             (advance-token))
-         (let ((token (token scanner)))
-           (values token (token-kind token)))))
-      (lambda (message)
-        (format *standard-error*
-          "~&~A:~D:~D: ~A~%" path (line scanner) (column scanner) message)
-        (error "~A~%" message))
-      (find-grammar "LSE"))))
+;; (defun parse-lse-file (path)
+;;   (with-open-file (src path)
+;;     (let ((scanner (make-instance 'scanner :source src))
+;;           (first-time t))
+;;       (lr-parse
+;;        (lambda ()
+;;          (if first-time
+;;              (setf first-time nil)
+;;              (advance-token))
+;;          (let ((token (token scanner)))
+;;            (values token (token-kind token)))))
+;;       (lambda (message)
+;;         (format *standard-error*
+;;           "~&~A:~D:~D: ~A~%" path (line scanner) (column scanner) message)
+;;         (error "~A~%" message))
+;;       (find-grammar "LSE"))))
       
 
-(defun clean ()
-  (let ((*default-pathname-defaults* (load-time-value *load-pathname*)))
-    (mapcar 'delete-file
-            (sort (delete-duplicates
-                   (append "lse-domain.*"
-                           "parser-lse.tab"
-                           (directory "**/*.fas")
-                           (directory "**/*.lib")
-                           (directory "grammars/*.*")))
-                  'string<= :key 'namestring))))
+;; (defun clean ()
+;;   (let ((*default-pathname-defaults* (load-time-value *load-pathname*)))
+;;     (mapcar 'delete-file
+;;             (sort (delete-duplicates
+;;                    (append "lse-domain.*"
+;;                            "parser-lse.tab"
+;;                            (directory "**/*.fas")
+;;                            (directory "**/*.lib")
+;;                            (directory "grammars/*.*")))
+;;                   'string<= :key 'namestring))))
 
 ;;;; THE END ;;;;

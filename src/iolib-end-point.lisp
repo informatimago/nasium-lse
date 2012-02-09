@@ -1,4 +1,4 @@
-;;;; -*- mode:lisp;coding:utf-8 -*-
+;;;; -*- mode:lisp; coding:utf-8 -*-
 ;;;;**************************************************************************
 ;;;;FILE:               end-point.lisp
 ;;;;LANGUAGE:           Common-Lisp

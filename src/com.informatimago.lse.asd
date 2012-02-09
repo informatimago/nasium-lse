@@ -38,7 +38,7 @@
 (asdf:defsystem :com.informatimago.lse
     :description  "LSE interpreter."
     :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
-    :version "1.0.2"
+    :version "1.0.4"
     :licence "GPL"
     :properties ((#:author-email                   . "pjb@informatimago.com")
                  (#:date                           . "Winter 2012")
@@ -58,8 +58,8 @@
                  #+clisp :com.informatimago.susv3
 
                  :com.informatimago.common-lisp
-
-                 :com.hp.zebu
+                 :com.informatimago.rdp
+                 ;; :com.hp.zebu
                  )
     :serial t
     :components (
@@ -75,32 +75,33 @@
                  ;;----------------------
 
                  ;; LSE language
-                 (:file "patch-zebu")
                  (:file "packages")
-                 (:file "grammar")
-                 (:file "lse-domain")
+
+                 ;; (:file "patch-zebu")
+                 ;; (:file "grammar")
+                 ;; (:file "lse-domain")
 
                  
                  (:file "configuration")
-                 (:file "io")
                  (:file "error")
-
-                 (:file "task")
-
+                 (:file "io")
                  (:file "catalog")
                  (:file "functions")
-                 (:file "scanner-lse")
+
+                 (:file "lse-scanner")
+                 (:file "lse-parser")
                  (:file "compiler")
+                 (:file "vm")
 
                  (:file "commands")
+                 (:file "task")
 
                  ;; LSE server
                  (:file "server-commands")
                  (:file "server")
                  ;; (:file "simple-server")
-                 ;; (:file "vm")
 
-                 (:file "main")
+                 ;; (:file "main")
                  ))
 
 

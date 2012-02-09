@@ -1,3 +1,4 @@
+;;;; -*- mode:lisp; coding:utf-8 -*-
 ;;;;****************************************************************************
 ;;;;FILE:               task.lisp
 ;;;;LANGUAGE:           Common-Lisp
@@ -54,13 +55,13 @@
   (abreger       nil :type boolean) ;; AB-REGER
   (silence       nil :type boolean) ;; SI-LENCE
   (interruption  nil :type boolean) ;; ESC
-  (signal        nil :type boolean) ;; CTRL-A  Utilisé par ATT()
+  (signal        nil :type boolean) ;; CTRL-A  UtilisÃ© par ATT()
   (dectech       nil :type boolean) ;; police DecTech pour _ et ^.
   (echo          nil :type boolean) ;; parameter lse_es_lire_ligne
   (random-state  (make-random-state) :type random-state)
-  (scanner       (make-instance 'scanner))
+  (scanner       nil)
   (environnement nil :type (or null environnement))
-  (decodeur-nom-fichier nil :type (or null ident))  ;; paramètre
+  (decodeur-nom-fichier nil :type (or null ident))  ;; paramÃ¨tre
   (decodeur-numero      nil :type (or null nombre)) ;; 
   (erreur               nil :type (or null erreur)) ;; resultat
 ;;         pthread_t               principal;
@@ -100,7 +101,7 @@
                                       int entree,int sortie);
         /*
             POST:   lse_task_etat(task)==lse_task_etat_dormant.
-            NOTE:   Les threads sont activés. 
+            NOTE:   Les threads sont activÃ©s. 
                     terminal est en attente d'une E/S, et 
                     principal est en attente de terminal...
         */
@@ -124,6 +125,9 @@
 (defparameter *task-mutex* nil "pthread_mutex_t")
 (defparameter *task* nil "The current task")
 
+#+developing (SETF *TASK* (MAKE-TASK))
+
+
 (defun task-initialize (task-count)
   "Appeler une seule fois dans le programme."
   ;; pthread_mutex_init(&mutex,NULL);
@@ -131,7 +135,7 @@
         *tasks*      nil)
   (dotimes (i *task-count*)
     (push (task-create (1- (- *task-count* i))) *tasks*))
-  (values));;task-initialize
+  (values))
 
 
 (defun task-count () *task-count*)
@@ -140,7 +144,7 @@
 
 (defun task-inlimbo ()
   "(thread-safe)
-Retourne un task qui était inlimbo (il est maintant aconnecter).
+Retourne un task qui Ã©tait inlimbo (il est maintant aconnecter).
 "
   ;;pthread_mutex_lock(&mutex);
   (unwind-protect
@@ -148,7 +152,7 @@ Retourne un task qui était inlimbo (il est maintant aconnecter).
         (when result (task-state-change task :to-connect))
         result)
     (progn ;; pthread_mutex_unlock(&mutex);
-      )));;task-inlimbo
+      )))
 
 
 #||
@@ -158,7 +162,7 @@ Retourne un task qui était inlimbo (il est maintant aconnecter).
 
     lse_task_t* lse_task_du_fil(void)
         /*
-            RETURN: Le task associé au fil courrant.
+            RETURN: Le task associÃ© au fil courrant.
         */
     {
         return((lse_task_t*)pthread_getspecific(lse_task_cle));
@@ -174,7 +178,7 @@ Retourne un task qui était inlimbo (il est maintant aconnecter).
         }
         pthread_setspecific(lse_task_cle,task);
         while(1){
-            /* attendons qu'un terminal soit connecté */
+            /* attendons qu'un terminal soit connectÃ© */
             pthread_mutex_lock(&(task->mutex_principal));
             pthread_cond_wait(&(task->condi_principal),
                               &(task->mutex_principal));
@@ -190,7 +194,7 @@ Retourne un task qui était inlimbo (il est maintant aconnecter).
     {
         lse_task_t* task=(lse_task_t* )t;
         while(1){
-            /* attendons qu'un terminal soit connecté */
+            /* attendons qu'un terminal soit connectÃ© */
             pthread_mutex_lock(&(task->mutex_terminal));
             pthread_cond_wait(&(task->condi_terminal),
                               &(task->mutex_terminal));
@@ -218,9 +222,9 @@ Retourne un task qui était inlimbo (il est maintant aconnecter).
 
     lse_task_t* lse_task_creer(int console)
         /*
-            NOTE:   Invoqué par lse_task_initialiser.
-            DOES:   Initialise un nouveau task; créé les deux threads,
-                    mais comme il n'est pas connecté, ils sont suspendus.
+            NOTE:   InvoquÃ© par lse_task_initialiser.
+            DOES:   Initialise un nouveau task; crÃ©Ã© les deux threads,
+                    mais comme il n'est pas connectÃ©, ils sont suspendus.
             POST:   lse_task_etat(task)==lse_task_etat_inlimbo.
         */
 

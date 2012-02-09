@@ -1,3 +1,4 @@
+;;;; -*- mode:lisp; coding:utf-8 -*-
 ;;;;****************************************************************************
 ;;;;FILE:               configuration.lisp
 ;;;;LANGUAGE:           Common-Lisp

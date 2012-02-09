@@ -175,6 +175,9 @@
 (defrule identificateur
     := tok-identificateur :build (progn tok-identificateur))
 
+(defrule function-argument
+    := expression
+    := left-reference)
 
 (defrule expression
     := (tok-moins terme)               :build (list :neg       terme)
@@ -196,24 +199,23 @@
 
 
 (defrule simple
-    := (tok-SI disjonction tok-ALORS expression.1 tok-SINON expression.2)
-    :build (list :xi disjonction expression.1 expression.2)
-    := (identificateur tok-pargauche tok-pardroite)
-    :build (list :fonction identificateur)
-    := (identificateur tok-pargauche liste-expression tok-pardroite)
-    :build (list* :fonction identificateur liste-expression)
-    := tok-litchaine :build (progn tok-litchaine)
+    := (tok-SI disjonction tok-ALORS expression.1 tok-SINON expression.2) :build (list :xi disjonction expression.1 expression.2)
+    := (identificateur tok-pargauche tok-pardroite)                       :build (list :fonction identificateur)
+    := (identificateur tok-pargauche liste-argument tok-pardroite)        :build (list* :fonction identificateur liste-argument)
+    := tok-litchaine                            :build (progn tok-litchaine)
     := (tok-pargauche expression tok-pardroite) :build (progn expression)
-    := left-reference
+    := right-reference
     := tok-nombre :build (progn tok-nombre)
     := tok-numero :build (progn tok-numero))
 
 
 (defrule liste-expression
-    := (liste-expression tok-virgule expression)
-    :build (snoc liste-expression expression)
-    := expression
-    :build (list expression))
+    := (liste-expression tok-virgule expression) :build (snoc liste-expression expression)
+    := expression                                :build (list expression))
+
+(defrule liste-argument
+    := (liste-argument tok-virgule function-argument) :build (snoc liste-argument function-argument)
+    := function-argument                              :build (list function-argument))
 
 
 (defrule liste-identificateur
@@ -385,21 +387,21 @@
 
 
 
-;; (defrule left-reference
-;;     := (left-reference/vecteur tok-virgule expression tok-crodroite)
-;;     :build (snoc left-reference/vecteur expression)
-;;     := (left-reference/vecteur tok-crodroite) :build (progn left-reference/vecteur)
-;;     := identificateur                         :build (list :vref identificateur))
-;; 
-;; (defrule left-reference/vecteur
-;;     := (identificateur tok-crogauche expression)
-;;     :build (list :aref identificateur expression))
-;; 
-;; (defrule liste-left-reference
-;;     := (liste-left-reference tok-virgule left-reference)
-;;     :build (snoc liste-left-reference left-reference)
-;;     := left-reference
-;;     :build (list left-reference))
+(defrule left-reference
+    := (left-reference/vecteur tok-virgule expression tok-crodroite)
+    :build (snoc left-reference/vecteur expression)
+    := (left-reference/vecteur tok-crodroite) :build (progn left-reference/vecteur)
+    := identificateur                         :build (list :vref identificateur))
+
+(defrule left-reference/vecteur
+    := (identificateur tok-crogauche expression)
+    :build (list :aref identificateur expression))
+
+(defrule liste-left-reference
+    := (liste-left-reference tok-virgule left-reference)
+    :build (snoc liste-left-reference left-reference)
+    := left-reference
+    :build (list left-reference))
 
 
 
@@ -511,7 +513,7 @@
 (defrule retour
     := tok-RETOUR                      :build (list :retour)
     := (tok-RETOUR tok-EN expression)  :build (list :retour-en expression))
-
+ 
 
 (defrule resultat
     := (tok-RESULTAT expression)       :build (list :resultat expression))
@@ -527,8 +529,7 @@
     := (identificateur tok-pargauche) :build (list :appel identificateur))
 
 (defrule garer
-    := (tok-GARER identificateur tok-virgule expression.1 tok-virgule
-                  expression.2)
+    := (tok-GARER identificateur tok-virgule expression.1 tok-virgule expression.2)
     :build (list :garer identificateur expression.1 expression.2))
 
 
@@ -538,8 +539,7 @@
     := charger/1)
 
 (defrule charger/1
-    := (tok-CHARGER identificateur tok-virgule expression.1
-                    tok-virgule expression.2)
+    := (tok-CHARGER identificateur tok-virgule expression.1 tok-virgule expression.2)
     :build  (list :charger identificateur expression.1 expression.2))
 
 

@@ -1,3 +1,4 @@
+;;;; -*- mode:lisp; coding:utf-8 -*-
 ;;;;****************************************************************************
 ;;;;FILE:               fonctions.lisp
 ;;;;LANGUAGE:           Common-Lisp
@@ -197,7 +198,7 @@
 
 
 (defun cca (ca)
-  ;; TODO: C'est pas tout à fait ça pour les formats.
+  ;; TODO: C'est pas tout Ã  fait Ã§a pour les formats.
   (if (= (truncate (le-nombre ca)) ca)
       (format nil "~D" (truncate ca))
       (format nil (if (<= 1e-3 (abs (le-nombre ca)) 1e6) "~F" "~E") ca)))

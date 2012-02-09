@@ -1,3 +1,4 @@
+;;;; -*- mode:lisp;coding:utf-8 -*-
 ;;;;****************************************************************************
 ;;;;FILE:               vm.lisp
 ;;;;LANGUAGE:           Common-Lisp
@@ -165,7 +166,7 @@ variable-type may be:
 ;; REFERENCE-PARAMETERS:
 
 (defclass reference-parameter (named-slot)
-  (reference :initarg :reference :accessor parameter-reference))
+  ((reference :initarg :reference :accessor parameter-reference)))
 
 (defmethod variable-type ((par reference-parameter))
   (variable-type (parameter-reference par)))

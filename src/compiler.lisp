@@ -291,10 +291,10 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
            :finally (return suite)))
 
        
-       ;; (:procedure ident nil       nil)
-       ;; (:procedure ident (fpid...) nil)
-       ;; (:procedure ident nil       (locid...))
-       ;; (:procedure ident (fpid...) (locid...))
+       ;; (:decl-procedure ident nil       nil)
+       ;; (:decl-procedure ident (fpid...) nil)
+       ;; (:decl-procedure ident nil       (locid...))
+       ;; (:decl-procedure ident (fpid...) (locid...))
        ;; --> :trap-proc-reached *
        ;; ==> fpid inter locid == arguments par valeur  ==> copier
        ;; ==> fpid diff  locid == arguments par reference
@@ -428,69 +428,66 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
           (labels ((collect (code)
                      (setf result (nconc result (copy-list code))))
                    (spec-simple (spec format)
-                     (cond
-                       ((eql  spec :rep-1)
-                        (collect (gen bc::pushi 1 nil)))
-                       ((and (consp spec)
-                             (eql (first spec) :rep))
-                        (collect (gen bc::pushi (numero-valeur (second spec)) nil)))
-                       ((eql  spec :rep-var)
-                        (when (null exprs)
-                          (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
-                        (collect (generate-statement (pop exprs) nil)))
-                       (t
-                        (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format))))
+                     (if (atom spec)
+                         (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)
+                         (case (first spec)
+                           (:rep-1   (collect (gen bc::pushi 1 nil)))
+                           (:rep     (collect (gen bc::pushi (numero-valeur (second spec)) nil)))
+                           (:rep-var (when (null exprs)
+                                       (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
+                                     (collect (generate-statement (pop exprs) nil)))
+                           (otherwise
+                            (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)))))
                    (spec-expr (spec op format)
-                     (cond
-                       ((eql  spec :rep-1)
-                        (when (null exprs)
-                          (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
-                        (collect (generate-statement (pop exprs) nil))
-                        (collect op))
-                       ((and (consp spec)
-                             (eql (first spec) :rep))
-                        (loop
-                           :repeat (numero-valeur (second spec))
-                           :do (progn
-                                 (when (null exprs)
-                                   (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
-                                 (collect (generate-statement (pop exprs) nil))
-                                 (collect op))))
-                       (t
-                        (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)))))
+                     (if (atom spec)
+                         (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)
+                         (case (first spec)
+                           (:rep-1 (when (null exprs)
+                                     (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
+                                   (collect (generate-statement (pop exprs) nil))
+                                   (collect op))
+                           (:rep   (loop
+                                     :repeat (numero-valeur (second spec))
+                                     :do (progn
+                                           (when (null exprs)
+                                             (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
+                                           (collect (generate-statement (pop exprs) nil))
+                                           (collect op))))
+                           (otherwise
+                            (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format))))))
             (if (second stat)
                 (loop
-                   :for format :in (second stat)
-                   :do (ecase (first format)
-                         (:spec-chaine
-                          (spec-simple (second format) format)
-                          (collect (gen bc::pushi (third format) bc::afficher-chaine nil)))
-                         ((:spec-slash :spec-space :spec-cr :spec-nl)
-                          (spec-simple (second format) format)
-                          (collect (gen (case (first format)
-                                          (:spec-slash bc::afficher-newline)
-                                          (:spec-space bc::afficher-space)
-                                          (:spec-cr    bc::afficher-cr)
-                                          (:spec-nl    bc::afficher-nl))
-                                        nil)))
-                         ((:spec-f :spec-e)
-                          (spec-expr (second format) (gen (third format)
-                                                          (fourth format)
-                                                          (case (first format)
-                                                            (:spec-f bc::afficher-f)
-                                                            (:spec-e bc::afficher-e))
-                                                          nil) format))
-                         (:spec-u
-                          (spec-expr (second format) (gen bc::afficher-u nil) format)))
-                   :finally (loop
-                               :for expr :in exprs
-                               :do (collect (gen (generate-statement expr nil) bc::afficher-u nil))))
+                  :for format :in (second stat)
+                  :do (ecase (first format)
+                        (:spec-chaine
+                         (spec-simple (second format) format)
+                         (collect (gen bc::pushi (third format) bc::afficher-chaine nil)))
+                        ((:spec-slash :spec-space :spec-cr :spec-nl)
+                         (spec-simple (second format) format)
+                         (collect (gen (case (first format)
+                                         (:spec-slash bc::afficher-newline)
+                                         (:spec-space bc::afficher-space)
+                                         (:spec-cr    bc::afficher-cr)
+                                         (:spec-nl    bc::afficher-nl))
+                                       nil)))
+                        ((:spec-f :spec-e)
+                         (spec-expr (second format) (gen (third format)
+                                                         (fourth format)
+                                                         (case (first format)
+                                                           (:spec-f bc::afficher-f)
+                                                           (:spec-e bc::afficher-e))
+                                                         nil) format))
+                        (:spec-u
+                         (spec-expr (second format) (gen bc::afficher-u nil) format)))
+                  :finally (loop
+                             :for expr :in exprs
+                             :do (collect (gen (generate-statement expr nil) bc::afficher-u nil))))
                 ;; (5) afficher[{n}u]expr...
                 (loop
-                   :for expr :in (cddr stat)
-                   :do (progn
-                         (collect (generate-statement expr nil))
-                         (collect (gen bc::afficher-u nil))))))
+                  :for expr :in (cddr stat)
+                  :do (progn
+                        (collect (generate-statement expr nil))
+                        (collect (gen bc::afficher-u nil))))))
           (nconc result next)))
 
        
@@ -557,7 +554,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
              (identificateur-nom (second stat))))
 
        (:charger
-        ;; TOOD: this creates the variables var and varstat too (TABLEAU, CHAINE or real)
+        ;; TODO: this creates the variables var and varstat too (TABLEAU, CHAINE or real)
         ;;(:charger  var enr fic)         --> enr fic :charger :pop&store var :pop
         ;;(:charger  var enr fic varstat) --> enr fic :charger :pop&store var :pop&store varstat
         (if (cddddr stat)
@@ -613,7 +610,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
     ((eq (car parse-tree) :liste-instructions)
      (compile-slist (cdr parse-tree)))
     ((eq (car parse-tree) :ligne-programme)
-     (compile-slist (cddr parse-tree)))
+     (cons (numero-valeur (cadr parse-tree)) (compile-slist (cddr parse-tree))))
     (t
      (format *error-output* "~&ERREUR: JE TROUVE UNE LISTE INVALIDE: ~S~%" parse-tree))))
 
@@ -641,12 +638,12 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 
 (defun compile-lse-file (source)
   (with-open-file (stream source)
-    (let ((scanner (make-instance 'lse-scanner :source stream)))
-      (advance-line scanner)
-      (loop
-        :until (typep (scanner-current-token scanner) 'tok-eof)
-        :collect (let ((parse-tree (parse-lse scanner)))
-                   (compile-lse-line-parse-tree parse-tree))))))
+    (loop
+      :with scanner = (make-instance 'lse-scanner :source stream)
+      :until (typep (scanner-current-token scanner) 'tok-eof)
+      :for parse-tree = (parse-lse scanner)
+      :when parse-tree
+      :collect (compile-lse-line-parse-tree parse-tree))))
 
 
 
@@ -714,43 +711,51 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;; ==> compile decl-procedure; store vector in lino; store proc.ident in proctable.
 
 
-(defun test-parse-file (path)
+(defun test/parse-stream (src)
+  (loop
+    :with scanner = (make-instance 'lse-scanner :source src)
+    :until (typep (scanner-current-token scanner) 'tok-eof)
+    :collect  (parse-lse scanner)))
+
+
+(defun test/parse-file (path)
   (with-open-file (src path)
-    (terpri)
-    (let* ((scanner    (make-instance 'scanner :source src))
-           (next-token (get-next-token-function scanner)))
-      (loop :do
-         (advance-line scanner)
-         (when (eofp (token scanner)) (loop-finish))
-         (format t "~2%~A~%" (buffer scanner))
-         (restart-case
-             ;; stuff
-             (format t "~&~S~%" ;; (lr-parse next-token
-                                ;;           (lambda (msg) (error "ERREUR: ~A" msg))
-                                ;;           (find-grammar "LSE"))
-                     (parse-lse next-token))
-           (advance-line ()
-             :report "PASSER A LA LIGNE SUIVANTE")))))
+    (test/parse-stream src)))
+
+(defun test/parse-string (source)
+  (with-input-from-string (src source)
+    (test/parse-stream src)))
+
+
+(defun test/compile-lse-stream (src)
+  (loop
+    :for line = (read-line src nil nil)
+    :do (terpri) (princ ";; |  ") (write-string line)
+    :while line
+    :do (let ((comp (compile-lse-line line)))
+          (print comp)
+          (print (car comp))
+          (print (disassemble-lse (cdr comp))))
+    :finally (terpri) (finish-output))
+  (values))
+
+(defun test/compile-lse-file (path)
+  (with-open-file (src path)
+    (test/compile-lse-stream src))
+  (values))
+
+(defun test/compile-lse-string (source)
+  (with-input-from-string (src source)
+    (test/compile-lse-stream src))
   (values))
 
 
-(defun test-compile-lse-file (path)
-  (with-open-file (src path)
-    (loop
-       :for line = (read-line src nil nil)
-       :do (terpri) (princ ";; |  ") (write-string line)
-       :while line
-       :do (let ((comp (compile-lse-line line)))
-             (print comp)
-             (print (disassemble-lse comp)))
-       :finally (terpri) (finish-output)))
-  (values))
+;; (test/parse-file #P"~/src/pjb/lse-cl/SYNTERR.LSE")
+;; (test/parse-file #P"~/src/pjb/lse/BOURG/BOUR.LSE")
+;; (test/parse-string "18*")
 
 
-;; (test-parse-file #P "~/src/pjb/lse-cl/SYNTERR.LSE")
-;; (test-parse-file #P "~/src/pjb/lse/BOURG/BOUR.LSE")
-
-;; (test-compile-file #P "~/src/pjb/lse/BOURG/BOUR.LSE")
+;; (test/compile-file #P "~/src/pjb/lse/BOURG/BOUR.LSE")
 ;; (compile-lse-file #P "~/src/pjb/lse-cl/TESTCOMP.LSE")
 
 

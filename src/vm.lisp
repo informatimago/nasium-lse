@@ -378,6 +378,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
 ;; references are either lse-variable or vecteur-ref or tableau-ref.
 ;; see about procedure in parameters by reference?
 
+(defun pushi (vm val)
+  (push val (vm-stack vm)))
+
 (defun push-ref (vm ident)
   (check-type ident identificateur)
   (let ((var (find-variable vm ident)))
@@ -397,8 +400,25 @@ NOTE: on ne peut pas liberer un parametre par reference.
               (push val (vm-stack vm))))
         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
 
-(defun pushi (vm val)
-  (push val (vm-stack vm)))
+
+(defun deref (vm object)
+  (typecase object
+    (identificateur
+     (let ((var (find-variable vm object)))
+       (if var
+           (let ((val (variable-value var)))
+             (if (indefinip val)
+                 (lse-error "LA VARIABLE ~A N'A PAS ETE INITIALISEE" var)
+                 val))
+           (lse-error "LA VARIABLE ~A N'EXISTE PAS" object))))
+    (lse-variable
+     (let ((val (variable-value object)))
+       (if (indefinip val)
+           (lse-error "LA VARIABLE ~A N'A PAS ETE INITIALISEE" object)
+           val)))
+    (otherwise
+     object)))
+
 
 
 
@@ -546,21 +566,21 @@ NOTE: on ne peut pas liberer un parametre par reference.
   (declare (ignore vm offset)))
 
 
-;; (:faire-jusqu-a  (op-4/1 faire-jusqu-a))
-;; (:faire-tant-que (op-3/1 faire-tant-que))
-;; (:tant-que                  (op-1 tant-que))
+;; (:faire-jusqu-a    (op-4/1 faire-jusqu-a))
+;; (:faire-tant-que   (op-3/1 faire-tant-que))
+;; (:tant-que         (op-1 tant-que))
 ;; 
-;; (:pause          (op-0 pause))
-;; (:terminer       (op-0 terminer))
+;; (:pause            (op-0 pause))
+;; (:terminer         (op-0 terminer))
 ;; 
 ;; (:next-line        (op-0 next-line))
 ;; (:goto             (op-1 goto))
-;; (:call           (op-0/2 call))
+;; (:call             (op-0/2 call))
 ;; (:retour           (op-0 retour))
 ;; (:retour-en        (op-1 retour-en))
 ;; (:result           (op-1 result))
 ;; 
-;; (:garer          (op-2/1 garer))
+;; (:garer            (op-2/1 garer))
 ;; (:charger                   (op-2 charger))
 ;; (:supprimer-enregistrement  (op-2 supprimer-enregistrement))
 ;; (:supprimer-fichier         (op-1 supprimer-fichier))
@@ -570,7 +590,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
                   
 
-                 
+
 (defun run-step (vm)
   (catch 'done
     (handler-case
@@ -582,8 +602,8 @@ NOTE: on ne peut pas liberer un parametre par reference.
                  (pfetch ()    (prog1 (aref code (vm-pc.offset vm))
                                  (incf (vm-pc.offset vm)))))
             (declare (inline spush spop pfetch))
-            (macrolet ((op-1*   (op) `(spush (,op (spop))))
-                       (op-2*   (op) `(spush (let ((b (spop))) (,op (spop) b))))
+            (macrolet ((op-1*  (op) `(spush (,op (deref vm (spop)))))
+                       (op-2*  (op) `(spush (let ((b (spop))) (,op (deref vm (spop)) (deref vm b)))))
                        (op-0   (op) `(,op vm))
                        (op-1   (op) `(spush (,op vm (spop))))
                        (op-2   (op) `(spush (let ((b (spop))) (,op vm (spop) b))))

@@ -50,6 +50,13 @@
   "nconc the ITEM to the LIST."
   (nconc list (cons item nil)))
 
+(defun uncomb (expr)
+  (cond
+    ((atom expr) expr)
+    ((endp (cdr expr)) (car expr))
+    (t (uncomb (cons (list* (caadr expr) (car expr) (cdadr expr)) (cddr expr))))))
+
+
 ;; (defgrammar test
 ;;     :terminals ((ident "[A-Za-z][A-Za-z0-9]+")
 ;;                 (numb "[0-9]+"))
@@ -170,15 +177,14 @@
 
             (--> start
                  (alt
-                  (seq ligne-programme   :action $1)
-                  (seq liste-instruction :action (cons :liste-instructions $1))
-                  (seq affic             :action (list :liste-instructions $1))
-                  (seq                   :action (progn nil)))
+                  (seq ligne-programme    :action $1)
+                  (seq liste-inst-ou-decl :action (cons :liste-instructions $1))
+                  (seq affic              :action (list :liste-instructions $1))
+                  (seq                    :action (progn nil)))
                  :action $1)
 
             (--> ligne-programme
                  (seq tok-numero (alt liste-inst-ou-decl
-                                      (seq tok-commentaire :action (list $1))
                                       (seq decl-procedure (opt (seq tok-ptvirg liste-inst-ou-decl :action $2)
                                                                :action $1) :action (cons $1 $2)))
                       :action (list* :ligne-programme $1 $2))
@@ -189,7 +195,7 @@
                       (alt
                        (seq tok-pardroite                      (opt decl-local :action decl-local)  :action (list nil $2))
                        (seq liste-identificateur tok-pardroite (opt decl-local :action decl-local)  :action (list $1 $3)))
-                      :action (list* :procedure $2 $4))
+                      :action (list* :decl-procedure $2 $4))
                  :action $1)
 
             (--> decl-local
@@ -200,51 +206,36 @@
                  (alt
                   (seq instruction (opt tok-ptvirg liste-inst-ou-decl :action liste-inst-ou-decl) :action (cons $1 $2))
                   (seq decl        (opt tok-ptvirg liste-inst-ou-decl :action liste-inst-ou-decl) :action (cons $1 $2))
-                  (seq tok-commentaire                                :action (list :commentaire $1)))
-                 :action $1)
-
-            (--> liste-instruction
-                 (seq instruction (opt (alt (rep tok-ptvirg liste-instruction :action $2)
-                                            (seq tok-ptvirg tok-commentaire   :action (list $2)))
-                                       :action $1)
-                      :action (cons $1 $2))
+                  (seq tok-commentaire                                :action (list (list :commentaire $1))))
                  :action $1)
 
             (--> decl
                  (alt decl-chaine decl-tableau)
                  :action $1)
-
-
             
             (--> decl-chaine
                  (seq tok-CHAINE liste-identificateur  :action (cons :chaine $2))
                  :action $1)
 
-
             (--> decl-tableau
                  (seq tok-TABLEAU liste-decl-tabl      :action (cons :tableau $2))
                  :action $1)
-
 
             (--> liste-decl-tabl
                  (seq decl-tabl (rep tok-virgule decl-tabl :action $2) :action (cons $1 $2))
                  :action $1)
 
-
             (--> decl-tabl
-                 (alt
-                  (seq expression tok-virgule decl-tabl/1 tok-crodroite :action (cons $1 $3))
-                  (seq decl-tabl/1 tok-crodroite :action $1))
+                 (seq identificateur tok-crogauche expression (opt (seq tok-virgule expression :action expression)) tok-crodroite
+                      :action (list* :adecl identificateur expression $4))
                  :action $1)
 
-            (--> decl-tabl/1    
-                 (seq identificateur tok-crogauche expression :action (list :adecl $1 $3))
-                 :action $1)
             
             (--> instruction
                  (alt
                   liberation      
                   affectation     
+                  appel           
                   lire            
                   afficher        
                   aller-en        
@@ -255,7 +246,6 @@
                   faire
                   retour          
                   resultat        
-                  appel           
                   garer           
                   charger         
                   supprimer       
@@ -269,6 +259,11 @@
 
             (--> affectation
                  (seq reference tok-fleche expression :action (list :affectation reference expression))
+                 :action $1)
+
+            (--> appel
+                 (seq procident tok-pargauche (opt liste-argument :action $1) tok-pardroite
+                      :action (list* :appel $1 $3))
                  :action $1)
 
             (--> lire
@@ -311,24 +306,33 @@
                   (seq tok-F tok-numero tok-point tok-numero :action (list :spec-f '(:rep-1) $2 $4))
                   (seq tok-E tok-numero tok-point tok-numero :action (list :spec-e '(:rep-1) $2 $4))
                   ;; 2) avec facteur de répétition:
-                  (seq spec-rep tok-chaine    :action (list :spec-chaine $1 $2))
-                  (seq spec-rep tok-divise    :action (list :spec-slash  $1))
-                  (seq spec-rep tok-X         :action (list :spec-space  $1))
-                  (seq spec-rep tok-C         :action (list :spec-cr     $1))
-                  (seq spec-rep tok-L         :action (list :spec-nl     $1))
-                  (seq spec-rep-num tok-U     :action (list :spec-u      $1))
-                  (seq spec-rep-num tok-F tok-numero tok-point tok-numero :action (list :spec-f $1 $3 $5))
-                  (seq spec-rep-num tok-E tok-numero tok-point tok-numero :action (list :spec-e $1 $3 $5)))
+                  (seq spec-rep-fois (alt
+                                      (seq tok-chaine    :action :spec-chaine)
+                                      (seq tok-divise    :action :spec-slash)
+                                      (seq tok-X         :action :spec-space)
+                                      (seq tok-C         :action :spec-cr)
+                                      (seq tok-L         :action :spec-nl))
+                       :action (list $2 spec-rep-fois))
+                  (seq spec-rep-num  (alt
+                                      (seq tok-chaine    :action :spec-chaine)
+                                      (seq tok-divise    :action :spec-slash)
+                                      (seq tok-X         :action :spec-space)
+                                      (seq tok-C         :action :spec-cr)
+                                      (seq tok-L         :action :spec-nl)
+                                      (seq tok-U        :action :spec-u)
+                                      (seq tok-F tok-numero tok-point tok-numero :action (list :spec-f tok-numero.1 tok-numero.2))
+                                      (seq tok-E tok-numero tok-point tok-numero :action (list :spec-e tok-numero.1 tok-numero.2)))
+                       :action (if (listp $2)
+                                   (list* (first $2) spec-rep-num (rest $2))
+                                   (list $2 spec-rep-num))))
                  :action $1)
 
             (--> spec-rep-num
                  (seq tok-numero  :action (list :rep $1))
                  :action $1)
 
-            (--> spec-rep
-                 (alt
-                  spec-rep-num 
-                  (seq tok-fois :action (list :rep-var)))
+            (--> spec-rep-fois
+                 (seq tok-fois    :action (list :rep-var))
                  :action $1)
 
             (--> aller-en
@@ -337,7 +341,9 @@
 
             (--> si-alors-sinon
                  (seq tok-SI disjonction tok-ALORS instruction (opt (seq tok-SINON instruction :action $2) :action $1)
-                      :action (list :si $2 $4 $5))
+                      :action (if $5
+                                  (list :si $2 $4 $5)
+                                  (list :si $2 $4)))
                  :action $1)
             
             (--> terminer
@@ -360,17 +366,14 @@
             
             (--> retour
                  (alt
-                  (seq tok-RETOUR                    :action (list :retour))
-                  (seq tok-RETOUR tok-EN expression  :action (list :retour-en $3)))
+                  (seq tok-RETOUR (opt (seq tok-EN expression :action expression) :action $1)
+                       :action (if $2
+                                   (list :retour-en $2)
+                                   (list :retour))))
                  :action $1)
 
             (--> resultat
                  (seq tok-RESULTAT expression       :action (list :resultat expression))
-                 :action $1)
-
-            (--> appel
-                 (seq procident tok-pargauche (opt liste-expression :action $1) tok-pardroite
-                      :action (list :appel $1 $3))
                  :action $1)
 
             (--> garer
@@ -402,37 +405,48 @@
             
             (--> expression
                  (alt
-                  (seq tok-moins terme                            :action (list :neg    terme))
-                  (seq terme (opt (alt (seq tok-moins  expression :action (list :moins  expression))
-                                       (seq tok-plus   expression :action (list :plus   expression))
-                                       (seq tok-concat expression :action (list :concat expression)))
+                  (seq tok-moins expression                  :action (list :neg    expression))
+                  (seq terme (rep (alt (seq tok-moins  terme :action (list :moins  terme))
+                                       (seq tok-plus   terme :action (list :plus   terme))
+                                       (seq tok-concat terme :action (list :concat terme)))
                                   :action $1)
                        :action (if $2
-                                   (list (first $2) terme (second $2))
+                                   (uncomb (cons terme $2))
                                    terme)))
                  :action $1)
 
+            
             (--> terme
-                 (seq facteur (opt (alt (seq tok-fois    terme :action (list :fois   terme))
-                                        (seq tok-divise  terme :action (list :divise terme)))
+                 (seq facteur (rep (alt (seq tok-fois    facteur :action (list :fois   facteur))
+                                        (seq tok-divise  facteur :action (list :divise facteur)))
                                    :action $1)
                       :action (if $2
-                                  (list (first $2) facteur (second $2))
+                                  (uncomb (cons facteur $2))
                                   facteur))
                  :action $1)
 
+            
             (--> facteur
-                 (seq simple (opt (seq tok-puissance facteur :action facteur) :action $1)
+                 (seq simple (rep (seq tok-puissance simple :action simple) :action $1)
                       :action (if $2
-                                  (list :puissance simple $2)
+                                  (uncomb (cons simple $2))
                                   simple))
                  :action $1)
 
             (--> simple
                  (alt
-                  (seq tok-SI disjonction tok-ALORS expression tok-SINON expression :action (list :xi disjonction expression.1 expression.2))
-                  (seq procident tok-pargauche (opt liste-argument :action $1) tok-pardroite   :action (list :fonction procident $3))
-                  (seq tok-pargauche expression tok-pardroite                       :action expression)
+                  (seq tok-SI disjonction tok-ALORS expression tok-SINON expression           :action (list :xi disjonction expression.1 expression.2))
+                  (seq procident (opt (seq tok-pargauche (opt liste-argument :action $1) tok-pardroite :action $2) :action $1)
+                       :action (if $2
+                                   (list* :fonction procident $2)
+                                   (list :vval procident)))
+                  ;; For the following rule, since disjonction and
+                  ;; expression have elements in common in their
+                  ;; first-sets, we must  use a disjonction here.
+                  ;; Type checking will ensure that we only have an
+                  ;; expression when we need an expression, and a
+                  ;; condition when we need it.
+                  (seq tok-pargauche disjonction tok-pardroite :action $2)
                   reference
                   tok-chaine
                   tok-nombre
@@ -441,7 +455,7 @@
 
 
             (--> liste-argument
-                 (seq (alt expression procident) (rep tok-virgule (alt expression procident) :action $2)
+                 (seq  expression (rep tok-virgule expression :action $2)
                       :action (cons $1 $2))
                  :action $1)
 
@@ -454,33 +468,49 @@
                  :action $1)
 
             (--> disjonction
-                 (seq conjonction (rep tok-OU conjonction :action conjonction) :action (list* :ou conjonction $2))
+                 (seq conjonction (rep tok-OU conjonction :action conjonction)
+                      :action (if $2
+                                  (list* :ou conjonction $2)
+                                  conjonction))
                  :action $1)
 
             (--> conjonction
-                 (seq condition (rep tok-ET condition :action condition) :action (list* :et condition $2))
+                 (seq condition (rep tok-ET condition :action condition)
+                      :action (if $2
+                                  (list* :et condition $2)
+                                  condition))
                  :action $1)
 
             (--> condition
                  (alt
-                  (seq tok-NON condition                        :action (list :non condition))
-                  (seq tok-pargauche disjonction tok-pardroite  :action disjonction)
-                  (seq expression tok-LT expression :action (list :lt expression.1 expression.2))
-                  (seq expression tok-LE expression :action (list :le expression.1 expression.2))
-                  (seq expression tok-NE expression :action (list :ne expression.1 expression.2))
-                  (seq expression tok-EQ expression :action (list :eg expression.1 expression.2))
-                  (seq expression tok-GT expression :action (list :gt expression.1 expression.2))
-                  (seq expression tok-GE expression :action (list :ge expression.1 expression.2)))
+                  (seq tok-NON condition                :action (list :non condition))
+                  ;; (seq tok-pargauche disjonction tok-pardroite  :action disjonction)
+                  (seq expression (opt (seq (alt (seq tok-EQ :action :eg)
+                                                 (seq tok-LT :action :lt)
+                                                 (seq tok-LE :action :le)
+                                                 (seq tok-NE :action :ne)
+                                                 (seq tok-GT :action :gt)
+                                                 (seq tok-GE :action :ge))
+                                            expression :action (list $1 expression))
+                                        :action $1) 
+                                       :action (if $2
+                                                   (list (first $2) expression (second $2))
+                                                   expression)))
                  :action $1)
 
             (--> reference
-                 (seq identificateur (opt (seq tok-crogauche expression
-                                               (opt  tok-virgule expression :action expression)
-                                               tok-crodroite
-                                               :action (list expression $2)) :action $1)
+                 (seq identificateur (opt (alt (seq tok-crogauche expression
+                                                    (opt (seq tok-virgule expression :action expression))
+                                                    tok-crodroite
+                                                    :action (list* :vref expression $2))
+                                               (seq tok-pargauche
+                                                    (opt liste-argument :action $1)
+                                                    tok-pardroite
+                                                    :action (list* :fonction $2)))
+                                          :action $1)
                       :action (if $2
-                                  (list* :aref identificateur $2)
-                                  (list  :vref identificateur)))
+                                  (list* (first $2) identificateur (rest $2))
+                                  (list :vref identificateur)))
                  :action $1)
 
             (--> liste-reference

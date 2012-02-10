@@ -57,6 +57,7 @@
     (tok-chaine         'chaine)
     (tok-commentaire    'commentaire)
     (tok-identificateur 'identificateur)
+    (tok-procident      'procident)
     (tok-motcle         'motcle)
     (tok-nombre         'nombre)
     (tok-numero         'numero)
@@ -88,6 +89,20 @@
 (defmethod initialize-instance :after ((self tok-identificateur) &rest args)
   (declare (ignore args))
   (setf (identificateur-nom self)
+        (intern (token-text self) (find-package "COM.INFORMATIMAGO.LSE.IDENTIFIERS")))
+  self)
+
+
+(defclass tok-procident (lse-token)
+  ((nom        :accessor procident-nom
+               :accessor identificateur-nom
+               :initarg :nom
+               :initform nil
+               :type     symbol)))
+
+(defmethod initialize-instance :after ((self tok-procident) &rest args)
+  (declare (ignore args))
+  (setf (procident-nom self)
         (intern (token-text self) (find-package "COM.INFORMATIMAGO.LSE.IDENTIFIERS")))
   self)
 
@@ -418,18 +433,21 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
 (eval-when (:compile-toplevel :load-toplevel :execute)
   ;; Needed at macro-expansion-time:
   (defun ! (&rest args) (apply (function concatenate) 'string args))
-  (defparameter letters         "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-  (defparameter digits          "0123456789")
-  (defparameter spaces          " ")
-  (defparameter ampersand       "&")
-  (defparameter apostrophe      "'")
-  (defparameter dot             ".")
-  (defparameter star            "*")
-  (defparameter signs           "+-")
-  (defparameter specials        "!#(),/;=?[]^_")
-  (defparameter specials-2      "<>" "may take an additionnal '=' character.")
-  (defparameter ident-first     (! letters ampersand))
-  (defparameter ident-next      (! letters digits)))
+  (defparameter letters            "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+  (defparameter digits             "0123456789")
+  (defparameter spaces             " ")
+  (defparameter ampersand          "&")
+  (defparameter apostrophe         "'")
+  (defparameter dot                ".")
+  (defparameter star               "*")
+  (defparameter signs              "+-")
+  (defparameter specials           "!#(),/;=?[]^_")
+  (defparameter specials-2         "<>" "may take an additionnal '=' character.")
+  (defparameter ident-first         letters)
+  (defparameter ident-next          (! letters digits))
+  (defparameter procident-first     ampersand)
+  (defparameter procident-second    letters)
+  (defparameter procident-rest      (! letters digits)))
 
 
 (defconstant +maybe-commentaire+ 0 "LSE Scanner State")
@@ -505,7 +523,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
         (spaces       (skip))
         (digits       (start) (shift numero-or-nombre))
         (ampersand    (start) (advance :error-on-eof "IDENTIFICATEUR TROP COURT")
-                      (shift identificateur-or-motcle))
+                      (shift procident))
         (letters      (start) (advance (token tok-identificateur)) ; 1 = ident
                       (shift identificateur-or-motcle))
         (apostrophe   (start) (advance :error-on-eof "CHAINE NON-TERMINEE")
@@ -522,9 +540,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
         (spaces       (skip))
         (digits       (start) (shift numero-or-nombre))
         (ampersand    (start) (advance :error-on-eof "IDENTIFICATEUR TROP COURT")
-
-
-                      (shift identificateur-or-motcle))
+                      (shift procident))
         (letters      (start) (advance (token tok-identificateur)) ; 1 = ident
                       (shift identificateur-or-motcle))
         (apostrophe   (start) (advance :error-on-eof "CHAINE NON-TERMINEE")
@@ -598,12 +614,24 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                                       (token tok-identificateur))
                                  ;; (skip 1-letter format specifiers).
                                  (motcle) (token tok-identificateur)))))
+
 ;;;        (identificateur-or-motcle-or-formatspec
 ;;;         (ident-next (advance (or (motcle) (token tok-identificateur))))
 ;;;         (others     (produce (or (motcle) (token tok-identificateur)))))
 
+
+       (procident ; 9
+        (procident-second (shift procident/rest) (advance (token tok-procident)))
+        (others           (scan-error "UN IDENTIFICATEUR DE PROCEDURE DOIT AVOIR AU MOINS UNE LETTRE; '~C' (~D) INVALIDE APRES '&'."
+                                      (code-char code)  code)))
+       (procident/rest ; 10
+        (procident-rest   (advance (token tok-procident)))
+        (others           (shift not-commentaire)
+                          (produce (token tok-procident))))
+
+
        ;;    (tok-chaine      "\\('[^']*'\\)\\('[^']*'\\)*")
-       (litchaine
+       (litchaine ; 11
         (apostrophe
          (if (and (< (1+ index) buflen)
                   (char= (character apostrophe) (aref buffer (1+ index))))
@@ -615,7 +643,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
         (others 
          (advance :error-on-eof "CHAINE NON-TERMINEE")))
 
-       (litchaine/in-format
+       (litchaine/in-format ; 12
         (apostrophe
          (if (and (< (1+ index) buflen)
                   (char= (character apostrophe) (aref buffer (1+ index))))
@@ -624,15 +652,15 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
              (progn (incf index)
                     (shift in-format)
                     (produce (token tok-chaine)))))
-        (others 
+        (others  ; 13
          (advance :error-on-eof "CHAINE NON-TERMINEE")))
 
-       (speciaux-2
+       (speciaux-2 ; 14
         ("="    (advance (motcle)) (shift maybe-commentaire) (produce (motcle)))
         (others                    (shift maybe-commentaire) (produce (motcle))))
 
        ;;    (tok-commentaire    "\\*.*$")
-       (commentaire
+       (commentaire ; 15
         (star  (setf index buflen) (shift maybe-commentaire) (produce (token tok-commentaire))))))))
 
 
@@ -682,37 +710,45 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
   (scanner-current-token scanner))
 
 
-(defun test/lse-scanner (path)
+(defun test/scan-stream (src)
+  (loop
+    :with scanner = (make-instance 'lse-scanner :source src :state 0)
+    :initially (progn
+                 (advance-line scanner)
+                 (format t "~2%;; ~A~%;; ~A~%"
+                         (scanner-buffer scanner)
+                         (scanner-current-token scanner)))
+    :do (progn
+          (typecase (scanner-current-token scanner)
+            (tok-eol
+             (scan-next-token scanner)
+             (format t ";; ~A~%" (scanner-buffer scanner)))
+            (t
+             (scan-next-token scanner)))
+          (format t "~&~3A ~20A ~20S ~3A ~3A ~20A ~A~%"
+                  (scanner-state scanner)
+                  (token-kind (scanner-current-token scanner))
+                  (token-text (scanner-current-token scanner))
+                  (eolp (scanner-current-token scanner))
+                  (eofp (scanner-current-token scanner))
+                  (scanner-previous-token-kind scanner)
+                  (type-of (scanner-current-token scanner)))
+          (finish-output))
+    :until (typecase (scanner-current-token scanner)
+             (tok-eof t)
+             (t nil))))
+
+(defun test/scan-file (path)
   (with-open-file (src path)
-    (loop
-      :with scanner = (make-instance 'lse-scanner :source src :state 0)
-      :initially (progn
-                   (advance-line scanner)
-                   (format t "~2%;; ~A~%;; ~A~%"
-                           (scanner-buffer scanner)
-                           (scanner-current-token scanner)))
-      :do (progn
-            (typecase (scanner-current-token scanner)
-              (tok-eol
-               (scan-next-token scanner)
-               (format t ";; ~A~%" (scanner-buffer scanner)))
-              (t
-               (scan-next-token scanner)))
-            (format t "~&~3A ~20A ~20S ~3A ~3A ~20A ~A~%"
-                    (scanner-state scanner)
-                    (token-kind (scanner-current-token scanner))
-                    (token-text (scanner-current-token scanner))
-                    (eolp (scanner-current-token scanner))
-                    (eofp (scanner-current-token scanner))
-                    (scanner-previous-token-kind scanner)
-                    (type-of (scanner-current-token scanner)))
-            (finish-output))
-      :until (typecase (scanner-current-token scanner)
-               (tok-eof t)
-               (t nil)))))
+    (test/scan-stream src)))
+
+(defun test/scan-string (source)
+  (with-input-from-string (src source)
+    (test/scan-stream src)))
 
 
-;; (test/lse-scanner #P"~/src/pjb/lse-cl/SYNTERR.LSE")
-;; (test/lse-scanner #P"~/src/pjb/lse-cl/TESTCOMP.LSE")
+;; (test/scan-file #P"~/src/pjb/lse-cl/SYNTERR.LSE")
+;; (test/scan-file #P"~/src/pjb/lse-cl/TESTCOMP.LSE")
+;; (test/scan-string "18*")
 ;;;; THE END ;;;;
 

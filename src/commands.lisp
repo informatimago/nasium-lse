@@ -204,15 +204,20 @@
                       liste-d-intervales))
 
             (--> liste-d-intervales
-                 (alt (seq intervale-de-numeros tok-virgule liste-d-intervales
-                           :action (cons $1 $3))
-                      (seq intervale-de-numeros
-                           :action (list $1))))
+                 (seq intervale-de-numeros (alt (seq tok-virgule liste-d-intervales
+                                                     :action liste-d-intervales)
+                                                (seq :action (list nil)))
+                      :action (if $2
+                                  (cons intervale-de-numeros $2)
+                                  intervale-de-numeros)))
             
             (--> intervale-de-numeros
-                 (alt (seq numero-de-ligne tok-a numero-de-ligne
-                           :action (progn  `(interval ,$1 ,$3)))
-                      (seq numero-de-ligne :action (progn  $1))))
+                 (seq numero-de-ligne (alt (seq tok-a numero-de-ligne
+                                                :action $3)
+                                           (seq :action (progn nil)))
+                      :action (if $2
+                                  `(interval numero-de-ligne $2)
+                                  numero-de-ligne)))
 
             (--> numero-de-ligne
                  tok-numero :action (progn
@@ -487,7 +492,7 @@
   (defcommand "DROITS"  nil ()
               "Allow the administrator to set the access rights of the accounts."
               (io-format *task* " ")
-              (unless (string= (io-read-line *task* :echo nil :xoff t) +PASSWORD+)
+              (unless (string= (io-read-line *task* :echo nil :xoff t) *PASSWORD*)
                 (error-report *task* +error-bad-identifier+)
                 (return-from droits))
               (io-newline *task*) (io-format *task* "            ANCIEN  NOUVEAU  ") ;

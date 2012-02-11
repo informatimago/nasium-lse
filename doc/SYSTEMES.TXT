@@ -1,0 +1,479 @@
+-*- mode:rst; coding:utf-8 -*-
+
+Systèmes L.S.E.
+###############
+
+On dérive deux grands modes de fonctionnement du système L.S.E.  
+
+D'une part, une commande unix permettant de développer et utiliser
+interactivement des programmes L.S.E, et permettant de les executés
+comme scripts unix.
+
+D'autre part, un serveur accessible via le réseau simulant le
+fonctionnement d'un système L.S.E sur Mitra-15, avec plusieurs
+consoles (ce qui permet le travail en groupe, notament par la commande
+PRENDRE ETAT CONSOLE).  Ce serveur est muni d'une facade permettant de
+sélectionner la machine Mitra-15 virtuelle avec laquel on se connecte,
+et d'un outil d'administration permettant de configurer ces machines
+virtuelles et de les sécuriser (mots-de-passe, etc).
+
+
+
+
+Mode unix
+=========
+
+Dans le mode unix on a une version "modernisée" de l'interaction entre
+l'utilisateur et le système L.S.E, et entre le système L.S.E et le
+système hôte.
+
+Il n'y a pas de notion de console (le système unix fournissant des
+comptes utilisateurs et des consoles et terminaux, physiques ou
+virtuels).
+
+Dans ce mode, les caractères minuscules et les caractères accentués
+peuvent être utilisés dans les chaînes.  Les mots réservés du langage
+peuvent être écrit soit tout en majuscule, soit tout en minuscule.
+
+
+Le système L.S.E peut être utilisé en mode interactif, ou en mode script.
+
+Interactif
+----------
+
+::
+
+    user@unix$ lse RET
+
+    EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]
+    VERSION : 1.0-UNIX
+    COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
+
+    BONJOUR
+
+Le système passe directement en mode actif ("BONJOUR" est affiché par
+le système). L'utilisateur peut alors utiliser le système normalement, 
+en tapant RET à la fin de chaque ligne ou commande.
+
+
+Script
+------
+
+Un programme L.S.E peut être exécuté comme script.  Il suffit pour
+celà de placer #!/usr/bin/lse sur la première ligne, suivit du
+programme.  Lorsqu'on invoque le script, le programme est chargé, et
+s'il n'y a aucune erreur de syntaxe, il est automatiquement exécuté.
+
+::
+
+    user@unix$ cat example RET
+    #!/usr/bin/lse
+    10 AFFICHER['Bonjour',/]
+    20 AFFICHER['Les arguments sont: ',U]ARGC
+    30 AFFICHER ARGV
+    40 TERMINER
+    user@unix$ chmod 755 example RET
+    user@unix$ ./example 1 2 3 a b c RET
+    Bonjour
+    Les arguments sont: 6 
+    ./example;1;2;3;a;b;c
+
+La variable ARGC est initialisée avec le nombre d'arguments; la
+variable chaîne ARGV est initialisée avec la concatenation du nom du
+programme et des arguments, séparés par un point-virgule.
+
+
+
+Fichiers
+--------
+
+L'acces aux fichiers se fait directement sur les fichiers unix, avec
+les restrictions des droits d'accès de l'utilisateur unix.
+
+La notion de fichier temporaire est remplacée par l'usage des
+répertoires '/tmp/lse$UID/'.  Les fichiers donnée ont une extension
+'.don' par défaut; les fichiers programmes ont une extension '.lse'
+par défaut.
+
+
+
+Commandes
+.........
+
+
+Pour toutes les commandes ou instructions prenant un nom de fichier,
+la différence par rapport au système L.S.E. de Mitra-15, est que
+l'expression chaîne ec contient un chemin unix.  Si le nom du fichier
+n'a pas une extension '.don', celle-ci est ajoutée automatiquement.
+Si le chemin n'est pas absolu (s'il ne commence par par '/'), il est
+relatif au répertoire courant (voir ci-dessous). Si le nom n'est pas
+donnée sous forme de chaine, mais d'identificateur: ::
+
+   RANGER PGM1
+   CATALOGUER MOTS,MOTS
+
+alors il est converti en minuscules et l'extension '.lse' ou '.don'
+est ajoutée:  un fichier nommé 'pgm1.lse' ou 'mots.don' est alors crée
+dans le répertoire courant.
+
+
+
+
+TABLE DES FICHIERS
+
+    Cette commande affiche le listing du répertoire courant (voir ci-dessous).
+
+    Les fichiers listés  dans la section FICHIERS-PROGRAMME sont ceux dont
+    l'extension est '.lse'.  
+
+    Les fichiers listés dans la section FICHIER-DONNEE PERMANENTS sont
+    ceux dont l'extension est '.don'.  
+
+    Les fichiers listés dans la section FICHIER-DONNEE TEMPORAIRES sont
+    ceux dont l'extension est '.don' et dont le propriétaire est
+    l'utilisateur courant.
+
+    Les noms de fichiers sont les noms unix. 
+
+
+UTILISATION DISQUE
+
+    Cette commande donne les mêmes fichiers que TABLE DES FICHIERS.
+    Dans la section espace temporaire allouée, on rapporte l'espace
+    disque disponible dans '/tmp/lse$UID/'.
+
+
+CHANGER REPEROIRE '/un/chemin/unix' 
+
+    Cette commande change le répertoire de travail courant.   Les
+    commandes et instructions de fichiers auxquelles on fourni des
+    noms de fichier relatifs les enregistrent dans ce répertoire
+    courant.
+
+
+AFFICHER REPERTOIRE COURANT
+
+    Cette commande affiche le chemin du répertoire courant.
+
+
+
+IDENTIFICATION xxxxx
+
+    Cette commande n'a pas de signification.
+
+
+
+MODIFIER ec
+
+    Cette commande est équivalente à :  ::
+
+        SUPPRIMER ec
+        RANGER ec
+
+    Elle enregistre donc le texte source du programme comme RANGER.
+
+
+RANGER ec
+PERFORER ec
+
+    Ces deux commandes sont équivalentes, elles enregistrent le texte
+    source du programme dans un fichier texte.
+
+
+DECODER ec[,ea1[,ea2]]
+
+    Enregistre le programme dans le fichier donnée ec.
+    Voir ci-dessus le format des programmes décodés dans des fichiers
+    données.
+
+APPELER ec
+
+    Remplace le programme courant par le programme chargé du fichier
+    ec.  
+
+
+RUBAN ec
+
+    Lit les lignes de programme du fichier ec, et les charge en
+    mémoire.  Les lignes de numéro différents existant en mémoire sont
+    conservées.
+
+
+ENCODER ec[,ea1[,ea2]]
+
+    Charge le programme ec en mémoire à partir du fichier donnée ec.
+    Voir ci-dessus le format des programmes décodés dans des fichiers
+    données.
+
+
+SUPPRIMER ec,P|D|T
+
+    Supprime le fichier programme, ou permanent, ou temporaire,
+    indiqué par le nom ec.
+
+SUPPRIMER *
+
+    Supprime tous les fichiers temporaires (dans '/tmp/lse$UID/').
+
+
+CATALOGUER ec1,ec2
+
+    Copie le fichier temporaire ec1 (chemin relatif à '/tmp/lse$UID/')
+    dans un fichier ec2 (chemin absolu ou relatif au répertoire
+    courant).
+
+
+EXECUTER ec[,ea]
+
+    Charge et exécute le programme indiqué par ec.
+
+
+Instructions
+............
+
+
+GARER id,ea,ec
+CHARGER id1,ea,ec[,id2]
+SUPPRIMER [ea,]ec
+EXECUTER ec[,ea]
+
+    La différence par rapport au système L.S.E. de Mitra-15, est que
+    l'expression chaîne ec contient un chemin unix.  Si le nom du
+    fichier n'a pas une extension  '.don' ou '.lse', celle-ci est
+    ajoutée automatiquement.  Si le chemin n'est pas absolu (s'il ne
+    commence par par '/'), il est relatif au répertoire courant (voir
+    ci-dessous).
+
+    L'instruction SUPPRIMER supprime un enregistrement si ea est donnée,
+    ou tout le fichier nommé ec (sujet aux droits d'accès unix).
+
+
+
+CHANGER REPERTOIRE ec
+
+    Cette procedure change le réperoire courant par celui indiqué par
+    l'expression chaîne ec, si il existe.  Sinon une erreur est signalée.
+
+
+
+Fonctions
+.........
+
+
+REP()
+
+    Cette fonction retourne une chaîne contenant le chemin absolu du
+    répertoire courant.
+
+
+
+
+
+
+
+Format des fichiers
+===================
+
+
+Fichiers programmes
+-------------------
+
+
+Les fichiers programmes d'extension '.lse' sont des fichiers texte
+unix normaux.  Les lignes sont terminées par un code ASCII Line Feed
+(LF, 10).  Elles sont encodées en UTF-8, si les chaînes ou les
+commentaires contiennent des lettres accentuées.
+
+Les lignes vides ou ne contenant que des espaces sont ignorées (elles
+ne sont pas générée).  Chaque ligne de programme doit commencer par un
+numéro de ligne.  Elles ne sont pas forcément dans l'ordre, et si un
+numéro se répète, la dernière prend le dessus.  Dans les fichiers
+généres, il n'y a pas de numéro de ligne en double, et les lignes sont
+triées par ordre croissant.
+
+Les mots réservés et les identificateurs de L.S.E sont normalement
+écrit tout en majuscules.  S'ils sont écrits avec des minuscules, ils
+sont remis en majuscules lors de la lecture.  Donc une variable nommée
+EXAMP peut aussi s'écrire examp ou ExamP.  Mais elle sera écrite EXAMP
+par LISTER A PARTIR DE ou par RANGER ou ENCODER.
+
+
+Fichiers données
+----------------
+
+Les fichiers données ont une structure par enregistrement. Chaque
+enregistrement est un bloc de taille fixe de 1024 octets.  Chaque
+enregistrement peut contenir une donnée de type:
+
+    - nombre (flottant IEEE-754 32 bits, ordre des octets "big endian").
+    - un tableau de nombre (IEEE-754 32 bits) à une dimension.
+    - un tableau de nombre (IEEE-754 32 bits) à deux dimensions.
+    - une chaîne de caractère encodée en UTF-8.
+
+Le numéro d'enregistrement est un entier entre 1 et 2^23-1 = 8388607.
+Les enregistrements ne sont pas nécessairement stockés dans l'ordre de
+numéro dans le fichier.
+
+
+Le fichier commence par un entête (quelques lignes de texte dans le
+premier bloc. 
+
+Les 4 octets du premier bloc de position 1016 à 1019 contiennent la
+position de la liste des bloc libres, ou 0 s'il n'y en a pas.
+
+Les blocs libres sont les enregistrements qui ont été supprimés.
+Chaque bloc libre contient dans ses octets 4 à 7 (ordre "big-endian"),
+la position du bloc libre suivant dans la liste, le dernier contient
+0.
+
+Les 4 derniers octets du premier bloc (positions 1020 à
+1023) indiquent la position de la table des enregistrement à la fin du
+fichier, ou 0 s'il elle n'existe pas (elle peut alors être ajoutée
+automatiquement lors de la prochaine fermeture du fichier).
+
+Le fichier peut contenir une table des enregistrements à la fin, qui
+est une séquence triée de numéros d'enregistrement et de position dans
+le fichier, tout les deux sur 32-bit en ordre "big-endian".
+
+
+    | numero | position |
+
+
+
+Les enregistrements ont le format suivant:
+    
+    | numero : type | donnée … |
+
+Le numéro d'enregistrement est stocké dans les trois premiers octets,
+en ordre big endian.  Le type de donnée est indiqué par le quatrième
+octet:
+
+    0 = enregistrement supprimé.
+    1 = nombre.
+    2 = tableau de dimension un.
+    3 = tableau de dimensions deux.
+    4 = chaîne.
+
+Le format de donnée depent de son type.
+
+
+Enregistrement Nombre
+
+    | numero : 1 | nombre |
+
+    Les nombres sont des nombres flottant IEEE 754 en ordre "big-endian".
+
+
+Enregistrement Tableau à une dimension
+
+    | numero : 2 | dimension | nombre | … | nombre |
+
+    Les nombres sont des nombre flottant IEEE 754 en ordre "big-endian".
+
+
+Enregistrement Tableau à deux dimensions
+
+    | numero : 3 | dimension-1 | dimension-2 | nombre | … | nombre |
+
+    Les nombres sont des nombre flottant IEEE 754 en ordre
+    "big-endian".  Les nombres sont enregistrés dans l'ordre: T[1,1]
+    T[1,2] T[1,3] T[2,1] T[2,2] T[2,3] T[3,1] T[3,2] T[3,3] T[4,1]
+    T[4,2] T[4,3]    
+
+Enregistrement Chaîne
+
+    | numero : 4 | longueur | code | … | code |
+
+    La longeur est donnée sur deux octets en ordre "big-endian".  La
+    chaîne est encodée en UTF-8.  La longueur maximum de la chaîne est
+    donc 1018 octets, ce qui donne un nombre  de caractères inférieur
+    ou égal à 1028 selon l'encodage UTF-8.
+
+
+
+Programmes décodés
+------------------
+
+Les programmes décodés dans des fichiers données ont le format
+suivant.  Toutes les lignes du programme sont terminée par un code 19
+(ASCII X-OFF) et concaténées. Un code 0 (ASCII NUL) est ajouté à la
+chaîne.  Puis elle est coupée selon la taille maximum d'un
+enregistrement, et chaque morceau est enregistrés dans des
+enregistrement de numéros successifs commençant par le 1.
+
+
+
+Serveur de Systèmes L.S.E.
+==========================
+
+Creation d'une machine virtuelle
+Modification d'une machine virtuelle
+Suppression d'une machine virtuelle
+
+
+Les paramètres d'une machine virtuelle sont:
+
+   - nom.
+   - mot de passe.
+   - nombre de consoles.
+   - répertoire unix où sont stockés les fichiers.
+   - liste des identifications et droits d'accès L.S.E.
+
+Note: le serveur de systèmes L.S.E. gère tous les fichiers de toutes
+les machines virtuelles.  Il doit donc gérer les droits d'accès.   Les
+accès fichiers sont restreints au répertoire de la machine virtuelle
+(et ses sous-répertoires).  Dans une machine virtuelle, les accès sont
+restreints selon la gestion des droits d'accès du système L.S.E
+(identifications).
+
+Lorsqu'il n'y a qu'une seule machine virtuelle configurée, l'étape de
+sélection de la machine virtuelle et du mot de passe est évitée, ce
+qui peut être pratique dans le cas d'un serveur installé sur un réseau
+local.
+
+
+Pour se connecter au serveur de système L.S.E,  il faut utiliser un
+tunnel ssh, afin de sécuriser la communication du mot de passe de la
+machine virtuelle. 
+
+
+::
+
+
+    user@unix$ xterm -e ssh -L 15001:localhost:15001 lse@ogamita.org &
+    user@unix$ telnet localhost 15001
+    
+    SYSTEMES L.S.E.
+    SELECTION DU SYSTEME.
+    NOM: lycee charlemagne
+    MOT DE PASSE: xxxxxxxx
+
+
+    EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]
+    VERSION : 1.0-SERVEUR
+    COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
+
+    ORDINATEUR: LYCEE CHARLEMAGNE
+    PRET
+    IDENTIFICATION 15364
+    boNJOUR
+    PRET
+    1* Petit programme de test.
+    10 afficher 'Salut'
+    20 terminer
+    liSTER A PARTIR DE 1
+    1* Petit programme de test.
+    10 AFFICHER 'Salut'
+    20 TERMINER
+    exECUTER A PARTIR DE 1
+    Salut
+    PRET
+    au REVOIR
+    ORDINATEUR: LYCEE CHARLEMAGNE
+    PRET
+    deCONNECTER
+    user@unix$ 
+
+
+
+t2

@@ -48,72 +48,129 @@
 ;; There are the following catalog categories:
 ;; :program :permanent :temporary :tape :shelf
 
+(defvar *current-console-number* 0)
+(defvar *current-user-number*    0)
+
+
+
+(defclass program-file (file)
+  ())
+
+(defclass data-file (file)
+  ())
+
+(defclass permanent-data-file (data-file)
+  ())
+
+(defclass temporary-data-file (data-file)
+  ())
+
 
 (deftype catalog-type () 
   '(member :program :permanent :temporary :tape :shelf))
 
 
-(defstruct catalog-entry
-  (type    :program :type catalog-type)
-  (name    ""       :type string) ;; 1-5 alphanum
-  (owner   0        :type (integer 0 99)) ;; owner of the permanent file.
-  (console 0        :type (integer 0 99)) ;; console of the temporary file.
-  (day     1        :type (integer 1 31))
-  (month   1        :type (integer 1 12))
-  (year    0        :type (integer 0 99))
-  (words   0        :type (integer 0))
-  (sectors 0        :type (integer 0))
-  (shelf   nil)) ;; for tapes, a relative logical path ("x" "y" "z")
+(defclass catalog-entry ()
+  ((name    :initarg :name
+            :accessor catalog-entry-name
+            :type string         
+            :documentation "Catalog name, 1-5 alphanum.")
+   (day     :initarg :day
+            :accessor catalog-entry-day
+            :initform 1
+            :type (integer 1 31))
+   (month   :initarg :month
+            :accessor catalog-entry-month
+            :initform 1
+            :type (integer 1 12))
+   (year    :initarg :year
+            :accessor catalog-entry-year
+            :initform 0
+            :type (integer 0 99))
+   (words   :reader catalog-entry-words
+            :type (integer 0)
+            :documentation "File size in words.")
+   (sectors :reader catalog-entry-sectors
+            :type (integer 0)
+            :documentation "File size in sectors.")
+   (path    :initarg :path
+            :reader catalog-entry-path
+            :documentation "The pathname to the actual file.")))
+
+
+(defclass temporary-entry (catalog-entry)
+  ((console :initarg :console
+            :accessor catalog-entry-console
+            :initform 0
+            :type (integer 0 99)
+            :documentation "Number of console of the temporary file.")))
+
+
+(defclass permanent-entry (catalog-entry)
+  ((owner   :initarg :owner
+            :accessor catalog-entry-owner
+            :initform 0
+            :type (integer 0 99) 
+            :documentation "Owner of the permanent file.")))
+
+(defclass tape-entry (catalog-entry)
+  ((shelf   :initform nil
+            :documentation "for tapes, a relative logical path (\"x\" \"y\" \"z\")")))
+
+
 
 ;; (io-valid-tape-name-p name)
 ;;         name ::= part | part '/' name .
 ;;         part ::= [A-Za-z][A-Za-z0-9]{0,4} /
 
+(defclass catalog ()
+  ((type    :initform :program :accessor catalog-type)
+   (count   :initform 0 :accessor catalog-count)
+   (entries :initarg :entries :initform '()  :accessor catalog-entries
+            :documentation "list of catalog-entry"))) 
 
-(defstruct catalog
-  (type    :program :type catalog-type)
-  (count   0        :type (integer 0))
-  (entries nil      :type list)) ;; list of catalog-entry
 
 
 (defstruct (catalog-data (:type list))
+  "Structure of the following *CATALOG-NAMES* list."
   type name catpath dirpath)
 
+(defun catalog-data (type)  (assoc type *catalog-names*))
 
-(defparameter +catalog-names+
-  `((:program   "PROGRAMME"   ,+lse-fic-progr+  ,+lse-rep-progr+)
-    (:permanent "PERMANENT"   ,+lse-fic-perma+  ,+lse-rep-perma+)
-    (:temporary "TEMPORAIRE"  nil               ,+lse-rep-tempo+)
-    (:tape      "RUBAN"       nil               ,+lse-rep-ruban+)
-    (:shelf     "ETAGERE"     nil               ,+lse-rep-ruban+)))
-
-
-(defparameter *catalog-permanent* (make-catalog))
-(defparameter *catalog-programme* (make-catalog))
+(defparameter *catalog-names*
+  `((:program   "PROGRAMME"   ,*lse-fic-progr*  ,*lse-rep-progr*)
+    (:permanent "PERMANENT"   ,*lse-fic-perma*  ,*lse-rep-perma*)
+    (:temporary "TEMPORAIRE"  nil               ,*lse-rep-tempo*)
+    (:tape      "RUBAN"       nil               ,*lse-rep-ruban*)
+    (:shelf     "ETAGERE"     nil               ,*lse-rep-ruban*)))
 
 
-(defun catalog-data (type)  (assoc type +catalog-names+))
+(defparameter *catalog-permanent* (make-instance 'catalog))
+(defparameter *catalog-programme* (make-instance 'catalog))
 
 
-(defun catalog-entry-path (entry)
-  (case (catalog-entry-type entry)
-    ((:program :permanent) 
-     (format nil "~A;~A"
-             (catalog-data-dirpath (catalog-data (catalog-entry-type entry)))
-             (catalog-entry-name entry)))
-    ((:tape :shelf)
-     (format nil "~A;~{~A;~}~A"
-             (catalog-data-dirpath (catalog-data (catalog-entry-type entry)))
-             (catalog-entry-shelf entry)
-             (catalog-entry-name entry)))
-    ((:temporary)
-     (format nil "~A;~2,'0D;~A"
-             (catalog-data-dirpath (catalog-data (catalog-entry-type entry)))
-             (catalog-entry-console entry)
-             (catalog-entry-name  entry)))
-    (otherwise
-     (error-panic "COMPLETER UNE ENTREE DE CATALOGUE ~@
-                 DE TYPE ~S IMPOSSIBLE." (catalog-entry-type entry)))))
+
+
+;; (defun catalog-entry-path (entry)
+;;   "Returns the path of the catalog entry ENTRY."
+;;   (case (catalog-entry-type entry)
+;;     ((:program :permanent) 
+;;      (format nil "~A;~A"
+;;              (catalog-data-dirpath (catalog-data (catalog-entry-type entry)))
+;;              (catalog-entry-name entry)))
+;;     ((:tape :shelf)
+;;      (format nil "~A;~{~A;~}~A"
+;;              (catalog-data-dirpath (catalog-data (catalog-entry-type entry)))
+;;              (catalog-entry-shelf entry)
+;;              (catalog-entry-name entry)))
+;;     ((:temporary)
+;;      (format nil "~A;~2,'0D;~A"
+;;              (catalog-data-dirpath (catalog-data (catalog-entry-type entry)))
+;;              (catalog-entry-console entry)
+;;              (catalog-entry-name  entry)))
+;;     (otherwise
+;;      (error-panic "COMPLETER UNE ENTREE DE CATALOGUE ~@
+;;                  DE TYPE ~S IMPOSSIBLE." (catalog-entry-type entry)))))
 
 
 (defun catalog-entry-fill (entry)
@@ -125,13 +182,13 @@
                  (if f (progn (setf result t) (file-length f)) 0))))
     (multiple-value-bind (s m h day month year)
         (decode-universal-time (or (file-write-date path) (get-universal-time)))
+      (declare (ignore h m s))
       (setf (catalog-entry-day     entry) day
             (catalog-entry-month   entry) month
             (catalog-entry-year    entry) (mod year 100)
             (catalog-entry-words   entry) (truncate flen 2)
             (catalog-entry-sectors entry) (truncate flen 256)))
     result))
-
 
 
 (defun catalog-update (catalog)
@@ -149,11 +206,12 @@
                        (function catalog-entry-name))))));;catalog-find-name
 |#
 
-(defun catalog-find-name-console (catalog name console)
+(defun catalog-find-name-console (catalog name &optional (console *current-console-number*))
+  "Finds in the CATALOG the entry belonging to the CONSOLE that has the NAME." 
   (find (cons name console) (catalog-entries catalog)
         :test (lambda (no entry)
                 (and (= (cdr no) (catalog-entry-console entry))
-                     (string-equal (car no)  (catalog-entry-name entry))))))
+                     (string-equal (car no) (catalog-entry-name entry))))))
     
     
 (defun catalog-valid-name-p (name)
@@ -162,25 +220,25 @@
        (every (function alphanumericp) name)))
 
 
-(defun catalog-add-entry-type (catalog type name &key console owner)
-  (let ((entry (make-catalog-entry 
+(defun catalog-add-entry-type (catalog type name &key (console *current-console-number*) (owner *current-user-number*))
+  (let ((entry (make-instance 'catalog-entry 
                 :console (or console 0)
                 :owner   (or owner 0)
                 :type type
                 :name  (if (member type '(:tape :shelf)) ""   name)
-                :rpath (if (member type '(:tape :shelf)) name nil))))
+                :shelf (if (member type '(:tape :shelf)) name nil))))
     (when (catalog-entry-fill entry)
       (push entry (catalog-entries catalog))
       (incf (catalog-count catalog))
       entry)))
 
 
-(defun catalog-add-entry (catalog name &key console owner)
+(defun catalog-add-entry (catalog name &key (console *current-console-number*) (owner *current-user-number*))
   (catalog-add-entry-type catalog (catalog-type catalog) name
                           :console console :owner owner))
 
 
-(defun catalog-add-entries (catalog names &key console owner)   
+(defun catalog-add-entries (catalog names &key (console *current-console-number*) (owner *current-user-number*))   
   (dolist (name names)
     (catalog-add-entry catalog name :console console :owner owner)))
 
@@ -189,14 +247,14 @@
   (setf (catalog-entries catalog) (delete  entry (catalog-entries catalog))))
 
     
-
-
 #||
+;; this is used with scandir.  We may do otherwise.
 
-    static int                  selectionner_numero;
-    static lse_catalogue_t*     selectionner_catalogue;
-    
+(defvar *selectionner-numero*    0)
+(defvar *selectionner-catalogue* nil)
 
+
+(defun selectionner-nouveau (entry))
     static int selectionner_nouveaux(const struct dirent* entree_rep)
     {
         return(
@@ -268,30 +326,50 @@
 
 
 (defun catalog-fetch-tapes (catalog base-path &optional (max-depth 1))
-  (let* ((pdir (pathname-directory base-path))
-         (plen (length pdir))
-         (pmat (merge-pathnames
-                (make-pathname 
-                 :directory (append pdir (make-list max-depth 
-                                                    :initial-element :wild))
-                 :name :wild :type nil :version :newest)   base-path))
-         (files (mapcan
-                 (lambda (path)
-                   (let ((d (pathname-directory path)))
-                     (when (equal (subseq d 0 plen) pdir)
-                       ;; no truename skipping, let's assume type and version NIL.
-                       (list (make-pathname 
-                              :directory (list :relative (subseq d plen))
-                              :name (pathname-name path))))))
-                 (directory pmat))))
-    
-    (directory (CONCATENATE 'string base-path 
-                            (do ((i 0 (1+ i))
-                                 (wild "*;" (concatenate 'string wild "*;")))
-                                ((>= i max-depth) wild))))
+  (when (eq (catalog-type catalog) :tape)
+    (let* ((base-path (truename base-path))
+           (pdir      (pathname-directory base-path))
+           (plen      (length pdir)))
+     (dotimes (depth max-depth catalog)
+       (let* ((pmat  (make-pathname 
+                      :directory (append pdir (make-list depth :initial-element :wild))
+                      :name :wild :type nil :version :newest :defaults base-path))
+              (files (mapcan
+                      (lambda (path)
+                        (let ((d (pathname-directory path)))
+                          (when (equal (subseq d 0 plen) pdir)
+                            ;; no truename skipping, let's assume type and version NIL.
+                            (list (make-pathname 
+                                   :directory (cons :relative (subseq d plen))
+                                   :name (pathname-name path) :type nil :version :newest
+                                   :defaults pmat)))))
+                      (directory pmat))))
+         (catalog-add-entries catalog files))))))
 
 
-    ))
+;; (let ((tapes (make-catalog :type :tape)))
+;;   (catalog-fetch-tapes tapes *LSE-REP-RUBAN* 3))
+
+;; (catalog-entry-path #S(catalog-entry :type :tape :name "" :owner 0 :console 0 :day 1 :month 1 :year 0 :words 0 :sectors 0 :shelf #P"BOURG/BOUR"))
+
+
+
+
+
+;; (let ((path #P"/home/pjb/src/lse-repository/RUBAN/BOURG/BOUR"))
+;;   (let ((d (pathname-directory path)))
+;;     (when (equal (subseq d 0 plen) pdir)
+;;       ;; no truename skipping, let's assume type and version NIL.
+;;       (list (make-pathname 
+;;              :directory (list :relative (subseq d plen))
+;;              :name (pathname-name path) :type nil :version :newest
+;;              :defaults pmat)))))
+
+;; (catalog-type (make-instance 'catalog :type :tape))
+;; (truename  *LSE-REP-RUBAN*)#P"/home/pjb/src/lse-repository/RUBAN/"
+
+
+
 
 #||
 
@@ -663,7 +741,7 @@ extern void lse_catalogue_synchroniser(void);
 ||#
 
 
-(defun catalog-make-path (type name &key console)
+(defun catalog-make-path (type name &key (console *current-console-number*))
   "
 PRE:    (eql type :temporary) ==> console must be provided.
 RETURN: A pathname for the file named NAME in the catalog of type TYPE.
@@ -770,7 +848,8 @@ RETURN: A pathname for the file named NAME in the catalog of type TYPE.
     }/*lse_catalogue_ajouter_fichier*/
 ||#
 
-(defun catalog-delete-file (type name &key console user)
+
+(defun catalog-delete-file (type name &key (console *current-console-number*) (user *current-user-number*))
   "
 PRE:  (eql TYPE :temporary) ==> console must be provided.
       (member TYPE '(:program :permanent) ==> user must be provided.
@@ -815,7 +894,7 @@ DO:   if (member type '(:program :permanent :temporary))
                   (make-pathname
                    :directory (list :relative (format nil "~2,'0D" console))
                    :name :wild :type :wild :version :wild)
-                  +lse-rep-tempo+)))
+                  *lse-rep-tempo*)))
     (delete-file file))
   (values))
 

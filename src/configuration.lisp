@@ -36,37 +36,48 @@
 
 (in-package "COM.INFORMATIMAGO.LSE")
 
-(let ((dir ;; /home/pjb/src/lse-repository
-       '(:absolute "home" "pjb" "src" "lse-repository" :wild-inferiors)))
-  ;;   '(:absolute "usr" "local" "share" "lse" :wild-inferiors)))
-  (SETF (LOGICAL-PATHNAME-TRANSLATIONS "LSE")
-        `(("**;*"     ,(MAKE-PATHNAME :DIRECTORY dir :NAME :WILD))
-          ("**;*.*"   ,(MAKE-PATHNAME :DIRECTORY dir :NAME :WILD :TYPE :WILD))
-          ("**;*.*.*" ,(MAKE-PATHNAME :DIRECTORY dir :NAME :WILD :TYPE :WILD 
-                                      :VERSION :WILD)))))
 
-(defparameter +LSE-REP-ADMIN+    "LSE:ADMIN;")
-(defparameter +LSE-REP-PROGR+    "LSE:PROGR;")
-(defparameter +LSE-REP-PERMA+    "LSE:PERMA;")
-(defparameter +LSE-REP-TEMPO+    "LSE:TEMPO;")
-(defparameter +LSE-REP-RUBAN+    "LSE:RUBAN;")
+(eval-when (:compile-toplevel :load-toplevel :execute)
+ (let ((dir ;; /home/pjb/src/lse-repository
+         '(:absolute "home" "pjb" "src" "lse-repository" :wild-inferiors)))
+   ;;   '(:absolute "usr" "local" "share" "lse" :wild-inferiors)))
+   (setf (logical-pathname-translations "LSE") nil)
+   (setf (logical-pathname-translations "LSE")
+         `(("LSE:**;*"     ,(make-pathname :directory dir :name :wild))
+           ("LSE:**;*.*"   ,(make-pathname :directory dir :name :wild :type :wild))
+           ("LSE:**;*.*.*" ,(make-pathname :directory dir :name :wild :type :wild 
+                                           :version :wild))))))
 
-(defparameter +LSE-FIC-COMPTE+   "LSE:ADMIN;COMPT")
-(defparameter +LSE-FIC-PROGR+    "LSE:ADMIN:PROGR")
-(defparameter +LSE-FIC-PERMA+    "LSE:ADMIN:PERMA")
+(defparameter *lse-rep-admin*    #p"LSE:ADMIN;")
+(defparameter *lse-rep-progr*    #p"LSE:PROGR;")
+(defparameter *lse-rep-perma*    #p"LSE:PERMA;")
+(defparameter *lse-rep-tempo*    #p"LSE:TEMPO;")
+(defparameter *lse-rep-ruban*    #p"LSE:RUBAN;")
+
+(defparameter *lse-fic-compte*   #p"LSE:ADMIN;COMPT")
+(defparameter *lse-fic-progr*    #p"LSE:ADMIN;PROGR")
+(defparameter *lse-fic-perma*    #p"LSE:ADMIN;PERMA")
 
 
-(defparameter +DEFAULT-ACCOUNT+ 99)
+(defparameter *default-account* 99)
 
-(defparameter +PASSWORD+    "MAYER")
+(defparameter *password*    "MAYER")
 
-(defparameter +HEADER+      "EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]")
-(defparameter +COPYRIGHT+   "COPYRIGHT 1984 - 2004 PASCAL BOURGUIGNON")
+(defparameter *header*      "EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]")
+(defparameter *copyright*   "COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON")
 
 
 (map nil (function ensure-directories-exist)
-     (list +LSE-REP-ADMIN+  +LSE-REP-PROGR+  +LSE-REP-PERMA+ 
-           +LSE-REP-TEMPO+  +LSE-REP-RUBAN+))
+     (list *lse-rep-admin*  *lse-rep-progr*  *lse-rep-perma* 
+           *lse-rep-tempo*  *lse-rep-ruban*))
 
 
-;;;; configuration.lisp               --                     --          ;;;;
+
+
+
+;; (map nil 'print (directory #P"LSE:**;*.*"))
+
+
+
+
+;;;; THE END ;;;;

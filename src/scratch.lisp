@@ -1,8 +1,8 @@
 ;;;; -*- mode:lisp;coding:utf-8 -*-
 
-(cd #P "~/src/pjb/lse-cl/src/")
-(push #P"~/src/pjb/lse-cl/dependencies/zebu-3.5.5-pjb/" asdf:*central-registry*)
-(push #P "~/src/pjb/lse-cl/src/"                        asdf:*central-registry*)
+(cd #P "/home/pjb/src/pjb/lse-cl/src/")
+(push #P"/home/pjb/src/pjb/lse-cl/dependencies/zebu-3.5.5-pjb/" asdf:*central-registry*)
+(push #P "/home/pjb/src/pjb/lse-cl/src/"                        asdf:*central-registry*)
 (in-package :cl-user)
 (asdf-load :com.informatimago.lse)
 
@@ -48,31 +48,36 @@
 (asdf-load :com.informatimago.common-lisp.cesarum)
 
 (in-package :cl-user)
-(cd #P "~/src/pjb/lse-cl/src/")
-(pushnew #P"~/src/pjb/lse-cl/dependencies/zebu-3.5.5-pjb/" asdf:*central-registry*)
-(pushnew #P "~/src/pjb/lse-cl/src/"                        asdf:*central-registry*)
+(cd #P "/home/pjb/src/pjb/lse-cl/src/")
+(pushnew #P"/home/pjb/src/pjb/lse-cl/dependencies/zebu-3.5.5-pjb/" asdf:*central-registry*)
+(pushnew #P "/home/pjb/src/pjb/lse-cl/src/"                        asdf:*central-registry*)
 (pushnew :developing *features*)
 
-
+;;----------------------------------------------------------------------
 (in-package :cl-user)
-(cd      #P "~/src/pjb/lse-cl/src/")
-(pushnew #P "~/src/public/rdp/"      asdf:*central-registry*)
-(pushnew #P "~/src/pjb/lse-cl/src/"  asdf:*central-registry*)
+(cd      #P "/home/pjb/src/pjb/lse-cl/src/")
+(pushnew #P "/home/pjb/src/pjb/lse-cl/src/"  asdf:*central-registry*)
+(pushnew #P "/home/pjb/src/public/rdp/"      asdf:*central-registry*)
 (pushnew :developing *features*)
 (setf *print-right-margin* 200
       *print-pretty* t
       *print-case* :downcase)
 (asdf:run-shell-command "rm -rf /home/pjb/.cache/common-lisp/kuiper.lan.informatimago.com/ccl-1.7-f94-linux-amd64/home/pjb/src/git/pjb/lse-cl/src/")
 (in-package :cl-user)
-(asdf-load :com.informatimago.lse)
-(in-package :com.informatimago.lse)
+(progn (ignore-errors (delete-package :com.informatimago.lse.server))
+       (ignore-errors (delete-package :com.informatimago.lse))
+       (ignore-errors (delete-package :com.informatimago.lse.byte-code))
+       (ignore-errors (delete-package :com.informatimago.lse.identifiers)))
+(asdf-delete-system :com.informatimago.lse)
+(ql:quickload       :com.informatimago.lse)
+(in-package         :com.informatimago.lse)
 ;; (com.informatimago.common-lisp.cesarum.package:add-nickname :COM.INFORMATIMAGO.LSE.IDENTIFIERS :id)
-
+;;----------------------------------------------------------------------
 
 
 (in-package :cl-user)
-(cd      #P "~/src/pjb/lse-cl/src/")
-(pushnew #P "~/src/pjb/lse-cl/src/" asdf:*central-registry*)
+(cd      #P "/home/pjb/src/pjb/lse-cl/src/")
+(pushnew #P "/home/pjb/src/pjb/lse-cl/src/" asdf:*central-registry*)
 (pushnew :developing *features*)
 (ql:quickload :com.informatimago.lse :verbose t :explain t)
 (in-package :com.informatimago.lse)
@@ -124,7 +129,7 @@ _______________________________________________________________________________
        (print (setf (scanner-current-token scanner) (scan-lse-token scanner)))
        (print (list 'column= (scanner-column scanner) 'state= (scanner-state scanner))))
 
-(with-open-file (src  #P"~/src/pjb/lse-cl/TESTCOMP.LSE")
+(with-open-file (src  #P"/home/pjb/src/pjb/lse-cl/TESTCOMP.LSE")
   (let ((scanner (make-instance 'lse-scanner :source src)))
    (loop
      :for line = (readline (slot-value scanner 'stream))
@@ -132,7 +137,7 @@ _______________________________________________________________________________
      :while line)))
 
 (in-package :com.informatimago.lse)
-(with-open-file (src  #P"~/src/pjb/lse-cl/TESTCOMP.LSE")
+(with-open-file (src  #P"/home/pjb/src/pjb/lse-cl/TESTCOMP.LSE")
   (let ((scanner (make-instance 'lse-scanner :source src)))
     (advance-line scanner)
     (scan-next-token scanner)))
@@ -156,12 +161,14 @@ _______________________________________________________________________________
             items)))
 
 (in-package :COM.INFORMATIMAGO.LSE)
-(test/lse-scanner  #P"~/src/pjb/lse-cl/SYNTERR.LSE")
-(test/lse-scanner  #P"~/src/pjb/lse-cl/TESTCOMP.LSE")
+(test/lse-scanner  #P"/home/pjb/src/pjb/lse-cl/SYNTERR.LSE")
+(test/lse-scanner  #P"/home/pjb/src/pjb/lse-cl/TESTCOMP.LSE")
 
-(test-parse-file   #P "~/src/pjb/lse-cl/SYNTERR.LSE")
-(test-parse-file   #P "~/src/pjb/lse/BOURG/BOUR.LSE")
-(test-parse-file   #P"~/src/pjb/lse-cl/TESTCOMP.LSE")
+(test-parse-file   #P "/home/pjb/src/pjb/lse-cl/SYNTERR.LSE")
+(test-parse-file   #P "/home/pjb/src/pjb/lse/BOURG/BOUR.LSE")
+(test-parse-file   #P"/home/pjb/src/pjb/lse-cl/TESTCOMP.LSE")
 
-(test-compile-file #P "~/src/pjb/lse/BOURG/BOUR.LSE")
-(test-compile-file #P "~/src/pjb/lse-cl/TESTCOMP.LSE")
+(test-compile-file #P "/home/pjb/src/pjb/lse/BOURG/BOUR.LSE")
+(test-compile-file #P "/home/pjb/src/pjb/lse-cl/TESTCOMP.LSE")
+
+

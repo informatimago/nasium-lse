@@ -41,7 +41,7 @@
 (DEFPACKAGE "COM.INFORMATIMAGO.LSE"
   (:nicknames "LSE")
   (:use "COMMON-LISP"
-        "SPLIT-SEQUENCE"
+        "SPLIT-SEQUENCE" "BABEL"
         ;; "COM.HP.ZEBU" ;; Done by ZEBU anyways.
 
         "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.LIST"

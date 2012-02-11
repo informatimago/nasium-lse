@@ -38,7 +38,7 @@
 (asdf:defsystem :com.informatimago.lse
     :description  "LSE interpreter."
     :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
-    :version "1.0.4"
+    :version "1.0.5"
     :licence "GPL"
     :properties ((#:author-email                   . "pjb@informatimago.com")
                  (#:date                           . "Winter 2012")
@@ -50,6 +50,7 @@
 
     :depends-on (:split-sequence
                  :alexandria
+                 :babel
                  
                  :iolib.base
                  :iolib
@@ -85,6 +86,7 @@
                  (:file "configuration")
                  (:file "error")
                  (:file "io")
+                 (:file "file")
                  (:file "catalog")
                  (:file "functions")
 

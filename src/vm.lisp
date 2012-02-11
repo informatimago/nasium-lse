@@ -590,6 +590,10 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
                   
 
+(defun comment (vm comment)
+  (declare (ignore vm comment))
+  (values))
+
 
 (defun run-step (vm)
   (catch 'done
@@ -699,6 +703,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                   (:faire-tant-que (op-3/1 faire-tant-que))
                   (:garer          (op-2/1 garer))
 
+                  (:comment        (op-0/1 comment))
                   (otherwise (error "COP INCONNU: ~S" cop)))))))
       
       (error (err)

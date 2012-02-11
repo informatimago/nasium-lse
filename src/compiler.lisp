@@ -201,7 +201,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
        (tok-chaine      (gen bc::pushi (chaine-valeur stat) next))
        (tok-nombre      (gen bc::pushi (nombre-valeur stat) next))
        (tok-numero      (gen bc::pushi (numero-valeur stat) next))
-       (tok-commentaire #|nothing|#)))
+       (tok-commentaire (gen bc::comment (chaine-valeur stat) next))))
     (cons
      (ecase (first stat)
 

@@ -115,19 +115,18 @@
 (defmethod read-header ((file file))
   (let ((buffer (make-array 8 :element-type '(unsigned-byte 8))))
     (with-slots (stream header) file
-      (file-position stream +header-position+)
-      (assert (= (length buffer) (read-sequence buffer stream)))
+      (read-block buffer stream +header-position+)
       (setf header (make-header :free-list    (peek32 buffer 0)
                                 :record-table (peek32 buffer 4))))))
 
 (defmethod write-header ((file file))
   (let ((buffer (make-array 8 :element-type '(unsigned-byte 8))))
     (with-slots (stream header) file
-     (file-position stream +header-position+)
-     (setf (peek32 buffer 0) (header-free-list    header)
-           (peek32 buffer 4) (header-record-table header))
-     (write-sequence buffer stream)
-     header)))
+      (setf (peek32 buffer 0) (header-free-list    header)
+            (peek32 buffer 4) (header-record-table header))
+      (file-position stream +header-position+)
+      (write-sequence buffer stream)
+      header)))
 
 
 (defun valid-type-p (type-code)
@@ -135,13 +134,13 @@
 
 (defmethod build-record-table ((file file))
   (with-slots (stream header record-table) file
-    (file-position stream +block-size+)
     (let ((buffer (make-block))
           (table (make-hash-table))
           (free-list 0))
       (loop
         :for position :from +block-size+ :by +block-size+
-        :do (if (= +block-size+ (read-sequence buffer stream))
+        :while (< position (file-length stream))
+        :do (if (read-block buffer stream position)
                 (let ((record-number (peek24 buffer 0)))
                   (if (or (zerop record-number)
                           (not (valid-type-p (peek8 buffer 3)))) 
@@ -156,9 +155,9 @@
                       (setf (gethash record-number table) position)))
                 ;; end of file
                 (loop-finish))
-        :finally (setf header (make-header :free-list free-list
-                                           :record-table position)
-                       record-table table)))))
+        :finally (return (setf header (make-header :free-list free-list
+                                                   :record-table position)
+                               record-table table))))))
 
 
 (defmethod read-record-table ((file file))
@@ -185,7 +184,7 @@
   (with-slots (stream header record-table) file
     (unless header
       (read-header file))
-    (unless (zerop (header-record-table header))
+    (when (zerop (header-record-table header))
       (build-record-table file))
     (let ((buffer (make-block)))
       (file-position stream (header-record-table header))
@@ -221,8 +220,10 @@
              :record-number record-number))
     (let ((position (if (zerop (header-free-list header))
                         (if (zerop (header-record-table header))
-                            (ceiling (file-length stream) +block-size+)
-                             (header-record-table header))
+                            (* (ceiling (file-length stream) +block-size+)
+                               +block-size+)
+                            (prog1 (header-record-table header)
+                              (setf (header-record-table header) 0)))
                         (let ((buffer (make-block)))
                           (read-block buffer stream (header-free-list header))
                           (prog1 (header-free-list header)
@@ -231,40 +232,25 @@
 
 
 (defun lse-data-file-open (filespec &key (if-exists :append) (if-does-not-exist :create))
-  (flet ((create ()
-           (let ((stream (open filespec
-                               :direction :io
-                               :element-type '(unsigned-byte 8)
-                               :if-exists if-exists
-                               :if-does-not-exist :create))
-                 (buffer (make-block)))
-             (replace buffer (ascii-format nil "L.S.E. Data File~%Version 1.0~2%"))
-             (file-position stream 0)
-             (write-sequence buffer stream)
-             stream)))
-    (let ((file (make-instance 'file
-                    :path (pathname filespec)
-                    :stream (if (probe-file filespec)
-                                (case if-exists
-                                  ((:append) (open filespec
-                                                   :direction :io
-                                                   :element-type '(unsigned-byte 8)
-                                                   :if-exists if-exists
-                                                   :if-does-not-exist :create))
-                                  ((nil)     (return-from lse-data-file-open nil))
-                                  (otherwise (create)))
-                                (ecase if-does-not-exist
-                                  ((:create)  (create))
-                                  ((:error)   (open filespec
-                                                    :direction :io
-                                                    :element-type '(unsigned-byte 8)
-                                                    :if-exists :error
-                                                    :if-does-not-exist :error))
-                                  ((nil)     (return-from lse-data-file-open nil)))))))
-      (with-slots (header record-table) file
-        (setf header (read-header file)
-              record-table (read-record-table file)))
-      file)))
+  (let ((stream (open filespec
+                      :direction :io
+                      :element-type '(unsigned-byte 8)
+                      :if-exists if-exists
+                      :if-does-not-exist if-does-not-exist)))
+    (when stream
+      (when (zerop (file-length stream))
+        (let ((buffer (make-block)))
+          (replace buffer (let ((*newline* ':lf))
+                            (ascii-format nil "L.S.E. Data File~%Version: 1.0.1~25%")))
+          (file-position stream 0)
+          (write-sequence buffer stream)))
+      (let ((file (make-instance 'file
+                      :path (pathname filespec)
+                      :stream stream)))
+        (with-slots (header record-table) file
+          (setf header (read-header file)
+                record-table (read-record-table file)))
+        file))))
 
 (defmethod lse-data-file-close ((file file))
   (with-slots (stream) file
@@ -345,7 +331,6 @@ RETURN: The data; a status code
                        :do (setf (row-major-aref data i) (ieee-754-to-float-32 (peek32 buffer j))))
                      (values data (1- +type-array+))))
                   ((#.+type-string+)
-                   
                    (let* ((size (peek16 buffer 4))
                           (data (babel:octets-to-string buffer
                                                         :start 6 :end (+ 6 size)
@@ -361,7 +346,6 @@ RETURN: The data; a status code
     (let ((position (or (gethash record-number record-table)
                         (%allocate-record file record-number)))
           (buffer (make-block)))
-      (file-position stream position)
       (setf (peek24 buffer 0) record-number)
       (etypecase data
         (nombre  (setf (peek8  buffer 3) +type-number+
@@ -386,7 +370,10 @@ RETURN: The data; a status code
                    (setf (peek8  buffer 3) +type-string+
                          (peek16 buffer 4) (length octets))
                    (replace buffer octets :start1 6))))
-      (write-sequence buffer stream))))
+      (format t "p=~8D <-- ~S~%" position (subseq buffer 0 40))
+      (file-position stream position)
+      (write-sequence buffer stream)
+      position)))
 
 
 (defmethod delete-record ((file file) record-number)
@@ -399,25 +386,183 @@ RETURN: The data; a status code
                   (peek32 buffer 4) (header-free-list header)
                   (header-free-list header) position)
             (remhash record-number record-table)
+            (file-position stream position)
             (write-sequence buffer stream)
-            (values 0))
-          (values -1)))))
+            (values 0 position))
+          (values -1 position)))))
 
 
 
-(defun test/dump-lse-file (path)
+(defun record-table-as-sorted-list (record-table)
+  (sort (let ((pairs '()))
+          (maphash (lambda (k v) (push (list k v) pairs)) record-table)
+          pairs)
+        '< :key 'first))
+
+
+(defun dump-record-table (file)
+  (with-slots (record-table) file
+    (cond
+      ((null record-table)
+       (format t "Record table is NIL.~%"))
+      ((zerop (hash-table-count record-table))
+       (format t "Record table is empty.~%"))
+      (t
+       (format t "Record table:~%~:{    rn=~8D p=~8D~%~}"
+               (record-table-as-sorted-list record-table))))))
+
+
+(defun check-record-table (record-table)
+  (when record-table
+   (let ((record-list (record-table-as-sorted-list record-table)))
+     (loop
+       :for (rn position) :in record-list
+       :do (unless (zerop (mod position +block-size+))
+             (format t "ERROR: rn=~8D p=~8D is not a multiple of ~D (remainder= ~D)~%"
+                     rn position +block-size+ (mod position +block-size+)))))))
+
+
+(defun dump-lse-file (path)
   (let ((file (lse-data-file-open path)))
     (unwind-protect
-         (loop
-           :for rn :from 1 :to 1000
-           :do (multiple-value-bind (data code) (read-record file rn)
-                 (ecase code
-                   (-1 #|no record, skip|#)
-                   (0 (format t "~4D: NOMBRE  = ~S~%" rn data))
-                   (1 (format t "~4D: VECTEUR = ~S~%" rn data))
-                   (2 (format t "~4D: TABLEAU = ~S~%" rn data))
-                   (3 (format t "~4D: CHAINE  = ~S~%" rn data)))
-                 (finish-output)))
+         (with-slots (record-table) file
+           (check-record-table record-table)
+           (loop
+             :for rn :from 1 :to 1000
+             :do (multiple-value-bind (data code) (read-record file rn)
+                   (ecase code
+                     (-1 #|no record, skip|#)
+                     (0 (format t "~4D: NOMBRE  = ~S~%" rn data))
+                     (1 (format t "~4D: VECTEUR = ~S~%" rn data))
+                     (2 (format t "~4D: TABLEAU = ~S~%" rn data))
+                     (3 (format t "~4D: CHAINE  = ~S~%" rn data)))
+                   (finish-output))))
+      (lse-data-file-close file))))
+
+
+(defun dump-lse-file/low-level (path)
+  (with-open-file (stream path)
+    (loop :repeat 3
+      :do (write-line (read-line stream))))
+  (let ((file (lse-data-file-open path)))
+    (unwind-protect
+         (with-slots (stream header record-table) file
+           (flet ((rem-or-nil (p) (let ((r (mod p +block-size+))) (unless (zerop r) r))))
+            (format t "Header:~%~
+                     ~&    free-list:    ~8D ~@[invalid, remainder=~D~]~%~
+                     ~&    record-table: ~8D ~@[invalid, remainder=~D~]~%"
+                    (header-free-list    header) (rem-or-nil (header-free-list    header))
+                    (header-record-table header) (rem-or-nil (header-record-table header))))
+           (dump-record-table file)
+           (format t "Records:~%")
+           (let ((buffer        (make-block))
+                 (table         (make-hash-table)) ; record-number -> position
+                 (free-table    (make-hash-table)) ; position -> (position . seen)
+                 (invalid-type-count 0)
+                 (invalid-data-count 0))
+             (loop
+               :for position :from +block-size+ :by +block-size+
+               :while (or (zerop (header-record-table header))
+                          (< position (header-record-table header)))
+               :do (if (read-block buffer stream position) 
+                       (let ((record-number (peek24 buffer 0)))
+                         (if (zerop record-number)
+                             (progn
+                               (unless (zerop (peek8 buffer 3))
+                                 (format t "~8D:  nr=~8D  Invalid record type ~D for free block~%"
+                                         position record-number (peek8 buffer 3))
+                                 (incf invalid-type-count))
+                               (setf (gethash position free-table) (cons (peek32 buffer 4) nil))
+                               (format t "~8D:  free block   next position=~8D~%"
+                                       position (peek32 buffer 4))
+                               (when (gethash position record-table)
+                                 (format t "ERROR:  Free block in the record table, at position ~8D~%"
+                                         position)))
+                             (progn
+                               (if (valid-type-p (peek8 buffer 3))
+                                   (format t "~8D:  nr=~8D  ~[FREE BLOCK~;NOMBRE~;VECTEUR~;TABLEAU~;CHAINE~:;INVALID~]~%"
+                                           position record-number (peek8 buffer 3))
+                                   (progn
+                                     (format t "~8D:  nr=~8D  Invalid record type ~D~%"
+                                             position record-number (peek8 buffer 3))
+                                     (incf invalid-type-count)))
+                               (setf (gethash record-number table) position)
+
+                               ;; (check-data)
+                               ;; (loop
+                               ;;   :for rn :from 1 :to 1000
+                               ;;   :do (multiple-value-bind (data code) (read-record file rn)
+                               ;;         (ecase code
+                               ;;           (-1 #|no record, skip|#)
+                               ;;           (0 (format t "~4D: NOMBRE  = ~S~%" rn data))
+                               ;;           (1 (format t "~4D: VECTEUR = ~S~%" rn data))
+                               ;;           (2 (format t "~4D: TABLEAU = ~S~%" rn data))
+                               ;;           (3 (format t "~4D: CHAINE  = ~S~%" rn data)))
+                               ;;         (finish-output)))
+                               )))
+                       ;; end of file
+                       (progn
+                         (format t "~8D:  end of file~%" position)
+                         (format t "~8D:  file size~%" (file-length stream))
+                         (when (/= position (file-length stream))
+                           (format t "WARNING: Incomplete block at end of file.~%"))
+                         (loop-finish)))
+               :finally (progn
+                          (loop
+                            :for current = (header-free-list header) :then next
+                            :for entry   = (gethash current free-table)
+                            :for next    = (car entry)
+                            :for seen    = (cdr entry)
+                            :while (and current (plusp current))
+                            :do (progn
+                                  (when seen
+                                    (format t "ERROR:  The free list is circular.~%")
+                                    (loop-finish))
+                                  (when entry
+                                    (setf (cdr entry) t)))
+                            :finally (maphash (lambda (position entry)
+                                                (let ((seen (cdr entry)))
+                                                  (unless seen
+                                                    (format t "ERROR:  Free block not in free-list, at position ~8D~%"
+                                                            position))))
+                                              free-table))
+                          (unless (equalp table record-table)
+                            (format t "ERROR:  The record-table is incorrect.~%")
+                            (let ((rt-elements (record-table-as-sorted-list record-table))
+                                  (ft-elements (record-table-as-sorted-list table)))
+                              (loop
+                                :with cur-rt = rt-elements
+                                :with cur-ft = ft-elements
+                                :initially (format t "Differences between the record table and the file contents:~%")
+                                :while (and cur-rt cur-ft)
+                                :do (cond
+                                      ((= (car cur-rt) (car cur-ft))
+                                       (unless (= (cdr cur-rt) (cdr cur-ft))
+                                         (format t "    rn=~8D  position in record table: ~8D,  position in file: ~8D~%"
+                                                 (car cur-rt) (cdr cur-rt) (cdr cur-ft)))
+                                       (pop cur-rt)
+                                       (pop cur-ft))
+                                      ((< (car cur-rt) (car cur-ft))
+                                       (format t "    rn=~8D  is in record table, position: ~8D, but no in the file.~%"
+                                               (car cur-rt) (cdr cur-rt))
+                                       (pop cur-rt))
+                                      (t
+                                       (format t "    rn=~8D  is in file table, position: ~8D, but no in the record table.~%"
+                                               (car cur-ft) (cdr cur-ft))
+                                       (pop cur-ft)))
+                                :finally
+                                (progn
+                                  (loop
+                                   :for last-rt :in cur-rt
+                                   :do (format t "    rn=~8D  is in record table, position: ~8D, but no in the file.~%"
+                                               (car last-rt) (cdr last-rt)))
+                                  (loop
+                                    :for last-ft :in cur-ft
+                                    :do (format t "    rn=~8D  is in file table,  position: ~8D, but no in the file.~%"
+                                                (car last-ft) (cdr last-ft)))))))
+                          (format t "Number of records:                    ~8D~%" (hash-table-count record-table))
+                          (format t "Number of records with invalid type:  ~8D~%" invalid-type-count)
+                          (format t "Number of records with invalid data:  ~8D~%" invalid-data-count)))))
       (lse-data-file-close file))))
 
 
@@ -436,7 +581,22 @@ RETURN: The data; a status code
                                                                     (2.1 2.2)
                                                                     (3.1 3.2)
                                                                     (4.1 4.2))))
-             (write-record file 40 "Hello world!"))
+             (write-record file 400 "Hello world!")
+             (write-record file 401 "Félicitation!  45 ¥ ↑∀δ∈D, δ≡ε₂↓")
+
+             (loop
+               :for nr :from 100 :to 110
+               :do (write-record file nr (format nil "Record ~D: contenu: ~D" nr nr)))
+             (loop
+               :for nr :from 100 :to 110 :by 2
+               :do (delete-record file nr))
+             (loop
+               :for nr :from 200 :to 210
+               :do (progn
+                     (write-record file nr (format nil "Record ~D: contenu: ~D" nr nr))
+                     (when (zerop (mod nr 3))
+                       (delete-record file (- nr 1))))))
+        
         (lse-data-file-close file))))
   (test/dump-lse-file  "/tmp/test.don"))
 

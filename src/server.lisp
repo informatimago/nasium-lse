@@ -40,10 +40,6 @@
 (defvar *client* nil "Bound to the current client while running configuration or lse commands.")
 (defvar *server-port* 15001 "Default port the server will listen to.")
 
-(defvar *version* "1.0.0-0.585-CL"
-  "The version of the EMULSE system.")
-
-
 
 (defvar *limbo-banner* "
 EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]

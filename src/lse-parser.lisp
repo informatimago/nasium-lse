@@ -184,9 +184,11 @@
                  :action $1)
 
             (--> ligne-programme
-                 (seq tok-numero (alt liste-inst-ou-decl
-                                      (seq decl-procedure (opt (seq tok-ptvirg liste-inst-ou-decl :action $2)
-                                                               :action $1) :action (cons $1 $2)))
+                 (seq (seq tok-numero :action (progn (setf (scanner-line *scanner*) (numero-valeur tok-numero))
+                                                     tok-numero))
+                      (alt liste-inst-ou-decl
+                                        (seq decl-procedure (opt (seq tok-ptvirg liste-inst-ou-decl :action $2)
+                                                                 :action $1) :action (cons $1 $2)))
                       :action (list* :ligne-programme $1 $2))
                  :action $1)
 
@@ -502,7 +504,7 @@
                  (seq identificateur (opt (alt (seq tok-crogauche expression
                                                     (opt (seq tok-virgule expression :action expression))
                                                     tok-crodroite
-                                                    :action (list* :vref expression $2))
+                                                    :action (list :vref expression $3))
                                                (seq tok-pargauche
                                                     (opt liste-argument :action $1)
                                                     tok-pardroite

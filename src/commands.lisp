@@ -42,110 +42,6 @@
 (in-package "COM.INFORMATIMAGO.LSE")
 
 
-#||
-(delete-duplicates
-(delete-if-not
-(lambda (x) (and (symbolp x)
-(<= 4 (length (string x)))
-(string= "TOK-" x :end2 4)))
-(flatten (with-open-file (in "commands.lisp")
-(loop :for s = (read in nil in)
-:until (eq s in)
-:collect s)))))
-||#
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; DEFINE-GRAMMAR & DEFRULE
-;;;
-;;;  Allows the definition of gramamr in lisp sources
-;;;  instead of .zb files.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-#-(and)
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defvar *rules* (make-hash-table)))
-
-
-#-(and)
-(defmacro defrule (&whole rule   name &rest args )
-  (declare (ignore args))
-  `(eval-when (:compile-toplevel :load-toplevel :execute)
-     (setf (gethash ',name *rules*) ',rule)
-     ',name))
-
-#-(and)
-(defmacro define-grammar (name
-                          (&key (grammar-file nil grammar-file-p)
-                                (output-file  nil output-file-p)
-                                (package nil packagep)
-                                (identifier-start-chars "")
-                                (identifier-continue-chars "")
-                                (intern-identifier nil)
-                                (string-delimiter #\")
-                                (symbol-delimiter #\')
-                                (domain ())
-                                (domain-file nil domain-file-p)
-                                (grammar "null-grammar")
-                                (white-space nil white-space-p)
-                                (case-sensitive t)
-                                (lex-cats nil lex-cats-p))
-                          &body rules)
-  (unless lex-cats-p
-    (error ":LEX-CATS keyword is mandatory in the options of DEFINE-GRAMMAR."))
-  (let ((grammar-file (if grammar-file-p
-                          grammar-file
-                          (make-pathname :name (string name)
-                                         :type "ZB"
-                                         :defaults *grammar-directory*
-                                         :case :common)))
-        (output-file (if output-file-p
-                         output-file
-                         (make-pathname :name (string name)
-                                        :type "TAB"
-                                        :defaults *grammar-directory*
-                                        :case :common))))
-    (with-open-file (*standard-output*
-                     grammar-file
-                     :direction :output
-                     :if-exists :supersede
-                     :if-does-not-exist :create)
-      (print `(:name ,(string name)
-                     :package  ,(string (if packagep package (package-name *package*)))
-                     :identifier-start-chars     ,identifier-start-chars    
-                     :identifier-continue-chars  ,identifier-continue-chars 
-                     :intern-identifier          ,intern-identifier         
-                     :string-delimiter           ,string-delimiter          
-                     :symbol-delimiter           ,symbol-delimiter          
-                     :case-sensitive             ,case-sensitive            
-                     :grammar                    ,grammar                   
-                     :domain                     ,domain                    
-                     :domain-file ,(if domain-file-p
-                                       domain-file
-                                       (format nil "~(~A~)-domain" name))
-                     ,@(when white-space-p `(:white-space ,white-space))
-                     :lex-cats ,lex-cats))
-      (dolist (rule rules)
-        (if (and (consp rule) (eq (first rule) 'insert-rule))
-            (if (gethash (second rule) *rules*)
-                (print (gethash (second rule) *rules*))
-                (error "Unknown rule name ~S" (second rule)))
-            (print rule))))
-    (LET ((COM.HP.ZEBU::*WARN-CONFLICTS*  T)
-          (COM.HP.ZEBU::*ALLOW-CONFLICTS* T))
-      (zebu-compile-file grammar-file :output-file output-file))
-    `(progn
-       (eval-when (:compile-toplevel)
-         (zebu:delete-grammar ,(string name))
-         ;; (zebu-load-file ',output-file)
-         (defparameter ,name nil))
-       (eval-when (::load-toplevel :execute)
-         (zebu:delete-grammar ,(string name))
-         (zebu-load-file ',output-file)
-         (defparameter ,name (find-grammar ,(string name)))))))
-
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Command line grammars
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -160,17 +56,19 @@
     :terminals    ((tok-numero  "[0-9]+"))
     :start numero-de-ligne
     :rules ((--> numero-de-ligne
-                 tok-numero :action (progn
-                                      (unless (valid-line-number (numero-valeur $1))
-                                        (error "NUMERO DE LIGNE INVALIDE: ~A"
-                                               (token-text $1)))
-                                      $1))))
+                 tok-numero :action (let ((lino (parse-integer (second $1))))
+                                      (unless (valid-line-number-p lino)
+                                        (error 'lse-error
+                                               :format-control "NUMERO DE LIGNE INVALIDE: ~A"
+                                               :format-arguments (list (second $1))))
+                                      (list lino)))))
 
 (defgrammar un-numero
     :terminals ((tok-numero  "[0-9]+"))
     :start un-numero
     :rules ((--> un-numero
-                 tok-numero)))
+                 tok-numero
+                 :action (list (parse-integer (second $1))))))
 
 
 (defgrammar deux-numeros
@@ -178,7 +76,10 @@
                 (tok-numero  "[0-9]+"))
     :start deux-numeros
     :rules ((--> deux-numeros
-                 (seq tok-numero tok-virgule tok-numero :action (list $1 $3)))))
+                 (seq tok-numero tok-virgule tok-numero
+                      :action (list (parse-integer (second $1))
+                                    (parse-integer (second $3))))
+                 :action $1)))
 
 
 (defgrammar deux-numeros-optionels
@@ -186,80 +87,125 @@
                 (tok-numero  "[0-9]+"))
     :start deux-numeros-optionels
     :rules ((--> deux-numeros-optionels
-                 (alt
-                  (seq tok-numero tok-virgule tok-numero :action (list $1 $3))
-                  (seq :action (list 1 nil))))))
+                 (seq tok-numero
+                      (opt (seq tok-virgule tok-numero :action (parse-integer (second $2)))
+                           :action $1)
+                      :action (list (parse-integer (second $1))
+                                    $2))
+                 :action $1)))
+
 
 
 (defgrammar liste-de-numeros
     :terminals ((tok-virgule ",")
                 (tok-fois    "\\*")
-                (tok-a       "A")
+                (tok-a       #-LSE-CASE-INSENSITIVE "A" #+LSE-CASE-INSENSITIVE "[Aa]")
                 (tok-numero  "[0-9]+"))
     :start liste-de-numeros
     :rules (
             (--> liste-de-numeros
                  (alt (seq tok-fois :action (progn :all))
                       (seq          :action (progn nil))
-                      liste-d-intervales))
+                      liste-d-intervales)
+                 :action (list $1))
 
             (--> liste-d-intervales
                  (seq intervale-de-numeros (alt (seq tok-virgule liste-d-intervales
                                                      :action liste-d-intervales)
                                                 (seq :action (list nil)))
-                      :action (if $2
-                                  (cons intervale-de-numeros $2)
-                                  intervale-de-numeros)))
+                      :action (cons intervale-de-numeros $2))
+                 :action $1)
             
             (--> intervale-de-numeros
                  (seq numero-de-ligne (alt (seq tok-a numero-de-ligne
-                                                :action $3)
+                                                :action $2)
                                            (seq :action (progn nil)))
                       :action (if $2
-                                  `(interval numero-de-ligne $2)
-                                  numero-de-ligne)))
+                                  (cons numero-de-ligne $2)
+                                  numero-de-ligne))
+                 :action $1)
 
             (--> numero-de-ligne
-                 tok-numero :action (progn
-                                      (unless (valid-line-number (numero-valeur $1))
-                                        (error "NUMERO DE LIGNE INVALIDE: ~A"
-                                               (token-text $1)))
-                                      $1))))
+                 tok-numero :action (let ((lino (parse-integer (second $1))))
+                                      (unless (valid-line-number-p lino)
+                                        (error 'lse-error
+                                               :format-control "NUMERO DE LIGNE INVALIDE: ~A"
+                                               :format-arguments (list (second $1))))
+                                      lino))))
 
 
 (defgrammar un-programme
-    :terminals ((tok-identificateur "[A-Za-z][A-Z-az0-9]*"))
+    :terminals ((tok-identificateur "[A-Za-z][A-Za-z0-9]*"))
     :start un-programme
     :rules (
             (--> un-programme
-                 ident)
+                 ident
+                 :action (list $1))
 
             (--> ident
                  (seq tok-identificateur
-                      :action (progn
-                                (unless (and (char= (character "&")
-                                                    (aref (token-text $1) 0))
-                                             (<= (length  (token-text $1)) 5))
-                                  (error "IDENTIFICATEUR INVALIDE: ~A" (token-text $1)))
-                                $1)))))
+                      ;; :action (let ((text (second $1)))
+                      ;;   (unless (<= (length text) 5)
+                      ;;     (error 'lse-error
+                      ;;            :format-control "IDENTIFICATEUR INVALIDE: ~A"
+                      ;;            :format-arguments (list text)))
+                      ;;   text)
+                      :action (second $1))
+                 :action $1)))
+
+
+(defgrammar arguments-supprimer
+    :terminals ((tok-star    "\\*")
+                (tok-virgule ",")
+                (tok-identificateur "[A-Za-z][A-Za-z0-9]*"))
+    :start arguments-supprimer
+    :rules ((--> arguments-supprimer
+                 (alt
+                  (seq tok-star :action '(*))
+                  (seq ident tok-virgule mode
+                       :action (list $1 $3)))
+                 :action $1)
+            (--> ident
+                 (seq tok-identificateur
+                      ;; :action  (let ((text (second $1)))
+                      ;;           (unless (<= (length text) 5)
+                      ;;             (error 'lse-error
+                      ;;                    :format-control "IDENTIFICATEUR INVALIDE: ~A"
+                      ;;                    :format-arguments (list text)))
+                      ;;           text)
+                      :action (second $1))
+                 :action $1)
+            (--> mode
+                 (seq tok-identificateur
+                      :action (let ((text (string-upcase (second $1))))
+                                (unless (member text '("P" "D" "T") :test (function string=))
+                                  (error 'lse-error
+                                         :format-control "TYPE DE FICHIER INVALIDE: ~A; ATTENDU: P, D OU T."
+                                         :format-arguments (list text)))
+                                text))
+                 :action $1)))
 
 
 (defgrammar deux-fichiers
     :terminals ((tok-virgule ",")
-                (tok-identificateur "[A-Za-z][A-Z-az0-9]*"))
+                (tok-identificateur "[A-Za-z][A-Za-z0-9]*"))
     :start deux-fichiers
     :rules ((--> deux-fichiers
                  (seq ident tok-virgule ident
-                      :action (list $1 $3)))
+                      :action (list $1 $3))
+                 :action $1)
             
             (--> ident
                  (seq tok-identificateur
-                      :action (progn
-                                (unless (and (char= (character "&")
-                                                    (aref (token-text $1) 0))
-                                             (<= (length  (token-text $1)) 5))
-                                  (error "IDENTIFICATEUR INVALIDE: ~A" (token-text $1)))
-                                $1)))))
+                      ;; :action (let ((text (second $1)))
+                      ;;           (unless (<= (length text) 5)
+                      ;;             (error 'lse-error
+                      ;;                    :format-control "IDENTIFICATEUR INVALIDE: ~A"
+                      ;;                    :format-arguments (list text)))
+                      ;;           text)
+                      :action (second $1))
+                 :action $1)))
+
 
 
 (defgrammar un-fichier-et-deux-numeros
@@ -269,19 +215,85 @@
     :start un-fichier-et-deux-numeros
     :rules (
             (--> un-fichier-et-deux-numeros
-                 (seq ident tok-virgule deux-numeros :action (cons $1 $3)))
+                 (seq ident (opt (seq tok-virgule deux-numeros :action deux-numeros)
+                                  :action $1)
+                       :action (cons ident $2))
+                 :action $1)
 
             (--> ident
                  (seq tok-identificateur
-                      :action (progn
-                                (unless (and (char= (character "&")
-                                                    (aref (token-text $1) 0))
-                                             (<= (length (token-text $1)) 5))
-                                  (error "IDENTIFICATEUR INVALIDE: ~A" (token-text $1)))
-                                $1)))
+                      ;; :action (let ((text (second $1)))
+                      ;;           (unless (<= (length text) 5)
+                      ;;             (error 'lse-error
+                      ;;                    :format-control "IDENTIFICATEUR INVALIDE: ~A"
+                      ;;                    :format-arguments (list text)))
+                      ;;           text)
+                      :action (second $1))
+                 :action $1)
 
             (--> deux-numeros
-                 (seq tok-numero tok-virgule tok-numero :action (list $1 $3)))))
+                 (seq tok-numero (opt (seq tok-virgule tok-numero
+                                           :action  (parse-integer (second tok-numero))))
+                      :action (cons (parse-integer (second tok-numero)) $2))
+                 :action $1)))
+
+
+
+(defgrammar un-chemin
+    :terminals  ((chaine "'(('')?[^']*)*'"))
+    :start un-chemin
+    :rules ((--> un-chemin
+                 chaine
+                 :action (list (chaine-valeur (make-instance 'tok-chaine :value (second $1)))))))
+
+
+
+(defun valid-line-number-p (lino) (<= 1 lino 255))
+
+
+(defun test/command-grammars ()
+  (assert (equal '(  9) (parse-numero-de-ligne "9")))
+  (assert (equal '(123) (parse-numero-de-ligne "123")))
+  (assert (null (ignore-errors (parse-numero-de-ligne "999"))))
+
+  (assert (equal '(  8) (parse-un-numero "8")))
+  (assert (equal '(123) (parse-un-numero "123")))
+  (assert (equal '(999) (parse-un-numero "999")))
+
+  (assert (equal '(3 4) (parse-deux-numeros "3,4")))
+  (assert (equal '(123 999) (parse-deux-numeros "123,999")))
+  (assert (equal '(123 999) (parse-deux-numeros-optionels "123,999")))
+  (assert (equal '(123 nil) (parse-deux-numeros-optionels "123")))
+
+  (assert (equal '(nil)  (parse-liste-de-numeros "")))
+  (assert (equal '(:all) (parse-liste-de-numeros "*")))
+  (assert (equal '((7))    (parse-liste-de-numeros "7")))
+  (assert (equal '((123))  (parse-liste-de-numeros "123")))
+  (assert (equal '((10 20 30)) (parse-liste-de-numeros "10,20,30")))
+  (assert (equal '((10 20 (30 . 40) 50)) (parse-liste-de-numeros "10, 20, 30 A 40,50")))
+
+  (assert (equal '("A")     (parse-un-programme "A")))
+  (assert (equal '("BOUR")  (parse-un-programme "BOUR")))
+  (assert (equal '("C1564") (parse-un-programme "C1564")))
+  
+  (assert (equal '("ABCD") (parse-un-fichier-et-deux-numeros "ABCD")))
+  (assert (equal '("ABCD" 100) (parse-un-fichier-et-deux-numeros "ABCD,100")))
+  (assert (equal '("ABCD" 100 200) (parse-un-fichier-et-deux-numeros "ABCD,100,200")))
+  (assert (equal '("A" 1 2) (parse-un-fichier-et-deux-numeros "A,1,2")))
+
+
+  (assert (null (ignore-errors (parse-deux-fichiers "UN"))))
+  (assert (equal '("A" "B") (parse-deux-fichiers "A , B")))
+  (assert (equal '("UN" "DEUX") (parse-deux-fichiers "UN,DEUX")))
+
+
+  (assert (null (ignore-errors (parse-arguments-supprimer "UN"))))
+  (assert (null (ignore-errors (parse-arguments-supprimer "DEUX,Z"))))
+  (assert (equal '("A" "P") (parse-arguments-supprimer "A , P")))
+  (assert (equal '("FICHI" "D") (parse-deux-fichiers "FICHI,D")))
+
+  :success)
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -311,7 +323,19 @@
     :grammar       ',grammar ;; (when grammar (find-grammar (string grammar)))
     :arguments     ',arguments
     :documentation ,(if (stringp (first body)) (first body) "")
-    :function       (lambda ,(flatten arguments) (block ,(intern name) ,@body))))
+    :function       (lambda ,arguments (block ,(intern name) ,@body))))
+
+(defvar *command-group* nil
+  "The command-group the command being called belongs to.")
+
+(defmethod command-call ((command command))
+  (let ((gn (command-grammar command)))
+    (if gn
+        (apply (command-function command)
+               (funcall (intern (with-standard-io-syntax (format nil "PARSE-~A" gn)))
+                        (io-read-line *task* :beep nil)))
+        (funcall (command-function command)))))
+
 
 
 (defstruct command-group
@@ -328,11 +352,24 @@
       :commands (list ,@commands))))
 
 
+(defmethod find-command (command (group command-group))
+  (or (find command (command-group-commands group)
+            :test
+            #-LSE-CASE-INSENSITIVE (function string=)
+            #+LSE-CASE-INSENSITIVE (function string-equal)
+            :key (function command-initials))
+      (some (lambda (supergroup) (find-command command (symbol-value supergroup)))
+            (command-group-supergroups group))))
+
+
+(defmethod all-commands ((group command-group))
+  (append (command-group-commands group)
+          (mapcan (lambda (supergroup) (all-commands (symbol-value supergroup)))
+                  (command-group-supergroups group))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
+;;
 ;; ---------------------
 ;;   Fichier {abstrait}
 ;; ---------------------
@@ -387,101 +424,104 @@
 ;;                                           d    ad   bd   adb
 
 
+
 (define-command-group common ()
 
   
   (defcommand "AIDER" nil ()
-              (io-format *task* "~&LES COMMANDES DISPONIBLES SONT:~2%")
-              (dolist (command *command-group*)
-                (io-format *task* "~A)~20A ~A~%"
-                           (command-initials command)
-                           (subseq (command-name command) 2)
-                           (command-documentation command)))
-              (io-format *task* "~&POUR ENTRER UNE COMMANDE, TAPEZ SES DEUX ~
-                                   PREMIERES LETTRES, SUIVIES DE CTRL-S.~
-                                 ~&POUR ANNULER UN CARACTERE, TAPEZ \\.~%"))
+    "Affiche la liste des commandes."
+    (io-format *task* "~%LES COMMANDES DISPONIBLES SONT:~2%")
+    (dolist (command (all-commands *command-group*))
+      (io-format *task* "~A)~20A ~{~A~^~%                        ~}~%"
+                 (command-initials command)
+                 (subseq (command-name command) 2)
+                 (split-sequence #\Newline (command-documentation command))))
+    (io-format *task* "~&POUR ENTRER UNE COMMANDE, TAPEZ SES DEUX ~
+                         PREMIERES LETTRES, SUIVIES DE CTRL-S.~
+                       ~&POUR ANNULER UN CARACTERE, TAPEZ \\.~%"))
   
 
   (defcommand "IDENTIFICATION" un-numero (identification)
-              ;;     void lse_cmd_identification(lse_travail_t* travail)
-              ;;     {
-              ;;         lse_cmd_parser_t parser;
-              ;;         lse_erreur_t erreur=lse_ok;
-              ;;         lse_chaine_t ligne;
-              ;;         int identification;
-              ;;         int disponible=lse_fichiers_temporaire_disponible();
-              ;;         int requis=9999; /* SEE Ajouter requis au fichier compt */
-              ;; 
-              ;;         lse_chaine_initialiser(&ligne);
-              ;;         lse_ecrire_format(travail," \a");
-              ;;         lse_lire_ligne(travail,&ligne,0,mXOFF); 
-              ;;         lse_cmd_arg_initialiser(&parser,&ligne); 
-              ;;         erreur=lse_cmd_analyser_un_numero(&parser,&identification);
-              ;;         if(erreur!=lse_ok){
-              ;;             /* mais que dit il ? on ne change pas de compte */
-              ;;             lse_ecrire_format(travail,"\r\n???");
-              ;;             return;
-              ;;         }
-              ;;         
-              ;;         /*
-              ;;             SEE: check that we're not wargamed.
-              ;;             
-              ;; 
-              ;;             if(id_locked_for_address(identification,remote_address)){
-              ;;                 (* on ne change pas de compte *)
-              ;;                 lse_ecrire_format(travail,"\r\n???");
-              ;;                 return;
-              ;;             }
-              ;; 
-              ;;             we need to keep for each id the list 
-              ;;             of (remote_address,number of invalid try)
-              ;; 
-              ;;             number of invalid try is reset to 0 once a good id is given.
-              ;; 
-              ;; 
-              ;;             maxtry=3
-              ;;             once maxtry unsuccessfull ID has been issued for a given 
-              ;;             account from a given remote_address, lock the account for 
-              ;;             this address.
-              ;;             
-              ;;         */
-              ;; 
-              ;;         if(!lse_compte_verifier_identification(identification)){
-              ;;             /* on ne change pas de compte */
-              ;;             lse_ecrire_format(travail,"\r\n???");
-              ;;             return;
-              ;;         }
-              ;; 
-              ;;         lse_fichier_terminer(travail->compte,-1);
-              ;;         travail->compte=identification%100;
-              ;;         /* SEE requis=lse_compte_espace_temporaire_requis(identification); */
-              ;;         if(lse_compte_verifier_droit(identification,
-              ;;                                      lse_compte_droit_tempofixe)){
-              ;;             int desire;
-              ;;             lse_ecrire_format(travail,"\r\nESPACE TEMPORAIRE DISPONIBLE : %d",
-              ;;                               disponible);
-              ;;             lse_ecrire_format(travail,"\r\nESPACE TEMPORAIRE DESIRE     :");
-              ;;             lse_cmd_lire_ligne(travail,&ligne);
-              ;;             lse_cmd_arg_initialiser(&parser,&ligne); 
-              ;;             erreur=lse_cmd_analyser_un_numero(&parser,&desire);
-              ;;             if((erreur==lse_ok)&&(0<desire)&&(desire<=disponible)){
-              ;;                 erreur=lse_fichier_allouer_temporaire(travail->console,desire);
-              ;;             }else{
-              ;;                 lse_ecrire_format(travail,"\r\n???");
-              ;;             }
-              ;;         }else if(disponible<requis
-              ;;                  /*cas ou  l'identification demandée correspondait a
-              ;;                    un espace temporaire supérieur à celui restant*/){
-              ;;             lse_ecrire_format(travail,
-              ;;                               "\r\nESPACE TEMPORAIRE REDUIT A %d SECTEURS.",
-              ;;                               disponible);
-              ;;             erreur=lse_fichier_allouer_temporaire(travail->console,disponible);
-              ;;         }
-              ;;         if(erreur!=lse_ok){
-              ;;             lse_erreur_rapporter(travail,erreur);
-              ;;         }
-              ;;     }/*lse_cmd_identification*/
-              )
+    "Permet à l'utilisateur de s'identifier."
+    ;;     void lse_cmd_identification(lse_travail_t* travail)
+    ;;     {
+    ;;         lse_cmd_parser_t parser;
+    ;;         lse_erreur_t erreur=lse_ok;
+    ;;         lse_chaine_t ligne;
+    ;;         int identification;
+    ;;         int disponible=lse_fichiers_temporaire_disponible();
+    ;;         int requis=9999; /* SEE Ajouter requis au fichier compt */
+    ;; 
+    ;;         lse_chaine_initialiser(&ligne);
+    ;;         lse_ecrire_format(travail," \a");
+    ;;         lse_lire_ligne(travail,&ligne,0,mXOFF); 
+    ;;         lse_cmd_arg_initialiser(&parser,&ligne); 
+    ;;         erreur=lse_cmd_analyser_un_numero(&parser,&identification);
+    ;;         if(erreur!=lse_ok){
+    ;;             /* mais que dit il ? on ne change pas de compte */
+    ;;             lse_ecrire_format(travail,"\r\n???");
+    ;;             return;
+    ;;         }
+    ;;         
+    ;;         /*
+    ;;             SEE: check that we're not wargamed.
+    ;;             
+    ;; 
+    ;;             if(id_locked_for_address(identification,remote_address)){
+    ;;                 (* on ne change pas de compte *)
+    ;;                 lse_ecrire_format(travail,"\r\n???");
+    ;;                 return;
+    ;;             }
+    ;; 
+    ;;             we need to keep for each id the list 
+    ;;             of (remote_address,number of invalid try)
+    ;; 
+    ;;             number of invalid try is reset to 0 once a good id is given.
+    ;; 
+    ;; 
+    ;;             maxtry=3
+    ;;             once maxtry unsuccessfull ID has been issued for a given 
+    ;;             account from a given remote_address, lock the account for 
+    ;;             this address.
+    ;;             
+    ;;         */
+    ;; 
+    ;;         if(!lse_compte_verifier_identification(identification)){
+    ;;             /* on ne change pas de compte */
+    ;;             lse_ecrire_format(travail,"\r\n???");
+    ;;             return;
+    ;;         }
+    ;; 
+    ;;         lse_fichier_terminer(travail->compte,-1);
+    ;;         travail->compte=identification%100;
+    ;;         /* SEE requis=lse_compte_espace_temporaire_requis(identification); */
+    ;;         if(lse_compte_verifier_droit(identification,
+    ;;                                      lse_compte_droit_tempofixe)){
+    ;;             int desire;
+    ;;             lse_ecrire_format(travail,"\r\nESPACE TEMPORAIRE DISPONIBLE : %d",
+    ;;                               disponible);
+    ;;             lse_ecrire_format(travail,"\r\nESPACE TEMPORAIRE DESIRE     :");
+    ;;             lse_cmd_lire_ligne(travail,&ligne);
+    ;;             lse_cmd_arg_initialiser(&parser,&ligne); 
+    ;;             erreur=lse_cmd_analyser_un_numero(&parser,&desire);
+    ;;             if((erreur==lse_ok)&&(0<desire)&&(desire<=disponible)){
+    ;;                 erreur=lse_fichier_allouer_temporaire(travail->console,desire);
+    ;;             }else{
+    ;;                 lse_ecrire_format(travail,"\r\n???");
+    ;;             }
+    ;;         }else if(disponible<requis
+    ;;                  /*cas ou  l'identification demandée correspondait a
+    ;;                    un espace temporaire supérieur à celui restant*/){
+    ;;             lse_ecrire_format(travail,
+    ;;                               "\r\nESPACE TEMPORAIRE REDUIT A %d SECTEURS.",
+    ;;                               disponible);
+    ;;             erreur=lse_fichier_allouer_temporaire(travail->console,disponible);
+    ;;         }
+    ;;         if(erreur!=lse_ok){
+    ;;             lse_erreur_rapporter(travail,erreur);
+    ;;         }
+    ;;     }/*lse_cmd_identification*/
+    )
 
   )
 
@@ -490,534 +530,634 @@
 
   
   (defcommand "DROITS"  nil ()
-              "Allow the administrator to set the access rights of the accounts."
-              (io-format *task* " ")
-              (unless (string= (io-read-line *task* :echo nil :xoff t) *PASSWORD*)
-                (error-report *task* +error-bad-identifier+)
-                (return-from droits))
-              (io-newline *task*) (io-format *task* "            ANCIEN  NOUVEAU  ") ;
-              (io-newline *task*) (io-format *task* "NO.COMPTE    PDAF     PDAF   ") ;
-              (loop
-                 :with account = -1
-                 :for line = (progn (io-newline *task*)
-                                    (io-format *task* "COMPTE NO. : ") ;
-                                    (io-read-line *task* :xoff t))
-                 :until (string= line "FIN")
-                 :do
-                   (setf account (if (zerop (length line))
-                                     (mod (1+ account) 100)
-                                     (parse-integer line :junk-allowed nil)))
-                   (when (<= 0 account 99)
-                     (let ((op (account-check-right account :programme))
-                           (od (account-check-right account :permanent))
-                           (oa (account-check-right account :tempoauto))
-                           (of (account-check-right account :tempofixe))
-                           np nd na nf)
-                       (io-beginning-of-line *task*)
-                       (io-format *task* 
-                                  "   ~2,'0D       ~{~[0~;1~]~}     "
-                                  account (list op od oa of))
-                       (setf line (io-read-line *task* :xoff t))
-                       (if (and (= 4 (length line))
-                                (every (lambda (ch) (position ch "01")) line))
-                           (progn
-                             (setf np (char= (character "1") (aref line 0))
-                                   nd (char= (character "1") (aref line 1))
-                                   na (char= (character "1") (aref line 2))
-                                   nf (and (not na)
-                                           (char= (character "1") (aref line 3))))
-                             (account-set-right account :programme np)
-                             (account-set-right account :permanent nd)
-                             (account-set-right account :tempoauto na)
-                             (account-set-right account :tempofixe nf))
-                           (setf np op  nd od  na oa  nf of))
-                       (io-beginning-of-line *task*)
-                       (io-format *task*
-                                  "   ~2,'0D       ~{~[0~;1~]~}      ~{~[0~;1~]~}    "
-                                  account (list op od oa of) (list np nd na nf)) )))
-              (io-new-line *task*))
+    "Gestion des droits d'accès des comptes."
+    (io-format *task* " ")
+    (unless (string= (io-read-line *task* :echo nil :xoff t) *PASSWORD*)
+      (error-report *task* +error-bad-identifier+)
+      (return-from droits))
+    (io-new-line *task*) (io-format *task* "            ANCIEN  NOUVEAU  ") ;
+    (io-new-line *task*) (io-format *task* "NO.COMPTE    PDAF     PDAF   ") ;
+    (loop
+      :with account = -1
+      :for line = (progn (io-new-line *task*)
+                         (io-format *task* "COMPTE NO. : ") ;
+                         (io-read-line *task* :xoff t))
+      :until (string= line "FIN")
+      :do
+      (setf account (if (zerop (length line))
+                        (mod (1+ account) 100)
+                        (parse-integer line :junk-allowed nil)))
+      (when (<= 0 account 99)
+        (let ((op (account-check-right account :programme))
+              (od (account-check-right account :permanent))
+              (oa (account-check-right account :tempoauto))
+              (of (account-check-right account :tempofixe))
+              np nd na nf)
+          (io-beginning-of-line *task*)
+          (io-format *task* 
+                     "   ~2,'0D       ~{~[0~;1~]~}     "
+                     account (list op od oa of))
+          (setf line (io-read-line *task* :xoff t))
+          (if (and (= 4 (length line))
+                   (every (lambda (ch) (position ch "01")) line))
+              (progn
+                (setf np (char= (character "1") (aref line 0))
+                      nd (char= (character "1") (aref line 1))
+                      na (char= (character "1") (aref line 2))
+                      nf (and (not na)
+                              (char= (character "1") (aref line 3))))
+                (account-set-right account :programme np)
+                (account-set-right account :permanent nd)
+                (account-set-right account :tempoauto na)
+                (account-set-right account :tempofixe nf))
+              (setf np op  nd od  na oa  nf of))
+          (io-beginning-of-line *task*)
+          (io-format *task*
+                     "   ~2,'0D       ~{~[0~;1~]~}      ~{~[0~;1~]~}    "
+                     account (list op od oa of) (list np nd na nf)) )))
+    (io-new-line *task*))
 
 
 
   (defcommand "BONJOUR" nil ()
-              (io-new-line *task* 2)
-              (io-format *task* "LSE-M15  CONSOLE NO.~2D  ~A" 
-                         (*task*-console *task*) (lse-dat))
-              (*task*-state-change *task* :active))
+    "Activation du mode de travail."
+    (io-new-line *task* 2)
+    (io-format *task* "LSE-M15  CONSOLE NO.~2D  ~A" 
+               (task-console *task*) (dat))
+    (task-state-change *task* :active))
 
 
   (defcommand "ADIEUX" nil ()
-              (io-new-line *task*)
-              (*task*-disconnect *task*))
+    "Déconnexion."
+    (io-new-line *task*)
+    (task-disconnect *task*))
 
 
   ) ;; sleeping
 
 
 
+
+
+(define-condition au-revoir ()
+  ())
+
+(defun au-revoir ()
+  (io-format *task* "  ~8A" (subseq (dat) 9))
+  (io-new-line *task* 3)
+  (io-finish-output *task*)
+  (task-state-change *task* :sleeping)
+  (catalog-delete-temporaries (task-console *task*))
+  (signal 'au-revoir))
+
+
+(defun abreger ()
+  (setf (task-abreger   *task*) t))
+
+(defun in-extenso ()
+  (setf (task-abreger   *task*) nil))
+
+(defun pas-a-pas ()
+  (setf (task-pas-a-pas *task*) t))
+
+(defun normal ()
+  (setf (task-pas-a-pas *task*) nil))
+
+
+
+(defun lister-a-partir-de (from to)
+  (io-format *task* "~:{~*~A~%~}" (get-program (task-vm *task*) from to)))
+
+
+(defun numero-a-partir-de (from to)
+  (io-format *task* "~:{~A~%~}" (get-program (task-vm *task*) from to)))
+
+
+(defun perforer-a-partir-de (from to)
+  ;; (lse_es_activer_perforateur_de_ruban travail)
+  ;; (lse_langage_perforer travail (first from-to) (second from-to))
+  ;; (lse_es_arreter_perforateur_de_ruban travail)
+  ;; (lse_ecrire_format travail "\r\nPERFORATION EFFECTUEE.")
+  )
+
+
+
+(defun ruban ()
+  ;;         if(lse_es_activer_lecteur_de_ruban(travail)){
+  (silence)
+  )
+
+
+(defun silence ()
+  (setf (io-echo      *task*) nil)
+  (setf (task-silence *task*) t))
+
+
+(defun unsilence ()
+  (setf (io-echo      *task*) t)
+  (setf (task-silence *task*) nil))
+
+
+(defun executer-a-partir-de (from to)
+  )
+
+
+(defun continuer ()
+  )
+
+
+(defun reprendre-a-partir-de (from to)
+  )
+
+(defun poursuivre-jusqu-en (linum)
+  )
+
+(defun prendre-etat-console (console-no)
+  ;;           verifier le numero correspond a une console existante.
+  ;;           Si la zone temporaire locale < taille des fichiers dans la zone
+  ;;           temporaire de la console a prendre :
+  ;;           "TRANSFERT FICHIERS TEMPORAIRES IMPOSSIBLE"       
+  )
+
+
+
+
+
+(defparameter *file-types*
+  '((:program   . "lse")
+    (:data      . "don")
+    (:temporary . "don")))
+
+
+(defparameter *current-directory* (truename #P"./"))
+
+
+(defun make-temporaries-directory ()
+  (let ((dir (pathname (format nil "/tmp/lse~D/" (asdf::get-uid)))))
+    (ensure-directories-exist (make-pathname :name "test" :type "test" :defaults dir))
+    dir))
+
+
+(defun catalog-pathname (name fictype)
+  (let ((fictype (cond
+                   ((string-equal fictype "P") :program)
+                   ((string-equal fictype "D") :data)
+                   ((string-equal fictype "T") :temporary)
+                   (t (error 'lse-error
+                             :format-control "INDICATEUR DE TYPE DE FICHIER INVALIDE: ~A; ATTENDU: P, D ou T."
+                             :format-arguments (list fictype)))))
+        (name (string-downcase name)))
+    (make-pathname :name name
+                   :type (cdr (assoc fictype *file-types*))
+                   :case :local
+                   :defaults (if (eq :temporary fictype)
+                                (make-temporaries-directory)
+                                *current-directory*))))
+
+;; (catalog-pathname "BOUR" "P") --> #P"./bour.lse"
+;; (catalog-pathname "BOUR" "D") --> #P"./bour.don"
+;; (catalog-pathname "BOUR" "T") --> #P"/tmp/lse1000/bour.don"
+
+
+(defun appeler (pgm)
+  (let* ((path      (catalog-pathname pgm :p))
+         (vm        (task-vm *task*)))
+    (vm-terminer vm)
+    (replace-program vm (compile-lse-file path pgm))
+    (values)))
+
+
+(defun ranger (pgm)
+  (let* ((path      (catalog-pathname pgm :p))
+         (vm        (task-vm *task*))
+         (source    (get-program vm 1 nil)))
+    (if source
+        (with-open-file (stream path
+                                :direction :output
+                                :if-exists nil
+                                :if-does-not-exist :create)
+          (if stream
+              (loop
+                :for (lino line) :in source
+                :do (write-line line stream))
+              (error 'lse-file-error
+                     :pathname path
+                     :format-control "UN PROGRAMME NOMME '~A' EXISTE DEJA; UTILISEZ LA COMMANDE MODIFIER."
+                     :format-arguments (list pgm))))
+        (error 'lse-error
+               :format-control "IL N'Y A PAS DE PROGRAMME A RANGER."
+               :format-arguments '()))
+    (values)))
+
+
+(defun modifier (pgm)
+  (let* ((path      (catalog-pathname pgm :p))
+         (vm        (task-vm *task*))
+         (source    (get-program vm 1 nil)))
+    (if source
+        (with-open-file (stream path
+                                :direction :output
+                                :if-exists :supersede
+                                :if-does-not-exist :create)
+          (loop
+            :for (lino line) :in source
+            :do (write-line line stream)))
+        (error 'lse-error
+               :format-control "IL N'Y A PAS DE PROGRAMME A MODIFIER."
+               :format-arguments '()))
+    (values)))
+
+
+
+
+(defparameter *xoff* (code-char +xoff+))
+(defparameter *nul*  (code-char +nul+))
+
+(defun split-size (string size)
+  (loop
+    :with len = (length string)
+    :for start :below len :by size
+    :collect (subseq string start (min (+ start size) len))))
+
+(defun decoder (fichier from to)
+  (let* ((path      (catalog-pathname fichier :T))
+         (vm        (task-vm *task*))
+         (source    (get-program vm from to)))
+    (if source
+        (let ((buffer (unsplit-string (mapcar (function second) source)
+                                      *xoff*
+                                      :fill-pointer t :size-increment 2)))
+          (vector-push *xoff* buffer)
+          (vector-push *nul*  buffer)
+          (let ((file (lse-data-file-open path
+                                          :if-exists :supersede
+                                          :if-does-not-exist :create)))
+            (unwind-protect
+                 (loop
+                   :for rn :from 1
+                   :for chunk :in (split-size buffer *max-record-chaine-size*)
+                   :do (write-record file rn chunk))
+              (lse-data-file-close file))))
+        (error 'lse-error
+               :format-control "IL N'Y A PAS DE PROGRAMME A DECODER."
+               :format-arguments '()))
+    (values)))
+
+
+(defun encoder (fichier from to)
+  (let* ((path      (catalog-pathname fichier :T))
+         (vm        (task-vm *task*)))
+    (let ((file (lse-data-file-open path :if-does-not-exist nil)))
+      (if file
+          (let ((source (nsubstitute-if #\Newline
+                                        (lambda (ch) (or (char= ch *xoff*)
+                                                         (char= ch *nul*)))
+                                        (unsplit-string
+                                         (unwind-protect
+                                              (loop
+                                                :for rn :from 1
+                                                :for chunk = (read-record file rn)
+                                                :collect chunk
+                                                :until (char= (aref chunk (1- (length chunk))) *nul*))
+                                           (lse-data-file-close file))
+                                         ""))))
+            (with-input-from-string (stream source)
+              (dolist (line (compile-lse-stream stream))
+                ;; ENCODER merges the lines.
+                (when (and (<= from (first line))
+                           (or (null to)
+                               (<= (first line) to)))
+                  (put-line vm (first line) line)))))
+          (error 'lse-file-error
+                 :pathname path
+                 :format-control "IL N'Y A PAS DE FICHIER TEMPORAIRE '~A' A ENCODER."
+                 :format-arguments (list fichier))))))
+
+
+
+
+;; (directory "./*.lse")
+;; (appeler "BOURG")
+;; (appeler "testcomp")
+;; (modifier "SAVE1")
+;; (lister-a-partir-de 1 nil)
+
+
+
+(defun effacer-lignes (liste-de-numeros)
+  (let ((vm (task-vm *task*)))
+    (if (eql :all liste-de-numeros)
+        (loop
+          :for lino :from (minimum-line-number vm)
+          :to (maximum-line-number vm)
+          :do (erase-line-number vm lino))
+        (dolist (item liste-de-numeros)
+          (if (consp item)
+              (loop
+                :for lino :from (min (car item) (cdr item)) :to (max (car item) (cdr item))
+                :do (erase-line-number vm lino))
+              (erase-line-number vm item))))))
+
+(defun eliminer-commentaires ()
+  (error 'pas-implemente
+         :what 'eliminer-commentaires))
+
+
+(defun cataloguer (temporaire permanent)
+  (let ((src-path (catalog-pathname temporaire :t))
+        (dst-path (catalog-pathname permanent  :d)))
+    (with-open-file (src src-path
+                         :direction :input
+                         :element-type '(unsigned-byte 8)
+                         :if-does-not-exist nil)
+      (if src
+          (with-open-file (dst dst-path
+                               :direction :output
+                               :element-type '(unsigned-byte 8)
+                               :if-exists nil
+                               :if-does-not-exist :create)
+            (if dst
+                (copy-stream src dst)
+                (error 'lse-file-error
+                       :pathname dst-path
+                       :format-control "IL N'Y A DEJA UN FICHIER PERMANENT '~A'."
+                       :format-arguments (list permanent))))
+          (error 'lse-file-error
+                 :pathname src-path
+                 :format-control "IL N'Y A PAS DE FICHIER TEMPORAIRE '~A' A CATALOGUER."
+                 :format-arguments (list temporaire))))))
+
+
+(defun supprimer-tous-les-fichiers-temporaires ()
+  (dolist (path (directory (make-pathname :name :wild
+                                          :type (cdr (assoc :temporary *file-types*))
+                                          :case :local
+                                          :defaults (make-temporaries-directory))))
+    (delete-file path))
+  (values))
+
+
+(defun supprimer (fichier stype)
+  (let ((path (catalog-pathname fichier stype)))
+    (delete-file path))
+  (values))
+
+
+
+
+(defun changer-repertoire (chemin)
+  (when (and (stringp chemin)
+             (< 1 (length chemin))
+             (char/= #\/ (aref chemin (1- (length chemin)))))
+    (setf chemin (concatenate 'string chemin "/")))
+  (setf *current-directory*
+        (truename (make-pathname
+                   :name nil :type nil :version nil
+                   :defaults (merge-pathnames chemin *current-directory*)))))
+
+
+(defun afficher-repertoire-courant ()
+  (io-format *task* "~%REPERTOIRE COURANT: ~A~%" *current-directory*))
+
+
+
+(defun table-des-fichiers ()
+  (io-format *task* "  ~A~%" (dat))
+  (flet ((list-files (type directory control-string modulo)
+           (let* ((files  (directory (make-pathname :name :wild
+                                                   :type (cdr (assoc type *file-types*))
+                                                   :version nil
+                                                   :defaults directory)))
+                  (width  (reduce (function max) files
+                                  :key (lambda (x) (length (pathname-name x)))
+                                  :initial-value 5)))
+            (dolist (file files)
+              (io-format *task* control-string
+                         width
+                         (string-upcase (pathname-name file))
+                         (task-account *task*)
+                         (subseq (formate-date (file-write-date file)) 0 8)
+                         (truncate (or (ignore-errors
+                                         (with-open-file (stream file
+                                                                 :direction :input
+                                                                 :element-type '(unsigned-byte 8)
+                                                                 :if-does-not-exist nil)
+                                           (file-length stream)))
+                                       0)
+                                   modulo))))))
+    
+   (io-format *task* "~%FICHIERS-PROGRAMMES~
+                     ~%*******************~
+                     ~2% NOM NO.COMPTE  DATE  NB.MOTS~
+                     ~2%")
+   (list-files :program *current-directory* "~VA  ~2,'0D    ~8A ~5D~%" 2)
+
+   (io-format *task* "~%FICHIERS-PERMANENTS~
+                     ~%*******************~
+                     ~2% NOM NO.COMPTE  DATE  NB.SECTEURS~
+                     ~2%")
+   (list-files :data *current-directory* "~VA  ~2,'0D    ~8A ~5D~%" +block-size+)
+
+   (io-format *task* "~%FICHIERS-DONNEE TEMPORAIRES~
+                     ~%*****************************~
+                     ~2% NOM CONSOLE NB.SECTEURS~
+                     ~2%")
+   (list-files :temporary (make-temporaries-directory) "~VA  ~2,'0D~*     ~5D~%" +block-size+)
+   (io-new-line *task*)
+   (values)))
+
+
+(defun free-sectors ()
+  88485460)
+
+(defun allocated-temporary-space ()
+  '((1 20)
+    (2 20)
+    (3 3)
+    (4 3)
+    (5 3)
+    (6 3)
+    (7 3)
+    (8 3)
+    (16 20)))
+
+(defun utilisation-disque ()
+  (table-des-fichiers)
+  (io-format *task* "~%NOMBRE DE SECTEUR LIBRES:~D~
+                     ~%*************************~
+                     ~2%" (free-sectors))
+  (io-format *task* "~%ESPACE TEMPORAIRE ALLOUE~
+                     ~%************************~
+                     ~2%CONSOLE NB.SECTEURS~
+                     ~2%")
+  (io-format *task* "~:{ ~2,'0D       ~5D~%~}" (allocated-temporary-space))
+  (io-new-line *task*)
+  (values))
+
+
+
+
 (define-command-group awake (common)
 
   (defcommand "AU REVOIR" nil ()
-              (io-format *task* "  ~8A" (subseq (lse-dat) 9))
-              (*task*-state-change *task* :sleeping)
-              (catalog-delete-temporaries (*task*-console *task*)))
+    "Efface les fichiers temporaires, et passe à l'état dormant."
+    (au-revoir))
 
+  (defcommand "ABREGER"     nil ()
+    "Ne complète pas l'affichage des commandes."
+    (abreger))
 
-  (defcommand "ABREGER"     nil ()  (setf (abreger   *task*) t))
-  (defcommand "IN EXTENSO"  nil ()  (setf (abreger   *task*) nil))
+  (defcommand "IN EXTENSO"  nil ()
+    "Complète l'affichage des commandes."
+    (in-extenso))
 
-  (defcommand "PAS A PAS"   nil ()  (setf (pas-a-pas *task*) t))
-  (defcommand "NORMAL"      nil ()  (setf (pas-a-pas *task*) nil))
-
-
-  (defcommand "LISTER A PARTIR DE"   deux-numeros-optionels ((from to))
-              
-              )
-
-
-  (defcommand "PERFORER A PARTIR DE" deux-numeros-optionels ((from to))
-              ;; (lse_es_activer_perforateur_de_ruban travail)
-              ;; (lse_langage_perforer travail (first from-to) (second from-to))
-              ;; (lse_es_arreter_perforateur_de_ruban travail)
-              ;; (lse_ecrire_format travail "\r\nPERFORATION EFFECTUEE.")
-              )
-
-
-  (defcommand "LP LISTER   LISP"     deux-numeros-optionels ((from to))
-              
-              )
-
-
-  (defcommand "PP PERFORER LISP"     deux-numeros-optionels ((from to))
-              ;; (lse_es_activer_perforateur_de_ruban travail)
-              ;; (lse_langage_lispeur travail (first from-to) (second from-to))
-              ;; (lse_es_arreter_perforateur_de_ruban travail)
-              ;; (lse_ecrire_format travail "\r\nPERFORATION EFFECTUEE.")
-              )
-
-
-  (defcommand "NUMERO A PARTIR DE"   deux-numeros-optionels ((from to))
-              
-              )
-
-
-  (defcommand "EXECUTER A PARTIR DE" deux-numeros-optionels ((from to))
-              
-              )
-
-
-  (defcommand "CONTINUER"             nil ()
-              )
-
-
-  (defcommand "REPRENDRE A PARTIR DE" deux-numeros-optionels ((from to))
-              
-              )
-
-
-  (defcommand "POURSUIVRE JUSQU'EN"   numero-de-ligne (linum)
-              
-              )
-
-
-  (defcommand "PRENDRE ETAT CONSOLE"  un-numero (consnum)
-              ;;           verifier le numero correspond a une console existante.
-              ;;           Si la zone temporaire locale < taille des fichiers dans la zone
-              ;;           temporaire de la console a prendre :
-              ;;           "TRANSFERT FICHIERS TEMPORAIRES IMPOSSIBLE"       
-              )
-
-  (defcommand "APPELER"  un-programme (pgm)
-              ;;         lse_cmd_parser_t parser;
-              ;;         lse_erreur_t erreur;
-              ;;         lse_chaine_t ligne;
-              ;;         lse_ident_t ident;
-              ;;         lse_cmd_lire_ligne(travail,&ligne);
-              ;;         lse_cmd_arg_initialiser(&parser,&ligne); 
-              ;;         erreur=lse_cmd_analyser_un_programme(&parser,&ident);
-              ;;         if(erreur==lse_ok){
-              ;;             lse_langage_appeler(travail,&ident);
-              ;;         }else{
-              ;;             lse_erreur_rapporter(travail,erreur);
-              ;;         }
-              )
+  (defcommand "PAS A PAS"   nil ()
+    "Exécution du programme pas-à-pas."
+    (pas-a-pas))
   
-  (defcommand "CATALOGUER"  deux-fichiers ((temporaire permanent))
-              ;;         lse_cmd_parser_t parser;
-              ;;         lse_erreur_t erreur;
-              ;;         lse_chaine_t ligne;
-              ;;         lse_ident_t temporaire;
-              ;;         lse_ident_t permanent;
-              ;; 
-              ;;         if(!lse_compte_verifier_droit(travail->compte,
-              ;;                                       lse_compte_droit_permanent)){
-              ;;             lse_erreur_rapporter(travail,lse_erreur_non_autorise);
-              ;;             return;
-              ;;         }
-              ;; 
-              ;;         lse_cmd_lire_ligne(travail,&ligne);
-              ;;         lse_cmd_arg_initialiser(&parser,&ligne); 
-              ;;         erreur=lse_cmd_analyser_deux_fichiers(&parser,&temporaire,&permanent);
-              ;;         if(erreur==lse_ok){
-              ;;             erreur=lse_catalogue_cataloguer(travail->console,temporaire.nom,
-              ;;                                             travail->compte,permanent.nom);
-              ;;         }
-              ;;         if(erreur!=lse_ok){
-              ;;             lse_erreur_rapporter(travail,erreur);
-              ;;         }
-              )
-  
+  (defcommand "NORMAL"      nil ()
+    "Annule la commande PAS A PAS."
+    (normal))
 
-  (defcommand "ENCODER" un-ficher-et-deux-numeros ((fichier de a))
-              ;;         lse_cmd_parser_t parser;
-              ;;         lse_erreur_t erreur;
-              ;;         lse_chaine_t ligne;
-              ;;         lse_ident_t fichier;
-              ;;         int de;
-              ;;         int a;
-              ;;         lse_cmd_lire_ligne(travail,&ligne);
-              ;;         lse_cmd_arg_initialiser(&parser,&ligne); 
-              ;;         erreur=lse_cmd_analyser_un_fichier_et_deux_numeros(&parser,
-              ;;                                                            &fichier,&de,&a);
-              ;;         if(erreur==lse_ok){
-              ;;             lse_langage_encoder(travail,&fichier,de,a);
-              ;;         }else{
-              ;;             lse_erreur_rapporter(travail,lse_erreur_nom_de_fichier_attendu);
-              ;;         }
-              )
+  (defcommand "LISTER A PARTIR DE"   deux-numeros-optionels (from to)
+    "Affiche le programme courant."
+    (lister-a-partir-de from to))
+
+  (defcommand "PERFORER A PARTIR DE" deux-numeros-optionels (from to)
+    "Perfore le programme courant sur le ruban perforé."
+    (perforer-a-partir-de from to))
+
+  #+developing
+  (defcommand "LP LISTER LISP A PARTIR DE "     deux-numeros-optionels (from to)
+    "Commande de deboguage: Désassemble les lignes de programme."
+    (desassembler-a-partir-de from to)
+    (let ((lines '()))
+      (maphash (lambda (lino code)
+                 (when (and (<= from lino) (or (null to) (<= lino to)))
+                   (push (list lino
+                               (third code)
+                               (with-output-to-string (*standard-output*)
+                                 (with-standard-io-syntax
+                                  (disassemble-lse (second code)))))
+                         lines)))
+               (vm-code-vectors (task-vm *task*)))
+      (io-format *task* "~:{~*~A~%~A~%~}" (sort lines '< :key (function first)))))
+
+  #+developing
+  (defcommand "PP PERFORER LISP A PARTIR DE "  deux-numeros-optionels (from to)
+    "Commande de deboguage: Désassemble les lignes de programme."
+        
+    ;; (lse_es_activer_perforateur_de_ruban travail)
+    ;; (lse_langage_lispeur travail (first from-to) (second from-to))
+    ;; (lse_es_arreter_perforateur_de_ruban travail)
+    ;; (lse_ecrire_format travail "\r\nPERFORATION EFFECTUEE.")
+    )
 
 
-  (defcommand "DECODER" un-ficher-et-deux-numeros ((fichier de a))
-              ;;         lse_cmd_parser_t parser;
-              ;;         lse_erreur_t erreur;
-              ;;         lse_chaine_t ligne;
-              ;;         lse_ident_t fichier;
-              ;;         int de;
-              ;;         int a;
-              ;;         lse_cmd_lire_ligne(travail,&ligne);
-              ;;         lse_cmd_arg_initialiser(&parser,&ligne); 
-              ;;         erreur=lse_cmd_analyser_un_fichier_et_deux_numeros(&parser,
-              ;;                                                            &fichier,&de,&a);
-              ;;         if(erreur==lse_ok){
-              ;;             lse_langage_decoder(travail,&fichier,de,a);
-              ;;         }else{
-              ;;             lse_erreur_rapporter(travail,lse_erreur_nom_de_fichier_attendu);
-              ;;         }
-              )
-  
-
-  (defcommand "EFFACER LIGNES" deux-numeros-optionels ((from to))
-              ;;     void lse_cmd_effacer_lignes(lse_travail_t* travail)
-              ;;     {
-              ;;         lse_cmd_parser_t parser;
-              ;;         lse_erreur_t erreur;
-              ;;         lse_chaine_t ligne;
-              ;;         int max=lse_programme_ligne_max();
-              ;;         char* indicateurs=(char*)malloc((unsigned)(max+1));
-              ;;         lse_cmd_lire_ligne(travail,&ligne);
-              ;;         lse_cmd_arg_initialiser(&parser,&ligne); 
-              ;;         erreur=lse_cmd_analyser_liste_de_numeros(&parser,indicateurs);
-              ;;         if(erreur==lse_ok){
-              ;;             int compte=0;
-              ;;             int i;
-              ;;             for(i=1;i<=max;i++){
-              ;;                 if(indicateurs[i]){
-              ;;                     compte++;
-              ;;                     lse_langage_effacer(travail,i);
-              ;;                 }
-              ;;             }
-              ;;             if(compte==0){
-              ;;                 lse_ecrire_format(travail,"\r\nANNULE");
-              ;;             }
-              ;;         }else{
-              ;;             lse_erreur_rapporter(travail,erreur);
-              ;;         }
-              ;;         free(indicateurs);
-              ;;     }/*lse_cmd_effacer_lignes*/
-              )
-  
-
-  (defcommand "ELIMINER COMMENTAIRES"  nil ()
-              ;;         lse_language_eliminer_commentaires(travail);
-              )
-
-
-
-  (defcommand "MODIFIER"  un-programme (pgm)
-              ;;         lse_cmd_parser_t parser;
-              ;;         lse_erreur_t erreur;
-              ;;         lse_chaine_t ligne;
-              ;;         lse_ident_t ident;
-              ;;         lse_cmd_lire_ligne(travail,&ligne);
-              ;;         lse_cmd_arg_initialiser(&parser,&ligne); 
-              ;;         erreur=lse_cmd_analyser_un_programme(&parser,&ident);
-              ;;         if(erreur==lse_ok){
-              ;;             lse_langage_modifier(travail,&ident);
-              ;;         }else{
-              ;;             lse_erreur_rapporter(travail,erreur);
-              ;;         }
-              )
-
-
-  (defcommand "RANGER" un-programme (pgm)
-              ;;         lse_cmd_parser_t parser;
-              ;;         lse_erreur_t erreur;
-              ;;         lse_chaine_t ligne;
-              ;;         lse_ident_t ident;
-              ;;         lse_cmd_lire_ligne(travail,&ligne);
-              ;;         lse_cmd_arg_initialiser(&parser,&ligne); 
-              ;;         erreur=lse_cmd_analyser_un_programme(&parser,&ident);
-              ;;         if(erreur==lse_ok){
-              ;;             lse_langage_ranger(travail,&ident);
-              ;;         }else{
-              ;;             lse_erreur_rapporter(travail,erreur);
-              ;;         }
-              )
+  (defcommand "NUMERO A PARTIR DE"   deux-numeros-optionels (from to)
+    "Affiche les numéros de lignes utilisés."
+    (numero-a-partir-de from to))
 
   
   (defcommand "RUBAN" nil ()
-              ;;         if(lse_es_activer_lecteur_de_ruban(travail)){
-              ;;             travail->silence=1;
-              ;;         }
-              )
+    (ruban))
 
   
   (defcommand "SILENCE"  nil ()
-              ;;         travail->silence=1;
-              )
+    "Supprime l'affichage de tout ce que l'utilisateur tape au clavier.
+L'effet de cette commande est annulé par la touche ESC."
+    (silence))
+
+
+  (defcommand "EXECUTER A PARTIR DE" deux-numeros-optionels (from to)
+    "Exécute le programme."
+    (executer-a-partir-de from to))
+
+
+  (defcommand "CONTINUER"             nil ()
+    "Continue l'exécution du programme après une pause."
+    (continuer))
+
+
+  (defcommand "REPRENDRE A PARTIR DE" deux-numeros-optionels (from to)
+    "Reprend l'exécution du programme après une pause."
+    (reprendre-a-partir-de from to))
+
+
+  (defcommand "POURSUIVRE JUSQU'EN"   numero-de-ligne (linum)
+    "Continue l'exécution du programme jusqu'à la ligne indiquée."
+    (poursuivre-jusqu-en linum))
+
+
+  (defcommand "PRENDRE ETAT CONSOLE"  un-numero (consnum)
+    "Copie le programme courant et les fichiers temporaires de la console indiquée."
+    (prendre-etat-console *task* consnum))
+
+
+  (defcommand "APPELER"  un-programme (pgm)
+    "Charge un fichier programme en mémoire."
+    (appeler pgm))
+
+  (defcommand "RANGER" un-programme (pgm)
+    "Enregistre le programme courant dans un nouveau fichier programme."
+    (ranger pgm))
+ 
+  (defcommand "MODIFIER"  un-programme (pgm)
+    "Enregistre le programme courant dans un fichier programme existant."
+    (modifier pgm))
 
   
-  (defcommand "SUPPRIMER" deux-fichiers ((fichier stype))
-              ;;         lse_cmd_parser_t parser;
-              ;;         lse_erreur_t erreur;
-              ;;         lse_chaine_t ligne;
-              ;;         lse_ident_t fichier;
-              ;;         lse_ident_t stype;
-              ;;         lse_catalogue_type_t type=lse_catalogue_type_fin;
-              ;; 
-              ;;         lse_cmd_lire_ligne(travail,&ligne);
-              ;;         lse_cmd_arg_initialiser(&parser,&ligne); 
-              ;;         erreur=lse_cmd_analyser_deux_fichiers(&parser,&fichier,&stype);
-              ;;         if(erreur==lse_ok){
-              ;;             if(strcmp(stype.nom,"P")==0){
-              ;;                 type=lse_catalogue_type_programme;
-              ;;             }else if(strcmp(stype.nom,"D")==0){
-              ;;                 type=lse_catalogue_type_permanent;
-              ;;             }else if(strcmp(stype.nom,"T")==0){
-              ;;                 type=lse_catalogue_type_temporaire;
-              ;;             }else{
-              ;;                 lse_erreur_rapporter(travail,
-              ;;                                      lse_erreur_type_de_fichier_invalide);
-              ;;                 return;
-              ;;             }
-              ;;             erreur=lse_catalogue_supprimer_fichier(
-              ;;                 type,
-              ;;                 type==lse_catalogue_type_temporaire?
-              ;;                 travail->console:travail->compte,
-              ;;                 fichier.nom);
-              ;;             lse_erreur_rapporter(travail,erreur);
-              ;;         }else{
-              ;;             lse_cmd_arg_initialiser(&parser,&ligne);
-              ;;             if(!lse_cmd_etoile(&parser)){
-              ;;                 lse_erreur_rapporter(travail,erreur);
-              ;;                 return;
-              ;;             }
-              ;;             if(!lse_cmd_rien_de_plus(&parser)){
-              ;;                 lse_erreur_rapporter(travail,lse_erreur_rien_de_plus_attendu);
-              ;;             }
-              ;;             erreur=lse_catalogue_supprimer_temporaires(travail->console);
-              ;;             if(erreur!=lse_ok){
-              ;;                 lse_erreur_rapporter(travail,erreur);
-              ;;             }
-              ;;         }
-              )
+  (defcommand "ENCODER" un-fichier-et-deux-numeros (fichier &optional (from 1) (to nil))
+    "Charge un programme à partir d'un fichier donnée."
+    (encoder fichier from to))
+
+
+  (defcommand "DECODER" un-fichier-et-deux-numeros (fichier &optional (from 1) (to nil))
+    "Enregistre le programme dans un fichier donnée."
+    (decoder fichier from to))
+  
+
+  (defcommand "EFFACER LIGNES" liste-de-numeros (liste-de-numeros)
+    "Efface les lignes indiquées."
+    (effacer-lignes liste-de-numeros))
+  
+
+  (defcommand "ELIMINER COMMENTAIRES"  nil ()
+    "Elimine les commentaires."
+    (eliminer-commentaires))
+
+  
+  (defcommand "CATALOGUER"  deux-fichiers (temporaire permanent)
+    "Copie un fichier temporaire dans un fichier permanent."
+    (cataloguer temporaire permanent))
+
+  
+  (defcommand "SUPPRIMER" arguments-supprimer (fichier &optional fictype)
+    "Supprime un fichier de type indiqué, ou supprime tous les fichiers temporaires (*)."
+    (if (equal fichier '*)
+        (supprimer-tous-les-fichiers-temporaires)
+        (supprimer fichier fictype)))
 
 
   (defcommand "TABLE DES FICHIERS" nil ()
-              ;;         lse_catalogue_t* programmes;
-              ;;         lse_catalogue_t* permanents;
-              ;;         lse_catalogue_t* temporaires;
-              ;; 
-              ;;         if(travail->compte==lse_compte_anonyme){
-              ;;             programmes=0;
-              ;;             permanents=0;
-              ;;         }else{
-              ;;             programmes=lse_catalogue_programmes(travail->compte);
-              ;;             permanents=lse_catalogue_permanents(travail->compte);
-              ;;         }
-              ;; 
-              ;;         temporaires=lse_catalogue_temporaires(travail->console);
-              ;; 
-              ;;         lse_lister_fichiers(travail,programmes,permanents,temporaires,0,0);
-              )
+    "Liste la table des fichiers (répertoire courant, et fichiers temporaires)."
+    (table-des-fichiers))
 
 
   (defcommand "UTILISATION DISQUE" nil ()
-              ;;         lse_catalogue_t* programmes;
-              ;;         lse_catalogue_t* permanents;
-              ;;         lse_catalogue_t* temporaires;
-              ;;         int secteurs_libres;
-              ;;         lse_temporaire_alloue_t* alloues;
-              ;;         lse_travail_t* console;
-              ;;         int i;
-              ;; 
-              ;;         if(travail->compte==lse_compte_anonyme){
-              ;;             return;
-              ;;         }
-              ;; 
-              ;;         programmes=lse_catalogue_programmes(lse_compte_tous);
-              ;;         permanents=lse_catalogue_permanents(lse_compte_tous);
-              ;;         temporaires=lse_catalogue_temporaires(lse_compte_tous);
-              ;; 
-              ;;         secteurs_libres=lse_catalogue_secteurs_libres();
-              ;;         alloues=(lse_temporaire_alloue_t*)malloc(sizeof(lse_temporaire_alloue_t)
-              ;;                                                  *(lse_travail_nombre()+1));
-              ;;         i=0;
-              ;;         while(0!=(console=lse_travail_console(i))){
-              ;;             alloues[i].console=console->console;
-              ;;             alloues[i].secteurs=lse_fichier_temporaire_alloue(console->console);
-              ;;             i++;
-              ;;         }
-              ;;         alloues[i].console=-1;
-              ;; 
-              ;; 
-              ;;         lse_lister_fichiers(travail,programmes,permanents,temporaires,
-              ;;                             secteurs_libres,alloues);
-              ;; 
-              ;;         free(alloues);
-              )
+    "Liste la table des fichiers (répertoire courant, et fichiers temporaires)."
+    (utilisation-disque))
+
+
+  (defcommand "CHANGER REPERTOIRE" un-chemin (nouveau-repertoire)
+    "Change le répertoire courant."
+    (changer-repertoire nouveau-repertoire))
+
+  (defcommand "AFFICHER REPERTOIRE COURANT" nil ()
+    "Affiche le répertoire courant."
+    (afficher-repertoire-courant))
 
   
-  ;;     void lse_catalogue_lister(lse_travail_t* travail,
-  ;;                               lse_catalogue_t* catalogue,
-  ;;                               lse_catalogue_champ_t champs)
-  ;;     {
-  ;;         int i;
-  ;;         const char* format_numero;
-  ;;         if(champs==(lse_catalogue_champ_nom
-  ;;                     |lse_catalogue_champ_numero
-  ;;                     |lse_catalogue_champ_secteurs)){
-  ;;             format_numero="  %02d   ";
-  ;;         }else{
-  ;;             format_numero="   %02d    ";
-  ;;         }
-  ;; 
-  ;;         for(i=0;i<catalogue->nombre;i++){
-  ;;             lse_catalogue_entree_t* entree;
-  ;;             entree=pjb_tableau_element_a(catalogue->entrees,i);
-  ;;             
-  ;;             lse_ecrire_format(travail,"\r\n");
-  ;; 
-  ;;             if(champs&lse_catalogue_champ_nom){
-  ;;                 lse_ecrire_format(travail,"%-5s",entree->nom);
-  ;;             }
-  ;;             if(champs&lse_catalogue_champ_numero){
-  ;;                 lse_ecrire_format(travail,format_numero,entree->numero);
-  ;;             }
-  ;;             if(champs&lse_catalogue_champ_date){
-  ;;                 lse_ecrire_format(travail,"%02d/%02d/%02d",
-  ;;                                   entree->jour,entree->mois,entree->annee);
-  ;;             }
-  ;;             if(champs&lse_catalogue_champ_mots){
-  ;;                 lse_ecrire_format(travail,"  %-5d",entree->mots);
-  ;;             }
-  ;;             if(champs&lse_catalogue_champ_secteurs){
-  ;;                 lse_ecrire_format(travail,"     %d",entree->secteurs);
-  ;;             }
-  ;;         }
-  ;;     }/*lse_catalogue_lister*/
-  ;; 
-  ;; 
-  ;;  
-  ;; 
-  ;;     typedef struct {
-  ;;         int console;
-  ;;         int secteurs;
-  ;;     }       lse_temporaire_alloue_t;
-  ;; 
-  ;;     static void lse_lister_fichiers(lse_travail_t* travail,
-  ;;                                     lse_catalogue_t* programmes,
-  ;;                                     lse_catalogue_t* permanents,
-  ;;                                     lse_catalogue_t* temporaires,
-  ;;                                     int secteurs_libres,
-  ;;                                     lse_temporaire_alloue_t* alloues)
-  ;;     {
-  ;;         int i;
-  ;;         lse_valeur_t* arguments[16];
-  ;;         lse_chaine_t* date;
-  ;; 
-  ;;         lse_dat(arguments);
-  ;;         date=(lse_chaine_t*)(arguments[0]);
-  ;;         lse_ecrire_format(travail,"  %s\r\n",date->caracteres);
-  ;; 
-  ;;         if(programmes!=0){
-  ;;             lse_ecrire_format(travail,
-  ;;                               "\r\nFICHIERS-PROGRAMME"
-  ;;                               "\r\n******************"
-  ;;                               "\r\n"
-  ;;                               "\r\n NOM NO.COMPTE  DATE  NB.MOTS"
-  ;;                               "\r\n");
-  ;;             lse_catalogue_lister(travail,programmes,
-  ;;                                  lse_catalogue_champ_nom
-  ;;                                  |lse_catalogue_champ_numero
-  ;;                                  |lse_catalogue_champ_date
-  ;;                                  |lse_catalogue_champ_mots);
-  ;;             lse_ecrire_format(travail,"\r\n");
-  ;;         }
-  ;; 
-  ;;         if(permanents!=0){
-  ;;             lse_ecrire_format(travail,
-  ;;                               "\r\nFICHIERS-DONNEE PERMANENTS"
-  ;;                               "\r\n**************************"
-  ;;                               "\r\n"
-  ;;                               "\r\n NOM NO.COMPTE  DATE  NB.SECTEURS"
-  ;;                               "\r\n");
-  ;; 
-  ;;             lse_catalogue_lister(travail,permanents,
-  ;;                                  lse_catalogue_champ_nom
-  ;;                                  |lse_catalogue_champ_numero
-  ;;                                  |lse_catalogue_champ_date
-  ;;                                  |lse_catalogue_champ_secteurs);
-  ;;             lse_ecrire_format(travail,"\r\n");
-  ;;         }
-  ;; 
-  ;;         if(temporaires!=0){
-  ;;             lse_ecrire_format(travail,
-  ;;                               "\r\nFICHIERS-DONNEE TEMPORAIRES"
-  ;;                               "\r\n***************************"
-  ;;                               "\r\n"
-  ;;                               "\r\n NOM CONSOLE NB.SECTEURS"
-  ;;                               "\r\n");
-  ;; 
-  ;;             lse_catalogue_lister(travail,temporaires,
-  ;;                                  lse_catalogue_champ_nom
-  ;;                                  |lse_catalogue_champ_numero
-  ;;                                  |lse_catalogue_champ_secteurs);
-  ;;             lse_ecrire_format(travail,"\r\n");
-  ;;         }
-  ;; 
-  ;;         if(alloues!=0){
-  ;;             lse_ecrire_format(travail,
-  ;;                               "\r\nNOMBRE DE SECTEURS LIBRES: %d"
-  ;;                               "\r\n**************************"
-  ;;                               "\r\n"
-  ;;                               "\r\nESPACE TEMPORAIRE ALLOUE"
-  ;;                               "\r\n************************"
-  ;;                               "\r\n"
-  ;;                               "\r\nCONSOLE NB.SECTEURS"
-  ;;                               "\r\n",secteurs_libres);
-  ;;             i=0;
-  ;;             while(alloues[i].console>=0){
-  ;;                 lse_ecrire_format(travail,"\r\n  %02d         %d",
-  ;;                                   alloues[i].console,alloues[i].secteurs);
-  ;;                 i++;
-  ;;             }
-  ;;         }
-  ;; 
-  ;;         lse_ecrire_format(travail,"\r\n");
-  ;; 
-  ;;     }/*lse_lister_fichiers*/
-
   ) ;; awake
 
 
@@ -1029,72 +1169,98 @@
   (mapcar (function command-name) (command-group-commands awake)))
 
 
-(defun cmd-interprete (task)
-  (loop while (task-state-awake-p (task-state task))
-     do
-       (setf (task-interruption task) nil)
-       (unless (task-silence task) (io-new-line task))
-       (let ((line (io-read-line task
-                                 :beep (not (task-silence task))
-                                 :xoff t)))
-         (unless (task-interruption task)
-           (cond
-             ((and (= 2 (length line)) (alpha-char-p (aref line 0)))
-              ;; looks like a command
-              (let ((entry (assoc line 
-                                  (if (task-state-sleeping-p task)
-                                      (sleeping-commands)
-                                      (awake-commands))
-                                  :test (lambda (x y) (string= x y :end2 2)))))
-                (if (null entry)
-                    (error-format task "COMMAND INCONNUE")
-                    (progn
-                      (unless (task-abreger task)
-                        (io-beginning-of-line task)
-                        (io-format task "~A" (first entry)))
-                      (funcall (second entry) task)))))
-             ((< 0 (length line))
-              ;; soit une instruction, soit une ligne de programme... 
-              (if (task-state-awake-p task)
-                  (lse-compile-and-execute task line)
-                  (io-format task "ETAT DORMANT"))))))))
 
 
-
-(defun cmd-interprete-line (task line)
-  (cond
-    ((and (= 2 (length line)) (alpha-char-p (aref line 0)))
-     ;; looks like a command
-     (let ((entry (assoc line 
-                         (if (task-state-sleeping-p task)
-                             (sleeping-commands)
-                             (awake-commands))
-                         :test (lambda (x y) (string= x y :end2 2)))))
-       (if (null entry)
-           (error-format task "COMMAND INCONNUE")
-           (progn
-             (unless (task-abreger task)
-               (io-beginning-of-line task)
-               (io-format task "~A" (first entry)))
-             (funcall (second entry) task)))))
-    ((< 0 (length line))
-     ;; soit une instruction, soit une ligne de programme... 
-     (if (task-state-awake-p task)
-         (lse-compile-and-execute task line)
-         (io-format task "ETAT DORMANT")))))
+(defun lse-compile-and-execute (task line)
+  (let* ((*task* task)
+         (code (compile-lse-line line)))
+    (if (consp code)
+        ;; program line
+        (if (equalp #(25) (second code))
+            (erase-line-number (task-vm task) (first code))
+            (put-line (task-vm task) (first code) code))
+        ;; instruction line
+        (progn
+          (setf (vm-code (task-vm task)) (second code))
+          (loop
+            :while (run-step (task-vm task)))))))
 
 
+(defun command-eval-line (task line)
+  (let ((*task* task))
+    (cond
 
-  ;; (loop while (task-state-awake-p (task-state task))
-  ;;    do
-  ;;      (setf (task-interruption task) nil)
-  ;;      (unless (task-silence task) (io-new-line task))
-  ;;      (let ((line (io-read-line task
-  ;;                                :beep (not (task-silence task))
-  ;;                                :xoff t)))
-  ;;        (unless (task-interruption task)
-  ;;          )))
+      ((and (= 2 (length line))
+            (alpha-char-p (aref line 0))
+            (alpha-char-p (aref line 1)))
+       ;; looks like a command
+       (let* ((command-group (ecase (task-state task)
+                               (:sleeping sleeping)
+                               (:active   awake)))
+              (*command-group* command-group)
+              (command (find-command line command-group)))
+         (if (null command)
+             (error 'lse-error
+                    :format-control "COMMANDE INCONNUE ~S"
+                    :format-arguments (list line))
+             (progn
+               (unless (task-abreger task)
+                 (io-beginning-of-line task)
+                 (io-format task "~A " (command-name command)))
+               (command-call command)))))
+      
+      ((< 0 (length line))
+       ;; soit une instruction, soit une ligne de programme... 
+       (if (task-state-awake-p task)
+           (lse-compile-and-execute task line)
+           (error "COMMANDE INVALIDE EN L'ETAT ~A~%ESSAYER LA COMMANDE AI(DE).~%"
+                  (task-state-label (task-state task)))))
 
-;;----------------------------------------------------------------------
+      #|else empty line, just ignore it.|#)))
 
+
+(defun command-repl (task)
+  (let ((*task* task))
+    (io-format task "~&PRET~%")
+    (io-finish-output task)
+    (handler-case
+        (loop
+          :while (task-state-awake-p task)
+          :do (restart-case
+                  (handler-case
+                      (handler-bind ((lse-error     (function signal))
+                                     (scanner-error (function signal))
+                                     (parser-error  (function signal))
+                                     (error         (function invoke-debugger)))
+                        (progn
+                          (setf (task-interruption task) nil)
+                          ;; (unless (task-silence task)
+                          ;;   (io-new-line task))
+                          (io-finish-output *task*)
+                          (let ((line (io-read-line task
+                                                    :beep (not (task-silence task))
+                                                    :xoff t)))
+                            (if (task-interruption task)
+                                (io-format *task* "~&PRET~%")
+                                (command-eval-line task line)))))
+                    (scanner-error-invalid-character (err)
+                      (io-format *task* "~&ERREUR: ~?~%"
+                                 "CARACTERE INVALIDE '~a' EN POSITION ~D"
+                                 (scanner-error-format-arguments err))
+                      (io-format *task* "~&PRET~%")
+                      (io-finish-output *task*))
+                    (error (err)
+                      (io-format *task* "~&ERREUR: ~A~%" err)
+                      (io-format *task* "~&PRET~%")
+                      (io-finish-output *task*)))
+                (continue ()
+                  :report "CONTINUER")))
+      (au-revoir () (values)))))
+
+
+;; (test/command-grammars)
+
+;; Local Variables:
+;; eval: (cl-indent 'defcommand 3)
+;; End:
 ;;;; THE END ;;;;

@@ -52,6 +52,7 @@
 (defstruct console
   (class 'xterm      :type (member xterm socket))
   (number 0          :type (integer 0 99))
+
   (state  :limbo     :type (member :limbo :configuration :sleeping :awake))
   (date   "00/00/00" :type string))
 

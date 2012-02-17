@@ -71,7 +71,7 @@
 (asdf-delete-system :com.informatimago.lse)
 (ql:quickload       :com.informatimago.lse)
 (in-package         :com.informatimago.lse)
-;; (com.informatimago.common-lisp.cesarum.package:add-nickname :COM.INFORMATIMAGO.LSE.IDENTIFIERS :id)
+(com.informatimago.common-lisp.cesarum.package:add-nickname :COM.INFORMATIMAGO.LSE.IDENTIFIERS :id)
 ;;----------------------------------------------------------------------
 
 
@@ -172,3 +172,21 @@ _______________________________________________________________________________
 (test-compile-file #P "/home/pjb/src/pjb/lse-cl/TESTCOMP.LSE")
 
 
+
+(in-package :COM.INFORMATIMAGO.LSE)
+(untrace read-block
+       read-header
+       write-header
+       build-record-table
+       read-record-table
+       write-record-table
+       %allocate-record
+       lse-data-file-open
+       lse-data-file-close
+       lse-data-file-open-p
+       read-record
+       write-record
+       delete-record
+       test/dump-lse-file
+       test/dump-lse-file/low-level
+       test/file)

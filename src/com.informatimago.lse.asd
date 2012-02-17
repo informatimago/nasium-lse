@@ -38,7 +38,7 @@
 (asdf:defsystem :com.informatimago.lse
     :description  "LSE interpreter."
     :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
-    :version "1.0.5"
+    :version "1.0.7"
     :licence "GPL"
     :properties ((#:author-email                   . "pjb@informatimago.com")
                  (#:date                           . "Winter 2012")
@@ -62,7 +62,6 @@
                  :com.informatimago.rdp
                  ;; :com.hp.zebu
                  )
-    :serial t
     :components (
                  ;; Some generic utility
                  (:file "logger")
@@ -70,39 +69,55 @@
                  (:file "environment")
                  (:file "iolib-message")
                  (:file "iolib-end-point")
-                 (:file "iolib-utils"   :depends-on ("logger" "signal" "iolib-message"))
-                 (:file "iolib-server"  :depends-on ("logger" "iolib-utils" "iolib-message"))
-                 (:file "iolib-client"  :depends-on ("logger" "iolib-utils" "iolib-message"))
-                 ;;----------------------
+                 (:file "iolib-utils"         :depends-on ("logger" "signal" "iolib-message"))        
+                 (:file "iolib-server"        :depends-on ("logger" "iolib-utils" "iolib-message"))   
+                 (:file "iolib-client"        :depends-on ("logger" "iolib-utils" "iolib-message"))   
+                 ;;---------------------                                                              
+                                                                                                      
+                 ;; LSE language                                                                      
+                 (:file "packages")                                                                   
+                                                                                                      
+                 ;; (:file "patch-zebu")                                                              
+                 ;; (:file "grammar")                                                                 
+                 ;; (:file "lse-domain")                                                              
+                                                                                                      
+                                                                                                      
+                 (:file "version"             :depends-on ("packages"))
+                 (:file "configuration"       :depends-on ("packages"))
+                 (:file "error"               :depends-on ("packages"))                               
 
-                 ;; LSE language
-                 (:file "packages")
-
-                 ;; (:file "patch-zebu")
-                 ;; (:file "grammar")
-                 ;; (:file "lse-domain")
-
+                 (:file "file"                :depends-on ("packages"
+                                                           "configuration" "error"))
                  
-                 (:file "configuration")
-                 (:file "error")
-                 (:file "io")
-                 (:file "file")
-                 (:file "catalog")
-                 (:file "functions")
+                 (:file "catalog"             :depends-on ("packages"))                               
+                 (:file "functions"           :depends-on ("packages" "error"))
+                                                                                                      
+                 (:file "lse-scanner"         :depends-on ("packages" "error"))
+                 (:file "lse-parser"          :depends-on ("packages" "lse-scanner"))                 
+                 (:file "byte-code"           :depends-on ("packages"))                               
+                 (:file "compiler"            :depends-on ("packages" "lse-parser" "byte-code"))      
+                 (:file "vm"                  :depends-on ("packages"
+                                                           "error" "byte-code" "functions" "file"))
 
-                 (:file "lse-scanner")
-                 (:file "lse-parser")
-                 (:file "compiler")
-                 (:file "vm")
+                 (:file "commands"            :depends-on ("packages" "error")) 
+                 (:file "task"                :depends-on ("packages" "vm"))
+                 (:file "io"                  :depends-on ("packages" "file" "task"))
 
-                 (:file "commands")
-                 (:file "task")
-
+                 ;; LSE cli
+                 (:file "swank-terminal"      :depends-on ("packages" "io"))
+                 (:file "unix-cli"            :depends-on ("packages"
+                                                           "version" "configuration"
+                                                           "commands" "vm" "compiler"
+                                                           "io" "swank-terminal"))
                  ;; LSE server
-                 (:file "server-commands")
-                 (:file "server")
-                 ;; (:file "simple-server")
+                 (:file "server-commands"     :depends-on ("packages"))
+                 (:file "server"              :depends-on ("packages"
+                                                           "iolib-end-point" "iolib-utils" "iolib-server"
+                                                           "server-commands"
+                                                           "version" "configuration"
+                                                           "task" "commands" "vm" "compiler"))
 
+                 ;; (:file "simple-server")
                  ;; (:file "main")
                  ))
 

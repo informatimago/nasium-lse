@@ -193,21 +193,21 @@
   (values))
 
 
-(defun error-panic (format-str &rest args)
-  (let ((message (format nil "~APANIQUE : ~A~A~A"
-                         (io-new-line-string)
-                         (apply (function format) nil format-str args)
-                         (io-new-line-string)
-                         (io-new-line-string))))
-    ;; Trouver tous les travail, et envoyer le message 
-    ;; sur tous les terminal-sortie 
-    (format *error-output* "~A" message)
-    (dolist (task *tasks*)
-      (when (task-state-awake-p task)
-        (io-standard-redirect task)
-        (io-format task "~A" message)))
-    (lse-terminate)
-    (lse-exit 13)))
+;; (defun error-panic (format-str &rest args)
+;;   (let ((message (format nil "~APANIQUE : ~A~A~A"
+;;                          (io-new-line-string)
+;;                          (apply (function format) nil format-str args)
+;;                          (io-new-line-string)
+;;                          (io-new-line-string))))
+;;     ;; Trouver tous les travail, et envoyer le message 
+;;     ;; sur tous les terminal-sortie 
+;;     (format *error-output* "~A" message)
+;;     (dolist (task *tasks*)
+;;       (when (task-state-awake-p task)
+;;         (io-standard-redirect task)
+;;         (io-format task "~A" message)))
+;;     (lse-terminate)
+;;     (lse-exit 13)))
 
 
 ;;;; THE END ;;;;

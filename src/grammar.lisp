@@ -67,4 +67,96 @@ Used by the DEFINE-GRAMMAR macro in command.lisp")
 ;; (load (compile-file "lse-domain.lisp")) ;; done by zebu-load-file
 
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; DEFINE-GRAMMAR & DEFRULE
+;;;
+;;;  Allows the definition of gramamr in lisp sources
+;;;  instead of .zb files.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#-(and)
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defvar *rules* (make-hash-table)))
+
+
+#-(and)
+(defmacro defrule (&whole rule   name &rest args )
+  (declare (ignore args))
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (setf (gethash ',name *rules*) ',rule)
+     ',name))
+
+#-(and)
+(defmacro define-grammar (name
+                          (&key (grammar-file nil grammar-file-p)
+                                (output-file  nil output-file-p)
+                                (package nil packagep)
+                                (identifier-start-chars "")
+                                (identifier-continue-chars "")
+                                (intern-identifier nil)
+                                (string-delimiter #\")
+                                (symbol-delimiter #\')
+                                (domain ())
+                                (domain-file nil domain-file-p)
+                                (grammar "null-grammar")
+                                (white-space nil white-space-p)
+                                (case-sensitive t)
+                                (lex-cats nil lex-cats-p))
+                          &body rules)
+  (unless lex-cats-p
+    (error ":LEX-CATS keyword is mandatory in the options of DEFINE-GRAMMAR."))
+  (let ((grammar-file (if grammar-file-p
+                          grammar-file
+                          (make-pathname :name (string name)
+                                         :type "ZB"
+                                         :defaults *grammar-directory*
+                                         :case :common)))
+        (output-file (if output-file-p
+                         output-file
+                         (make-pathname :name (string name)
+                                        :type "TAB"
+                                        :defaults *grammar-directory*
+                                        :case :common))))
+    (with-open-file (*standard-output*
+                     grammar-file
+                     :direction :output
+                     :if-exists :supersede
+                     :if-does-not-exist :create)
+      (print `(:name ,(string name)
+                     :package  ,(string (if packagep package (package-name *package*)))
+                     :identifier-start-chars     ,identifier-start-chars    
+                     :identifier-continue-chars  ,identifier-continue-chars 
+                     :intern-identifier          ,intern-identifier         
+                     :string-delimiter           ,string-delimiter          
+                     :symbol-delimiter           ,symbol-delimiter          
+                     :case-sensitive             ,case-sensitive            
+                     :grammar                    ,grammar                   
+                     :domain                     ,domain                    
+                     :domain-file ,(if domain-file-p
+                                       domain-file
+                                       (format nil "~(~A~)-domain" name))
+                     ,@(when white-space-p `(:white-space ,white-space))
+                     :lex-cats ,lex-cats))
+      (dolist (rule rules)
+        (if (and (consp rule) (eq (first rule) 'insert-rule))
+            (if (gethash (second rule) *rules*)
+                (print (gethash (second rule) *rules*))
+                (error "Unknown rule name ~S" (second rule)))
+            (print rule))))
+    (LET ((COM.HP.ZEBU::*WARN-CONFLICTS*  T)
+          (COM.HP.ZEBU::*ALLOW-CONFLICTS* T))
+      (zebu-compile-file grammar-file :output-file output-file))
+    `(progn
+       (eval-when (:compile-toplevel)
+         (zebu:delete-grammar ,(string name))
+         ;; (zebu-load-file ',output-file)
+         (defparameter ,name nil))
+       (eval-when (::load-toplevel :execute)
+         (zebu:delete-grammar ,(string name))
+         (zebu-load-file ',output-file)
+         (defparameter ,name (find-grammar ,(string name)))))))
+
+
+
 ;;; THE END ;;;;

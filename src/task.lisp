@@ -42,25 +42,39 @@
 
 (in-package "COM.INFORMATIMAGO.LSE")
 
+(defun task-state-label (state)
+  (ecase state
+    (:in-limbo   "IN LIMBO")
+    (:to-connect "A CONNECTER")
+    (:sleeping   "DORMANT")
+    (:active     "MONITEUR")))
+
+
 (defstruct task
-  (console 0 :type fixnum)
-  (account 0 :type fixnum)
-  (state   :in-limbo :type (member :in-limbo :to-connect :sleeping :active))
-  (entree) ;; stream?
-  (sortie) ;; stream?
-  (entree-terminal) ;; stream?
-  (sortie-terminal) ;; stream?
-  (entree-ruban) ;; stream?
-  (sortie-ruban) ;; stream?
-  (abreger       nil :type boolean) ;; AB-REGER
-  (silence       nil :type boolean) ;; SI-LENCE
-  (interruption  nil :type boolean) ;; ESC
-  (signal        nil :type boolean) ;; CTRL-A  Utilisé par ATT()
-  (dectech       nil :type boolean) ;; police DecTech pour _ et ^.
-  (echo          nil :type boolean) ;; parameter lse_es_lire_ligne
-  (random-state  (make-random-state) :type random-state)
-  (scanner       nil)
-  (environnement nil :type (or null environnement))
+  (console              0 :type fixnum)
+  (account              0 :type fixnum)
+  (state                :in-limbo :type (member :in-limbo :to-connect :sleeping :active))
+  (terminal)
+  (input)               ; stream?
+  (output)              ; stream?
+  (terminal-input)      ; stream?
+  (terminal-output)     ; stream?
+  (tape-input)          ; stream?
+  (tape-output)         ; stream?
+  (abreger              nil :type boolean) ; AB-REGER
+  (silence              nil :type boolean) ; SI-LENCE
+  (pas-a-pas            nil :type boolean) ; PA-S A PAS
+  (interruption         nil :type boolean) ; ESC
+  (signal               nil :type boolean) ; CTRL-A  Utilisé par ATT()
+  (dectech              nil :type boolean) ; police DecTech pour _ et ^.
+  (unicode              nil :type boolean) ; whether we have a unicode terminal.
+  (case-insensitive     nil :type boolean) ; whether the input should be case insensitive.
+  (upcase-output        t   :type boolean) ; whether the output should be upcased.
+  (bell-function        nil :type (or null function)) ; the function used to issue a bell.
+  (echo                 nil :type boolean) ; parameter lse_es_lire_ligne
+  (random-state         (make-random-state) :type random-state)
+  (scanner              nil)
+  (environnement        nil :type (or null environnement))
   (decodeur-nom-fichier nil :type (or null ident))  ;; paramètre
   (decodeur-numero      nil :type (or null nombre)) ;; 
   (erreur               nil :type (or null erreur)) ;; resultat
@@ -85,14 +99,19 @@
 ;;      
 ;;         unsigned int            graine;
 ;;         int                     graine_semee;
-        );;task
 
+  (vm (make-instance 'lse-vm) :type lse-vm))
+
+(defun task-state-change (task new-state)
+  (check-type new-state  (member :in-limbo :to-connect :sleeping :active))
+  (setf (task-state task) new-state))
 
 (defun task-state-in-limbo-p   (task)  (eq :in-limbo   (task-state task)))
 (defun task-state-to-connect-p (task)  (eq :to-connect (task-state task)))
 (defun task-state-sleeping-p   (task)  (eq :sleeping   (task-state task)))
 (defun task-state-active-p     (task)  (eq :active     (task-state task)))
 (defun task-state-awake-p      (task)  (eq :active     (task-state task)))
+
 
 #||
 /* methodes d'instance : */
@@ -120,12 +139,10 @@
 ||#
 
 
-(defparameter *task-count* 0   "Fixed number of tasks.")
-(defparameter *tasks*      '() "The list of tasks.")
-(defparameter *task-mutex* nil "pthread_mutex_t")
-(defparameter *task* nil "The current task")
-
-#+developing (SETF *TASK* (MAKE-TASK))
+(defparameter *task-count*  0   "Fixed number of tasks.")
+(defparameter *tasks*       '() "The list of tasks.")
+(defparameter *task-mutex*  nil "pthread_mutex_t")
+(defparameter *task*        nil "The current task")
 
 
 (defun task-initialize (task-count)
@@ -139,7 +156,7 @@
 
 
 (defun task-count () *task-count*)
-(defun task-console (console) (elt *tasks* console))
+(defun console-task (console) (elt *tasks* console))
 
 
 (defun task-inlimbo ()

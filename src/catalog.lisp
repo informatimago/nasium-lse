@@ -169,7 +169,7 @@
 ;;              (catalog-entry-console entry)
 ;;              (catalog-entry-name  entry)))
 ;;     (otherwise
-;;      (error-panic "COMPLETER UNE ENTREE DE CATALOGUE ~@
+;;      (error "COMPLETER UNE ENTREE DE CATALOGUE ~@
 ;;                  DE TYPE ~S IMPOSSIBLE." (catalog-entry-type entry)))))
 
 

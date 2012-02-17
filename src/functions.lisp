@@ -69,10 +69,48 @@
 (defparameter faux (make-booleen :value :faux))
 
 
-(define-condition erreur-lse        (error) ())
-(define-condition incomparable      (erreur-lse) ())
-(define-condition pas-implemente    (erreur-lse) ())
-(define-condition argument-invalide (erreur-lse) ())
+(define-condition incomparable      (lse-error)
+  ((op :initarg :op :reader incomparable-operator)
+   (a  :initarg :a  :reader incomparable-argument-a)
+   (b  :initarg :b  :reader incomparable-argument-b))
+  (:report print-incomparable-error))
+
+(defmethod print-incomparable-error ((err incomparable) stream)
+  (format stream "ON NE PEUT PAS COMPARER (~A) UN OBJET DE TYPE ~A (~S) AVEC UN OBJECT DE TYPE ~A (~S)"
+          (ecase (incomparable-operator err)
+            (:eg "=")
+            (:ne "#")
+            (:lt "<")
+            (:le "<=")
+            (:gt ">")
+            (:ge ">="))
+          (type-of (incomparable-argument-a err))  (incomparable-argument-a err)
+          (type-of (incomparable-argument-b err))  (incomparable-argument-b err)))
+
+
+(define-condition pas-implemente    (lse-error)
+  ((what :initarg :what :initform "QUELQUE CHOSE" :reader pas-implemented-what))
+  (:report print-pas-implemente-error))
+
+(defmethod print-pas-implemente-error ((err pas-implemente) stream)
+  (format stream "~A N'EST PAS ENCORE IMPLEMENTE" (pas-implemente-what err)))
+
+
+(define-condition argument-invalide (lse-error)
+  ((op            :initarg :op       :reader argument-invalide-operator)
+   (index         :initarg :index    :reader argument-invalide-argument-index)
+   (argument      :initarg :argument :reader argument-invalide-argument)
+   (reason        :initarg :reason   :reader argument-invalide-reason))
+  (:report print-argument-invalide-error))
+
+(defmethod print-argument-invalide-error ((err argument-invalide) stream)
+  (format stream "LE ~AE ARGUMENT POUR ~A, ~S, N'EST PAS VALIDE: ~A"
+          (argument-invalide-argument-index err)
+          (argument-invalide-operator err)
+          (argument-invalide-argument err)
+          (argument-invalide-reasone err)))
+
+
 
 (defmacro un-nombre  (a) `(coerce ,a 'nombre))
 (defmacro le-booleen (a) `(etypecase ,a (booleen ,a)))
@@ -109,12 +147,12 @@
 (defun <=/== (a b) (non (<==== a b)))
 
 
-(defmethod eg ((a t)              (b t))              (error 'incomparable))
-(defmethod ne ((a t)              (b t))              (error 'incomparable))
-(defmethod lt ((a t)              (b t))              (error 'incomparable))
-(defmethod le ((a t)              (b t))              (error 'incomparable))
-(defmethod ge ((a t)              (b t))              (error 'incomparable))
-(defmethod gt ((a t)              (b t))              (error 'incomparable))
+(defmethod eg ((a t)              (b t))              (error 'incomparable :op 'eg :a a :b b))
+(defmethod ne ((a t)              (b t))              (error 'incomparable :op 'ne :a a :b b))
+(defmethod lt ((a t)              (b t))              (error 'incomparable :op 'lt :a a :b b))
+(defmethod le ((a t)              (b t))              (error 'incomparable :op 'le :a a :b b))
+(defmethod ge ((a t)              (b t))              (error 'incomparable :op 'ge :a a :b b))
+(defmethod gt ((a t)              (b t))              (error 'incomparable :op 'gt :a a :b b))
 
 (defmacro defcompare (class eg ne lt le gt ge)
   `(progn
@@ -139,7 +177,11 @@
 (defun div  (a b) (/        (le-nombre a) (le-nombre b)))
 (defun pow  (a b)
   (when (and (< (le-nombre a) 0.0) (/= (truncate (le-nombre b)) b))
-    (error 'argument-invalide))
+    (error 'argument-invalide
+           :op "POW"
+           :index 2
+           :argument b
+           :reason "QUAND LE PREMIER ARGUMENT EST NEGATIF, LE SECOND DOIT ETRE ENTIER."))
   (un-nombre (expt a (if (< a 0.0) (truncate b) b))))
 (defun ent  (a)   (un-nombre (truncate (le-nombre a))))
 (defun neg  (a)   (-        (le-nombre a)))
@@ -163,8 +205,8 @@
 (defun tem ()    (multiple-value-bind (s m h) (get-decoded-time)
                    (+ (* (+ (* 60 h) m) 60) s)))
 
-(defun att ()    (error 'pas-implemente))
-(defun dis (a) (declare (ignore a))  (error 'pas-implemente))
+(defun att ()    (error 'pas-implemente :what "ATT"))
+(defun dis (a) (declare (ignore a))  (error 'pas-implemente :what "DIS"))
 (defun etl (a b) (un-nombre (logand (truncate (le-nombre a))
                                     (truncate (le-nombre b)))))
 (defun oul (a b) (un-nombre (logior (truncate (le-nombre a))
@@ -181,7 +223,11 @@
 (defun pos (ch de sc)
   (let* ((debut (1- (truncate (le-nombre de)))))
     (when (or (< debut 0) (/= (1+ debut) de))
-      (error 'argument-invalide))
+      (error 'argument-invalide
+             :op "POS"
+             :index 2
+             :argument de
+             :reason "LE DEBUT DOIT ETRE UN ENTIER SUPERIEUR OU EGAL A 1."))
     (if (< (length (la-chaine ch)) (+ debut (length (la-chaine sc))))
         0.0
         (+ 1.0 (or (search sc ch :start2 debut) -1.0)))))
@@ -194,7 +240,11 @@
 
 (defun eqc (co)
   (string (or (code-char (truncate (le-nombre co)))
-              (error 'argument-invalide))))
+              (error 'argument-invalide
+                     :op "EQC"
+                     :index 1
+                     :argument co
+                     :reason "L'ARGUMENT DOIT ETRE LE CODE D'UN CARACTERE (ENTRE 0 et 255)."))))
 
 
 (defun cca (ca)
@@ -210,7 +260,11 @@
          (debut (1- (truncate (le-nombre de))))
          (fin 0))
     (when (or (< debut 0) (/= (1+ debut) de) (<= chlen debut))
-      (error 'argument-invalide))
+      (error 'argument-invalide
+             :op "CNB"
+             :index 2
+             :argument de             
+             :reason "L'ARGUMENT DEBUT DOIT ETRE UN NOMBRE ENTIER ENTRE 1 ET LA LONGUEUR DE LA CHAINE."))
     (labels ((skip-spaces (pos)
                (position (character " ") ch :start pos :test (function char/=)))
              (eos! (fin)
@@ -253,11 +307,19 @@
   (let ((debut (1- (truncate (le-nombre de))))
         (chlen (length (la-chaine ch))))
     (when (or (< debut 0) (/= (1+ debut) de))
-      (error 'argument-invalide))
+      (error 'argument-invalide
+             :op "SCH"
+             :index 2
+             :argument de
+             :reason "L'ARGUMENT DEBUT DOIT ETRE UN NOMBRE ENTIER SUPERIEUR OU EGAL A 1."))
     (let ((fin  (etypecase lo-or-ch
                   (nombre (let ((longueur (truncate lo-or-ch)))
                             (if (or (<= longueur 0) (/= longueur lo-or-ch))
-                                (error 'argument-invalide)
+                                (error 'argument-invalide
+                                       :op "SCH"
+                                       :index 3
+                                       :argument lo-or-ch
+                                       :reason "L'ARGUMENT LONGEUR DOIT ETRE UN ENTIER SUPERIEUR OU EGAL A 1 (OU BIEN UNE CHAINE).")
                                 (+ debut longueur))))
                   (chaine (or (position-if
                                (lambda (ch) (position ch lo-or-ch
@@ -271,7 +333,11 @@
 (defun skp (ch de &optional ev)
   (let ((debut (1- (truncate (le-nombre de)))))
     (when (or (< debut 0) (/= (1+ debut) de))
-      (error 'argument-invalide))
+      (error 'argument-invalide
+             :op "SKP"
+             :index 2
+             :argument de
+             :reason "L'ARGUMENT DEBUT DOIT ETRE UN ENTIER SUPERIEUR OU EGAL A 1."))
     (or (find-if (if (null ev)
                      (function alpha-char-p)
                      (progn (la-chaine ev) (lambda (ch) (not (position ch ev)))))
@@ -281,7 +347,11 @@
 (defun ptr (ch de &optional ev)
   (let ((debut (1- (truncate (le-nombre de)))))
     (when (or (< debut 0) (/= (1+ debut) de))
-      (error 'argument-invalide))
+      (error 'argument-invalide
+             :op "PTR"
+             :index 2
+             :argument de
+             :reason "L'ARGUMENT DEBUT DOIT ETRE UN ENTIER SUPERIEUR OU EGAL A 1."))
     (or (find-if (if (null ev)
                      (complement (function alpha-char-p))
                      (progn (la-chaine ev) (lambda (ch) (position ch ev))))
@@ -292,18 +362,24 @@
   (let ((debut (1- (truncate (le-nombre de))))
         (chlen (length (la-chaine ch))))
     (when (or (< debut 0) (/= (1+ debut) de) (<= chlen debut))
-      (error 'argument-invalide))
+      (error 'argument-invalide
+             :op "GRL"
+             :index 2
+             :argument de
+             :reason "L'ARGUMENT DEBUT DOIT ETRE UN ENTIER SUPERIEUR OU EGAL A 1 ET INFERIEUR OU EGAL A LA LONGUEUR DE LA CHAINE."))
     (let ((debut (position-if (function alpha-char-p) ch :start debut)))
       (if debut
           (let ((fin (position-if-not (function alpha-char-p) ch :start debut)))
             (values (subseq ch debut fin) (or fin (1+ chlen))))
           (values "" (1+ chlen))))))
            
-
-(defun dat ()
-  (multiple-value-bind (se mi ho da mo ye) (get-decoded-time)
+(defun formate-date (universal-time)
+  (multiple-value-bind (se mi ho da mo ye) (decode-universal-time universal-time)
     (format nil "~2,'0D/~2,'0D/~2,'0D ~2,'0D:~2,'0D:~2,'0D"
             da mo (mod ye 100) ho mi se)))
+
+(defun dat ()
+  (formate-date (get-universal-time)))
 
 
 

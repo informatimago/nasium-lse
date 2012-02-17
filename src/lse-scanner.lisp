@@ -205,7 +205,7 @@
 ;; tokens
 ;;----------------------------------------------------------------------
 
-(define-condition lse-scanner-error (scanner-error)
+(define-condition lse-scanner-error (lse-error scanner-error)
   ((buffer
     :initarg :buffer
     :accessor scanner-error-buffer
@@ -241,6 +241,9 @@
     :documentation "The token kind of the previous token."))
   (:DOCUMENTATION "A scanner for L.S.E."))
 
+(defvar *scanner* nil
+  "The current scanner.")
+
 ;; (defmethod scanner-current-token ((scanner lse-scanner))
 ;;   (slot-value scanner 'com.informatimago.common-lisp.parser.scanner::current-token))
 ;; (defmethod scanner-current-text ((scanner lse-scanner))
@@ -272,7 +275,7 @@
                                 (scanner-column scanner)
                                 token
                                 (scanner-current-token scanner)
-                                (scanner-current-text scanner)
+                                (token-text (scanner-current-token scanner))
                                 *non-terminal-stack*
                                 (assoc (first *non-terminal-stack*)
                                        (grammar-rules (grammar-named 'lse)))))))
@@ -350,7 +353,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                    base-case)))))
     `(symbol-macrolet ,(generate-state-values transitions)
        (loop
-         ;; (print (list 'state '= ,statevar 'code '= ,codevar))
+          ;; (print (list 'state '= ,statevar 'code '= ,codevar (format nil "~S" (code-char ,codevar))))
          (ecase ,statevar
            ,@(let ((state-value -1))
                   (mapcar
@@ -432,8 +435,10 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   ;; Needed at macro-expansion-time:
-  (defun ! (&rest args) (apply (function concatenate) 'string args))
-  (defparameter letters            "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+  (defun concat (&rest args) (apply (function concatenate) 'string args))
+  (defparameter letters
+    #-LSE-CASE-INSENSITIVE "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    #+LSE-CASE-INSENSITIVE "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
   (defparameter digits             "0123456789")
   (defparameter spaces             " ")
   (defparameter ampersand          "&")
@@ -444,10 +449,10 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
   (defparameter specials           "!#(),/;=?[]^_")
   (defparameter specials-2         "<>" "may take an additionnal '=' character.")
   (defparameter ident-first         letters)
-  (defparameter ident-next          (! letters digits))
+  (defparameter ident-next          (concat letters digits))
   (defparameter procident-first     ampersand)
   (defparameter procident-second    letters)
-  (defparameter procident-rest      (! letters digits)))
+  (defparameter procident-rest      (concat letters digits)))
 
 
 (defconstant +maybe-commentaire+ 0 "LSE Scanner State")
@@ -498,7 +503,9 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                                     (entry (rassoc text (if (= state in-format)
                                                             *tokens+format-specifiers*
                                                             *tokens*)
-                                                   :test (function string=))))
+                                                   :test
+                                                   #-LSE-CASE-INSENSITIVE (function string=)
+                                                   #+LSE-CASE-INSENSITIVE (function string-equal))))
                                (when entry
                                  (make-instance 'tok-motcle
                                      :kind (car entry)
@@ -507,7 +514,11 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                                      :column (scanner-column scanner)))))
          (token  (tok)      `(make-instance ',tok
                                  :kind ',tok
-                                 :text (subseq buffer start index)
+                                 :text
+                                 #-LSE-CASE-INSENSITIVE (subseq buffer start index)
+                                 #+LSE-CASE-INSENSITIVE ,(if  (member tok '(tok-chaine tok-commentaire)) 
+                                                             `(subseq buffer start index)
+                                                             `(string-upcase (subseq buffer start index)))
                                  :line (scanner-line scanner)
                                  :column start)))
       (when (<= buflen index)
@@ -530,7 +541,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                       (shift litchaine))
         (specials-2   (start) (advance (motcle)) (shift speciaux-2))
         (star         (start) (shift commentaire))
-        ((! specials dot signs)
+        ((concat specials dot signs)
          (start) (advance (motcle)) (produce (motcle)))
         (others     (scan-error "CARACTERE INVALIDE '~C' (~D)"
                                 (code-char code) code)))
@@ -538,7 +549,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
        (not-commentaire                 ; must be state 1
         ;; same as maybe-commentaire, but star goes to specials
         (spaces       (skip))
-        (digits       (start) (shift numero-or-nombre))
+        (digits       (start) (shift nombre))
         (ampersand    (start) (advance :error-on-eof "IDENTIFICATEUR TROP COURT")
                       (shift procident))
         (letters      (start) (advance (token tok-identificateur)) ; 1 = ident
@@ -546,7 +557,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
         (apostrophe   (start) (advance :error-on-eof "CHAINE NON-TERMINEE")
                       (shift litchaine))
         (specials-2   (start) (advance (motcle)) (shift speciaux-2))
-        ((! specials dot star signs)
+        ((concat specials dot star signs)
          (start) (advance (motcle)) (produce (motcle)))
         (others     (scan-error "CARACTERE INVALIDE '~C' (~D)"
                                 (code-char code) code)))
@@ -560,7 +571,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
         (apostrophe   (start) (advance :error-on-eof "CHAINE NON-TERMINEE")
                       (shift litchaine/in-format))
         ;; (specials-2   (start) (advance (motcle)) (shift speciaux-2))
-        ((! specials dot star signs)
+        ((concat specials dot star signs)
          (start) (advance (motcle)) (produce (motcle)))
         (others     (scan-error "CARACTERE INVALIDE '~C' (~D)"
                                 (code-char code) code)))
@@ -577,37 +588,52 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                   (shift nombre-mantissa))
         ("E"      (advance :error-on-eof "IL MANQUE L'EXPOSANT APRES 'E'")
                   (shift nombre-exponent))
-        ((! spaces specials specials-2 star signs)
+        ((concat spaces star)
          (shift maybe-commentaire) (produce (token tok-numero)))
+        ((concat specials specials-2 signs)
+         (shift not-commentaire) (produce (token tok-numero)))
         (others (scan-error "CARACTERE '~C' (~D) INVALIDE DANS UN NOMBRE '~A'"
                             (code-char code)  code
                             (subseq buffer start (1+ index)))))
-       (nombre-mantissa ; 5
+
+       (nombre ; 5
+        (digits   (advance (token tok-numero)))
+        (dot      (advance (token tok-nombre))
+                  (shift nombre-mantissa))
+        ("E"      (advance :error-on-eof "IL MANQUE L'EXPOSANT APRES 'E'")
+                  (shift nombre-exponent))
+        ((concat spaces star specials specials-2 signs)
+         (shift not-commentaire) (produce (token tok-numero)))
+        (others (scan-error "CARACTERE '~C' (~D) INVALIDE DANS UN NOMBRE '~A'"
+                            (code-char code)  code
+                            (subseq buffer start (1+ index)))))
+       
+       (nombre-mantissa ; 6
         (digits   (advance (token tok-nombre)))
         ("E"      (advance :not-eof  "IL MANQUE L'EXPOSANT APRES 'E'")
                   (shift nombre-exponent))
-        ((! spaces specials specials-2 dot star signs)
+        ((concat spaces specials specials-2 dot star signs)
          (shift not-commentaire) (produce (token tok-nombre)))
         (others (scan-error "CARACTERE '~C' (~D) INVALIDE DANS UN NOMBRE '~A'"
                             (code-char code)  code
                             (subseq buffer start (1+ index)))))
-       (nombre-exponent ; 6
+       (nombre-exponent ; 7
         (signs     (advance :not-eof "IL MANQUE DES CHIFFRES DANS L'EXPOSANT")
                    (shift nombre-signed-exponent))
         (digits    (shift nombre-signed-exponent))
         (others (scan-error "CARACTERE '~C' (~D) INVALIDE DANS UN NOMBRE '~A'"
                             (code-char code) code
                             (subseq buffer start (1+ index)))))
-       (nombre-signed-exponent ; 7
+       (nombre-signed-exponent ; 8
         (digits    (advance (token tok-nombre)))
-        ((! spaces specials specials-2 dot star signs)
+        ((concat spaces specials specials-2 dot star signs)
          (shift not-commentaire) (produce (token tok-nombre)))
         (others (scan-error "CARACTERE '~C' (~D) INVALIDE DANS UN NOMBRE '~A'"
                             (code-char code)  code
                             (subseq buffer start (1+ index)))))
        
        ;;    (tok-identificateur "&?[A-Z][0-9A-Z]?[0-9A-Z]?[0-9A-Z]?[0-9A-Z]?")
-       (identificateur-or-motcle ; 8
+       (identificateur-or-motcle ; 9
         (ident-next (advance (or (motcle) (token tok-identificateur))))
         (others     (shift not-commentaire)
                     (produce (or (and (= (1+ start) index)
@@ -620,18 +646,18 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
 ;;;         (others     (produce (or (motcle) (token tok-identificateur)))))
 
 
-       (procident ; 9
+       (procident ; 10
         (procident-second (shift procident/rest) (advance (token tok-procident)))
         (others           (scan-error "UN IDENTIFICATEUR DE PROCEDURE DOIT AVOIR AU MOINS UNE LETTRE; '~C' (~D) INVALIDE APRES '&'."
                                       (code-char code)  code)))
-       (procident/rest ; 10
+       (procident/rest ; 11
         (procident-rest   (advance (token tok-procident)))
         (others           (shift not-commentaire)
                           (produce (token tok-procident))))
 
 
        ;;    (tok-chaine      "\\('[^']*'\\)\\('[^']*'\\)*")
-       (litchaine ; 11
+       (litchaine ; 12
         (apostrophe
          (if (and (< (1+ index) buflen)
                   (char= (character apostrophe) (aref buffer (1+ index))))
@@ -643,7 +669,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
         (others 
          (advance :error-on-eof "CHAINE NON-TERMINEE")))
 
-       (litchaine/in-format ; 12
+       (litchaine/in-format ; 13
         (apostrophe
          (if (and (< (1+ index) buflen)
                   (char= (character apostrophe) (aref buffer (1+ index))))
@@ -652,15 +678,15 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
              (progn (incf index)
                     (shift in-format)
                     (produce (token tok-chaine)))))
-        (others  ; 13
+        (others  ; 14
          (advance :error-on-eof "CHAINE NON-TERMINEE")))
 
-       (speciaux-2 ; 14
-        ("="    (advance (motcle)) (shift maybe-commentaire) (produce (motcle)))
-        (others                    (shift maybe-commentaire) (produce (motcle))))
+       (speciaux-2 ; 15
+        ("="    (advance (motcle)) (shift not-commentaire) (produce (motcle)))
+        (others                    (shift not-commentaire) (produce (motcle))))
 
        ;;    (tok-commentaire    "\\*.*$")
-       (commentaire ; 15
+       (commentaire ; 16
         (star  (setf index buflen) (shift maybe-commentaire) (produce (token tok-commentaire))))))))
 
 
@@ -675,7 +701,8 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
      (setf (scanner-column scanner) 0
            (scanner-state  scanner) +maybe-commentaire+)
      (incf (scanner-line   scanner))
-     (setf (scanner-current-token scanner) nil))
+     (setf (scanner-current-token scanner) nil)
+     (scan-next-token scanner))
     (t                                  ; Just got EOF
      (setf (scanner-current-token scanner) (make-eof scanner))))
   (scanner-current-token scanner))
@@ -684,13 +711,17 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
 (defmethod scan-next-token ((scanner lse-scanner) &optional parser-data)
   (declare (ignore parser-data))
   (typecase (scanner-current-token scanner)
-    (tok-eof #|End of File -- don't move|#)
-    (tok-eol (typecase (advance-line scanner)
-               (tok-eof #|nothing|#)
-               (t       (setf (scanner-current-token scanner) (scan-lse-token scanner)))))
-    (t       (setf (scanner-current-token scanner) (scan-lse-token scanner))
-             ;; (print (slot-value  (scanner-current-token scanner) 'text))
-             ))
+    (tok-eof
+     #|End of File -- don't move|#)
+    (tok-eol
+     ;; (typecase (advance-line scanner)
+     ;;   (tok-eof #|nothing|#)
+     ;;   (t       (setf (scanner-current-token scanner) (scan-lse-token scanner))))
+     (advance-line scanner))
+    (t
+     (setf (scanner-current-token scanner) (scan-lse-token scanner))
+     ;; (print (slot-value  (scanner-current-token scanner) 'text))
+     ))
   (case (token-kind (scanner-current-token scanner))
     (tok-numero
      (when (eq 'tok-eol (scanner-previous-token-kind scanner))
@@ -721,7 +752,8 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
     :do (progn
           (typecase (scanner-current-token scanner)
             (tok-eol
-             (scan-next-token scanner)
+             (advance-line scanner)
+             ;; (scan-next-token scanner)
              (format t ";; ~A~%" (scanner-buffer scanner)))
             (t
              (scan-next-token scanner)))

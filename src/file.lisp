@@ -96,7 +96,16 @@
   (defconstant +type-array+  3)
   (defconstant +type-string+ 4)
 
+
+  ;; On T1600, the strings a limited to 256 characters, so there's no
+  ;; point in having bigger blocks.
+  ;; On  Mitra-15 strings are unlimited, so we can have bigger blocks.
+  ;; See functions.lisp.
+  ;; On the other hand, we should not have different block sizes if
+  ;; we're not prepared to read files from any block size (to be able
+  ;; to exchange files).
   (defconstant +block-size+       1024)
+  
   (defconstant +header-position+  (- +block-size+ 8)))
 
 (defun make-block () (make-array +block-size+ :element-type '(unsigned-byte 8) :initial-element 0))
@@ -206,9 +215,44 @@
                               (write-sequence buffer stream)
                               (return done))))))))
 
-(define-condition file-error-record-already-exists (file-error)
-  ((file :initarg :file :accessor file-error-file)
-   (record-number :initarg :record-number :accessor file-error-record-number)))
+(define-condition lse-file-error (lse-error file-error)
+  ;; Note: from file-error we inherit :pathname and file-error-pathname.
+  ((file          :initarg :file
+                  :accessor file-error-file
+                  :initform nil
+                  :documentation "The FILE object in error.")
+   (record-number :initarg :record-number
+                  :accessor file-error-record-number
+                  :initform nil
+                  :documentation "The record number in error.")))
+
+
+(define-condition file-error-record-already-exists (lse-file-error)
+  ()
+  (:report (lambda (err stream)
+             (format stream "L'ENREGISTREMENT ~A EXISTE DEJA DANS LE FICHIER ~S."
+                     (file-error-record-number err)
+                     (file-error-pathname err)))))
+
+(define-condition file-error-file-does-not-exist   (lse-file-error)
+  ()
+  (:report (lambda (err stream)
+             (format stream "LE FICHIER ~S N'EXISTE PAS."
+                     (file-error-pathname err)))))
+
+(define-condition file-error-file-is-inaccessible  (lse-file-error)
+  ()
+  (:report (lambda (err stream)
+             (format stream "LE FICHIER ~S EST INACCESSIBLE."
+                     (file-error-pathname err)))))
+
+(define-condition file-error-file-already-exists   (lse-file-error)
+  ()
+  (:report (lambda (err stream)
+             (format stream "LE FICHIER ~S EXISTE DEJA."
+                     (file-error-pathname err)))))
+
+
 
 (defmethod %allocate-record ((file file) record-number)
   "Allocates a new record.  Take it from the free list, or if it's empty, from the end of file (record-table)."
@@ -270,7 +314,7 @@
 (defmacro gen-ieee-encoding (name type exponent-bits mantissa-bits)
   ;; Thanks to ivan4th (~ivan_iv@nat-msk-01.ti.ru) for correcting an off-by-1
   `(progn
-     (defun ,(intern (format nil "~A-TO-IEEE-754" name) (symbol-package name))  (float)
+     (defun ,(intern (with-standard-io-syntax (format nil "~A-TO-IEEE-754" name)) (symbol-package name))  (float)
        (multiple-value-bind (mantissa exponent sign) 
            (integer-decode-float float)
          (dpb (if (minusp sign) 1 0)
@@ -279,7 +323,7 @@
                       exponent)
                    (byte ,exponent-bits ,(1- mantissa-bits))
                    (ldb (byte ,(1- mantissa-bits) 0) mantissa)))))
-     (defun ,(intern (format nil "IEEE-754-TO-~A" name) (symbol-package name))  (ieee)
+     (defun ,(intern (with-standard-io-syntax (format nil "IEEE-754-TO-~A" name)) (symbol-package name))  (ieee)
        (let ((aval (scale-float
                     (coerce
                      (dpb 1 (byte 1 ,(1- mantissa-bits))
@@ -293,9 +337,9 @@
              aval
              (- aval))))))
 
-
-(gen-ieee-encoding float-32 'single-float  8 24)
-;; (gen-ieee-encoding float-64 'double-float 11 53)
+(eval-when (:compile-toplevel :execute)
+  ;; (gen-ieee-encoding float-64 'double-float 11 53)
+  (gen-ieee-encoding float-32 'single-float  8 24))
 
 
 
@@ -340,6 +384,13 @@ RETURN: The data; a status code
                    (values nil -1)))
                 (values nil -1)))))))
 
+(defparameter *max-record-chaine-size*  (truncate (- +block-size+ 6))
+  "Maximum number of UTF-8 bytes in a record.")
+(defparameter *max-record-tableau-size* (truncate (- +block-size+ 8) 4)
+  "Maximum number of 2D array slots in a record.")
+(defparameter *max-record-vecteur-size* (truncate (- +block-size+ 6) 4)
+  "Maximum number of 1D vector slots in a record.")
+
 (defmethod write-record ((file file) record-number data)
   (check-type data (or nombre vecteur tableau chaine))
   (with-slots (stream record-table) file
@@ -366,11 +417,11 @@ RETURN: The data; a status code
                    :for j :from 8 :by 4
                    :do (setf (peek32 buffer j) (float-32-to-ieee-754 (row-major-aref data i)))))
         (chaine  (let ((octets (string-to-octets data :encoding :utf-8)))
-                   (assert (<= (length octets) #. (truncate (- +block-size+ 6))))
+                   (assert (<= (length octets) #.(truncate (- +block-size+ 6))))
                    (setf (peek8  buffer 3) +type-string+
                          (peek16 buffer 4) (length octets))
                    (replace buffer octets :start1 6))))
-      (format t "p=~8D <-- ~S~%" position (subseq buffer 0 40))
+      ;; (format t "p=~8D <-- ~S~%" position (subseq buffer 0 40))
       (file-position stream position)
       (write-sequence buffer stream)
       position)))
@@ -598,7 +649,7 @@ RETURN: The data; a status code
                        (delete-record file (- nr 1))))))
         
         (lse-data-file-close file))))
-  (test/dump-lse-file  "/tmp/test.don"))
+  (dump-lse-file  "/tmp/test.don"))
 
 
 ;; (inspect (make-instance 'file :path "/tmp/p.don" :stream (open "/tmp/p.don"

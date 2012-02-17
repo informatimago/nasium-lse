@@ -33,7 +33,8 @@ virtuels).
 
 Dans ce mode, les caractères minuscules et les caractères accentués
 peuvent être utilisés dans les chaînes.  Les mots réservés du langage
-peuvent être écrit soit tout en majuscule, soit tout en minuscule.
+et les identificateurs  peuvent être écrits avec des majuscules ou des
+minuscules.  Ils sont automatiquement mis en majuscules.
 
 
 Le système L.S.E peut être utilisé en mode interactif, ou en mode script.
@@ -476,4 +477,5 @@ machine virtuelle.
 
 
 
-t2
+
+.. comment: THE END 

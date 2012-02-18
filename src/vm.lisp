@@ -286,6 +286,108 @@ variable-type may be:
   vm)
 
 
+
+#|
+
+
+
+EXECUTER A PARTIR DE debut[,fin]
+
+    Fait exécuter le programme courant de l'utilisateur à partir de la
+    ligne de numéro 'debut' (si aucune ligne n'est numéroté 'debut',
+    une erreur sera détectée).
+
+    L'exécution se poursuivra jusqu'à ce qu'on arrive :
+
+        - soit à la ligne de numéro 'fin' ; cette ligne ne sera pas
+          exécutée, la console repassera dans l'état «moniteur» et
+          affichera 'fin'.
+
+        - soit à une des instructions LSE: PAUSE ou TERMINER ou à une
+          erreur.  La console repassera dans l'état «moniteur» et
+          affichera un message indiquant la cause de l'arrêt et le
+          numéro de la ligne où il s'est produit.  Eventuellement, en
+          cas d'arrêt dans une procédure, le numéro de la ligne où
+          l'on avait appelé cette procédure.
+
+        - L'utilisation de la touche ESC arrête également l'exécution.
+
+
+REPRENDRE A PARTIR DE debut[,fin]
+
+    Permet de reprendre l'exécution sur une ligne différente de celle
+    où elle fut interrompue.
+
+    Les paramètres 'debut' et 'fin' ont la même signification que ceux
+    de la commande EXECUTER, mais la commande REPRENDRE ne change pas
+    l'affectation des identificateurs.  Toutes les valeurs antérieures
+    a l'interruption sont conservée.
+
+    L'exécution du programme est toujours reprise au niveau principal
+    (même si le programme avait été interrompu dans une procédure).
+
+    
+CONTINUER
+
+    Permet de relancer l'exécution d'un programme momentanément
+    interrompu par l'instruction PAUSE ou la touche d'interruption ESC.
+
+    L'exécution reprend à l'endroit où elle fut arrêtée.
+
+
+POURSUIVRE JUSQU'EN fin
+
+    Relance l'exécution comme CONTINUER mais avec arrêt en ligne 'fin'.
+
+
+
+
+T-1600:
+TERMINE EN LIGNE ###
+PAUSE EN LIGNE ###
+
+Mitra-15:
+TERMINE
+PAUSE
+
+
+Arrêt sur point d'arrêt (début de ligne).
+  (EXECUTER A PARTIR DE debut[,fin])
+  (REPRENDRE A PARTIR DE debut[,fin])
+  (POURSUIVRE JUSQU'EN fin)
+   Il n'y a qu'un seul point d'arrêt ('fin') au maximum.
+
+Arrêt sur PAUSE
+
+Arrêt sur TERMINER
+
+Arrêt sur ESC
+
+
+CONTINUER
+POURSUIVRE JUSQU'EN fin
+  Sur PAUSE ou ESC.
+  Continue là où on en était.
+  Poursuivre donne un point d'arrêt.
+
+
+EXECUTER A PARTIR DE debut[,fin]
+  Reprend au niveau principal.
+  Efface la pile des procédures.
+  Efface pas les variables globales.
+
+REPRENDRE A PARTIR DE debut[,fin]
+  Reprend au niveau principal.
+  Efface la pile des procédures.
+  N'efface pas les variables globales.
+
+
+|#
+
+
+
+
+
 (defmethod find-variable ((vm lse-vm) ident)
   "
 RETURN: The variable; the frame it belongs to,

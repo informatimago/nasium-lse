@@ -42,101 +42,158 @@
 
 (in-package "COM.INFORMATIMAGO.LSE")
 
+
+
+
+;;      *
+;;      |
+;;      |
+;;      V
+;;  +--------+  connecter     +----------+   BOnjour     +----------+
+;;  | Limbo  |--------------->| Sleeping |-------------->| Active   |
+;;  |        |                |          |  /preparer    |          |
+;;  |        |                |          |               |          |
+;;  |        |   ADieux/      |          |               |          |
+;;  |        |   deconnecter  |          |   AUrevoir    |          |
+;;  |        |<---------------|          |<--------------|          |
+;;  +--------+                +----------+  /nettoyer    +----------+
+;;      ^                                                     |
+;;      |               etat_cmd_changer(0)                   |
+;;      +-----------------------------------------------------+
+;;                       /nettoyer
+
+
 (defun task-state-label (state)
   (ecase state
-    (:in-limbo   "IN LIMBO")
     (:to-connect "A CONNECTER")
+    (:in-limbo   "IN LIMBO")
     (:sleeping   "DORMANT")
     (:active     "MONITEUR")))
 
 
-(defstruct task
-  (console              0 :type fixnum)
-  (account              0 :type fixnum)
-  (state                :in-limbo :type (member :in-limbo :to-connect :sleeping :active))
-  (terminal)
-  (input)               ; stream?
-  (output)              ; stream?
-  (terminal-input)      ; stream?
-  (terminal-output)     ; stream?
-  (tape-input)          ; stream?
-  (tape-output)         ; stream?
-  (abreger              nil :type boolean) ; AB-REGER
-  (silence              nil :type boolean) ; SI-LENCE
-  (pas-a-pas            nil :type boolean) ; PA-S A PAS
-  (interruption         nil :type boolean) ; ESC
-  (signal               nil :type boolean) ; CTRL-A  Utilisé par ATT()
-  (dectech              nil :type boolean) ; police DecTech pour _ et ^.
-  (unicode              nil :type boolean) ; whether we have a unicode terminal.
-  (case-insensitive     nil :type boolean) ; whether the input should be case insensitive.
-  (upcase-output        t   :type boolean) ; whether the output should be upcased.
-  (bell-function        nil :type (or null function)) ; the function used to issue a bell.
-  (echo                 nil :type boolean) ; parameter lse_es_lire_ligne
-  (random-state         (make-random-state) :type random-state)
-  (scanner              nil)
-  (environnement        nil :type (or null environnement))
-  (decodeur-nom-fichier nil :type (or null ident))  ;; paramètre
-  (decodeur-numero      nil :type (or null nombre)) ;; 
-  (erreur               nil :type (or null erreur)) ;; resultat
-;;         pthread_t               principal;
-;;         pthread_mutex_t         mutex_principal;
-;;         pthread_cond_t          condi_principal;
-;;         pthread_t               terminal;
-;;         pthread_mutex_t         mutex_terminal;
-;;         pthread_cond_t          condi_terminal;
-;; 
-;;         pthread_mutex_t         mutex_tampon_entree;
+(defclass task ()
+
+  ((console              :initarg :console
+                         :reader task-console
+                         :initform 0
+                         :type fixnum)
+   (account              :initarg :account
+                         :reader task-account
+                         :initform 0
+                         :type fixnum)
+   (state                :initarg :state
+                         :accessor task-state
+                         :initform :in-limbo
+                         :type (member :in-limbo :to-connect :sleeping :active))
+
+   (input                :accessor task-input
+                         :initform nil
+                         :documentation "current input stream.
+Can be either (terminal-input-stream terminal) or tape-input.")
+   (output               :accessor task-output
+                         :initform nil
+                         :documentation "current output stream.
+Can be either (terminal-output-stream terminal) or tape-output.")
+
+   (terminal             :initarg :terminal
+                         :reader task-terminal
+                         :initform nil
+    :documentation "user interaction terminal.")
   
-;;         lse_chaine_t*           tampon_entree; /* parametre lse_es_lire_ligne */
-;;         int                     terminateurs;  /* parametre lse_es_lire_ligne */
-;; 
-;;         struct sockaddr_in      remote_addr;
-;;         
-;;         lse_scanner_FlexLexer*  scanner;
-;;         lse_chaine_t*           scanner_source;
-;;         int                     scanner_position;
-;;         int                     scanner_colonne;
-;;      
-;;         unsigned int            graine;
-;;         int                     graine_semee;
+   (tape-input           :initarg :tape-input
+                         :accessor task-tape-input
+                         :initform nil
+                         :documentation "stream? when a tape is loaded.")
+   (tape-output          :initarg :tape-output
+                         :accessor task-tape-output
+                         :initform nil
+                         :documentation "stream? to a temporary tape")
+  
 
-  (vm (make-instance 'lse-vm) :type lse-vm))
+   (dectech              :initarg :dectech
+                         :accessor task-dectech
+                         :initform nil
+                         :type boolean
+                         :documentation "police DecTech pour _ et ^.") 
+   (unicode              :initarg :unicode
+                         :accessor task-unicode
+                         :initform nil
+                         :type boolean
+                         :documentation "whether we have a unicode terminal.")
+   (case-insensitive     :initarg :case-insensitive
+                         :accessor task-case-insensitive
+                         :initform nil
+                         :type boolean
+                         :documentation "whether the input should be case insensitive.")
+   (upcase-output        :initarg :upcase-output
+                         :accessor task-upcase-output
+                         :initform t
+                         :type boolean
+                         :documentation "whether the output should be upcased.")
 
-(defun task-state-change (task new-state)
-  (check-type new-state  (member :in-limbo :to-connect :sleeping :active))
-  (setf (task-state task) new-state))
+   (abreger              :accessor task-abreger          :initform nil :type boolean
+                         :documentation "AB-REGER - le système ne complète pas les commandes.")
+   (silence              :accessor task-silence          :initform nil :type boolean
+                         :documentation "SI-LENCE - suppression de l'echo (utilisateur, ruban).") 
+   (pas-a-pas            :accessor task-pas-a-pas        :initform nil :type boolean
+                         :documentation "PA-S A PAS - execution pas à pas.") 
+   (interruption         :accessor task-interruption     :initform nil :type boolean
+                         :documentation "ESC")
+   (signal               :accessor task-siganl           :initform nil :type boolean
+                         :documentation "CTRL-A  Utilisé par ATT()")
+
+   (echo                 :initarg :echo
+                         :accessor task-echo
+                         :initform nil
+                         :type boolean
+                         :documentation "parameter io-read-line.")
+   
+   (random-state         :reader task-random-state
+                         :initform (make-random-state) :type random-state)
+   (environnement        :accessor task-environnement :initform nil :type (or null environnement))
+   (vm                   :reader task-vm
+                         :initform (make-instance 'lse-vm) :type lse-vm)))
+
+
+(defmethod task-input ((task task))
+  (with-slots (input) task
+    (when (null input) 
+      (setf input (terminal-input-stream (task-terminal task))))
+    input))
+
+
+(defmethod task-output ((task task))
+  (with-slots (output) task
+    (when (null output) 
+      (setf output (terminal-output-stream (task-terminal task))))
+    output))
+
+
+(defmethod task-tape-input ((task task))
+  (with-slots (tape-input) task
+    (when (null tape-input)
+      (setf tape-input (make-string-input-stream "")))
+    tape-input))
+
+
+(defmethod task-tape-output ((task task))
+  (with-slots (tape-output) task
+    (when (null tape-output)
+      (let ((path (catalog-pathname "RUBAN" "S")))
+        (setf tape-output (open path
+                                :direction :io
+                                :if-does-not-exist :create
+                                :if-exists :supersede))))
+    tape-output))
+
+
+
 
 (defun task-state-in-limbo-p   (task)  (eq :in-limbo   (task-state task)))
 (defun task-state-to-connect-p (task)  (eq :to-connect (task-state task)))
 (defun task-state-sleeping-p   (task)  (eq :sleeping   (task-state task)))
 (defun task-state-active-p     (task)  (eq :active     (task-state task)))
 (defun task-state-awake-p      (task)  (eq :active     (task-state task)))
-
-
-#||
-/* methodes d'instance : */
-
-    extern void lse_task_connecter(lse_task_t* task,
-                                      int entree,int sortie);
-        /*
-            POST:   lse_task_etat(task)==lse_task_etat_dormant.
-            NOTE:   Les threads sont activés. 
-                    terminal est en attente d'une E/S, et 
-                    principal est en attente de terminal...
-        */
-
-    extern void lse_task_deconnecter(lse_task_t* task);
-        /*
-            POST:   lse_task_etat(task)==lse_task_etat_inlimbo.
-            NOTE:   Les threads sont de nouveau suspendus.
-        */
-
-    extern int  lse_task_etat(lse_task_t* task);
-
-    extern void lse_task_etat_changer(lse_task_t* task,
-                                         int nouvel_etat);
-
-||#
 
 
 (defparameter *task-count*  0   "Fixed number of tasks.")
@@ -308,23 +365,6 @@ Retourne un task qui était inlimbo (il est maintant aconnecter).
     }/*lse_task_preparer*/
 ||#
 
-
-;;      *
-;;      |
-;;      |
-;;      V
-;;  +--------+  connecter     +----------+   BOnjour     +----------+
-;;  | Limbo  |--------------->| Sleeping |-------------->| Active   |
-;;  |        |                |          |  /preparer    |          |
-;;  |        |                |          |               |          |
-;;  |        |   ADieux/      |          |               |          |
-;;  |        |   deconnecter  |          |   AUrevoir    |          |
-;;  |        |<---------------|          |<--------------|          |
-;;  +--------+                +----------+  /nettoyer    +----------+
-;;      ^                                                     |
-;;      |               etat_cmd_changer(0)                   |
-;;      +-----------------------------------------------------+
-;;                       /nettoyer
 
 
  

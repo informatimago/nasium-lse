@@ -98,81 +98,19 @@
 ;;; Tape I/O
 ;;----------------------------------------------------------------------
 
-(defun io-redirect-input-from-tape (task tape-name)
-  "
-RETURN: The task-tape-input or nil.
-"
-  (when (task-tape-input task)
-    (close (task-tape-input task))
-    (setf  (task-tape-input task) nil))
-  (setf (task-input task) (task-terminal-input task))
-  (let ((path (catalog-make-path :tape name)))
-    (if path
-        (if (setf (task-tape-input task)
-                  (open path :direction :input :if-does-not-exists nil))
-            (setf (task-input task) (task-tape-input task))
-            (error 'file-error-file-is-inaccessible :pathname path))
-        (error 'file-error-file-does-not-exist :pathname path)))
-  (task-tape-input task))
-
-
-(defun io-redirect-output-to-tape (task tape-name)
-  "
-RETURN: The task-tape-output or nil.
-"
-  (when (task-tape-output task)
-    (close (task-tape-output task))
-    (setf  (task-tape-output task) nil))
-  (setf (task-output task) (task-terminal-output task))
-  (let ((path (catalog-make-path :tape name)))
-    (if path
-        (if (setf (task-tape-output task)
-                  (open path :direction :output
-                        :if-does-not-exists :create
-                        :if-exists :supersede))
-            (setf (task-output task) (task-tape-output task))
-            (error 'file-error-file-is-inaccessible :pathname path))
-        (error 'file-error-file-does-not-exist :pathname path)))
-  (task-tape-output task))
-
-
-(defun io-valid-tape-name-p (name)
-  "
-RETURN: Whether name is a string with the following format:
-        name ::= part | part '/' name .
-        part ::= [A-Za-z][A-Za-z0-9]{0,4} /
-"
-  (do ((i 0)
-       (l 0)
-       (state :first))
-      ((>= i (length name)) t)
-    (if (eq state :first)
-        (if (alpha-char-p (char name i))
-            (setf i (1+ i) l 1 state :rest)
-            (return-from io-valid-tape-name-p nil))
-        (cond
-          ((alphanumericp (char name i))
-           (setf i (1+ i) l (1+ l))
-           (when (> l 5) (return-from io-valid-tape-name-p nil)))
-          ((char= (character "/") (char name i))
-           (setf i (1+ i) state :first))
-          (t
-           (return-from io-valid-tape-name-p nil))))))
-
-
 
 (defun io-stop-tape-reader (task)
-  (setf (task-input task) (task-terminal-input task)))
+  (setf (task-input  task) (terminal-input-stream (task-terminal task))))
 
 (defun io-stop-tape-puncher (task)
-  (setf (task-output task) (task-terminal-output task)))
+  (setf (task-output task) (terminal-output-stream (task-terminal task))))
+
 
 (defun io-start-tape-reader (task)
-  )
+  (setf (task-input  task) (task-tape-input task)))
 
 (defun io-start-tape-puncher (task)
-  )
-
+  (setf (task-output task) (task-tape-output task)))
 
 
 (defun io-standard-redirection (task)
@@ -189,6 +127,18 @@ RETURN: Whether name is a string with the following format:
 (defclass terminal ()
   ())
 
+(defgeneric terminal-input-stream (terminal)
+  (:documentation "Returns the input stream used to read from the terminal.")
+  (:method (terminal)
+    (declare (ignorable terminal))
+    *terminal-io*))
+
+(defgeneric terminal-output-stream (terminal)
+  (:documentation "Returns the output stream used to write to the terminal.")
+  (:method (terminal)
+    (declare (ignorable terminal))
+    *terminal-io*))
+  
 (defgeneric terminal-ring-bell (terminal)
   (:documentation "Ring a bell on the terminal.")
   (:method (terminal)
@@ -292,20 +242,36 @@ When false, no automatic echo occurs.")
 
 ;;----------------------------------------------------------------------
 
+(defun io-terminal-output-p (task)
+  (eql (task-output task) (terminal-output-stream (task-terminal task))))
+
+(defun io-terminal-input-p  (task)
+  (eql (task-input task) (terminal-input-stream (task-terminal task))))
+
+
+
 (defun io-bell (task)
   (terminal-ring-bell (task-terminal task)))
 
 (defun io-beginning-of-line (task)
-  (terminal-beginning-of-line (task-terminal task)))
+  (if (io-terminal-output-p task)
+      (terminal-beginning-of-line (task-terminal task))
+      (princ #\Return (task-output task))))
 
 (defun io-new-line (task &optional (count 1))
-  (terminal-new-line (task-terminal task) count))
+  (if (io-terminal-output-p task)
+      (terminal-new-line (task-terminal task) count)
+      (terpri (task-output task))))
 
 (defun io-finish-output (task)
-  (terminal-finish-output (task-terminal task)))
+  (if (io-terminal-output-p task)
+      (terminal-finish-output (task-terminal task))
+      (finish-output (task-output task))))
 
 (defun io-read-line (task &key (echo t) (beep nil) (xoff nil))
-  (terminal-read-line (task-terminal task) :echo echo :beep beep :xoff xoff))
+  (if (io-terminal-input-p task)
+      (terminal-read-line (task-terminal task) :echo echo :beep beep :xoff xoff)
+      (read-line (task-input task))))
 
 (defun io-echo (task)
    (terminal-echo (task-terminal task)))
@@ -326,7 +292,7 @@ When false, no automatic echo occurs.")
       #\^))
 
 (defun io-substitute (task string)
-  (if (eql (task-output task) (task-terminal-output task))
+  (if (io-terminal-output-p task)
       (with-output-to-string (out)
         (loop
           :with dectech = (task-dectech task)
@@ -342,8 +308,10 @@ When false, no automatic echo occurs.")
                          (unicode (princ *unicode-upwards-arrow* out))
                          (t       (princ ch out))))
                 (otherwise
-                 (if (lower-case-p ch)
-                     (princ (char-upcase ch) out)
+                 (if (task-upcase-output task)
+                     (if (lower-case-p ch)
+                         (princ (char-upcase ch) out)
+                         (princ ch out))
                      (princ ch out))))))
       string))
 
@@ -363,7 +331,9 @@ When false, no automatic echo occurs.")
       :do (let ((chunk-end (or (position-if (lambda (ch) (find (char-code ch) *io-active-codes*))
                                             buffer :start start)
                                end)))
-            (terminal-write-string (task-terminal task) buffer :start start :end chunk-end)
+            (if (io-terminal-output-p task)
+                (terminal-write-string (task-terminal task) buffer :start start :end chunk-end)
+                (write-string          buffer (task-output   task) :start start :end chunk-end))
             (when (< chunk-end end)
               (ecase (aref buffer chunk-end)
                 (#.+CR+               (io-beginning-of-line  task))
@@ -772,6 +742,70 @@ NIL or:
 #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C) 
 #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\Z) 
 #S(SYSTEM::INPUT-CHARACTER :CHAR #\Escape :BITS 0 :FONT 0 :KEY NIL) 
+
+
+(defun io-valid-tape-name-p (name)
+  "
+RETURN: Whether name is a string with the following format:
+        name ::= part | part '/' name .
+        part ::= [A-Za-z][A-Za-z0-9]{0,4} /
+"
+  (do ((i 0)
+       (l 0)
+       (state :first))
+      ((>= i (length name)) t)
+    (if (eq state :first)
+        (if (alpha-char-p (char name i))
+            (setf i (1+ i) l 1 state :rest)
+            (return-from io-valid-tape-name-p nil))
+        (cond
+          ((alphanumericp (char name i))
+           (setf i (1+ i) l (1+ l))
+           (when (> l 5) (return-from io-valid-tape-name-p nil)))
+          ((char= (character "/") (char name i))
+           (setf i (1+ i) state :first))
+          (t
+           (return-from io-valid-tape-name-p nil))))))
+
+
+(defun io-redirect-input-from-tape (task tape-name)
+  "
+RETURN: The task-tape-input or nil.
+"
+  (when (task-tape-input task)
+    (close (task-tape-input task))
+    (setf  (task-tape-input task) nil))
+  (setf (task-input task) (terminal-input-stream (task-terminal task)))
+  (let ((path (catalog-make-path :tape name)))
+    (if path
+        (if (setf (task-tape-input task)
+                  (open path :direction :input :if-does-not-exists nil))
+            (setf (task-input task) (task-tape-input task))
+            (error 'file-error-file-is-inaccessible :pathname path))
+        (error 'file-error-file-does-not-exist :pathname path)))
+  (task-tape-input task))
+
+
+(defun io-redirect-output-to-tape (task tape-name)
+  "
+RETURN: The task-tape-output or nil.
+"
+  (when (task-tape-output task)
+    (close (task-tape-output task))
+    (setf  (task-tape-output task) nil))
+  (setf (task-output task) (terminal-output-stream (task-terminal task)))
+  (let ((path (catalog-make-path :tape name)))
+    (if path
+        (if (setf (task-tape-output task)
+                  (open path :direction :output
+                        :if-does-not-exists :create
+                        :if-exists :supersede))
+            (setf (task-output task) (task-tape-output task))
+            (error 'file-error-file-is-inaccessible :pathname path))
+        (error 'file-error-file-does-not-exist :pathname path)))
+  (task-tape-output task))
+
+
 
 ||#
 

@@ -36,8 +36,11 @@
 
 (in-package :cl-user)
 (cd      #P "/home/pjb/src/pjb/lse-cl/src/")
-(pushnew #P "/home/pjb/src/pjb/lse-cl/src/"  asdf:*central-registry*)
-(pushnew #P "/home/pjb/src/public/rdp/"      asdf:*central-registry*)
+(pushnew #P "/home/pjb/src/pjb/lse-cl/src/"          asdf:*central-registry*)
+(pushnew #P "/home/pjb/src/public/rdp/"              asdf:*central-registry*)
+;; (pushnew #P "/home/pjb/src/public/lisp/common-lisp/" asdf:*central-registry*)
+;; (asdf-delete-system :com.informatimago.common-lisp)
+;; (asdf-load          :com.informatimago.common-lisp)
 (pushnew :developing *features*)
 (pushnew :LSE-CASE-INSENSITIVE *features*)
 (setf *print-right-margin* 200
@@ -53,7 +56,7 @@
 (ql:quickload       :com.informatimago.lse)
 (in-package         :com.informatimago.lse)
 (com.informatimago.common-lisp.cesarum.package:add-nickname :COM.INFORMATIMAGO.LSE.IDENTIFIERS :id)
-
+(print '(in-package         :com.informatimago.lse))
 
 
 ;;;; THE END ;;;;

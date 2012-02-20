@@ -11,6 +11,7 @@
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
+;;;;    2012-02-20 <PJB> Added auto-decrement of version number.
 ;;;;    2012-02-15 <PJB> Created.
 ;;;;BUGS
 ;;;;LEGAL
@@ -37,7 +38,14 @@
 (in-package "COM.INFORMATIMAGO.LSE")
 
 
-(defparameter *version* "1.0.0-0.601-CL"
+(defparameter *version*
+  #. (progn
+       (format nil "1.0.0-~5,3F-CL" (decf (SEXP-FILE-CONTENTS
+                                        (make-pathname :name "VERSION" :type nil :version nil
+                                                       :defaults *load-truename*)
+                                        :if-does-not-exist :create)
+                                       0.001)))
   "The version of the EMULSE system.")
+
 
 ;;;; THE END ;;;;

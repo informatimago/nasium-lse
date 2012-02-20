@@ -1,9 +1,24 @@
 
+
 Some variants between the T1600 and the Mitra-15 can be selected by
 pushing one or the other of those features:
 
-    (pushnew :t1600-lse     *features*)
-    (pushnew :mitra-15-lse  *features*)
+    (pushnew :LSE-T1600     *features*)  ; \
+    (pushnew :LSE-MITRA-15  *features*)  ;  > mutually exclusive.
+    (pushnew :LSE-UNIX      *features*)  ; /
+
+They change some messages and some limits (string lengths, block size,
+line numbers, etc).
+
+
+
+    (pushnew :LSE-CASE-INSENSITIVE *features*)
+
+Makes the scanner accept lower case letters.  For tokens, they're
+converted to upper case.  For strings, they're kept as given (unicode
+characters are accepted in strings and are encoded in UTF-8).
+
+
 
 
 Utilities:

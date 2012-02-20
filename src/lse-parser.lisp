@@ -297,7 +297,7 @@
 
             (--> specification
                  (alt
-                  ;; Afin d'éviter une abiguité sur first(spec-rep-num) inter first(spec-rep),
+                  ;; Afin d'éviter une ambiguité sur first(spec-rep-num) inter first(spec-rep),
                   ;; on distingue les deux cas:
                   ;; 1) sans facteur de répétition:
                   (seq tok-chaine    :action (list :spec-chaine '(:rep-1) $1))
@@ -310,19 +310,21 @@
                   (seq tok-E tok-numero tok-point tok-numero :action (list :spec-e '(:rep-1) $2 $4))
                   ;; 2) avec facteur de répétition:
                   (seq spec-rep-fois (alt
-                                      (seq tok-chaine    :action :spec-chaine)
+                                      (seq tok-chaine    :action (list :spec-chaine tok-chaine))
                                       (seq tok-divise    :action :spec-slash)
                                       (seq tok-X         :action :spec-space)
                                       (seq tok-C         :action :spec-cr)
                                       (seq tok-L         :action :spec-nl))
-                       :action (list $2 spec-rep-fois))
+                       :action  (if (listp $2)
+                                    (list* (first $2) spec-rep-fois (rest $2))
+                                    (list $2 spec-rep-fois)))
                   (seq spec-rep-num  (alt
-                                      (seq tok-chaine    :action :spec-chaine)
+                                      (seq tok-chaine    :action (list :spec-chaine tok-chaine))
                                       (seq tok-divise    :action :spec-slash)
                                       (seq tok-X         :action :spec-space)
                                       (seq tok-C         :action :spec-cr)
                                       (seq tok-L         :action :spec-nl)
-                                      (seq tok-U        :action :spec-u)
+                                      (seq tok-U         :action :spec-u)
                                       (seq tok-F tok-numero tok-point tok-numero :action (list :spec-f tok-numero.1 tok-numero.2))
                                       (seq tok-E tok-numero tok-point tok-numero :action (list :spec-e tok-numero.1 tok-numero.2)))
                        :action (if (listp $2)
@@ -438,9 +440,8 @@
 
             
             (--> facteur
-                 (seq simple (rep (seq tok-puissance simple :action simple)
-                                  ;; :action $1
-                                  )
+                 (seq simple (rep (seq tok-puissance simple :action (list :puissance simple))
+                                  :action $1)
                       :action (if $2
                                   (uncomb (cons simple $2))
                                   simple))

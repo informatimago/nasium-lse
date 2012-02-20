@@ -813,21 +813,59 @@
 
 (defun executer-a-partir-de (from to)
   (io-new-line *task*)
-  )
+  (let ((vm (task-vm *task*)))
+    (unless (or (null to) (vm-line-exist-p vm to))
+      (error 'lse-error
+             :format-control "NUMERO DE LIGNE INEXISTANT ~D"
+             :format-arguments (list to)))
+    (when (vm-line-exist-p vm from)
+      (vm-reset-variables vm))
+    (setf (vm-trap-line vm) to)
+    (vm-goto vm from)
+    (vm-run vm)))
 
 
 (defun continuer ()
   (io-new-line *task*)
-  )
+  (let ((vm (task-vm *task*)))
+    (if (vm-pausedp vm)
+        (progn
+         (setf (vm-trap-line vm) nil)
+         (vm-unpause vm)
+         (vm-run vm))
+        (error 'lse-error
+               :format-control "ON NE PEUT PAS CONTINUER UN PROGRAMME QUI N'EST PAS EN PAUSE."))))
 
 
 (defun reprendre-a-partir-de (from to)
   (io-new-line *task*)
-  )
+  (let ((vm (task-vm *task*)))
+    (unless (or (null to) (vm-line-exist-p vm to))
+      (error 'lse-error
+             :format-control "NUMERO DE LIGNE INEXISTANT ~D"
+             :format-arguments (list to)))
+    (when (vm-line-exist-p vm from)
+      (vm-reset-stacks vm))
+    (setf (vm-trap-line vm) to)
+    (vm-goto vm from)
+    (vm-run vm)))
+
 
 (defun poursuivre-jusqu-en (linum)
   (io-new-line *task*)
-  )
+  (let ((vm (task-vm *task*)))
+    (unless (or (null linum) (vm-line-exist-p vm linum))
+      (error 'lse-error
+             :format-control "NUMERO DE LIGNE INEXISTANT ~D"
+             :format-arguments (list linum)))
+    (if (vm-pausedp vm)
+        (progn
+          (setf (vm-trap-line vm) linum)
+          (vm-unpause vm)
+          (vm-run vm))
+        (error 'lse-error
+               :format-control "ON NE PEUT PAS POURSUIVRE UN PROGRAMME QUI N'EST PAS EN PAUSE."))))
+
 
 (defun prendre-etat-console (console-no)
   (io-new-line *task*)
@@ -1012,10 +1050,11 @@
 (defun effacer-lignes (liste-de-numeros)
   (let ((vm (task-vm *task*)))
     (if (eql :all liste-de-numeros)
-        (loop
-          :for lino :from (minimum-line-number vm)
-          :to (maximum-line-number vm)
-          :do (erase-line-number vm lino))
+        (when (minimum-line-number vm)
+          (loop
+            :for lino :from (minimum-line-number vm)
+            :to (maximum-line-number vm)
+            :do (erase-line-number vm lino)))
         (dolist (item liste-de-numeros)
           (if (consp item)
               (loop
@@ -1349,16 +1388,19 @@ L'effet de cette commande est annulé par la touche ESC."
 (defun lse-compile-and-execute (task line)
   (let* ((*task* task)
          (code (compile-lse-line line)))
-    (if (consp code)
-        ;; program line
-        (if (equalp #(25) (second code))
-            (erase-line-number (task-vm task) (first code))
-            (put-line (task-vm task) (first code) code))
+    (if (zerop (first code))
         ;; instruction line
-        (progn
-          (setf (vm-code (task-vm task)) (second code))
-          (loop
-            :while (run-step (task-vm task)))))))
+        (let ((vm (task-vm task)))
+          (setf (vm-state vm) :running
+                (vm-pc.line vm) 0
+                (vm-pc.offset vm) 0
+                (vm-code vm) (second code))
+          (vm-run vm)
+          (io-new-line *task*))
+        ;; program line
+        (if (equalp #(!next-line) (second code))
+            (erase-line-number (task-vm task) (first code))
+            (put-line (task-vm task) (first code) code)))))
 
 
 (defun command-eval-line (task line)
@@ -1414,21 +1456,28 @@ L'effet de cette commande est annulé par la touche ESC."
                           ;; (unless (task-silence task)
                           ;;   (io-new-line task))
                           (io-finish-output *task*)
-                          (let ((line (io-read-line task
-                                                    :beep (not (task-silence task))
-                                                    :xoff t)))
-                            (if (task-interruption task)
-                                (io-format *task* "~&PRET~%")
-                                (command-eval-line task line)))))
+
+                          (handler-case
+                           (let ((line (io-read-line task
+                                                     :beep (not (task-silence task))
+                                                     :xoff t)))
+                             (if (task-interruption task)
+                                 (io-format *task* "~%PRET~%")
+                                 (command-eval-line task line)))
+                            (end-of-file (err)
+                              (if (and (io-tape-input-p *task*)
+                                       (eql (stream-error-stream err) (task-input *task*)))
+                                  (io-stop-tape-reader *task*)
+                                  (error err))))))
                     (scanner-error-invalid-character (err)
-                      (io-format *task* "~&ERREUR: ~?~%"
+                      (io-format *task* "~%ERREUR: ~?~%"
                                  "CARACTERE INVALIDE '~a' EN POSITION ~D"
                                  (scanner-error-format-arguments err))
-                      (io-format *task* "~&PRET~%")
+                      (io-format *task* "~%PRET~%")
                       (io-finish-output *task*))
                     (error (err)
-                      (io-format *task* "~&ERREUR: ~A~%" err)
-                      (io-format *task* "~&PRET~%")
+                      (io-format *task* "~%ERREUR: ~A~%" err)
+                      (io-format *task* "~%PRET~%")
                       (io-finish-output *task*)))
                 (continue ()
                   :report "CONTINUER")))

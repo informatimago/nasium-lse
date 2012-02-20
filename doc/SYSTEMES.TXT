@@ -46,11 +46,14 @@ Interactif
 
     user@unix$ lse RET
 
-    EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]
-    VERSION : 1.0-UNIX
+    L.S.E.
+    VERSION 1.0.0-0.601-CL-UNIX
     COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
 
-    BONJOUR
+
+    BONJOUR     04:31:54
+
+    PRET
 
 Le système passe directement en mode actif ("BONJOUR" est affiché par
 le système). L'utilisateur peut alors utiliser le système normalement, 
@@ -63,12 +66,19 @@ Script
 Un programme L.S.E peut être exécuté comme script.  Il suffit pour
 celà de placer #!/usr/bin/lse sur la première ligne, suivit du
 programme.  Lorsqu'on invoque le script, le programme est chargé, et
-s'il n'y a aucune erreur de syntaxe, il est automatiquement exécuté.
+s'il n'y a aucune erreur de syntaxe, il est automatiquement exécuté à
+partir de la première ligne.  Lorsqu'il se termine normalement, le
+script se termine.  Si une erreur est rencontrée, elle est signalée,
+et si l'option --deboguer est donnée sur la ligne #!/usr/bin/lse,
+alors le système entre en mode interactif, sinon le script se termine
+avec un status non nul.  Si l'instruction PAUSE est exécutée, alors le
+système entre en mode interactif.
+
 
 ::
 
     user@unix$ cat example RET
-    #!/usr/bin/lse
+    #!/usr/bin/lse --deboguer
     10 AFFICHER['Bonjour',/]
     20 AFFICHER['Les arguments sont: ',U]ARGC
     30 AFFICHER ARGV
@@ -77,11 +87,11 @@ s'il n'y a aucune erreur de syntaxe, il est automatiquement exécuté.
     user@unix$ ./example 1 2 3 a b c RET
     Bonjour
     Les arguments sont: 6 
-    ./example;1;2;3;a;b;c
+    ./example|1|2|3|a|b|c
 
 La variable ARGC est initialisée avec le nombre d'arguments; la
 variable chaîne ARGV est initialisée avec la concatenation du nom du
-programme et des arguments, séparés par un point-virgule.
+programme et des arguments, séparés par une barre verticale '|'.
 
 
 
@@ -276,6 +286,89 @@ Format des fichiers
 ===================
 
 
+Rubans perforés
+---------------
+
+Les commandes de lecture de ruban perforé, et de perforation de ruban,
+utilisent des fichiers au lieu de bandes de papier.  Ces fichiers sont
+des fichiers texte d'extension '.rub', dont la première ligne contient
+un commentaire (il est ignoré à la lecture, et saisi par l'utilisateur
+à l'écriture).
+
+Les rubans contiennent exactement ce qui est perforé ou lu par les
+programmes ou les commandes du système LSE.
+
+Normalement, le code X-OFF est utilisé pour entrer les commandes et
+lignes de programmes, et donc les commandes de perforation devrait
+perforer un X-OFF en fin de ligne de programme.  Mais comme le système
+LSE sur unix utilise un Line Feed, c'est un Line Feed qui est perforé.
+(Ceci devrait être révisé afin de produire et de lire des rubans
+compatibles utilisant X-OFF).
+
+On peut ainsi écrire des scripts sous forme de ruban:
+
+    --------------------   ----------------------------------------
+    Contenu du ruban       Description
+    --------------------   ----------------------------------------
+    Example de script      Ligne commentaire.
+    AB                     ABREGE, évite l'affichage des commandes.
+    AP                     APPELER le programme
+    PGM1                   PGM1 (fichier pgm1.lse).
+    LI                     LISTER A PARTIR DE
+    1                      1
+    EX                     EXECUTER A PARTIR DE
+    1                      1
+    EF                     EFFACER LIGNES
+    *                      *
+    IN                     IN EXTENSO -- annule ABREGE
+    --------------------   ----------------------------------------
+
+Il faut faire attention à ne pas laisser d'espace à la suite des
+commandes.
+
+On peut executer ce script avec les commandes suivantes : ::
+
+    ET -- ETAGERE DE RUBANS pour sélectionner le répertoire où les
+          rubans sont collectionnés. ('.' indique le répertoire courant).
+
+    SE -- SELECTIONNER RUBAN.  Charge un ruban sur le lecteur.
+
+    RU -- RUBAN. Active le lecteur de ruban.
+
+
+Exemple : ::
+
+
+    ETAGERE DE RUBANS '.'
+
+    L'ETAGERE DE RUBAN COURANTE EST: /home/pjb/src/git/pjb/lse-cl/src/
+
+    RUBANS PERFORES SUR L'ETAGERERE
+    *********************************
+
+     NOM      DATE    TAILLE  COMMENTAIRE
+
+    EXAMPLE   20/02/12       29  Example de script
+    TEST1     18/02/12      439  Test d'archivage de ruban #1
+    TESTDEEN  20/02/12       49  Test DECODE ENCODE
+
+    SELECTIONNER RUBAN EXAMPLE
+
+    LE RUBAN EXAMPLE (Example de script) EST MIS EN PLACE.
+
+    RUBAN 
+    1*AUTEUR: PASCAL BOURGUIGNON
+    2*PROGRAMME EXAMPLE
+    10 AFFICHER[/,'PROGRAMME EXEMPLE',/]
+    15 AFFICHER[U,/]DAT()
+    20 TERMINER
+
+    PROGRAMME EXEMPLE
+    20/02/12 04:20:31    
+    TERMINE
+
+
+
 Fichiers programmes
 -------------------
 
@@ -293,10 +386,10 @@ généres, il n'y a pas de numéro de ligne en double, et les lignes sont
 triées par ordre croissant.
 
 Les mots réservés et les identificateurs de L.S.E sont normalement
-écrit tout en majuscules.  S'ils sont écrits avec des minuscules, ils
+écrits tout en majuscules.  S'ils sont écrits avec des minuscules, ils
 sont remis en majuscules lors de la lecture.  Donc une variable nommée
 EXAMP peut aussi s'écrire examp ou ExamP.  Mais elle sera écrite EXAMP
-par LISTER A PARTIR DE ou par RANGER ou ENCODER.
+par LISTER A PARTIR DE ou par RANGER ou DECODER.
 
 
 Fichiers données

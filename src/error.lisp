@@ -48,6 +48,11 @@
 (define-condition lse-error (simple-error)
   ((code :type symbol :initarg :code)))
 
+(defun lse-error (format-control &rest format-arguments)
+  (error 'lse-error
+         :format-control format-control
+         :format-arguments format-arguments))
+
 
 (defparameter +code-message-assoc+
   '(
@@ -116,7 +121,7 @@
     ( :ligne-inexistante
       "LIGNE INEXISTANTE" )
     ( :plus-d-instruction
-      "PLUS D'INSTRUCTION" )
+     "PLUS D'INSTRUCTION" )
     ( :virgule-attendue
       "VIRGULE ATTENDUE" )
     ( :virgule-ou-a-attendus

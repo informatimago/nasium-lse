@@ -50,18 +50,18 @@
 
 
 ;; On T1600, chaines are limited to 256 characters, but on Mitra-15 they're "unlimited".
-#+t1600-lse (defconstant chaine-maximum 256)
-#+t1600-lse (defun   chainep    (x)  (and (stringp x) (<= (length x) chaine-maximum)))
-#+t1600-lse (deftype chaine     ()   '(satisfies chainep))
+#+LSE-T1600 (defconstant chaine-maximum 256)
+#+LSE-T1600 (defun   chainep    (x)  (and (stringp x) (<= (length x) chaine-maximum)))
+#+LSE-T1600 (deftype chaine     ()   '(satisfies chainep))
 
-#-t1600-lse (defconstant chaine-maximum array-dimension-limit)
-#-t1600-lse (defun   chainep    (x)   (stringp x))
-#-t1600-lse (deftype chaine     ()   'string)
+#-LSE-T1600 (defconstant chaine-maximum array-dimension-limit)
+#-LSE-T1600 (defun   chainep    (x)   (stringp x))
+#-LSE-T1600 (deftype chaine     ()   'string)
 
 
 (defun   identificateurp  (x)  (and (symbolp x)
                                     (eq (symbol-package x)
-                                        (find-package "LSE-USER"))))
+                                        (find-package "COM.INFORMATIMAGO.LSE.IDENTIFIERS"))))
 (deftype identificateur   () '(satisfies identificateurp))
 
 (defstruct booleen value)
@@ -93,7 +93,7 @@
   (:report print-pas-implemente-error))
 
 (defmethod print-pas-implemente-error ((err pas-implemente) stream)
-  (format stream "~A N'EST PAS ENCORE IMPLEMENTE" (pas-implemente-what err)))
+  (format stream "~A N'EST PAS ENCORE IMPLEMENTE" (pas-implemented-what err)))
 
 
 (define-condition argument-invalide (lse-error)
@@ -108,14 +108,26 @@
           (argument-invalide-argument-index err)
           (argument-invalide-operator err)
           (argument-invalide-argument err)
-          (argument-invalide-reasone err)))
+          (argument-invalide-reason err)))
 
 
 
-(defmacro un-nombre  (a) `(coerce ,a 'nombre))
-(defmacro le-booleen (a) `(etypecase ,a (booleen ,a)))
-(defmacro le-nombre  (a) `(etypecase ,a (nombre  ,a)))
-(defmacro la-chaine  (a) `(etypecase ,a (chaine  ,a)))
+(defmacro un-nombre  (a)
+  `(coerce ,a 'nombre))
+
+(defmacro le-booleen (a)
+  `(etypecase ,a
+     (booleen ,a)
+     (null faux)
+     (t    vrai)))
+
+(defmacro le-nombre  (a)
+  `(etypecase ,a
+     (nombre  ,a)))
+
+(defmacro la-chaine  (a)
+  `(etypecase ,a
+     (chaine  ,a)))
 
 
 (defun ou    (a b) (if (let ((a (eq vrai (le-booleen a)))
@@ -156,12 +168,12 @@
 
 (defmacro defcompare (class eg ne lt le gt ge)
   `(progn
-     (defmethod eg ((a ,class) (b ,class)) (,eg a b))
-     (defmethod ne ((a ,class) (b ,class)) (,ne a b))
-     (defmethod lt ((a ,class) (b ,class)) (,lt a b))
-     (defmethod le ((a ,class) (b ,class)) (,le a b))
-     (defmethod gt ((a ,class) (b ,class)) (,gt a b))
-     (defmethod ge ((a ,class) (b ,class)) (,ge a b))))
+     (defmethod eg ((a ,class) (b ,class)) (le-booleen (,eg a b)))
+     (defmethod ne ((a ,class) (b ,class)) (le-booleen (,ne a b)))
+     (defmethod lt ((a ,class) (b ,class)) (le-booleen (,lt a b)))
+     (defmethod le ((a ,class) (b ,class)) (le-booleen (,le a b)))
+     (defmethod gt ((a ,class) (b ,class)) (le-booleen (,gt a b)))
+     (defmethod ge ((a ,class) (b ,class)) (le-booleen (,ge a b)))))
 
 ;; We need to use classes here:
 (defcompare number          =       /=       <       <=       >       >=)
@@ -171,33 +183,33 @@
 
 
 
-(defun add  (a b) (+        (le-nombre a) (le-nombre b)))
-(defun sub  (a b) (-        (le-nombre a) (le-nombre b)))
-(defun mul  (a b) (*        (le-nombre a) (le-nombre b)))
-(defun div  (a b) (/        (le-nombre a) (le-nombre b)))
+(defun add  (a b) (+        (un-nombre a) (un-nombre b)))
+(defun sub  (a b) (-        (un-nombre a) (un-nombre b)))
+(defun mul  (a b) (*        (un-nombre a) (un-nombre b)))
+(defun div  (a b) (/        (un-nombre a) (un-nombre b)))
 (defun pow  (a b)
-  (when (and (< (le-nombre a) 0.0) (/= (truncate (le-nombre b)) b))
+  (when (and (< (un-nombre a) 0.0) (/= (truncate (un-nombre b)) b))
     (error 'argument-invalide
            :op "POW"
            :index 2
            :argument b
            :reason "QUAND LE PREMIER ARGUMENT EST NEGATIF, LE SECOND DOIT ETRE ENTIER."))
   (un-nombre (expt a (if (< a 0.0) (truncate b) b))))
-(defun ent  (a)   (un-nombre (truncate (le-nombre a))))
-(defun neg  (a)   (-        (le-nombre a)))
-(defun abso (a)   (abs      (le-nombre a)))
-(defun expo (a)   (exp      (le-nombre a)))
-(defun sinu (a)   (sin      (le-nombre a)))
-(defun cosi (a)   (cos      (le-nombre a)))
-(defun atg  (a)   (atan     (le-nombre a)))
-(defun rac  (a)   (let ((result (sqrt (le-nombre a)))) (le-nombre result)))
-(defun lgn  (a)   (let ((result (log  (le-nombre a)))) (le-nombre result)))
+(defun ent  (a)   (un-nombre (truncate (un-nombre a))))
+(defun neg  (a)   (-        (un-nombre a)))
+(defun abso (a)   (abs      (un-nombre a)))
+(defun expo (a)   (exp      (un-nombre a)))
+(defun sinu (a)   (sin      (un-nombre a)))
+(defun cosi (a)   (cos      (un-nombre a)))
+(defun atg  (a)   (atan     (un-nombre a)))
+(defun rac  (a)   (let ((result (sqrt (un-nombre a)))) (un-nombre result)))
+(defun lgn  (a)   (let ((result (log  (un-nombre a)))) (un-nombre result)))
 
 (defun ale  (a)
   ;; (ale 0) --> true random
   ;; (ale n) --> pseudo-random from n
   ;; ==> we should implement a pseudo-random function (or call srand/rand).
-  (let ((a (le-nombre a)))
+  (let ((a (un-nombre a)))
     (when (zerop a)
       (setf (task-random-state *task*) (make-random-state t)))
     (random 1.0)))
@@ -207,12 +219,12 @@
 
 (defun att ()    (error 'pas-implemente :what "ATT"))
 (defun dis (a) (declare (ignore a))  (error 'pas-implemente :what "DIS"))
-(defun etl (a b) (un-nombre (logand (truncate (le-nombre a))
-                                    (truncate (le-nombre b)))))
-(defun oul (a b) (un-nombre (logior (truncate (le-nombre a))
-                                    (truncate (le-nombre b)))))
-(defun oux (a b) (un-nombre (logxor (truncate (le-nombre a))
-                                    (truncate (le-nombre b)))))
+(defun etl (a b) (un-nombre (logand (truncate (un-nombre a))
+                                    (truncate (un-nombre b)))))
+(defun oul (a b) (un-nombre (logior (truncate (un-nombre a))
+                                    (truncate (un-nombre b)))))
+(defun oux (a b) (un-nombre (logxor (truncate (un-nombre a))
+                                    (truncate (un-nombre b)))))
 
 
 (defun concatenation (a b) (la-chaine (concatenate 'string
@@ -221,7 +233,7 @@
 (defun lgr (a) (un-nombre (length (la-chaine a))))
 
 (defun pos (ch de sc)
-  (let* ((debut (1- (truncate (le-nombre de)))))
+  (let* ((debut (1- (truncate (un-nombre de)))))
     (when (or (< debut 0) (/= (1+ debut) de))
       (error 'argument-invalide
              :op "POS"
@@ -235,11 +247,11 @@
 
 (defun eqn (ch &optional po)
   (un-nombre (char-code (aref (la-chaine ch)
-                              (or (and po (1- (le-nombre po))) 0)))))
+                              (or (and po (1- (un-nombre po))) 0)))))
 
 
 (defun eqc (co)
-  (string (or (code-char (truncate (le-nombre co)))
+  (string (or (code-char (truncate (un-nombre co)))
               (error 'argument-invalide
                      :op "EQC"
                      :index 1
@@ -249,15 +261,15 @@
 
 (defun cca (ca)
   ;; TODO: C'est pas tout à fait ça pour les formats.
-  (if (= (truncate (le-nombre ca)) ca)
+  (if (= (truncate (un-nombre ca)) ca)
       (format nil "~D" (truncate ca))
-      (format nil (if (<= 1e-3 (abs (le-nombre ca)) 1e6) "~F" "~E") ca)))
+      (format nil (if (<= 1e-3 (abs (un-nombre ca)) 1e6) "~F" "~E") ca)))
 
 
 (defun cnb (ch de)
   (let* ((ch (la-chaine ch))
          (chlen (length ch))
-         (debut (1- (truncate (le-nombre de))))
+         (debut (1- (truncate (un-nombre de))))
          (fin 0))
     (when (or (< debut 0) (/= (1+ debut) de) (<= chlen debut))
       (error 'argument-invalide
@@ -304,7 +316,7 @@
         
 
 (defun sch (ch de lo-or-ch)
-  (let ((debut (1- (truncate (le-nombre de))))
+  (let ((debut (1- (truncate (un-nombre de))))
         (chlen (length (la-chaine ch))))
     (when (or (< debut 0) (/= (1+ debut) de))
       (error 'argument-invalide
@@ -331,7 +343,7 @@
 
 
 (defun skp (ch de &optional ev)
-  (let ((debut (1- (truncate (le-nombre de)))))
+  (let ((debut (1- (truncate (un-nombre de)))))
     (when (or (< debut 0) (/= (1+ debut) de))
       (error 'argument-invalide
              :op "SKP"
@@ -345,7 +357,7 @@
 
 
 (defun ptr (ch de &optional ev)
-  (let ((debut (1- (truncate (le-nombre de)))))
+  (let ((debut (1- (truncate (un-nombre de)))))
     (when (or (< debut 0) (/= (1+ debut) de))
       (error 'argument-invalide
              :op "PTR"
@@ -359,7 +371,7 @@
 
 
 (defun grl (ch de)
-  (let ((debut (1- (truncate (le-nombre de))))
+  (let ((debut (1- (truncate (un-nombre de))))
         (chlen (length (la-chaine ch))))
     (when (or (< debut 0) (/= (1+ debut) de) (<= chlen debut))
       (error 'argument-invalide
@@ -407,7 +419,7 @@
                     (,(lambda (a b) (logand (truncate a) (truncate b))) etl)
                     (,(lambda (a b) (logior (truncate a) (truncate b))) oul)
                     (,(lambda (a b) (logxor (truncate a) (truncate b))) oux)))
-        (format t "~A " (second op) a b)
+        (format t "~A ~A ~A" (second op) a b)
         (assert
          (equal
           (ignore-errors (un-nombre (funcall (first op) (- a 10.0) (- b 10.0))))

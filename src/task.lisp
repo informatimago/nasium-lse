@@ -148,7 +148,7 @@ Can be either (terminal-output-stream terminal) or tape-output.")
                          :type boolean
                          :documentation "parameter io-read-line.")
    
-   (random-state         :reader task-random-state
+   (random-state         :accessor task-random-state
                          :initform (make-random-state) :type random-state)
    (environnement        :accessor task-environnement :initform nil :type (or null environnement))
    (vm                   :reader task-vm

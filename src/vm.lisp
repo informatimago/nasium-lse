@@ -100,6 +100,12 @@
 (defclass frame ()
   ((variables :initarg :variables :initform '() :accessor frame-variables)))
 
+(defclass local-frame (frame)
+  ((return.line :initarg :return.line :initform 0 :reader frame-return.line
+                :documentation "The return line.")
+   (return.offset :initarg :return.offset :initform 0 :reader frame-return.offset
+                  :documentation "The offset into the code vector of the return line.")))
+
 (defmethod print-object ((frame frame) stream)
   (print-unreadable-object (frame stream :identity t :type t)
     (format stream "with ~D variables: ~(~A~^ ~)"
@@ -231,21 +237,27 @@ variable-type may be:
 ;;; The LSE Virtual Machine
 
 (defclass lse-vm ()
-  ((global-frame      :reader vm-global-frame
+  ((state             :accessor vm-state
+                      :initform :idle
+                      :type (member :idle :running))
+   (global-frame      :reader vm-global-frame
                       :initform (make-instance 'frame)
                       :type frame)
    (local-frame-stack :accessor vm-local-frame-stack
                       :initform '()
                       :type list )
-   (code-vectors      :reader vm-code-vectors
-                      :initform (make-hash-table :test (function eql) :size 256)
-                      :documentation "Keys are line numbers, values are lists (line-number code-vector source-line).")
    (stack             :reader vm-stack
                       :initform (make-array '(256)
                                             :element-type t
                                             :adjustable t
                                             :fill-pointer 0)
                       :type vector)
+   (code-vectors      :reader vm-code-vectors
+                      :initform (make-hash-table :test (function eql) :size 256)
+                      :documentation "Keys are line numbers, values are lists (line-number code-vector source-line).")
+   (trap-line         :accessor vm-trap-line
+                      :initform nil
+                      :type (or null (integer 0)))
    (pc.line           :accessor vm-pc.line
                       :initform 0
                       :type (integer 0))
@@ -256,10 +268,9 @@ variable-type may be:
    (code              :accessor vm-code
                       :initform  #(!next-line)
                       :type vector )
-
-   (paused.pc.line)
-   (paused.pc.offset)
-   (paused.code)))
+   (paused.pc.line    :initform nil)
+   (paused.pc.offset  :initform nil)
+   (paused.code       :initform nil)))
 
 
 
@@ -274,16 +285,76 @@ variable-type may be:
   vm)
 
 
-(defmethod vm-terminer ((vm lse-vm))
-  (setf (vm-local-frame-stack vm)         '()
-        (fill-pointer (vm-stack vm))      0
-        (vm-pc.line vm)                   0
-        (vm-pc.offset vm)                 0
-        (vm-code vm)                      #(!next-line)
-        (slot-value vm 'paused.pc.line)   nil
-        (slot-value vm 'paused.pc.offset) nil
-        (slot-value vm 'paused.code)      nil)
+
+
+(defmethod vm-pausedp ((vm lse-vm))
+  (slot-value vm 'paused.pc.line))
+
+
+(defmethod vm-pause ((vm lse-vm))
+  (when (eql (vm-state vm) :running)
+    (setf (vm-state vm) :idle
+          (slot-value vm 'paused.pc.line)   (vm-pc.line vm)  
+          (slot-value vm 'paused.pc.offset) (vm-pc.offset vm)
+          (slot-value vm 'paused.code)      (vm-code vm)))
   vm)
+
+(defmethod vm-unpause ((vm lse-vm))
+  (when (vm-pausedp vm)
+    (setf (vm-state vm) :running
+          (vm-pc.line   vm) (slot-value vm 'paused.pc.line)  
+          (vm-pc.offset vm) (slot-value vm 'paused.pc.offset)
+          (vm-code      vm) (slot-value vm 'paused.code)
+          (slot-value vm 'paused.pc.line)   nil
+          (slot-value vm 'paused.pc.offset) nil
+          (slot-value vm 'paused.code)      nil))
+  vm)
+
+(defmethod vm-line-exist-p ((vm lse-vm) lino)
+  (gethash lino (vm-code-vectors vm)))
+
+(defmethod vm-goto ((vm lse-vm) lino)
+  (let ((line (gethash lino (vm-code-vectors vm))))
+    (if line
+        (progn
+          (setf (vm-state     vm) :running
+                (vm-pc.line   vm) lino
+                (vm-pc.offset vm) 0
+                (vm-code      vm) (second line)
+                (slot-value vm 'paused.pc.line)   nil
+                (slot-value vm 'paused.pc.offset) nil
+                (slot-value vm 'paused.code)      nil)
+          (when (eql lino (vm-trap-line vm))
+            (pause vm))) ; to get the PAUSE message
+        (lse-error "NUMERO DE LIGNE INEXISTANT ~D" lino)))
+  vm)
+
+(defmethod vm-reset-variables ((vm lse-vm))
+  (setf (slot-value vm 'global-frame) (make-instance 'frame))
+  (vm-reset-stacks vm))
+
+(defmethod vm-reset-stacks ((vm lse-vm))
+  (setf (vm-local-frame-stack vm)         '()
+        (fill-pointer (vm-stack vm))      0)
+  (setf
+   (vm-pc.line vm)                   0
+   (vm-pc.offset vm)                 0
+   (vm-code vm)                      #(!next-line)
+   (slot-value vm 'paused.pc.line)   nil
+   (slot-value vm 'paused.pc.offset) nil
+   (slot-value vm 'paused.code)      nil)
+  vm)
+
+(defmethod vm-terminer ((vm lse-vm))
+  (setf (vm-state vm) :idle)
+  vm)
+
+(defmethod vm-run ((vm lse-vm))
+  (loop
+    :while (eql (vm-state vm) :running)
+    :do (run-step vm))
+  vm)
+
 
 
 
@@ -474,36 +545,110 @@ RETURN: vm
 
 
 
+(defun line-length-maximum ()
+  #+LSE-T1600 80
+  #+LSE-MITRA-15 80
+  #-(or LSE-T1600 LSE-MITRA-15) 65535)
+
+(defun line-number-maximum ()
+  #+LSE-T1600 255
+  #+LSE-MITRA-15 250
+  #-(or LSE-T1600 LSE-MITRA-15) 65535)
+
+(defun line-number-valid-p (linum)
+  (and (integerp linum) (<= 1 linum (line-number-maximum))))
 
 
 
 
 
 
-(defun afficher-nl      (vm rep) (format t "~V,,,VA" rep LF ""))
-(defun afficher-cr      (vm rep) (format t "~V,,,VA" rep CR ""))
-(defun afficher-space   (vm rep) (format t "~VA" rep ""))
-(defun afficher-newline (vm rep) (format t "~V%" rep))
+
+
+
+(defun afficher-nl      (vm rep)
+  (declare (ignore vm))
+  (format t "~V,,,VA" rep LF ""))
+
+(defun afficher-cr      (vm rep)
+  (declare (ignore vm))
+  (format t "~V,,,VA" rep CR ""))
+
+(defun afficher-space   (vm rep)
+  (declare (ignore vm))
+  (format t "~VA" rep ""))
+
+(defun afficher-newline (vm rep)
+  (declare (ignore vm))
+  (format t "~V%" rep))
 
 (defun afficher-chaine (vm rep val)
-  (check-type rep nombre)
+  (declare (ignore vm))
+  (check-type rep (or (integer 1) nombre))
   (check-type val chaine)
   (loop :repeat (round rep) :do (princ val)))
 
-(defun afficher-e (vm rep e d)
-  )
-
-(defun afficher-f (vm rep e d)
-  )
 
 
-(defun afficher-u (vm nexpr)
-  ()
-  )
+;; NOTE: AFFICHER[Fn.m,En.m]VECT,TABL are specific to T1600.
+;;       We should have some #+LSE-T1600 arround here…
 
-;; (:LIRE&store        (op-0/1 LIRE&store))
-;; (:LIRE&astore1        (op-1/1 LIRE&astore1))
-;; (:LIRE&astore2        (op-2/1 LIRE&astore2))
+(defun afficher-with-format (vm ctrl value)
+  (etypecase value
+    ((or integer nombre chaine)
+     (if (functionp ctrl)
+         (funcall ctrl vm value)
+         (io-format *task* ctrl value)))
+    (vector
+     (loop
+       :for i :below (length value)
+       :initially (afficher-newline vm 1)
+       :do (if (functionp ctrl)
+               (progn (funcall ctrl vm (aref value i))
+                      (io-format *task* " "))
+               (io-format *task* "~? " ctrl (list (aref value i))))))
+    (array
+     (loop
+       :for i :below (array-dimension value 0)
+       :do (loop
+             :for j :below (array-dimension value 1)
+             :initially (afficher-newline vm 1)
+             :do  (if (functionp ctrl)
+                      (progn (funcall ctrl vm (aref value i j))
+                             (io-format *task* " "))
+                      (io-format *task* "~? " ctrl (list (aref value i j)))))))))
+
+
+(defun afficher-e (vm val e d)
+  (let* ((val (deref vm val))
+         (w (+ e 1 d 4))
+         (ctrl (format nil "~~~A,~A,2,,,,'EE" w d)))
+    (afficher-with-format vm ctrl val)))
+
+
+(defun afficher-f (vm val e d)
+  (let* ((val (deref vm val))
+         (w (+ e 1 d))
+         (ctrl (format nil "~~~A,~AF" w d)))
+    (afficher-with-format vm ctrl val)))
+
+
+(defun afficher-u (vm value)
+  (let ((value (deref vm value)))
+    (etypecase value
+      ((or integer nombre)
+       (io-format *task* (if (and (<= 1e-3 value) (< value 1e6))
+                             "~A "          
+                             "~,,2,,,,'EE ")
+                  (let ((tvalue (truncate value)))
+                    (if (= tvalue value)
+                        tvalue
+                        value))))
+      (chaine
+       (io-format *task*  "~A" value))
+      ((or vector array)
+       (afficher-with-format vm (function afficher-u) value)))))
+
 
 
 (defun declare-chaine (vm ident)
@@ -521,7 +666,7 @@ RETURN: vm
 
 (defun declare-tableau1 (vm dim ident)
   (check-type ident identificateur)
-  (check-type dim nombre)
+  (check-type dim (or integer nombre))
   (let ((dim (round dim))
         (var (find-variable vm ident)))
     (flet ((init-value (dim)
@@ -540,8 +685,8 @@ RETURN: vm
 
 (defun declare-tableau2 (vm dim1 dim2 ident)
   (check-type ident identificateur)
-  (check-type dim1 nombre)
-  (check-type dim2 nombre)
+  (check-type dim1 (or integer nombre))
+  (check-type dim2 (or integer nombre))
   (let ((dim1 (round dim1))
         (dim2 (round dim2))
         (var (find-variable vm ident)))
@@ -624,45 +769,18 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 
 
-(defun POP&ASTORE1 (vm val index ident)
-  (check-type ident identificateur)
-  (check-type index nombre)
-  (check-type val nombre)
-  (let ((index (round index))
-        (var (find-variable vm ident)))
-    (if var
-        (if (and (consp (variable-type var))
-                 (eql (first (variable-type var)) 'vecteur))
-            (setf (aref (variable-value var) index) val)
-            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 1" ident))
-        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
 
-
-(defun POP&ASTORE2 (vm val index1 index2 ident)
-  (check-type ident identificateur)
-  (check-type index1 nombre)
-  (check-type index2 nombre)
-  (check-type val nombre)
-  (let ((index1 (round index1))
-        (index2 (round index2))
-        (var (find-variable vm ident)))
-    (if var
-        (if (and (consp (variable-type var))
-                 (eql (first (variable-type var)) 'tableau))
-            (setf (aref (variable-value var) index1 index2) val)
-            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
-        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
 
 
 (defun POP&STORE (vm val ident)
   (check-type ident identificateur)
-  (check-type val (or nombre chaine))
+  (check-type val (or integer nombre chaine))
   (let ((var (find-variable vm ident)))
     (if var
         (case (variable-type var)
           (nombre
            (if (nombrep val)
-               (setf (variable-value var) val)
+               (setf (variable-value var) (un-nombre val))
                (lse-error "LA VARIABLE ~A N'EST PAS UNE CHAINE" ident)))
           (chaine
            (if (chainep val)
@@ -671,7 +789,115 @@ NOTE: on ne peut pas liberer un parametre par reference.
           (t
            (lse-error "LA VARIABLE ~A N'EST PAS ~A" ident
                       (if (nombrep val) "UN NOMBRE" "UNE CHAINE"))))
+        (typecase val
+          ((or integer nombre)
+           (add-global-variable vm (make-instance 'lse-variable
+                                        :name  ident
+                                        :value (un-nombre val))))
+          (otherwise
+           (lse-error "LA VARIABLE ~A N'EST PAS DECLAREE COMME CHAINE." ident))))))
+
+
+(defun POP&ASTORE1 (vm val index ident)
+  (check-type ident identificateur)
+  (check-type index nombre)
+  (check-type val (or integer nombre))
+  (let ((index (round index))
+        (var (find-variable vm ident)))
+    (if var
+        (if (and (consp (variable-type var))
+                 (eql (first (variable-type var)) 'vecteur))
+            (setf (aref (variable-value var) (1- index)) (un-nombre val))
+            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 1" ident))
         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+
+
+(defun POP&ASTORE2 (vm val index1 index2 ident)
+  (check-type ident identificateur)
+  (check-type index1 nombre)
+  (check-type index2 nombre)
+  (check-type val (or integer nombre))
+  (let ((index1 (round index1))
+        (index2 (round index2))
+        (var (find-variable vm ident)))
+    (if var
+        (if (and (consp (variable-type var))
+                 (eql (first (variable-type var)) 'tableau))
+            (setf (aref (variable-value var) (1- index1) (1- index2)) (un-nombre val))
+            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
+        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+
+
+
+(defun beep (vm)
+  (declare (ignore vm))
+  (io-bell *task*))
+
+
+;; We need lire&store operators since we need to know the type of
+;; variable to know what to read (string, number, vector or array).
+
+
+(defun lire&store (vm ident)
+  (check-type ident identificateur)
+  (let ((var (find-variable vm ident)))
+    (if var
+        (case (variable-type var)
+          ((nombre)
+           (let ((val (io-read-number *task*)))
+             (if (nombrep val)
+                 (setf (variable-value var) (un-nombre val))
+                 (lse-error "LA VARIABLE ~A N'EST PAS UNE CHAINE" ident))))
+          ((chaine)
+           (let ((val (io-read-string *task*)))
+             (if (chainep val)
+                 (setf (variable-value var) val)
+                 (lse-error "LA VARIABLE ~A EST UNE CHAINE" ident))))
+          (t
+           (loop
+             :for i :below (array-total-size (variable-value var))
+             :for val = (io-read-number *task*)
+             :do (setf (row-major-aref (variable-value var) i) (un-nombre val)))))
+        (let ((val (io-read-number *task*)))
+          (add-global-variable vm (make-instance 'lse-variable
+                                      :name  ident
+                                      :value (un-nombre val)))))))
+
+
+(defun lire&astore1 (vm index ident)
+  (check-type ident identificateur)
+  (check-type index (or integer nombre))
+  (let ((index (round index))
+        (var (find-variable vm ident)))
+    (if var
+        (if (and (consp (variable-type var))
+                 (eql (first (variable-type var)) 'vecteur))
+            (if (<= 1 index (array-dimension (variable-value var) 0))
+                (let ((val (io-read-number *task*)))
+                  (setf (aref (variable-value var) (1- index)) (un-nombre val)))
+                (lse-error "DEPASSEMENT DES BORNES ~A[~A] EST INVALIDE" ident index))
+            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 1" ident))
+        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+
+
+(defun lire&astore2 (vm index1 index2 ident)
+  (check-type ident identificateur)
+  (check-type index1 (or integer nombre))
+  (check-type index2 (or integer nombre))
+  (let ((index1 (round index1))
+        (index2 (round index2))
+        (var (find-variable vm ident)))
+    (if var
+        (if (and (consp (variable-type var))
+                 (eql (first (variable-type var)) 'tableau))
+            (if (and (<= 1 index1 (array-dimension (variable-value var) 0))
+                     (<= 1 index2 (array-dimension (variable-value var) 1)))
+                (let ((val (io-read-number *task*)))
+                  (setf (aref (variable-value var) (1- index1) (1- index2)) (un-nombre val)))
+                (lse-error "DEPASSEMENT DES BORNES ~A[~A,~A] EST INVALIDE" ident index1 index2))
+            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
+        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+
 
 
 (defun AREF1&PUSH-VAL (vm index ident)
@@ -683,7 +909,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
         (if (and (consp (variable-type var))
                  (eql (first (variable-type var)) 'vecteur))
             (if (<= 1 index (array-dimension (variable-value var) 0))
-                (stack-push (aref (variable-value var) index) (vm-stack vm))
+                (stack-push (aref (variable-value var) (1- index)) (vm-stack vm))
                 (lse-error "DEPASSEMENT DES BORNES ~A[~A] EST INVALIDE" ident index))
             (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 1" ident))
         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
@@ -701,7 +927,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                  (eql (first (variable-type var)) 'tableau))
             (if (and (<= 1 index1 (array-dimension (variable-value var) 0))
                      (<= 1 index2 (array-dimension (variable-value var) 1)))
-                (stack-push (aref (variable-value var) index1 index2) (vm-stack vm))
+                (stack-push (aref (variable-value var) (1- index1) (1- index2)) (vm-stack vm))
                 (lse-error "DEPASSEMENT DES BORNES ~A[~A,~A] EST INVALIDE" ident index1 index2))
             (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
@@ -753,16 +979,30 @@ NOTE: on ne peut pas liberer un parametre par reference.
   (incf (vm-pc.offset vm) offset))
 
 (defun btrue (vm val offset)
-  (if (booleenp val)
-      (when (eq vrai val)
-        (incf (vm-pc.offset vm) offset))
-      (lse-error "LE TEST N'EST PAS UN BOOLEEN MAIS ~A" val)))
+  (cond
+    ((booleen-p val)
+     (when (eq vrai val)
+       (incf (vm-pc.offset vm) offset)))
+    ((eq t val)
+     (incf (vm-pc.offset vm) offset))
+    ((null val))
+    (t
+     (error 'lse-error
+            :format-control "LE TEST N'EST PAS UN BOOLEEN MAIS ~A"
+            :format-arguments (list val)))))
 
 (defun bfalse (vm val offset)
-  (if (booleenp val)
-      (when (eq faux val)
-        (incf (vm-pc.offset vm) offset))
-      (lse-error "LE TEST N'EST PAS UN BOOLEEN MAIS ~A" val)))
+  (cond
+    ((booleen-p val)
+     (when (eq faux val)
+       (incf (vm-pc.offset vm) offset)))
+    ((eq t val))
+    ((null val)
+     (incf (vm-pc.offset vm) offset))
+    (t    
+     (error 'lse-error
+            :format-control "LE TEST N'EST PAS UN BOOLEEN MAIS ~A"
+            :format-arguments (list val)))))
 
 (defun bnever (vm offset)
   (declare (ignore vm offset)))
@@ -771,27 +1011,74 @@ NOTE: on ne peut pas liberer un parametre par reference.
 ;; (:faire-jusqu-a    (op-4/1 faire-jusqu-a))
 ;; (:faire-tant-que   (op-3/1 faire-tant-que))
 ;; (:tant-que         (op-1 tant-que))
-;; 
+
+
 (defun pause (vm)
-  ;; TODO: Not correct.
-  (setf (slot-value vm 'paused.pc.line)   (vm-pc.line vm)
-        (slot-value vm 'paused.pc.offset) (vm-pc.offset vm)
-        (slot-value vm 'paused.code)      (vm-code vm))
+  (io-format *task*
+             #+LSE-T1600 "~%PAUSE EN LIGNE ~3,'0D~%"
+             #-LSE-T1600 "~%PAUSE~%" (vm-pc.line vm))
+  (vm-pause vm)
   (throw 'run-step-done nil))
 
 (defun terminer (vm)
-  ;; TODO: Not correct.
+  (io-format *task*
+             #+LSE-T1600 "~%TERMINE EN LIGNE ~3,'0D~%"
+             #-LSE-T1600 "~%TERMINE~%" (vm-pc.line vm))
+  (vm-terminer vm)
+  (throw 'run-step-done nil))
+
+(defun stop (vm)
+  (vm-terminer vm)
   (throw 'run-step-done nil))
 
 
 
-;; (:next-line        (op-0 next-line))
-;; (:goto             (op-1 goto))
-;; (:call             (op-0/2 call))
-;; (:retour           (op-0 retour))
-;; (:retour-en        (op-1 retour-en))
-;; (:result           (op-1 result))
-;; 
+(defun next-line (vm)
+  (let ((max  (maximum-line-number vm))
+        (lino (1+ (vm-pc.line vm))))
+    (loop
+      :while (and (<= lino max)
+                  (not (vm-line-exist-p vm lino)))
+      :do (incf lino))
+    (if (<= lino max)
+        (vm-goto vm lino)
+        (error 'lse-error
+               :format-control "FIN DU PROGRAMME ATTEINT EN LIGNE ~D: IL MANQUE UNE INSTRUCTION TERMINER"
+               :format-arguments (list (vm-pc.line vm))))))
+
+
+(defun goto (vm lino)
+  (vm-goto vm lino))
+
+(defun retour (vm)
+  (if (vm-local-frame-stack vm)
+      (let ((frame (pop (vm-local-frame-stack vm))))
+        (setf (vm-pc.line   vm) (frame-return.line   frame)
+              (vm-pc.offset vm) (frame-return.offset frame)
+              (vm-code      vm) (second (gethash (vm-pc.line vm) (vm-code-vectors vm)))))
+      (lse-error "IL N'Y A PAS D'APPEL DE PROCEDURE EN COURS, RETOUR IMPOSSIBLE")))
+
+(defun retour-en (vm lino)
+  (if (vm-local-frame-stack vm)
+      (let ((frame (pop (vm-local-frame-stack vm)))
+            (line (gethash lino (vm-code-vectors vm))))
+        (if line
+            (setf (vm-pc.line   vm) lino
+                  (vm-pc.offset vm) 0
+                  (vm-code      vm) (second line))
+            (lse-error "NUMERO DE LIGNE INEXISTANT ~D" lino)))
+      (lse-error "IL N'Y A PAS D'APPEL DE PROCEDURE EN COURS, RETOUR EN IMPOSSIBLE")))
+
+(defun result (vm result)
+    (if (vm-local-frame-stack vm)
+      (let ((frame (pop (vm-local-frame-stack vm))))
+        (stack-push result (vm-stack vm))
+        (setf (vm-pc.line   vm) (frame-return.line   frame)
+              (vm-pc.offset vm) (frame-return.offset frame)
+              (vm-code      vm) (second (gethash (vm-pc.line vm) (vm-code-vectors vm)))))
+      (lse-error "IL N'Y A PAS D'APPEL DE PROCEDURE EN COURS, RESULTAT IMPOSSIBLE")))
+
+
 ;; (:garer            (op-2/1 garer))
 ;; (:charger                   (op-2 charger))
 ;; (:supprimer-enregistrement  (op-2 supprimer-enregistrement))
@@ -813,6 +1100,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
 (defun run-step (vm)
   (catch 'run-step-done
     (handler-case
+        ;; handler-bind ((error #'invoke-debugger))
         (let ((stack (vm-stack vm))
               (code  (vm-code  vm))
               (*vm*  vm))
@@ -834,7 +1122,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                        (op-4/1 (op) `(spush (let ((d (spop)) (c (spop)) (b (spop))) (,op vm (spop) b c d (pfetch)))))
                        (op-0/2 (op) `(,op vm (pfetch) (pfetch))))
               (let ((cop (pfetch)))
-                (format t "Executing COP ~A~%" cop)
+                ;; (io-format *task* "~&Executing COP ~A~%" (car (gethash cop *cop-info* (cons cop 0))))
                 (case cop
 
                   (!dup    (let ((a (spop))) (spush a) (spush a)))
@@ -868,7 +1156,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                   (!afficher-chaine  (op-2 afficher-chaine))
                   (!afficher-u       (op-1 afficher-u))
                   
-
+                  (!beep             (op-0 beep))
                   (!LIRE&STORE       (op-0/1 LIRE&STORE))
                   (!LIRE&ASTORE1     (op-1/1 LIRE&ASTORE1))
                   (!LIRE&ASTORE2     (op-2/1 LIRE&ASTORE2))
@@ -887,6 +1175,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                   (!executer                  (op-2 executer))
                   (!pause          (op-0 pause))
                   (!terminer       (op-0 terminer))
+                  (!stop           (op-0 stop))
                   
                   (!AREF1&PUSH-REF (op-1/1 AREF1&PUSH-REF))
                   (!AREF1&PUSH-VAL (op-1/1 AREF1&PUSH-VAL))
@@ -925,10 +1214,13 @@ NOTE: on ne peut pas liberer un parametre par reference.
                           :format-arguments (list cop))))))))
       
       (error (err)
+        (io-format *task* "~%ERREUR: ~A~%" err)
         (pause vm)
-        ;; (io-format *task* "ERREUR: ~A~%" err)
         (error err)))
     t))
+
+
+
 
 
 #||
@@ -1037,9 +1329,9 @@ va references are :pop&store'd
 (:spec-nl    rep) --> rep :afficher-nl
 (:spec-u     rep) --> rep expression... :afficher-u
 (:spec-f     rep width precision)
-   --> rep :pushi width :pushi precision expression... :affichier-f
+   --> rep :pushi width :pushi precision expression... :afficher-f
 (:spec-e     rep width precision)
-   --> rep :pushi width :pushi precision expression... :affichier-e
+   --> rep :pushi width :pushi precision expression... :afficher-e
 
 (:aller-en  expression) --> expression :goto
 (:si test then)       --> test :bfalse offset.t then  

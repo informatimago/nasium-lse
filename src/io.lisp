@@ -175,6 +175,12 @@
     (declare (ignorable terminal echo beep xoff))
     ""))
 
+(defgeneric terminal-read (terminal &key echo beep xoff)
+  (:documentation "Read an object from the terminal.")
+  (:method (terminal &key echo beep xoff)
+    (declare (ignorable terminal echo beep xoff))
+    nil))
+
 (defgeneric terminal-echo (terminal)
   (:documentation "Returns the current echo status of the terminal.")
   (:method (terminal)
@@ -240,6 +246,19 @@ When false, no automatic echo occurs.")
            (read-line (terminal-input-stream terminal)))
       (setf (terminal-echo terminal) saved-echo))))
 
+
+(defmethod terminal-read ((terminal standard-terminal) &key (echo t) (beep nil) (xoff nil))
+  (declare (ignore xoff)) ; TODO: implement xoff on terminals.
+  (let ((saved-echo (terminal-echo terminal)))
+    (unless (eq (not saved-echo) (not echo))
+      (setf (terminal-echo terminal) echo))
+    (unwind-protect
+         (progn
+           (when beep
+             (terminal-ring-bell terminal))
+           (read (terminal-input-stream terminal)))
+      (setf (terminal-echo terminal) saved-echo))))
+
 ;;----------------------------------------------------------------------
 
 (defun io-terminal-output-p (task)
@@ -247,6 +266,12 @@ When false, no automatic echo occurs.")
 
 (defun io-terminal-input-p  (task)
   (eql (task-input task) (terminal-input-stream (task-terminal task))))
+
+(defun io-tape-output-p (task)
+  (eql (task-output task) (task-tape-output task)))
+
+(defun io-tape-input-p  (task)
+  (eql (task-input task) (task-tape-input task)))
 
 
 
@@ -272,6 +297,23 @@ When false, no automatic echo occurs.")
   (if (io-terminal-input-p task)
       (terminal-read-line (task-terminal task) :echo echo :beep beep :xoff xoff)
       (read-line (task-input task))))
+
+
+(defun io-read (task)
+  (if (io-terminal-input-p task)
+      (terminal-read (task-terminal task))
+      (read (task-input task))))
+
+(defun io-read-string (task)
+  (io-read-line task))
+
+(defun io-read-number (task)
+  (let ((value (io-read task)))
+    (typecase value
+      (integer (un-nombre value))
+      (nombre  value)
+      (t (lse-error "UN NOMBRE ETAIT ATTENDU, PAS ~S" value)))))
+
 
 (defun io-echo (task)
    (terminal-echo (task-terminal task)))

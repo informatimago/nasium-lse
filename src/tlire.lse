@@ -1,0 +1,21 @@
+1*Auteur: Pascal Bourguignon
+2*Description: Programme de test: LIRE
+ 10 AFFICHER[/,'A='];LIRE A;AFFICHER[/,'A LU=',U,';']A
+ 12 AFFICHER[/,'A='];LIRE A;AFFICHER[/,'A LU=',U,';']A
+ 14 AFFICHER[/,'A,B,C='];LIRE A,B,C;AFFICHER[/,'A LU=',U,', B LU=',U,', C LU=',U,';']A,B,C
+ 16 AFFICHER[/,'A,B,C='];LIRE A,B,C;AFFICHER[/,'A LU=',U,', B LU=',U,', C LU=',U,';']A,B,C
+ 18 CHAINE CH,CH1,CH2
+ 20 AFFICHER[/,'CH='];LIRE CH;AFFICHER[/,'CH LU=''',U,''';']CH
+ 22 AFFICHER[/,'CH1,CH2='];LIRE CH1,CH2;AFFICHER[/,'CH1 LU=''',U,''',','CH2 LU=''',U,''';']CH1,CH2
+ 24 TABLEAU V[3],M[3,2]
+ 26 AFFICHER[/,'V[1..3]='];LIRE V;AFFICHER[/,'V[1..3]=',U]V;AFFICHER[/,'V[1..3]=',F3.3]V
+ 28 AFFICHER[/,'M[1..3,1..2]='];LIRE M;AFFICHER[/,'M[1..3,1..2]=',U]M;AFFICHER[/,'M[1..3,1..2]=',E3.3]M
+ 30 AFFICHER[/,'V[1]='];LIRE V[1]
+ 32 AFFICHER[/,'V[2]='];LIRE V[2]
+ 34 AFFICHER[/,'V[3]='];LIRE V[3]
+ 36 AFFICHER[/,'V[1..3]=',U]V;AFFICHER[/,'V[1..3]=',F3.3]V
+ 38 AFFICHER[/,'M[1,1..2]='];LIRE M[1,1],M[1,2]
+ 40 AFFICHER[/,'M[2,1..2]='];LIRE M[2,1],M[2,2]
+ 42 AFFICHER[/,'M[3,1..2]='];LIRE M[3,1],M[3,2]
+ 44 AFFICHER[/,'M[1..3,1..2]=',U]M;AFFICHER[/,'M[1..3,1..2]=',E3.3]M
+ 46 TERMINER

@@ -1,0 +1,6 @@
+1*Auteur: Pascal Bourguignon
+2*Description: Programme de test PAUSE/TERMINER.
+10 AFFICHER[/,U,/]'Bonjour'
+80 PAUSE
+85 AFFICHER['Après la pause…',/]
+90 TERMINER

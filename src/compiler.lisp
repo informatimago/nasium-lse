@@ -40,6 +40,7 @@
 ;;----------------------------------------------------------------------
 (cl:in-package "COM.INFORMATIMAGO.LSE")
 ;;----------------------------------------------------------------------
+(enable-byte-code-reader-macro)
 
 
 ;; The compiler module provides three features:
@@ -377,9 +378,9 @@
                           (princ (case (first item)
                                    (:spec-f "F")
                                    (:spec-e "E")))
-                          (princ (third item))
+                          (unparse-expression (third item))
                           (princ ".")
-                          (princ (fourth item)))
+                          (unparse-expression  (fourth item)))
                          (:spec-u
                           (princ "U"))))
                      (princ "]"))
@@ -490,50 +491,50 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
      (cons stat next))
     (token
      (ecase (token-kind stat)
-       (tok-chaine         (gen bc::pushi (chaine-valeur stat) next))
-       (tok-nombre         (gen bc::pushi (nombre-valeur stat) next))
-       (tok-numero         (gen bc::pushi (numero-valeur stat) next))
+       (tok-chaine         (gen !pushi (chaine-valeur stat) next))
+       (tok-nombre         (gen !pushi (nombre-valeur stat) next))
+       (tok-numero         (gen !pushi (numero-valeur stat) next))
        (tok-identificateur (gen (identificateur-nom stat) next))
-       (tok-commentaire    (gen bc::comment (token-text stat) next))))
+       (tok-commentaire    (gen !comment (token-text stat) next))))
     (cons
      (ecase (first stat)
 
        ((:neg :non)
         (gen (second stat) (case (first stat)
-                             (:neg bc::neg)
-                             (:non bc::non)) next))
+                             (:neg !neg)
+                             (:non !non)) next))
        ((:moins :plus :fois :divise :puissance :concat
                 :lt :le :gt :ge :eg :ne)
         (gen (second stat) (third stat)
              (case (first stat)
-               (:moins bc::sub)
-               (:plus  bc::add)
-               (:fois  bc::mul)
-               (:divise bc::div)
-               (:puissance bc::pow)
-               (:concat bc::concat)
-               (:lt bc::lt)
-               (:le bc::le)
-               (:gt bc::gt)
-               (:ge bc::ge)
-               (:eg bc::eg)
-               (:ne bc::ne)) next))
+               (:moins !sub)
+               (:plus  !add)
+               (:fois  !mul)
+               (:divise !div)
+               (:puissance !pow)
+               (:concat !concat)
+               (:lt !lt)
+               (:le !le)
+               (:gt !gt)
+               (:ge !ge)
+               (:eg !eg)
+               (:ne !ne)) next))
        (:xi
         (let* ((else (gen (fourth stat) next))
                (offset.e (cons-position next else))
-               (then (gen (third stat) bc::balways  offset.e else))
+               (then (gen (third stat) !balways  offset.e else))
                (offset.t (cons-position else then)))
-          (gen (second stat) bc::bfalse offset.t then)))
+          (gen (second stat) !bfalse offset.t then)))
        ((:ou :et)
         (loop
            :with suite = next
            :for item :in (reverse (cddr stat))
            :do (setf suite (gen item (case (first stat)
-                                       (:ou bc::ou)
-                                       (:et bc::et)) suite))
+                                       (:ou !ou)
+                                       (:et !et)) suite))
            :finally (return (gen (second stat) (case (first stat)
-                                                 (:ou bc::ou)
-                                                 (:et bc::et)) suite))))
+                                                 (:ou !ou)
+                                                 (:et !et)) suite))))
 
        (:commentaire
         (gen (second stat) next))
@@ -543,8 +544,8 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
            :with suite = next
            :for item :in (reverse (rest stat))
            :do (setf suite (gen (case (first stat)
-                                  (:liberer bc::liberer)
-                                  (:chaine  bc::chaine))
+                                  (:liberer !liberer)
+                                  (:chaine  !chaine))
                                 (identificateur-nom item) suite))
            :finally (return suite)))
        (:tableau
@@ -554,32 +555,32 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
            :finally (return next)))
        (:adecl
         (if (null (cdddr stat))
-            (gen (third stat) bc::tableau1
+            (gen (third stat) !tableau1
                  (identificateur-nom (second stat)) next)
-            (gen (third stat) (fourth stat) bc::tableau2
+            (gen (third stat) (fourth stat) !tableau2
                  (identificateur-nom (second stat)) next)))
        
        ((:aval :aref)
         (if (null (cdddr stat))
             (gen (third stat)
                  (case (first stat)
-                   (:aval bc::aref1&push-val)
-                   (:aref bc::aref1&push-ref))
+                   (:aval !aref1&push-val)
+                   (:aref !aref1&push-ref))
                  (identificateur-nom (second stat)) next)
             (gen (third stat) (fourth stat)
                  (case (first stat)
-                   (:aval bc::aref2&push-val)
-                   (:aref bc::aref2&push-ref))
+                   (:aval !aref2&push-val)
+                   (:aref !aref2&push-ref))
                  (identificateur-nom (second stat)) next)))
        ((:vval :vref)
         (gen (case (first stat)
-               (:vval bc::push-val)
-               (:vref bc::push-ref))
+               (:vval !push-val)
+               (:vref !push-ref))
              (identificateur-nom (second stat)) next))
 
        ((:fonction :appel)
         (loop
-           :with suite = (gen bc::call (identificateur-nom (second stat))
+           :with suite = (gen !call (identificateur-nom (second stat))
                               (length (cddr stat)) next)
            :for item :in (reverse (cddr stat))
            :do (setf suite (gen item suite))
@@ -602,13 +603,13 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 
        
        (:decl-procedure
-        ;; Les procedures ne sont pas executable, bc::procedure generates an error.
+        ;; Les procedures ne sont pas executable, !procedure generates an error.
         
-        (gen bc::procedure next))
+        (gen !procedure next))
        
-       (:resultat   (gen (second stat) bc::result next))
-       (:retour-en  (gen (second stat) bc::retour-en next))
-       (:retour     (gen bc::retour next))
+       (:resultat   (gen (second stat) !result next))
+       (:retour-en  (gen (second stat) !retour-en next))
+       (:retour     (gen !retour next))
 
        ;; :result             OR  :retour-en      OR   :retour
        ;; -------------------     ---------------     ------------
@@ -631,12 +632,12 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
         (setf next (cons (identificateur-nom (second (second stat))) next))
         (case (length (second stat))
           (2  (gen (third stat)
-                   bc::pop&store    next))
+                   !pop&store    next))
           (3  (gen (third stat) (third (second stat))
-                   bc::pop&astore1  next))
+                   !pop&astore1  next))
           (4  (gen (third stat) (third (second stat))
                    (fourth (second stat))
-                   bc::pop&astore2  next))))
+                   !pop&astore2  next))))
 
        (:lire
         ;; (:vref ident) --> :lire&store ident
@@ -646,18 +647,18 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
            :for item :in (reverse (rest stat))
            :do (setf next 
                      (case (length item)
-                       (2  (gen bc::lire&store
+                       (2  (gen !lire&store
                                 (identificateur-nom (second item)) next))
-                       (3  (gen (third item) bc::lire&astore1
+                       (3  (gen (third item) !lire&astore1
                                 (identificateur-nom (second item)) next))
-                       (4  (gen (third item) (fourth item) bc::lire&astore2
+                       (4  (gen (third item) (fourth item) !lire&astore2
                                 (identificateur-nom (second item)) next))))
-           :finally (return next)))
+           :finally (return (gen !beep next))))
 
-       (:rep-1     (gen bc::pushi 1 next))
-       (:rep       (gen bc::pushi (numero-valeur (second stat)) next))
-       (:rep-var   (gen bc::push-val 'id::$index bc::dup bc::pushi 1 bc::add
-                        bc::pop&store 'id::$index bc::aref1&push-val 'id::$vals
+       (:rep-1     (gen !pushi 1 next))
+       (:rep       (gen !pushi (numero-valeur (second stat)) next))
+       (:rep-var   (gen !push-val 'id::$index !dup !pushi 1 !add
+                        !pop&store 'id::$index !aref1&push-val 'id::$vals
                         next))
 
 
@@ -717,7 +718,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
         ;; (:afficher (form...))
 
         ;; TODO: the $INDEX and $VALS variables should be "local"
-        ;; (gen  BC::LIBERER 'ID::$VALS next)
+        ;; (gen  !LIBERER 'ID::$VALS next)
         (let ((result '())
               (exprs (cddr stat)))
           (labels ((collect (code)
@@ -726,8 +727,8 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                      (if (atom spec)
                          (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)
                          (case (first spec)
-                           (:rep-1   (collect (gen bc::pushi 1 nil)))
-                           (:rep     (collect (gen bc::pushi (numero-valeur (second spec)) nil)))
+                           (:rep-1   (collect (gen !pushi 1 nil)))
+                           (:rep     (collect (gen !pushi (numero-valeur (second spec)) nil)))
                            (:rep-var (when (null exprs)
                                        (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
                                      (collect (generate-statement (pop exprs) nil)))
@@ -755,39 +756,41 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                   :for format :in (second stat)
                   :do (ecase (first format)
                         (:spec-chaine
+                         ;; (print stat)
+                          ;; (print format)
                          (spec-simple (second format) format)
-                         (collect (gen bc::pushi (third format) bc::afficher-chaine nil)))
+                         (collect (gen (third format) !afficher-chaine nil)))
                         ((:spec-slash :spec-space :spec-cr :spec-nl)
                          (spec-simple (second format) format)
                          (collect (gen (case (first format)
-                                         (:spec-slash bc::afficher-newline)
-                                         (:spec-space bc::afficher-space)
-                                         (:spec-cr    bc::afficher-cr)
-                                         (:spec-nl    bc::afficher-nl))
+                                         (:spec-slash !afficher-newline)
+                                         (:spec-space !afficher-space)
+                                         (:spec-cr    !afficher-cr)
+                                         (:spec-nl    !afficher-nl))
                                        nil)))
                         ((:spec-f :spec-e)
                          (spec-expr (second format) (gen (third format)
                                                          (fourth format)
                                                          (case (first format)
-                                                           (:spec-f bc::afficher-f)
-                                                           (:spec-e bc::afficher-e))
+                                                           (:spec-f !afficher-f)
+                                                           (:spec-e !afficher-e))
                                                          nil) format))
                         (:spec-u
-                         (spec-expr (second format) (gen bc::afficher-u nil) format)))
+                         (spec-expr (second format) (gen !afficher-u nil) format)))
                   :finally (loop
                              :for expr :in exprs
-                             :do (collect (gen (generate-statement expr nil) bc::afficher-u nil))))
+                             :do (collect (gen (generate-statement expr nil) !afficher-u nil))))
                 ;; (5) afficher[{n}u]expr...
                 (loop
                   :for expr :in (cddr stat)
                   :do (progn
                         (collect (generate-statement expr nil))
-                        (collect (gen bc::afficher-u nil))))))
+                        (collect (gen !afficher-u nil))))))
           (nconc result next)))
 
        
-       ;; (setf next (gen bc::pushi (length (cddr stat)) bc::pop&store 'id::$valscnt next))
-       ;; (setf next (gen bc::pushi 1 bc::pop&store 'id::$index next))
+       ;; (setf next (gen !pushi (length (cddr stat)) !pop&store 'id::$valscnt next))
+       ;; (setf next (gen !pushi 1 !pop&store 'id::$index next))
        ;; (4) set $index to 1
        ;; to avoid too much stack usage, we evalute each expression
        ;; and store it into $vals in turn.
@@ -796,10 +799,10 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
        ;; (loop
        ;;    :for expr :in (reverse (cddr stat))
        ;;    :for i :from (length (cddr stat)) :downto 1 
-       ;;    :do (setf next (gen  bc::pushi i bc::pop&astore1 'id::$vals next))
+       ;;    :do (setf next (gen  !pushi i !pop&astore1 'id::$vals next))
        ;;    :do (setf next (generate-statement expr next)))
        ;; (1) declare the tableau $vals[n]
-       ;; (gen  bc::pushi (length (cddr stat)) bc::tableau1 'id::$vals next)
+       ;; (gen  !pushi (length (cddr stat)) !tableau1 'id::$vals next)
 
 
        ;; rep :affiche-u -- 
@@ -811,7 +814,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 
 
 
-       (:aller-en (gen (second stat) bc::goto next))
+       (:aller-en (gen (second stat) !goto next))
        (:si
         ;;(:si test then)       --> test :bfalse offset.t then  
         ;;(:si test then else)  --> test :bfalse offset.t then  :balways offset.e else
@@ -819,33 +822,33 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
             ;; same as :xi
             (let* ((else (gen (fourth stat) next))
                    (offset.e (cons-position next else))
-                   (then (gen (third stat) bc::balways  offset.e else))
+                   (then (gen (third stat) !balways  offset.e else))
                    (offset.t (cons-position else then)))
-              (gen (second stat) bc::bfalse offset.t then))
+              (gen (second stat) !bfalse offset.t then))
             (let* ((then (gen (third stat) next))
                    (offset.t (cons-position next then)))
-              (gen (second stat) bc::bfalse offset.t then))))
+              (gen (second stat) !bfalse offset.t then))))
 
-       (:terminer (gen bc::terminer next))
-       (:pause    (gen bc::pause    next))
+       (:terminer (gen !terminer next))
+       (:pause    (gen !pause    next))
 
        (:faire-jusqu-a ;; lino ident init pas jusqua)
         ;; --> lino init pas jusqua :faire-jusqu-a ident
         (gen (second stat) (fourth stat) (fifth stat) (sixth stat)
-             bc::faire-jusqu-a (third stat) next))
+             !faire-jusqu-a (third stat) next))
 
        (:faire-tant-que ;; lino ident init pas test)
         ;; --> lino init pas :faire-tant-que ident test
         (gen (second stat) (fourth stat) (fifth stat) 
-             bc::faire-tant-que (third stat)
-             (sixth stat) bc::tant-que next))
+             !faire-tant-que (third stat)
+             (sixth stat) !tant-que next))
 
        ;; ==> create a faire bloc. When we reach the end of each line, we must
        ;;     check for loop blocks available for this line. (kind of come from...).
 
 
        (:garer ;; var enr fic) --> enr fic :garer var
-        (gen (third stat) (fourth stat) bc::garer
+        (gen (third stat) (fourth stat) !garer
              (identificateur-nom (second stat))))
 
        (:charger
@@ -853,20 +856,20 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
         ;;(:charger  var enr fic)         --> enr fic :charger :pop&store var :pop
         ;;(:charger  var enr fic varstat) --> enr fic :charger :pop&store var :pop&store varstat
         (if (cddddr stat)
-            (gen (third stat) (fourth stat) bc::charger bc::pop&store
-                 (second stat) bc::pop&store (fifth stat) next)
-            (gen (third stat) (fourth stat) bc::charger bc::pop&store
+            (gen (third stat) (fourth stat) !charger !pop&store
+                 (second stat) !pop&store (fifth stat) next)
+            (gen (third stat) (fourth stat) !charger !pop&store
                  (second stat) next)))
        
        (:supprimer
         (if (cddr stat)
-            (gen (second stat) (third stat)  bc::supprimer-enregistrement next)
-            (gen (second stat) bc::supprimer-fichier next)))
+            (gen (second stat) (third stat)  !supprimer-enregistrement next)
+            (gen (second stat) !supprimer-fichier next)))
        
        (:executer
         (if (cddr stat)
-            (gen (second stat) (third stat)  bc::executer next)
-            (gen (second stat) bc::pushi 1   bc::executer next)))
+            (gen (second stat) (third stat)  !executer next)
+            (gen (second stat) !pushi 1   !executer next)))
 
        (:debut
         (loop
@@ -895,9 +898,13 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
             :format-control "INTERNE: UN ATOME ~S DANS L'ARBRE SYNTAXIQUE."
             :format-arguments (list parse-tree)))
     ((eq (car parse-tree) :liste-instructions)
-     (list 0 (compile-slist (cdr parse-tree) BC::TERMINER)))
+     (list 0 (compile-slist (cdr parse-tree) !STOP)))
     ((eq (car parse-tree) :ligne-programme)
-     (list (numero-valeur (cadr parse-tree)) (compile-slist (cddr parse-tree) BC::NEXT-LINE)))
+     (let ((linum (numero-valeur (cadr parse-tree))))
+       (unless (line-number-valid-p linum)
+         (lse-error "NUMERO DE LIGNE INVALIDE ~D; CE DEVRAIT ETRE UN ENTIER ENTRE 1 ET ~D INCLUS."
+                    linum (line-number-maximum)))
+       (list linum (compile-slist (cddr parse-tree) !NEXT-LINE))))
     (t
      (error 'lse-error
             :format-control "INTERNE: UNE LISTE INVALIDE ~S DANS L'ARBRE SYNTAXIQUE."
@@ -1213,6 +1220,11 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;; (test/parse-file #P"~/src/pjb/lse/BOURG/BOUR.LSE")
 ;; (test/parse-string "18*")
 ;; (let ((*print-escape* nil) (*print-pretty* t) (*print-right-margin* 80)) (write (test/parse-file "tpars.lse")))
+
+;; (compile-lse-line "95 AFFICHER['Après la pause…',/]")
+;; (compile-lse-line "20 afficher [10/,20x,'Hello',/,20x,5'*',2/]")
+
+
 
 
 ;; (compile-lse-file #P "~/src/pjb/lse/BOURG/BOUR.LSE")

@@ -1,0 +1,27 @@
+1*Auteur: Pascal Bourguignon
+2*Description: Programme de test AFFICHER
+10 AFFICHER[2/,U,2/]'Programme de test AFFICHER'
+11 AFFICHER[/,72'-',/]
+12 AFFICHER '-Chaine-'
+14 AFFICHER 42
+16 AFFICHER 4.2
+19 AFFICHER[/,72'-',/]
+20 AFFICHER[/,'Chaine dans format',/,X,'<- un espace',/,'Debut',C,'<- Retour',L,'Nouvelle ligne']
+22 AFFICHER[/,'Formats universels:',U,U,U]'Chaine',42,4.2
+24 AFFICHER[/,'Formats U:',U,X,U,X,U,X,U,X,U]1234.5688,1234568.7,1.2345688E+9,0.0012345688,1.2345688E-9
+26 AFFICHER[/,'Formats F:',F1.1,X,F3.3,X,F6.6]1234.5688,1234.5688,1234.5688
+28 AFFICHER[/,'Formats E:',E1.1,X,E3.3,X,E6.6]1234.5688,1234.5688,1234.5688
+29 AFFICHER[/,72'-',/]
+30 AFFICHER[3/,3'Repetitions dans format ',3/,3X,'<- trois espaces',3/,'Debut',3C,'<- Retour',3L,'Trois nouvelles lignes.']
+34 AFFICHER[/,'Formats 5U:',5U]1234.5688,1234568.7,1.2345688E+9,0.0012345688,1.2345688E-9
+36 AFFICHER[/,'Formats 3F:',3F6.6]1234.5688,1.2345688E+9,0.0012345688
+38 AFFICHER[/,'Formats 3E:',3E6.6]1234.5688,1.2345688E+9,0.0012345688
+39 AFFICHER[/,72'-',/]
+40 AFFICHER[/,'Formats variables']
+42 AFFICHER[/,*'*']42
+44 AFFICHER[*/,'4 nouvelles lignes.']4
+45 AFFICHER[*L,'4 nouvelles lignes.']4
+46 AFFICHER[/,*X,'<- 42 espaces.']42
+48 AFFICHER[/,*'*',*C,'<- 4 retour']4,4
+49 AFFICHER[/,72'-',/]
+90 TERMINER

@@ -102,7 +102,8 @@
                          EXECUTER  ; fic lin EXECUTED
                          PAUSE     ; PAUSE
                          TERMINER  ; TERMINER
-
+                         STOP ; STOP, to end interactive expressions.
+                         beep ; BEEP, to beep before LIRE.
                          PROCEDURE
                          ))
 

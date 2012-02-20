@@ -145,6 +145,7 @@
                 (tok-crodroite "\\]")
                 (tok-fleche    "_")
                 (tok-ptvirg    ";")
+                (tok-at        "@")
 
                 ;; (tok-ligne          "{NEWLINE}") ;; #.(string #\newline))
                 ;; numero : chiffre {chiffre} .
@@ -187,8 +188,8 @@
                  (seq (seq tok-numero :action (progn (setf (scanner-line *scanner*) (numero-valeur tok-numero))
                                                      tok-numero))
                       (alt liste-inst-ou-decl
-                                        (seq decl-procedure (opt (seq tok-ptvirg liste-inst-ou-decl :action $2)
-                                                                 :action $1) :action (cons $1 $2)))
+                           (seq decl-procedure (opt (seq tok-ptvirg liste-inst-ou-decl :action $2)
+                                                    :action $1) :action (cons $1 $2)))
                       :action (list* :ligne-programme $1 $2))
                  :action $1)
 
@@ -359,7 +360,7 @@
                  :action $1)
 
             (--> faire
-                 (seq tok-FAIRE tok-numero tok-POUR identificateur tok-fleche expression
+                 (seq tok-FAIRE expression tok-POUR identificateur tok-fleche expression
                       (opt (seq tok-PAS expression) :action $1)
                       (alt (seq tok-JUSQUA expression         :action (list :faire-jusqu-a  $2))
                            (seq tok-TANT tok-QUE disjonction  :action (list :faire-tant-que $3)))
@@ -379,7 +380,8 @@
                  :action $1)
 
             (--> garer
-                 (seq tok-GARER identificateur tok-virgule expression tok-virgule expression :action (list :garer $2 $4 $6))
+                 (seq tok-GARER identificateur tok-virgule expression tok-virgule expression
+                      :action (list :garer $2 $4 $6))
                  :action $1)
 
             (--> charger
@@ -403,20 +405,27 @@
             ;; We cannot distinguish references from
             ;; right-references in function arguments because they
             ;; have the same form, and both are possible. &F(A,B), so
-            ;; we must keep references, also for other expressions.
+            ;; we must keep references, and also for other expressions.
             
             (--> expression
                  (alt
-                  (seq tok-moins expression                  :action (list :neg    expression))
-                  (seq terme (rep (alt (seq tok-moins  terme :action (list :moins  terme))
-                                       (seq tok-plus   terme :action (list :plus   terme))
-                                       (seq tok-concat terme :action (list :concat terme)))
-                                  :action $1)
+                  (seq terme-signe (rep (alt (seq tok-moins  terme :action (list :moins  terme))
+                                             (seq tok-plus   terme :action (list :plus   terme))
+                                             (seq tok-concat terme :action (list :concat terme)))
+                                        :action $1)
                        :action (if $2
-                                   (uncomb (cons terme $2))
-                                   terme)))
+                                   (uncomb (cons terme-signe $2))
+                                   terme-signe)))
                  :action $1)
 
+            ;; Two signs cannot be adjacent: a*-b must be written a*(-b)
+
+            (--> terme-signe
+                 (seq (opt tok-moins) terme
+                      :action (if $1
+                                  (list :neg terme)
+                                  terme))
+                 :action $1)
             
             (--> terme
                  (seq facteur (rep (alt (seq tok-fois    facteur :action (list :fois   facteur))
@@ -429,7 +438,9 @@
 
             
             (--> facteur
-                 (seq simple (rep (seq tok-puissance simple :action simple) :action $1)
+                 (seq simple (rep (seq tok-puissance simple :action simple)
+                                  ;; :action $1
+                                  )
                       :action (if $2
                                   (uncomb (cons simple $2))
                                   simple))
@@ -458,7 +469,7 @@
 
             (--> liste-argument
                  (seq  expression (rep tok-virgule expression :action $2)
-                      :action (cons $1 $2))
+                       :action (cons $1 $2))
                  :action $1)
 
             (--> liste-expression
@@ -494,17 +505,17 @@
                                                  (seq tok-GT :action :gt)
                                                  (seq tok-GE :action :ge))
                                             expression :action (list $1 expression))
-                                        :action $1) 
-                                       :action (if $2
-                                                   (list (first $2) expression (second $2))
-                                                   expression)))
+                                       :action $1) 
+                       :action (if $2
+                                   (list (first $2) expression (second $2))
+                                   expression)))
                  :action $1)
 
             (--> reference
                  (seq identificateur (opt (alt (seq tok-crogauche expression
                                                     (opt (seq tok-virgule expression :action expression))
                                                     tok-crodroite
-                                                    :action (list :vref expression $3))
+                                                    :action (list* :aref expression $3))
                                                (seq tok-pargauche
                                                     (opt liste-argument :action $1)
                                                     tok-pardroite
@@ -516,11 +527,11 @@
                  :action $1)
 
             (--> liste-reference
-                 (seq reference (rep tok-virgule reference :action $2) :action (cons $1 $2))
+                 (seq reference (rep (seq tok-virgule reference :action $2) :action $1) :action (cons $1 $2))
                  :action $1)
 
             (--> identificateur
-                 (seq tok-identificateur :action  $1)
+                 (seq (alt tok-identificateur tok-at) :action  $1)
                  :action $1)
 
             (--> procident

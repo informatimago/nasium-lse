@@ -65,14 +65,15 @@
 
 
 (defmethod print-object ((self lse-token) stream)
-  (flet ((inprint ()
-           (format stream "~D:~D: ~A ~S"
-                 (token-line self) (token-column self)
-                 (token-kind-label (token-kind self)) (token-text self))))
-   (if *print-escape*
-       (print-unreadable-object (self stream :type t :identity t)
-         (inprint))
-       (inprint)))
+  (if *print-escape*
+      (print-unreadable-object (self stream :type t :identity t)
+        (format stream "~D:~D: ~A ~S"
+                (token-line self) (token-column self)
+                (token-kind-label (token-kind self))
+                (token-text self)))
+      (format stream "#<~A ~S>"
+              (token-kind-label (token-kind self))
+              (token-text self)))
   self)
 
 
@@ -419,7 +420,8 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
     (tok-crogauche . "[")
     (tok-crodroite . "]")
     (tok-fleche    . "_")
-    (tok-ptvirg    . ";")))
+    (tok-ptvirg    . ";")
+    (tok-at        . "@")))
 
 
 (defparameter *tokens+format-specifiers*
@@ -442,6 +444,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
   (defparameter digits             "0123456789")
   (defparameter spaces             " ")
   (defparameter ampersand          "&")
+  (defparameter at                 "@")
   (defparameter apostrophe         "'")
   (defparameter dot                ".")
   (defparameter star               "*")
@@ -533,6 +536,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
        (maybe-commentaire               ; must be state 0
         (spaces       (skip))
         (digits       (start) (shift numero-or-nombre))
+        (at           (start) (shift not-commentaire) (advance (motcle)) (produce (motcle)))
         (ampersand    (start) (advance :error-on-eof "IDENTIFICATEUR TROP COURT")
                       (shift procident))
         (letters      (start) (advance (token tok-identificateur)) ; 1 = ident
@@ -550,6 +554,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
         ;; same as maybe-commentaire, but star goes to specials
         (spaces       (skip))
         (digits       (start) (shift nombre))
+        (at           (start) (advance (motcle)) (produce (motcle)))
         (ampersand    (start) (advance :error-on-eof "IDENTIFICATEUR TROP COURT")
                       (shift procident))
         (letters      (start) (advance (token tok-identificateur)) ; 1 = ident

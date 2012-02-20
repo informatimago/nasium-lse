@@ -370,7 +370,19 @@
      (make-command-group
       :name ',name
       :supergroups ',supergroups
-      :commands (list ,@commands))))
+      :commands (let* ((commands (list ,@commands))
+                       (dups (duplicates commands
+                                         :test 'equalp
+                                         :key (function command-initials))))
+                  (when dups
+                    (error "There are commands with duplicate initials: ~{~{~A~^, ~}~^; ~}."
+                           (mapcar (lambda (dup)
+                                     (mapcar (function command-name)
+                                             (remove (command-initials dup) commands
+                                                     :test-not (function string-equal)
+                                                     :key (function command-initials))))
+                                   dups)))
+                  commands))))
 
 
 (defmethod find-command (command (group command-group))
@@ -973,6 +985,7 @@
                                                 :until (char= (aref chunk (1- (length chunk))) *nul*))
                                            (lse-data-file-close file))
                                          ""))))
+            (io-format *task* "~2&~A~2&" source)
             (with-input-from-string (stream source)
               (dolist (line (compile-lse-stream stream))
                 ;; ENCODER merges the lines.
@@ -1200,12 +1213,12 @@
 
 
   #+developing
-  (defcommand "DEASSEMBLER A PARTIR DE "     deux-numeros-optionels (from to)
+  (defcommand "LD DEASSEMBLER A PARTIR DE "     deux-numeros-optionels (from to)
     "Commande de deboguage: Désassemble les lignes de programme."
     (desassembler-a-partir-de from to))
 
   #+developing
-  (defcommand "DP DEASSEMBLER/PERFORER A PARTIR DE "  deux-numeros-optionels (from to)
+  (defcommand "LP DEASSEMBLER/PERFORER A PARTIR DE "  deux-numeros-optionels (from to)
     "Commande de deboguage: Désassemble les lignes de programme."
     (io-start-tape-puncher *task*)
     (unwind-protect (desassembler-a-partir-de from to)

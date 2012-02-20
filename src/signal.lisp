@@ -11,6 +11,7 @@
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
+;;;;    2012-02-20 <PJB> Added user-interrupt and yield-signals.
 ;;;;    2012-02-01 <PJB> Created.
 ;;;;BUGS
 ;;;;LEGAL
@@ -37,7 +38,8 @@
 (defpackage "COM.INFORMATIMAGO.SIGNAL"
   (:use "COMMON-LISP")
   (:export
-   "SIGNAL-HANDLER-BIND" "CATCHING-SIGNALS"
+   "USER-INTERRUPT"
+   "YIELD-SIGNALS" "SIGNAL-HANDLER-BIND" "CATCHING-SIGNALS"
    "+SIGHUP+" "+SIGINT+" "+SIGQUIT+" "+SIGILL+" "+SIGTRAP+"
    "+SIGABRT+" "+SIGBUS+" "+SIGFPE+" "+SIGKILL+" "+SIGUSR1+"
    "+SIGSEGV+" "+SIGUSR2+" "+SIGPIPE+" "+SIGALRM+" "+SIGTERM+"
@@ -113,6 +115,23 @@ This package exports macros to help unix signal handling.
   (defconstant +SIGWINCH+  28)
   (defconstant +SIGIO+     29)
   (defconstant +SIGSYS+    31))
+
+
+(define-condition user-interrupt (condition)
+  ((signal :initarg :signal
+           :initform 0
+           :reader user-interrupt-signal))
+  (:report (lambda (condition stream)
+             (format stream "~S signal ~D"
+                     'user-interrupt
+                     (user-interrupt-signal condition)))))
+
+
+(defun yield-signals (signals)
+  #+ccl
+  (dolist (signum signals)
+    (when (ccl:wait-for-signal signum 0)
+      (signal 'user-interrupt :signal signum))))
 
 
 (defmacro signal-handler-bind (bindings &body body)

@@ -1456,7 +1456,6 @@ L'effet de cette commande est annulé par la touche ESC."
                           ;; (unless (task-silence task)
                           ;;   (io-new-line task))
                           (io-finish-output *task*)
-
                           (handler-case
                            (let ((line (io-read-line task
                                                      :beep (not (task-silence task))
@@ -1477,6 +1476,10 @@ L'effet de cette commande est annulé par la touche ESC."
                       (io-finish-output *task*))
                     (error (err)
                       (io-format *task* "~%ERREUR: ~A~%" err)
+                      (io-format *task* "~%PRET~%")
+                      (io-finish-output *task*))
+                    (user-interrupt (condition)
+                      (io-format *task* "~%Condition: ~A~%" condition)
                       (io-format *task* "~%PRET~%")
                       (io-finish-output *task*)))
                 (continue ()

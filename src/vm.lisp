@@ -1043,7 +1043,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
     (if (<= lino max)
         (vm-goto vm lino)
         (error 'lse-error
-               :format-control "FIN DU PROGRAMME ATTEINT EN LIGNE ~D: IL MANQUE UNE INSTRUCTION TERMINER"
+               :format-control "FIN DU PROGRAMME ATTEINTE EN LIGNE ~D : IL MANQUE UNE INSTRUCTION TERMINER"
                :format-arguments (list (vm-pc.line vm))))))
 
 
@@ -1104,6 +1104,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
         (let ((stack (vm-stack vm))
               (code  (vm-code  vm))
               (*vm*  vm))
+          (yield-signals '(#.+sigint+))
           (flet ((spush  (val) (vector-push-extend val stack))
                  (spop   ()    (vector-pop stack))
                  (pfetch ()    (prog1 (aref code (vm-pc.offset vm))
@@ -1212,11 +1213,17 @@ NOTE: on ne peut pas liberer un parametre par reference.
                    (error 'lse-error
                           :format-control "INTERNE MACHINE VIRTUELLE: CODE OPERATION INCONNU ~S"
                           :format-arguments (list cop))))))))
-      
+
       (error (err)
         (io-format *task* "~%ERREUR: ~A~%" err)
-        (pause vm)
-        (error err)))
+        (pause vm)     ; PAUSE EN LIGNE ### message.
+        (io-finish-output *task*)
+        (error err))
+      (user-interrupt (condition)
+        (io-format *task* "~%Condition: ~A~%" condition)
+        (io-format *task* "~%PRET~%")
+        (vm-pause vm) ; no message
+        (io-finish-output *task*)))
     t))
 
 

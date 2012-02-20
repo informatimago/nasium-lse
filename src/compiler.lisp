@@ -11,6 +11,7 @@
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
+;;;;    2012-02-19 <PJB> Implemented the expression unparser.
 ;;;;    2005-08-25 <PJB> Created.
 ;;;;BUGS
 ;;;;    LIRE must take into account the type of the variable.
@@ -39,6 +40,415 @@
 ;;----------------------------------------------------------------------
 (cl:in-package "COM.INFORMATIMAGO.LSE")
 ;;----------------------------------------------------------------------
+
+
+;; The compiler module provides three features:
+;; 
+;; 1- unparse the syntactic tree produced by the parser into a LSE source
+;;    text.  This is used by the DECODE command.  We could as well use
+;;    the original source text, but this allows us to produce a nicely
+;;    formated (ie. without extraneous spaces or parentheses) code.
+;; 
+;;    UNPARSE-SLIST
+;; 
+;; 2- compiles the LSE source code to byte-code vectors.
+;;    The scanner and parser are provided by lse-scanner.lisp
+;;    and lse-parser.lisp. 
+;; 
+;;    GENERATE-STATEMENT
+;;    GENERATE-SLIST
+;;    COMPILE-SLIST
+;; 
+;;    COMPILE-LSE-LINE-PARSE-TREE
+;;    COMPILE-LSE-LINE
+;;    COMPILE-LSE-STREAM
+;;    COMPILE-LSE-FILE
+;; 
+;;    DECOMPILE-LSE-LINE
+;; 
+;;    We don't decompile the byte-code, so that we may implement
+;;    "optimizations".  Already,  the code generated for AFFICHER would
+;;    produce sometimes a different source if decompiled.
+;; 
+;; 3- disassemble the byte-code vectors.  This is used for debugging and
+;;    pedagogical purposes.
+;; 
+;;    DISASSEMBLE-LSE
+;;
+;;
+;; Note: for now, the byte-code vectors also contain identifiers
+;;       (symbols) and strings.  Since identifiers are limited to
+;;       [A-Z][A-Z0-9]{0,4}, (with possibly a '&'  prefix for
+;;       procedure identifiers),  they could be encoded as a 27-bit
+;;       integer easily serialized as 4 bytes.  Strings could be
+;;       serialized as a 2-byte length followed by UTF-8 codes.   But
+;;       since the virtual machine is written in lisp, we really don't
+;;       need to do that. (We could also use symbols instead of byte
+;;       codes, see byte-code.lisp).
+;;
+
+
+
+;;;---------------------------------------------------------------------
+;;; 1- Unparser
+;;;---------------------------------------------------------------------
+
+(defmacro dolist/separator ((var list separator) &body body)
+  (let ((vsep (gensym))
+        (esep (gensym)))
+    `(loop
+       :with ,esep = ,separator
+       :for ,var :in ,list
+       :for ,vsep = "" :then ,esep
+       :do (princ ,vsep) (locally ,@body))))
+
+
+
+;; (:plus (:fois (:vref a) (:vref a))
+;;        (:fois (:vref b) (:vref b)))
+;; a*a+b*b
+
+;; (:fois (:plus (:vref a) (:vref a))
+;;        (:plus (:vref b) (:vref b)))
+;; (a+a)*(b+b)
+
+;; Two signs cannot be adjacent: a*-b must be written a*(-b)
+
+;; for (op1 (op2 … …) …)
+;;
+;; if (<= (operator-priority op1) (operator-priority op2))
+;; then no need for parentheses  … op2 … op1 … == (… op2 …) op1 …
+;;
+;; if (> (operator-priority op1) (operator-priority op2))
+;; then we need parentheses  (… op2 …) op1 …
+;;                 otherwise  … op2 … op1 … == … op2 (… op1 …)
+
+
+(defparameter *priority-levels*
+  '((:ou)
+    (:et)
+    (:non)
+    (:eg :ne :lt :le :gt :ge)
+    (:moins :plus :concat)
+    (:neg)
+    (:divise :fois)
+    (:puissance)
+    (:xi :fonction :vval :vref :aval :aref)))
+
+(defun operator-priority (operator)
+  (position operator *priority-levels*
+            :test (function member)))
+
+
+
+
+;; a+b+c
+;; (:plus a (:plus b c))
+
+;; a-b-c
+;; (:moins (:moins a b) c)
+
+;; a-(b-c)
+;; (:moins a (:moins b c))
+
+;; a/b/c
+;; (:divise (:divise a b) c)
+
+;; a/(b/c)
+;; (:divise a (:divise b c))
+
+
+;; (disjonction (conjonction { :OU conjonction }))
+;; (conjonction (condition   { :ET condition }))
+;; (condition   (:NON condition)
+;;              (expression (:EG :NE :LT :LE :GT :GE) expression))
+;; (expression  (:neg expression)
+;;              (terme   { (:moins :plus :concat) terme))
+;; (terme       (facteur { (:fois :divise) facteur))
+;; (facteur     (simple  { :puissance simple }))
+;; (simple      (:xi disjonction expression expression)
+;;              (:fonction procident (liste-arguments))
+;;              (:VVAL procident)
+;;              ( \( disjonction \) )
+;;              (:vref identifier)
+;;              (:vval identifier)
+;;              (:aref identifier expression [expression])
+;;              (:aval identifier expression [expression])
+;;              chaine
+;;              nombre
+;;              numero)
+
+
+(defun unparse-expression (expr)
+  (macrolet ((with-parens ((op1 op2) item)
+               (let ((vitem (gensym))
+                     (vop1  (gensym))
+                     (vop2  (gensym)))
+                 `(let ((,vop1 ,op1)
+                        (,vop2 ,op2)
+                        (,vitem ,item))
+                    (if (or (atom ,vitem)
+                            (atom ,vop2)
+                            (<= (operator-priority (first ,vop1))
+                                (operator-priority (first ,vop2))))
+                        (unparse-expression ,vitem)
+                        (progn
+                          (princ "(")
+                          (unparse-expression ,vitem)
+                          (princ ")")))))))
+   (etypecase expr
+     ((or integer nombre symbol)
+      (princ expr))
+     (token
+      (ecase (token-kind expr)
+        (tok-identificateur (princ (identificateur-nom expr)))
+        (tok-procident      (princ (identificateur-nom expr)))
+        (tok-chaine         (princ (token-text expr)))
+        (tok-nombre         (princ (nombre-valeur expr)))
+        (tok-numero         (princ (numero-valeur expr)))))
+     (cons
+      (ecase (first expr)
+
+        ((:neg) (princ "-")    (with-parens (expr (second expr))
+                                 (second expr)))
+
+        ((:non) (princ "NON ") (with-parens (expr (second expr))
+                                 (second expr)))
+
+        ((:moins :divise)
+         (if (or (atom (second expr))
+                 (eql (first expr) (first (second expr))))
+             (unparse-expression (second expr))
+             (with-parens (expr (second expr))
+               (second expr)))
+         (princ (case (first expr)
+                  (:moins  "-")
+                  (:divise "/")))
+         (if (and (consp (third expr))
+                  (eql (first expr) (first (third expr))))
+             (progn
+               (princ "(") (unparse-expression (third expr)) (princ ")"))
+             (with-parens (expr (third expr))
+               (third expr))))
+        
+        ((:plus :concat
+                :fois 
+                :puissance 
+                :lt :le :gt :ge :eg :ne)
+         (with-parens (expr (second expr))
+           (second expr))
+         (princ (case (first expr)
+                  (:plus  "+")
+                  (:fois  "*")
+                  (:puissance "^")
+                  (:concat "!")
+                  (:lt "<")
+                  (:le "<=")
+                  (:gt ">")
+                  (:ge ">=")
+                  (:eg "=")
+                  (:ne "#")))
+         (with-parens (expr (third expr))
+           (third expr)))
+
+        (:xi
+         (princ "SI ")
+         (unparse-expression (second expr))
+         (princ " ALORS ")
+         (unparse-expression (third expr))
+         (princ " SINON ")
+         (unparse-expression (fourth expr)))
+
+        ((:ou :et)
+         (dolist/separator (item (rest expr) (case (first expr)
+                                               (:ou " OU ")
+                                               (:et " ET ")))
+           (with-parens (expr item)
+             item)))
+
+        ((:adecl :aval :aref)
+         (princ (identificateur-nom (second expr)))
+         (princ "[")
+         (unparse-expression (third expr))
+         (when (cdddr expr)
+           (princ ",")
+           (unparse-expression (fourth expr)))
+         (princ "]"))
+
+        ((:vval :vref)
+         (princ (identificateur-nom (second expr))))
+
+        ((:fonction :appel)
+         (princ (identificateur-nom (second expr)))
+         (princ "(")
+         (dolist/separator (item (cddr expr) ",")
+           (unparse-expression item))
+         (princ ")")))))))
+
+
+(defun unparse-tree (expr)
+  (macrolet ((with-parens (item)
+               (let ((vitem (gensym)))
+                 `(let ((,vitem ,item))
+                    (if (atom ,vitem)
+                        (unparse-tree ,vitem)
+                        (progn
+                          (princ "(")
+                          (unparse-tree ,vitem)
+                          (princ ")")))))))
+    (etypecase expr
+      ((or integer nombre symbol)
+       (princ expr))
+      (token
+       (ecase (token-kind expr)
+         (tok-chaine         (princ (token-text expr)))
+         (tok-identificateur (princ (identificateur-nom expr)))
+         (tok-nombre         (princ (nombre-valeur expr)))
+         (tok-numero         (princ (numero-valeur expr)))
+         (tok-commentaire    (princ (token-text expr)))))
+      (cons
+       (ecase (first expr)
+         ((:neg :non
+                :moins :plus :fois :divise :puissance :concat
+                :lt :le :gt :ge :eg :ne
+                :xi :ou :et
+                :adecl :aval :aref
+                :vval :vref
+                :fonction :appel)
+          (unparse-expression expr))
+         
+         ((:commentaire :terminer :pause :aller-en :retour :retour-en :resultat
+                        :liberer :chaine :tableau
+                        :lire :garer :charger :supprimer :executer)
+          (princ (case (first expr)
+                   (:commentaire "")
+                   (:terminer   "TERMINER")
+                   (:pause      "PAUSE")
+                   (:aller-en   "ALLER EN ")
+                   (:resultat   "RESULTAT ")
+                   (:retour-en  "RETOUR EN ")
+                   (:retour     "RETOUR")
+                   (:liberer    "LIBERER ")
+                   (:chaine     "CHAINE ")
+                   (:tableau    "TABLEAU ")
+                   (:lire       "LIRE ")
+                   (:garer      "GARER ")
+                   (:charger    "CHARGER ")
+                   (:supprimer  "SUPPRIMER ")
+                   (:executer   "EXECUTER ")))
+          (dolist/separator (item (rest expr) ",")
+            (unparse-tree item)))
+         
+         (:decl-procedure
+          (princ "PROCEDURE ")
+          (princ (identificateur-nom (second expr)))
+          (princ "(")
+          (dolist/separator (item (third expr) ",")
+            (unparse-tree item))
+          (princ ")")
+          (when (fourth expr)
+            (princ " LOCAL ")
+            (dolist/separator (item (fourth expr) ",")
+              (unparse-tree item))))
+
+         (:affectation
+          (unparse-expression (second expr))
+          (princ "_")
+          (unparse-expression (third expr)))
+
+         (:afficher
+          (if (second expr)
+              (progn (princ "AFFICHER[")
+                     (dolist/separator (item (second expr) ",")
+                       (ecase (first (second item))
+                         (:rep-1     )
+                         (:rep       (princ (numero-valeur (second (second item)))))
+                         (:rep-var   (princ "*")))
+                       (ecase (first item)
+                         (:spec-chaine
+                          (unparse-expression (third item)))
+                         ((:spec-slash :spec-space :spec-cr :spec-nl)
+                          (princ (case (first item)
+                                   (:spec-slash "/")
+                                   (:spec-space "X")
+                                   (:spec-cr    "C")
+                                   (:spec-nl    "L"))))
+                         ((:spec-f :spec-e)
+                          (princ (case (first item)
+                                   (:spec-f "F")
+                                   (:spec-e "E")))
+                          (princ (third item))
+                          (princ ".")
+                          (princ (fourth item)))
+                         (:spec-u
+                          (princ "U"))))
+                     (princ "]"))
+              (princ "AFFICHER "))
+          (dolist/separator (item (cddr expr) ",")
+            (unparse-expression item)))
+
+
+         (:si
+          (princ "SI ")
+          (unparse-expression (second expr))
+          (princ " ALORS ")
+          (unparse-tree (third expr))
+          (when (cdddr expr)
+            (princ " SINON ")
+            (unparse-tree (fourth expr))))
+
+         ((:faire-jusqu-a :faire-tant-que) ;; lino ident init pas jusqua|tantque)
+          (princ "FAIRE ")
+          (unparse-expression (second expr))
+          (princ " POUR ")
+          (unparse-expression (third expr))
+          (princ "_")
+          (unparse-expression (fourth expr))
+          (unless (= 1 (fifth expr))
+            (princ " PAS ")
+            (unparse-expression (fifth expr)))
+          (princ (case (first expr)
+                   (:faire-jusqu-a  " JUSQUA ")
+                   (:faire-tant-que " TANT QUE ")))
+          (unparse-expression (sixth expr)))
+
+         (:debut
+          (loop
+            :for item :in (cddr expr)
+            :initially (princ "DEBUT ") (unparse-tree (second expr))
+            :do (princ ";") (unparse-tree item)
+            :finally (princ " FIN"))))))))
+
+
+(defun unparse-slist (parse-tree)
+  (with-output-to-string (*standard-output*)
+    (with-standard-io-syntax
+      (cond
+        ((null parse-tree))              ; nothing to do
+        ((atom parse-tree)
+         (error 'lse-error
+                :format-control "INTERNE: UN ATOME ~S DANS L'ARBRE SYNTAXIQUE."
+                :format-arguments (list parse-tree)))
+        ((eq (car parse-tree) :liste-instructions)
+         (dolist/separator (item (cdr parse-tree) ";")
+           (unparse-tree item)))
+        ((eq (car parse-tree) :ligne-programme)
+         (princ (numero-valeur (cadr parse-tree)))
+         (unless (and (listp (caddr parse-tree))
+                      (eql ':commentaire (caaddr parse-tree)))
+           (princ " "))
+         (dolist/separator (item (cddr parse-tree) ";")
+           (unparse-tree item)))
+        (t
+         (error 'lse-error
+                :format-control "INTERNE: UNE LISTE INVALIDE ~S DANS L'ARBRE SYNTAXIQUE."
+                :format-arguments (list parse-tree)))))))
+
+
+
+;;;---------------------------------------------------------------------
+;;; 2- Compiler, byte-code generator.
+;;;---------------------------------------------------------------------
 
 
 (defun cons-position (cons list &key (start 0) (end nil))
@@ -466,221 +876,6 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 
 
 
-(defmacro dolist/separator ((var list separator) &body body)
-  (let ((vsep (gensym))
-        (esep (gensym)))
-    `(loop
-       :with ,esep = ,separator
-       :for ,var :in ,list
-       :for ,vsep = "" :then ,esep
-       :do (princ ,vsep) (locally ,@body))))
-
-
-(defun unparse-tree (stat)
-  (macrolet ((with-parens (item)
-               (let ((vitem (gensym)))
-                 `(let ((,vitem ,item))
-                    (if (atom ,vitem)
-                        (unparse-tree ,vitem)
-                        (progn
-                          (princ "(")
-                          (unparse-tree ,vitem)
-                          (princ ")")))))))
-    (etypecase stat
-      ((or integer nombre symbol)
-       (princ stat))
-      (token
-       (ecase (token-kind stat)
-         (tok-chaine         (princ (token-text stat)))
-         (tok-identificateur (princ (identificateur-nom stat)))
-         (tok-nombre         (princ (nombre-valeur stat)))
-         (tok-numero         (princ (numero-valeur stat)))
-         (tok-commentaire    (princ (token-text stat)))))
-      (cons
-       (ecase (first stat)
-
-         ((:neg) (princ "-")    (with-parens (second stat)))
-
-         ((:non) (princ "NON ") (with-parens (second stat)))
-
-         ((:moins :plus :fois :divise :puissance :concat
-                  :lt :le :gt :ge :eg :ne)
-          (with-parens (second stat))
-          (princ (case (first stat)
-                   (:moins "-")
-                   (:plus  "+")
-                   (:fois  "*")
-                   (:divise "/")
-                   (:puissance "^")
-                   (:concat "!")
-                   (:lt "<")
-                   (:le "<=")
-                   (:gt ">")
-                   (:ge ">=")
-                   (:eg "=")
-                   (:ne "#")))
-          (with-parens (third stat)))
-
-         (:xi
-          (princ "SI ")
-          (unparse-tree (second stat))
-          (princ " ALORS ")
-          (unparse-tree (third stat))
-          (princ " SINON ")
-          (unparse-tree (fourth stat)))
-
-         ((:ou :et)
-          (dolist/separator (item (rest stat) (case (first stat)
-                                                (:ou " OU ")
-                                                (:et " ET ")))
-            (unparse-tree item)))
-
-         ((:commentaire :terminer :pause :aller-en :retour :retour-en :resultat
-                        :liberer :chaine :tableau
-                        :lire :garer :charger :supprimer :executer)
-          (princ (case (first stat)
-                   (:commentaire "")
-                   (:terminer   "TERMINER")
-                   (:pause      "PAUSE")
-                   (:aller-en   "ALLER EN ")
-                   (:retour     "RETOUR")
-                   (:resultat   "RESULTAT ")
-                   (:retour-en  "RETOUR EN ")
-                   (:liberer    "LIBERER ")
-                   (:chaine     "CHAINE ")
-                   (:tableau    "TABLEAU ")
-                   (:lire       "LIRE ")
-                   (:garer      "GARER ")
-                   (:charger    "CHARGER ")
-                   (:supprimer  "SUPPRIMER ")
-                   (:executer   "EXECUTER ")))
-          (dolist/separator (item (rest stat) ",")
-            (unparse-tree item)))
-
-         ((:adecl :aval :aref)
-          (princ (identificateur-nom (second stat)))
-          (princ "[")
-          (unparse-tree (third stat))
-          (when (cdddr stat)
-            (princ ",")
-            (unparse-tree (fourth stat)))
-          (princ "]"))
-
-         ((:vval :vref)
-          (princ (identificateur-nom (second stat))))
-
-         ((:fonction :appel)
-          (princ (identificateur-nom (second stat)))
-          (princ "(")
-          (dolist/separator (item (cddr stat) ",")
-            (unparse-tree item))
-          (princ ")"))
-         
-         (:decl-procedure
-          (princ "PROCEDURE ")
-          (princ (identificateur-nom (second stat)))
-          (princ "(")
-          (dolist/separator (item (third stat) ",")
-            (unparse-tree item))
-          (princ ")")
-          (when (fourth stat)
-            (princ " LOCAL ")
-            (dolist/separator (item (fourth stat) ",")
-              (unparse-tree item))))
-         
-
-         (:affectation
-          (unparse-tree (second stat))
-          (princ "_")
-          (unparse-tree (third stat)))
-
-
-         (:afficher
-          (if (second stat)
-              (progn (princ "AFFICHER[")
-                     (dolist/separator (item (second stat) ",")
-                       (ecase (first (second item))
-                         (:rep-1     )
-                         (:rep       (princ (numero-valeur (second (second item)))))
-                         (:rep-var   (princ "*")))
-                       (ecase (first item)
-                         (:spec-chaine
-                          (unparse-tree (third item)))
-                         ((:spec-slash :spec-space :spec-cr :spec-nl)
-                          (princ (case (first item)
-                                   (:spec-slash "/")
-                                   (:spec-space "X")
-                                   (:spec-cr    "C")
-                                   (:spec-nl    "L"))))
-                         ((:spec-f :spec-e)
-                          (princ (case (first item)
-                                   (:spec-f "F")
-                                   (:spec-e "E")))
-                          (princ (third item))
-                          (princ ".")
-                          (princ (fourth item)))
-                         (:spec-u
-                          (princ "U"))))
-                     (princ "]"))
-              (princ "AFFICHER "))
-          (dolist/separator (item (cddr stat) ",")
-            (unparse-tree item)))
-
-
-         (:si
-          (princ "SI ")
-          (unparse-tree (second stat))
-          (princ " ALORS ")
-          (unparse-tree (third stat))
-          (when (cdddr stat)
-            (princ " SINON ")
-            (unparse-tree (fourth stat))))
-
-         ((:faire-jusqu-a :faire-tant-que) ;; lino ident init pas jusqua|tantque)
-          (princ "FAIRE ")
-          (unparse-tree (second stat))
-          (princ " POUR ")
-          (unparse-tree (third stat))
-          (princ "_")
-          (unparse-tree (fourth stat))
-          (unless (= 1 (fifth stat))
-            (princ " PAS ")
-            (unparse-tree (fifth stat)))
-          (princ (case (first stat)
-                   (:faire-jusqu-a  " JUSQUA ")
-                   (:faire-tant-que " TANT QUE ")))
-          (unparse-tree (sixth stat)))
-
-         
-         (:debut
-          (loop
-            :for item :in (cddr stat)
-            :initially (princ "BEGIN ") (unparse-tree (second stat))
-            :do (princ ";") (unparse-tree item)
-            :finally (princ " END"))))))))
-
-
-(defun unparse-slist (parse-tree)
-  (with-output-to-string (*standard-output*)
-    (with-standard-io-syntax
-     (cond
-       ((null parse-tree))              ; nothing to do
-       ((atom parse-tree)
-        (format *error-output* "~&ERREUR: JE TROUVE UN ATOME: ~S~%" parse-tree))
-       ((eq (car parse-tree) :liste-instructions)
-        (dolist/separator (item (cdr parse-tree) ";")
-          (unparse-tree item)))
-       ((eq (car parse-tree) :ligne-programme)
-        (princ (numero-valeur (cadr parse-tree)))
-        (unless (and (listp (caddr parse-tree))
-                     (eql ':commentaire (caaddr parse-tree)))
-          (princ " "))
-        (dolist/separator (item (cddr parse-tree) ";")
-          (unparse-tree item)))
-       (t
-        (format *error-output* "~&ERREUR: JE TROUVE UNE LISTE INVALIDE: ~S~%" parse-tree))))))
-
-
 (defun generate-slist (slist final)    ; generate bytes for a statement list
   (if slist
       (generate-statement (car slist) (generate-slist (cdr slist) final))
@@ -696,19 +891,17 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
   (cond
     ((null parse-tree) (list 0 #()))           ; nothing to do
     ((atom parse-tree)
-     (format *error-output* "~&ERREUR: JE TROUVE UN ATOME: ~S~%" parse-tree))
+     (error 'lse-error
+            :format-control "INTERNE: UN ATOME ~S DANS L'ARBRE SYNTAXIQUE."
+            :format-arguments (list parse-tree)))
     ((eq (car parse-tree) :liste-instructions)
      (list 0 (compile-slist (cdr parse-tree) BC::TERMINER)))
     ((eq (car parse-tree) :ligne-programme)
      (list (numero-valeur (cadr parse-tree)) (compile-slist (cddr parse-tree) BC::NEXT-LINE)))
     (t
-     (format *error-output* "~&ERREUR: JE TROUVE UNE LISTE INVALIDE: ~S~%" parse-tree))))
-
-
-
-;; lire --> vref
-;; si --> vval/aval
-;; adecl --> vref/aref
+     (error 'lse-error
+            :format-control "INTERNE: UNE LISTE INVALIDE ~S DANS L'ARBRE SYNTAXIQUE."
+            :format-arguments (list parse-tree)))))
 
 
 ;; zebu:
@@ -756,6 +949,166 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                :format-control "PAS DE PROGRAMME NOMME '~A' ACCESSIBLE"
                :format-arguments (list name)))))
 
+
+
+(defun decompile-lse-line (lino code)
+  (declare (ignore lino))
+  ;; For now, we cheat, we don't decompile anything, we just return
+  ;; the unparsed source kept along with the code vector.
+  (third code))
+
+
+(defun decompile-lse-line-2 (lino byte-code)
+  (with-output-to-string (source)
+    (princ lino source) (princ " " source)
+    (flet ((nbop (cop) (cdr (gethash cop *cop-info* '(0 . 0))))
+           (disa (cop) (car (gethash cop *cop-info* (cons cop 0)))))
+      (let ((pc 0)
+            (listing '())
+            (labels '()))
+        (loop :while (< pc (length byte-code)) :do
+          (let ((cop (list (disa (aref byte-code pc))))
+                (noa       (nbop (aref byte-code pc))))
+            (incf pc)
+            (dotimes (n noa)
+              (setf cop (nconc cop (list (aref byte-code pc))))
+              (incf pc))
+            (push cop listing)
+            (when (member (first cop) bc::*branches*)
+              (push (+ pc (second cop)) labels))))
+        (setf listing (nreverse listing))
+        (princ listing source)
+        #-(and)
+        (loop
+          :initially (format t "~&")
+          :with pc = 0
+          :for line :in listing
+          :do (progn (if (member pc labels)
+                         (format t "@~6:A " pc)
+                         (format t "        "))
+                     (format t "~32:A"
+                             (with-output-to-string (out)
+                               (princ "(" out)
+                               (let ((first t))
+                                 (dolist (item line)
+                                   (if first
+                                       (setf first nil)
+                                       (princ " " out))
+                                   (if (symbolp item)
+                                       (princ item out)
+                                       (prin1 item out))))
+                               (princ ")" out)))
+                     (if (member (first line) bc::*branches*)
+                         (format t " ; @~A~%"  (+ pc (length line) (second line)))
+                         (format t "~%"))
+                     (incf pc (length line))))))
+    #-(and)
+    (loop
+
+      (case
+
+          
+          (cl:defparameter *branches* '(
+                                        BALWAYS ;       BALWAYS offset
+                                        BTRUE   ; test  BTRUE   offset
+                                        BFALSE  ; test  BFALSE  offset
+                                        BNEVER  ;       BNEVER  offset
+                                        ))
+        
+        (cl:defparameter *0* '(
+                               DUP ; arg DUP
+
+                               NON ; arg NON 
+                               OU  ; arg1 arg2 OU
+                               ET  ; arg1 arg2 ET
+
+                               EG  ; arg1 arg2 EG
+                               NE  ; arg1 arg2 NE
+                               LE  ; arg1 arg2 LE
+                               LT  ; arg1 arg2 LT
+                               GE  ; arg1 arg2 GE
+                               GT  ; arg1 arg2 GT
+
+                               CONCAT ; arg1 arg2 CONCAT
+
+                               NEG ; arg NEG
+                               ADD ; arg1 arg2 ADD
+                               SUB ; arg1 arg2 SUB
+                               MUL ; arg1 arg2 MUL
+                               DIV ; arg1 arg2 DIV
+                               POW ; arg1 arg2 POW
+
+
+                               AFFICHER-E        ; rep e f AFFICHER-E
+                               AFFICHER-F        ; rep e f AFFICHER-F
+                               AFFICHER-CR       ; rep AFFICHER-CR
+                               AFFICHER-CHAINE   ; rep chaine AFFICHER-CHAINE
+                               AFFICHER-NEWLINE  ; rep AFFICHER-NEWLINE
+                               AFFICHER-NL       ; rep AFFICHER-NL
+                               AFFICHER-SPACE    ; rep AFFICHER-SPACE
+                               AFFICHER-U        ; nexpr AFFICHER-U
+
+                               NEXT-LINE  ; NEXT-LINE
+                               RETOUR     ; RETOUR
+                               RETOUR-EN  ; line RETOUR-EN
+                               RESULT     ; arg RESULT
+                               GOTO       ; line GOTO
+
+                               TANT-QUE                 ; test TANT-QUE
+                               CHARGER                  ; enr fic CHARGER
+                               SUPPRIMER-ENREGISTREMENT ; enr fic SUPPRIMER-ENREGISTREMENT
+                               SUPPRIMER-FICHIER        ;     fic SUPPRIMER-FICHIER
+                               EXECUTER  ; fic lin EXECUTED
+                               PAUSE     ; PAUSE
+                               TERMINER  ; TERMINER
+
+                               PROCEDURE
+                               comment ; COMMENT comment
+                               ))
+
+        (cl:defparameter *1* '(
+                               AREF1&PUSH-REF ; idx AREF1&PUSH-REF identifier
+                               AREF1&PUSH-VAL ; idx AREF1&PUSH-VAL identifier
+                               AREF2&PUSH-REF ; idx1 idx2 AREF2&PUSH-REF identifier
+                               AREF2&PUSH-VAL ; idx1 idx2 AREF2&PUSH-VAL identifier
+
+                               POP&ASTORE1    ; val idx POP&ASTORE1 identifier
+                               POP&ASTORE2    ; val idx1 idx2 POP&ASTORE2 identifier
+                               POP&STORE      ; val POP&STORE identifier
+
+                               PUSH-REF       ; PUSH-REF identifier
+                               PUSH-VAL       ; PUSH-REF identifier
+                               PUSHI          ; PUSHI immediate-value
+
+                               LIRE&STORE        ; LIRE&STORE ident
+                               LIRE&ASTORE1      ; index LIRE&ASTORE1 ident
+                               LIRE&ASTORE2      ; idx1 idx2 LIRE&ASTORE1 ident
+
+                               CHAINE         ; CHAINE identifier
+                               TABLEAU1       ; dim TABLEAU1 identifier
+                               TABLEAU2       ; dim1 dim2 TABLEAU2 identifier
+                               LIBERER        ; LIBERER identifier
+
+                               BALWAYS    ;      BALWAYS offset
+                               BTRUE      ; test BTRUE   offset
+                               BFALSE     ; test BFALSE  offset
+                               BNEVER     ;      BNEVER  offset
+
+                               FAIRE-JUSQU-A   ; lino init pas jusqua FAIRE-JUSQU-A ident
+                               FAIRE-TANT-QUE  ; lino init pas FAIRE-TANT-QUE ident
+                                        ; test TANT-QUE
+                               GARER           ; enr fic GARER identificateur
+                               ))
+
+        (cl:defparameter *2* '(CALL            ; CALL identificateur-procedure nombre-d-argument
+                               ))))))
+
+
+
+
+;;;---------------------------------------------------------------------
+;;; 3- Disassembler
+;;;---------------------------------------------------------------------
 
 
 (defparameter *cop-info*
@@ -811,172 +1164,11 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
   (values))
 
 
-(defun decompile-lse-line (lino code)
-  (declare (ignore lino))
-  (third code))
-
-;; (defun decompile-lse-line (lino byte-code)
-;;   (with-output-to-string (source)
-;;     (princ lino source) (princ " " source)
-;;     (flet ((nbop (cop) (cdr (gethash cop *cop-info* '(0 . 0))))
-;;            (disa (cop) (car (gethash cop *cop-info* (cons cop 0)))))
-;;       (let ((pc 0)
-;;             (listing '())
-;;             (labels '()))
-;;         (loop :while (< pc (length byte-code)) :do
-;;           (let ((cop (list (disa (aref byte-code pc))))
-;;                 (noa       (nbop (aref byte-code pc))))
-;;             (incf pc)
-;;             (dotimes (n noa)
-;;               (setf cop (nconc cop (list (aref byte-code pc))))
-;;               (incf pc))
-;;             (push cop listing)
-;;             (when (member (first cop) bc::*branches*)
-;;               (push (+ pc (second cop)) labels))))
-;;         (setf listing (nreverse listing))
-;;         (princ listing source)
-;;         #-(and)
-;;         (loop
-;;           :initially (format t "~&")
-;;           :with pc = 0
-;;           :for line :in listing
-;;           :do (progn (if (member pc labels)
-;;                          (format t "@~6:A " pc)
-;;                          (format t "        "))
-;;                      (format t "~32:A"
-;;                              (with-output-to-string (out)
-;;                                (princ "(" out)
-;;                                (let ((first t))
-;;                                  (dolist (item line)
-;;                                    (if first
-;;                                        (setf first nil)
-;;                                        (princ " " out))
-;;                                    (if (symbolp item)
-;;                                        (princ item out)
-;;                                        (prin1 item out))))
-;;                                (princ ")" out)))
-;;                      (if (member (first line) bc::*branches*)
-;;                          (format t " ; @~A~%"  (+ pc (length line) (second line)))
-;;                          (format t "~%"))
-;;                      (incf pc (length line))))))
-;;     #-(and)
-;;     (loop
-;; 
-;;       (case
-;; 
-;;           
-;;           (cl:defparameter *branches* '(
-;;                                         BALWAYS ;       BALWAYS offset
-;;                                         BTRUE   ; test  BTRUE   offset
-;;                                         BFALSE  ; test  BFALSE  offset
-;;                                         BNEVER  ;       BNEVER  offset
-;;                                         ))
-;;         
-;;         (cl:defparameter *0* '(
-;;                                DUP ; arg DUP
-;; 
-;;                                NON ; arg NON 
-;;                                OU  ; arg1 arg2 OU
-;;                                ET  ; arg1 arg2 ET
-;; 
-;;                                EG  ; arg1 arg2 EG
-;;                                NE  ; arg1 arg2 NE
-;;                                LE  ; arg1 arg2 LE
-;;                                LT  ; arg1 arg2 LT
-;;                                GE  ; arg1 arg2 GE
-;;                                GT  ; arg1 arg2 GT
-;; 
-;;                                CONCAT ; arg1 arg2 CONCAT
-;; 
-;;                                NEG ; arg NEG
-;;                                ADD ; arg1 arg2 ADD
-;;                                SUB ; arg1 arg2 SUB
-;;                                MUL ; arg1 arg2 MUL
-;;                                DIV ; arg1 arg2 DIV
-;;                                POW ; arg1 arg2 POW
-;; 
-;; 
-;;                                AFFICHER-E        ; rep e f AFFICHER-E
-;;                                AFFICHER-F        ; rep e f AFFICHER-F
-;;                                AFFICHER-CR       ; rep AFFICHER-CR
-;;                                AFFICHER-CHAINE   ; rep chaine AFFICHER-CHAINE
-;;                                AFFICHER-NEWLINE  ; rep AFFICHER-NEWLINE
-;;                                AFFICHER-NL       ; rep AFFICHER-NL
-;;                                AFFICHER-SPACE    ; rep AFFICHER-SPACE
-;;                                AFFICHER-U        ; nexpr AFFICHER-U
-;; 
-;;                                NEXT-LINE  ; NEXT-LINE
-;;                                RETOUR     ; RETOUR
-;;                                RETOUR-EN  ; line RETOUR-EN
-;;                                RESULT     ; arg RESULT
-;;                                GOTO       ; line GOTO
-;; 
-;;                                TANT-QUE                 ; test TANT-QUE
-;;                                CHARGER                  ; enr fic CHARGER
-;;                                SUPPRIMER-ENREGISTREMENT ; enr fic SUPPRIMER-ENREGISTREMENT
-;;                                SUPPRIMER-FICHIER        ;     fic SUPPRIMER-FICHIER
-;;                                EXECUTER  ; fic lin EXECUTED
-;;                                PAUSE     ; PAUSE
-;;                                TERMINER  ; TERMINER
-;; 
-;;                                PROCEDURE
-;;                                comment ; COMMENT comment
-;;                                ))
-;; 
-;;         (cl:defparameter *1* '(
-;;                                AREF1&PUSH-REF ; idx AREF1&PUSH-REF identifier
-;;                                AREF1&PUSH-VAL ; idx AREF1&PUSH-VAL identifier
-;;                                AREF2&PUSH-REF ; idx1 idx2 AREF2&PUSH-REF identifier
-;;                                AREF2&PUSH-VAL ; idx1 idx2 AREF2&PUSH-VAL identifier
-;; 
-;;                                POP&ASTORE1    ; val idx POP&ASTORE1 identifier
-;;                                POP&ASTORE2    ; val idx1 idx2 POP&ASTORE2 identifier
-;;                                POP&STORE      ; val POP&STORE identifier
-;; 
-;;                                PUSH-REF       ; PUSH-REF identifier
-;;                                PUSH-VAL       ; PUSH-REF identifier
-;;                                PUSHI          ; PUSHI immediate-value
-;; 
-;;                                LIRE&STORE        ; LIRE&STORE ident
-;;                                LIRE&ASTORE1      ; index LIRE&ASTORE1 ident
-;;                                LIRE&ASTORE2      ; idx1 idx2 LIRE&ASTORE1 ident
-;; 
-;;                                CHAINE         ; CHAINE identifier
-;;                                TABLEAU1       ; dim TABLEAU1 identifier
-;;                                TABLEAU2       ; dim1 dim2 TABLEAU2 identifier
-;;                                LIBERER        ; LIBERER identifier
-;; 
-;;                                BALWAYS    ;      BALWAYS offset
-;;                                BTRUE      ; test BTRUE   offset
-;;                                BFALSE     ; test BFALSE  offset
-;;                                BNEVER     ;      BNEVER  offset
-;; 
-;;                                FAIRE-JUSQU-A   ; lino init pas jusqua FAIRE-JUSQU-A ident
-;;                                FAIRE-TANT-QUE  ; lino init pas FAIRE-TANT-QUE ident
-;;                                         ; test TANT-QUE
-;;                                GARER           ; enr fic GARER identificateur
-;;                                ))
-;; 
-;;         (cl:defparameter *2* '(CALL            ; CALL identificateur-procedure nombre-d-argument
-;;                                ))))))
-;; 
-;; (destructuring-bind (lino . code)
-;;     (compile-lse-line "10 si a=b alors afficher['egal ',u]a sinon afficher['different ',2u]a,b")
-;;   (decompile-lse-line lino code))
-;; "10 ((PUSH-REF A) (PUSH-REF B) (EG) (BFALSE 11) (PUSHI 1) (PUSHI 48) (egal ) (AFFICHER-CHAINE) (PUSH-REF A) (AFFICHER-U) (BALWAYS 12) (PUSHI 1) (PUSHI 48) (different ) (AFFICHER-CHAINE) (PUSH-REF A) (AFFICHER-U) (PUSH-REF B) (AFFICHER-U) (NEXT-LINE))"
 
 
-;;(progn (terpri)(disassemble-lse bc))
-
-;;(:Ligne-Programme numero instr...)
-;;(:liste-instructions instr...)
-
-;; (:Ligne-Programme numero instr...)
-;; ==> compile instr... and store vector in lino.
-;; 
-;; (:ligne-programme numero (:decl-procedure  decl-procedure))
-;; ==> compile decl-procedure; store vector in lino; store proc.ident in proctable.
-
+;;;---------------------------------------------------------------------
+;;; Test functions
+;;;---------------------------------------------------------------------
 
 (defun test/parse-stream (src)
   (let ((*scanner* (make-instance 'lse-scanner :source src)))
@@ -1020,12 +1212,14 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;; (test/parse-file #P"~/src/pjb/lse-cl/SYNTERR.LSE")
 ;; (test/parse-file #P"~/src/pjb/lse/BOURG/BOUR.LSE")
 ;; (test/parse-string "18*")
+;; (let ((*print-escape* nil) (*print-pretty* t) (*print-right-margin* 80)) (write (test/parse-file "tpars.lse")))
 
 
 ;; (compile-lse-file #P "~/src/pjb/lse/BOURG/BOUR.LSE")
 ;; (compile-lse-file #P "~/src/pjb/lse-cl/TESTCOMP.LSE")
 
 ;; (test/compile-lse-file #P "~/src/pjb/lse-cl/TESTCOMP.LSE")
+;; (test/compile-lse-file "tpars.lse")
 
 
 

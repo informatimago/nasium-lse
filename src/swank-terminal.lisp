@@ -12,6 +12,8 @@
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
+;;;;    2012-02-20 <PJB> Added redefinition of simple-break to signal
+;;;;                     user-interrupt.
 ;;;;    2012-02-16 <PJB> Created.
 ;;;;BUGS
 ;;;;LEGAL
@@ -89,6 +91,17 @@
                       (progn (slime-repl-bol) (previous-line 1) (point))
                       (point-max))))))
 
+
+
+#+swank
+(in-package "SWANK")
+
+#+swank
+(defslimefun simple-break (&optional (datum "Interrupt from Emacs") &rest args)
+  (with-simple-restart (continue "Continue from break.")
+    (signal 'com.informatimago.signal:user-interrupt
+            :signal com.informatimago.signal:+sigint+)
+    (invoke-slime-debugger (coerce-to-condition datum args))))
 
 
 ;;;; THE END ;;;;

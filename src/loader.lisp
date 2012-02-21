@@ -41,8 +41,9 @@
 ;; (pushnew #P "/home/pjb/src/public/lisp/common-lisp/" asdf:*central-registry*)
 ;; (asdf-delete-system :com.informatimago.common-lisp)
 ;; (asdf-load          :com.informatimago.common-lisp)
-(pushnew :developing *features*)
+(pushnew :developing           *features*)
 (pushnew :LSE-CASE-INSENSITIVE *features*)
+(pushnew :lse-unix             *features*)
 (setf *print-right-margin* 200
       *print-pretty* t
       *print-case* :downcase)

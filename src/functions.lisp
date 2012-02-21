@@ -195,21 +195,22 @@
            :argument b
            :reason "QUAND LE PREMIER ARGUMENT EST NEGATIF, LE SECOND DOIT ETRE ENTIER."))
   (un-nombre (expt a (if (< a 0.0) (truncate b) b))))
-(defun ent  (a)   (un-nombre (truncate (un-nombre a))))
-(defun neg  (a)   (-        (un-nombre a)))
-(defun abso (a)   (abs      (un-nombre a)))
-(defun expo (a)   (exp      (un-nombre a)))
-(defun sinu (a)   (sin      (un-nombre a)))
-(defun cosi (a)   (cos      (un-nombre a)))
-(defun atg  (a)   (atan     (un-nombre a)))
-(defun rac  (a)   (let ((result (sqrt (un-nombre a)))) (un-nombre result)))
-(defun lgn  (a)   (let ((result (log  (un-nombre a)))) (un-nombre result)))
+
+(defun ent  (a)   (let ((a (deref *vm* a))) (un-nombre (floor (un-nombre a)))))
+(defun neg  (a)   (let ((a (deref *vm* a))) (-        (un-nombre a))))
+(defun abso (a)   (let ((a (deref *vm* a))) (abs      (un-nombre a))))
+(defun expo (a)   (let ((a (deref *vm* a))) (exp      (un-nombre a))))
+(defun sinu (a)   (let ((a (deref *vm* a))) (sin      (un-nombre a))))
+(defun cosi (a)   (let ((a (deref *vm* a))) (cos      (un-nombre a))))
+(defun atg  (a)   (let ((a (deref *vm* a))) (atan     (un-nombre a))))
+(defun rac  (a)   (let* ((a (deref *vm* a)) (result (sqrt (un-nombre a)))) (un-nombre result)))
+(defun lgn  (a)   (let* ((a (deref *vm* a)) (result (log  (un-nombre a)))) (un-nombre result)))
 
 (defun ale  (a)
   ;; (ale 0) --> true random
   ;; (ale n) --> pseudo-random from n
   ;; ==> we should implement a pseudo-random function (or call srand/rand).
-  (let ((a (un-nombre a)))
+  (let ((a (un-nombre (deref *vm* a))))
     (when (zerop a)
       (setf (task-random-state *task*) (make-random-state t)))
     (random 1.0)))
@@ -219,21 +220,24 @@
 
 (defun att ()    (error 'pas-implemente :what "ATT"))
 (defun dis (a) (declare (ignore a))  (error 'pas-implemente :what "DIS"))
-(defun etl (a b) (un-nombre (logand (truncate (un-nombre a))
-                                    (truncate (un-nombre b)))))
-(defun oul (a b) (un-nombre (logior (truncate (un-nombre a))
-                                    (truncate (un-nombre b)))))
-(defun oux (a b) (un-nombre (logxor (truncate (un-nombre a))
-                                    (truncate (un-nombre b)))))
+(defun etl (a b) (un-nombre (logand (truncate (un-nombre (deref *vm* a)))
+                                    (truncate (un-nombre (deref *vm* b))))))
+(defun oul (a b) (un-nombre (logior (truncate (un-nombre (deref *vm* a)))
+                                    (truncate (un-nombre (deref *vm* b))))))
+(defun oux (a b) (un-nombre (logxor (truncate (un-nombre (deref *vm* a)))
+                                    (truncate (un-nombre (deref *vm* b))))))
 
 
-(defun concatenation (a b) (la-chaine (concatenate 'string
-                                        (la-chaine a) (la-chaine b))))
+(defun concatenation (a b)
+  (la-chaine (concatenate 'string (la-chaine (deref *vm* a)) (la-chaine (deref *vm* b)))))
 
-(defun lgr (a) (un-nombre (length (la-chaine a))))
+(defun lgr (a) (un-nombre (length (la-chaine (deref *vm* a)))))
 
 (defun pos (ch de sc)
-  (let* ((debut (1- (truncate (un-nombre de)))))
+  (let* ((ch (deref *vm* ch))
+         (de (deref *vm* de))
+         (sc (deref *vm* sc))
+         (debut (1- (truncate (un-nombre de)))))
     (when (or (< debut 0) (/= (1+ debut) de))
       (error 'argument-invalide
              :op "POS"
@@ -246,28 +250,42 @@
            
 
 (defun eqn (ch &optional po)
-  (un-nombre (char-code (aref (la-chaine ch)
-                              (or (and po (1- (un-nombre po))) 0)))))
+  (let* ((ch (deref *vm* ch))
+         (po (deref *vm* po)))
+    (un-nombre (char-code (aref (la-chaine ch)
+                                (or (and po (1- (un-nombre po))) 0))))))
 
 
 (defun eqc (co)
-  (string (or (code-char (truncate (un-nombre co)))
-              (error 'argument-invalide
-                     :op "EQC"
-                     :index 1
-                     :argument co
-                     :reason "L'ARGUMENT DOIT ETRE LE CODE D'UN CARACTERE (ENTRE 0 et 255)."))))
+  (let* ((co (truncate (un-nombre (deref *vm* co))))
+         (limit #+lse-t1600     256
+                #+lse-mitra-15  128
+                #-(or lse-t1600 lse-mitra-15)  char-code-limit))
+    (if (< -1 co limit)
+        (string (code-char co))
+        (error 'argument-invalide
+               :op "EQC"
+               :index 1
+               :argument co
+               :reason (format nil "L'ARGUMENT DOIT ETRE LE CODE D'UN CARACTERE (ENTRE 0 et ~D)."
+                               (1- limit))))))
 
 
 (defun cca (ca)
-  ;; TODO: C'est pas tout à fait ça pour les formats.
-  (if (= (truncate (un-nombre ca)) ca)
-      (format nil "~D" (truncate ca))
-      (format nil (if (<= 1e-3 (abs (un-nombre ca)) 1e6) "~F" "~E") ca)))
+  (let* ((ca (deref *vm* ca))
+         (ca (un-nombre ca))
+         (value (abs ca)))
+    (format nil (cond
+                  ((and (<= 1e-3 value) (< value 1e6)) "~A")
+                  (t                                   "~,,2,,,,'EE"))
+            (if (= ca (truncate ca))
+                (truncate ca)
+                ca))))
 
 
-(defun cnb (ch de)
-  (let* ((ch (la-chaine ch))
+(defun cnb (ch de &optional va)
+  (let* ((ch (la-chaine (deref *vm* ch)))
+         (de (deref *vm* de))
          (chlen (length ch))
          (debut (1- (truncate (un-nombre de))))
          (fin 0))
@@ -281,11 +299,20 @@
                (position (character " ") ch :start pos :test (function char/=)))
              (eos! (fin)
                (return-from cnb
-                 (values
-                  (un-nombre
-                   (or (read-from-string ch nil nil :start debut
-                                         :end (min fin chlen)) 0.0))
-                  (un-nombre fin))))
+                 (values (un-nombre
+                          (or (read-from-string ch nil nil :start debut
+                                                :end (min fin chlen)) 0.0))
+                         (if va
+                             (let ((var (find-variable *vm* va))
+                                   (new-pos (un-nombre fin)))
+                               (if var
+                                   (if (eql (variable-type var) 'nombre)
+                                       (setf (variable-value var) new-pos)
+                                       (lse-error "LA VARIABLE ~A N'EST PAS UN NOMBRE" va))
+                                   (add-global-variable *vm* (make-instance 'lse-variable
+                                                                 :name  va
+                                                                 :value new-pos))))
+                             (un-nombre fin)))))
              (eos? (pos) (when  (<= chlen fin) (eos! pos)))
              (match? (pos charseq) (position (aref ch pos) charseq))
              (digit? (pos) (digit-char-p (aref ch pos)))
@@ -315,9 +342,13 @@
       (eos! fin))))
         
 
-(defun sch (ch de lo-or-ch)
-  (let ((debut (1- (truncate (un-nombre de))))
-        (chlen (length (la-chaine ch))))
+(defun sch (ch de lo-or-ch &optional va)
+  (let* ((ch       (deref *vm* ch))
+         (de       (deref *vm* de))
+         (lo-or-ch (deref *vm* lo-or-ch))
+         (debut (1- (truncate (un-nombre de))))
+         (chlen (length (la-chaine ch)))
+         (new-pos 0))
     (when (or (< debut 0) (/= (1+ debut) de))
       (error 'argument-invalide
              :op "SCH"
@@ -325,54 +356,76 @@
              :argument de
              :reason "L'ARGUMENT DEBUT DOIT ETRE UN NOMBRE ENTIER SUPERIEUR OU EGAL A 1."))
     (let ((fin  (etypecase lo-or-ch
-                  (nombre (let ((longueur (truncate lo-or-ch)))
-                            (if (or (<= longueur 0) (/= longueur lo-or-ch))
-                                (error 'argument-invalide
-                                       :op "SCH"
-                                       :index 3
-                                       :argument lo-or-ch
-                                       :reason "L'ARGUMENT LONGEUR DOIT ETRE UN ENTIER SUPERIEUR OU EGAL A 1 (OU BIEN UNE CHAINE).")
-                                (+ debut longueur))))
-                  (chaine (or (position-if
-                               (lambda (ch) (position ch lo-or-ch
-                                                 :test (function char=)))
-                               ch :start debut) (1+ chlen))))))
+                  ((or integer nombre)
+                   (let ((longueur (truncate lo-or-ch)))
+                     (if (or (<= longueur 0) (/= longueur lo-or-ch))
+                         (error 'argument-invalide
+                                :op "SCH"
+                                :index 3
+                                :argument lo-or-ch
+                                :reason "L'ARGUMENT LONGEUR DOIT ETRE UN ENTIER SUPERIEUR OU EGAL A 1 (OU BIEN UNE CHAINE).")
+                         (+ debut longueur))))
+                  (chaine
+                   (or (position-if
+                        (lambda (ch) (position ch lo-or-ch
+                                               :test (function char=)))
+                        ch :start debut) (1+ chlen))))))
       (setf fin   (min fin   chlen))
       (setf debut (min debut chlen))
+      (when va
+        (let ((var (find-variable *vm* va))
+              (new-pos (un-nombre fin)))
+          (if var
+              (if (eql (variable-type var) 'nombre)
+                  (setf (variable-value var) new-pos)
+                  (lse-error "LA VARIABLE ~A N'EST PAS UN NOMBRE" va))
+              (add-global-variable *vm* (make-instance 'lse-variable
+                                            :name  va
+                                            :value new-pos)))))
       (values (subseq ch debut fin) (un-nombre fin)))))
 
 
 (defun skp (ch de &optional ev)
-  (let ((debut (1- (truncate (un-nombre de)))))
+  (let* ((ch (deref *vm* ch))
+         (de (deref *vm* de))
+         (ev (deref *vm* ev))
+         (debut (1- (truncate (un-nombre de)))))
     (when (or (< debut 0) (/= (1+ debut) de))
       (error 'argument-invalide
              :op "SKP"
              :index 2
              :argument de
              :reason "L'ARGUMENT DEBUT DOIT ETRE UN ENTIER SUPERIEUR OU EGAL A 1."))
-    (or (find-if (if (null ev)
-                     (function alpha-char-p)
-                     (progn (la-chaine ev) (lambda (ch) (not (position ch ev)))))
-                 (la-chaine ch) :start debut) (+ 1.0 (length ch)))))
+    (+ 1.0 (or (position-if (if (null ev)
+                                (function alpha-char-p)
+                                (progn (la-chaine ev) (lambda (ch) (not (position ch ev)))))
+                            (la-chaine ch) :start debut)
+               (length ch)))))
 
 
 (defun ptr (ch de &optional ev)
-  (let ((debut (1- (truncate (un-nombre de)))))
+  (let* ((ch (deref *vm* ch))
+         (de (deref *vm* de))
+         (ev (deref *vm* ev))
+         (debut (1- (truncate (un-nombre de)))))
     (when (or (< debut 0) (/= (1+ debut) de))
       (error 'argument-invalide
              :op "PTR"
              :index 2
              :argument de
              :reason "L'ARGUMENT DEBUT DOIT ETRE UN ENTIER SUPERIEUR OU EGAL A 1."))
-    (or (find-if (if (null ev)
-                     (complement (function alpha-char-p))
-                     (progn (la-chaine ev) (lambda (ch) (position ch ev))))
-                 (la-chaine ch) :start debut) (+ 1.0 (length ch)))))
+    (+ 1.0 (or (position-if (if (null ev)
+                                (complement (function alpha-char-p))
+                                (complement (progn (la-chaine ev) (lambda (ch) (position ch ev)))))
+                            (la-chaine ch) :start debut)
+               (length ch)))))
 
 
 (defun grl (ch de)
-  (let ((debut (1- (truncate (un-nombre de))))
-        (chlen (length (la-chaine ch))))
+  (let* ((ch (deref *vm* ch))
+         (de (deref *vm* de))
+         (debut (1- (truncate (un-nombre de))))
+         (chlen (length (la-chaine ch))))
     (when (or (< debut 0) (/= (1+ debut) de) (<= chlen debut))
       (error 'argument-invalide
              :op "GRL"
@@ -600,3 +653,4 @@
 
 
 ;;;; THE END ;;;;
+

@@ -735,7 +735,8 @@ NOTE: on ne peut pas liberer un parametre par reference.
         (etypecase var
           (lse-variable          (stack-push var (vm-stack vm)))
           (reference-parameter   (stack-push (reference-variable var) (vm-stack vm))))
-        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+        ;; (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident)
+        (stack-push var (vm-stack vm)))))
 
 (defun push-val (vm ident)
   (check-type ident identificateur)
@@ -774,58 +775,61 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun POP&STORE (vm val ident)
   (check-type ident identificateur)
-  (check-type val (or integer nombre chaine))
-  (let ((var (find-variable vm ident)))
-    (if var
-        (case (variable-type var)
-          (nombre
-           (if (nombrep val)
-               (setf (variable-value var) (un-nombre val))
-               (lse-error "LA VARIABLE ~A N'EST PAS UNE CHAINE" ident)))
-          (chaine
-           (if (chainep val)
-               (setf (variable-value var) val)
-               (lse-error "LA VARIABLE ~A EST UNE CHAINE" ident)))
-          (t
-           (lse-error "LA VARIABLE ~A N'EST PAS ~A" ident
-                      (if (nombrep val) "UN NOMBRE" "UNE CHAINE"))))
-        (typecase val
-          ((or integer nombre)
-           (add-global-variable vm (make-instance 'lse-variable
-                                        :name  ident
-                                        :value (un-nombre val))))
-          (otherwise
-           (lse-error "LA VARIABLE ~A N'EST PAS DECLAREE COMME CHAINE." ident))))))
+  (let ((val (deref vm val)))
+    (check-type val (or integer nombre chaine))
+    (let ((var (find-variable vm ident)))
+      (if var
+          (case (variable-type var)
+            (nombre
+             (if (nombrep val)
+                 (setf (variable-value var) (un-nombre val))
+                 (lse-error "LA VARIABLE ~A N'EST PAS UNE CHAINE" ident)))
+            (chaine
+             (if (chainep val)
+                 (setf (variable-value var) val)
+                 (lse-error "LA VARIABLE ~A EST UNE CHAINE" ident)))
+            (t
+             (lse-error "LA VARIABLE ~A N'EST PAS ~A" ident
+                        (if (nombrep val) "UN NOMBRE" "UNE CHAINE"))))
+          (typecase val
+            ((or integer nombre)
+             (add-global-variable vm (make-instance 'lse-variable
+                                         :name  ident
+                                         :value (un-nombre val))))
+            (otherwise
+             (lse-error "LA VARIABLE ~A N'EST PAS DECLAREE COMME CHAINE." ident)))))))
 
 
 (defun POP&ASTORE1 (vm val index ident)
   (check-type ident identificateur)
   (check-type index nombre)
-  (check-type val (or integer nombre))
-  (let ((index (round index))
-        (var (find-variable vm ident)))
-    (if var
-        (if (and (consp (variable-type var))
-                 (eql (first (variable-type var)) 'vecteur))
-            (setf (aref (variable-value var) (1- index)) (un-nombre val))
-            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 1" ident))
-        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+  (let ((val (deref vm val)))
+   (check-type val (or integer nombre))
+   (let ((index (round index))
+         (var (find-variable vm ident)))
+     (if var
+         (if (and (consp (variable-type var))
+                  (eql (first (variable-type var)) 'vecteur))
+             (setf (aref (variable-value var) (1- index)) (un-nombre val))
+             (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 1" ident))
+         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident)))))
 
 
 (defun POP&ASTORE2 (vm val index1 index2 ident)
   (check-type ident identificateur)
   (check-type index1 nombre)
   (check-type index2 nombre)
-  (check-type val (or integer nombre))
-  (let ((index1 (round index1))
-        (index2 (round index2))
-        (var (find-variable vm ident)))
-    (if var
-        (if (and (consp (variable-type var))
-                 (eql (first (variable-type var)) 'tableau))
-            (setf (aref (variable-value var) (1- index1) (1- index2)) (un-nombre val))
-            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
-        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+  (let ((val (deref vm val)))
+   (check-type val (or integer nombre))
+   (let ((index1 (round index1))
+         (index2 (round index2))
+         (var (find-variable vm ident)))
+     (if var
+         (if (and (consp (variable-type var))
+                  (eql (first (variable-type var)) 'tableau))
+             (setf (aref (variable-value var) (1- index1) (1- index2)) (un-nombre val))
+             (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
+         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident)))))
 
 
 
@@ -1047,6 +1051,68 @@ NOTE: on ne peut pas liberer un parametre par reference.
                :format-arguments (list (vm-pc.line vm))))))
 
 
+(defparameter *primitive-functions*
+  (hashtable :elements '((id::ent (ent 1 1))
+                         (id::neg (neg 1 1))
+                         (id::abs (abso 1 1))
+                         (id::exp (expo 1 1))
+                         (id::sin (sinu 1 1))
+                         (id::cos (cosi 1 1))
+                         (id::atg (atg 1 1))
+                         (id::rac (rac 1 1))
+                         (id::lgn (lgn 1 1))
+                         (id::ale (ale 1 1))
+                         (id::tem (tem 0 0))
+                         (id::att (att 0 0))
+                         #-(and) (id::dis  (dis 1 1))
+                         (id::etl (etl 2 2))
+                         (id::oul (oul 2 2))
+                         (id::oxl (oxl 2 2))
+                         (id::lgr (lgr 1 1))
+                         (id::pos (pos 3 3))
+                         (id::eqn (eqn 1 1))
+                         (id::eqc (eqc 1 1))
+                         (id::cca (cca 1 1))
+                         (id::cnb (cnb 2 3))
+                         (id::sch (sch 3 4))
+                         (id::skp (skp 2 3))
+                         (id::ptr (ptr 2 3))
+                         (id::grl (grl 2 2))
+                         (id::dat (dat 0 0)))))
+
+
+
+
+(defun call (vm procident nargs)
+  (check-type procident identificateur)
+  (check-type nargs (integer 0))
+  (let ((entry (gethash procident *primitive-functions*)))
+    (if entry
+        ;; primitive functions
+        (destructuring-bind (fun minargs maxargs) entry
+          (if (<= minargs nargs maxargs)
+              (let ((stack  (vm-stack vm)))
+                (stack-push (apply fun (loop
+                                         :with args = '()
+                                         :repeat nargs
+                                         :do (push (stack-pop stack) args)
+                                         :finally (return args)))
+                            stack))
+              (error 'lse-error
+                     :format-control
+                     (if (< nargs minargs)
+                         "NOMBRE D'ARGUMENTS POUR ~:@(~A~) INSUFFISANT (MINIMUM ~D, DONNE~:@(~P~) ~:*~D)"
+                         "NOMBRE D'ARGUMENTS POUR ~:@(~A~) TROP GRAND (MAXIMUM ~D, DONNE~:@(~P~) ~:*~D)")
+                     :format-arguments (list procident
+                                             (if (< nargs minargs)
+                                                 minargs
+                                                 maxargs)
+                                             nargs))))
+        ;; &procident
+        (error 'pas-implemente :what '(call &procident))
+        
+        )))
+
 (defun goto (vm lino)
   (vm-goto vm lino))
 
@@ -1100,123 +1166,124 @@ NOTE: on ne peut pas liberer un parametre par reference.
 (defun run-step (vm)
   (catch 'run-step-done
     (handler-case
-        ;; handler-bind ((error #'invoke-debugger))
-        (let ((stack (vm-stack vm))
-              (code  (vm-code  vm))
-              (*vm*  vm))
-          (yield-signals '(#.+sigint+))
-          (flet ((spush  (val) (vector-push-extend val stack))
-                 (spop   ()    (vector-pop stack))
-                 (pfetch ()    (prog1 (aref code (vm-pc.offset vm))
-                                 (incf (vm-pc.offset vm)))))
-            (declare (inline spush spop pfetch))
-            (macrolet ((op-1*  (op) `(spush (,op (deref vm (spop)))))
-                       (op-2*  (op) `(spush (let ((b (spop))) (,op (deref vm (spop)) (deref vm b)))))
-                       (op-0   (op) `(,op vm))
-                       (op-1   (op) `(spush (,op vm (spop))))
-                       (op-2   (op) `(spush (let ((b (spop))) (,op vm (spop) b))))
-                       (op-3   (op) `(spush (let ((c (spop)) (b (spop))) (,op vm (spop) b c))))
-                       (op-0/1 (op) `(,op vm (pfetch)))
-                       (op-1/1 (op) `(spush (,op vm (spop) (pfetch))))
-                       (op-2/1 (op) `(spush (let ((b (spop))) (,op vm (spop) b (pfetch)))))
-                       (op-3/1 (op) `(spush (let ((c (spop)) (b (spop))) (,op vm (spop) b c (pfetch)))))
-                       (op-4/1 (op) `(spush (let ((d (spop)) (c (spop)) (b (spop))) (,op vm (spop) b c d (pfetch)))))
-                       (op-0/2 (op) `(,op vm (pfetch) (pfetch))))
-              (let ((cop (pfetch)))
-                ;; (io-format *task* "~&Executing COP ~A~%" (car (gethash cop *cop-info* (cons cop 0))))
-                (case cop
+        (handler-bind ((error #'invoke-debugger))
+          (let ((stack (vm-stack vm))
+                (code  (vm-code  vm))
+                (*vm*  vm))
+            (yield-signals '(#.+sigint+))
+            (flet ((spush  (val) (vector-push-extend val stack))
+                   (spop   ()    (vector-pop stack))
+                   (pfetch ()    (prog1 (aref code (vm-pc.offset vm))
+                                   (incf (vm-pc.offset vm)))))
+              (declare (inline spush spop pfetch))
+              (macrolet ((op-1*  (op) `(spush (,op (deref vm (spop)))))
+                         (op-2*  (op) `(spush (let ((b (spop))) (,op (deref vm (spop)) (deref vm b)))))
+                         (op-0   (op) `(,op vm))
+                         (op-1   (op) `(spush (,op vm (spop))))
+                         (op-2   (op) `(spush (let ((b (spop))) (,op vm (spop) b))))
+                         (op-3   (op) `(spush (let ((c (spop)) (b (spop))) (,op vm (spop) b c))))
+                         (op-0/1 (op) `(,op vm (pfetch)))
+                         (op-1/1 (op) `(spush (,op vm (spop) (pfetch))))
+                         (op-2/1 (op) `(spush (let ((b (spop))) (,op vm (spop) b (pfetch)))))
+                         (op-3/1 (op) `(spush (let ((c (spop)) (b (spop))) (,op vm (spop) b c (pfetch)))))
+                         (op-4/1 (op) `(spush (let ((d (spop)) (c (spop)) (b (spop))) (,op vm (spop) b c d (pfetch)))))
+                         (op-0/2 (op) `(,op vm (pfetch) (pfetch))))
+                (let ((cop (pfetch)))
+                  ;; (io-format *task* "~&Executing COP ~A~%" (car (gethash cop *cop-info* (cons cop 0))))
+                  (case cop
 
-                  (!dup    (let ((a (spop))) (spush a) (spush a)))
+                    (!dup    (let ((a (spop))) (spush a) (spush a)))
                   
-                  (!non    (op-1* non))
-                  (!et     (op-2* et))
-                  (!ou     (op-2* ou))
+                    (!non    (op-1* non))
+                    (!et     (op-2* et))
+                    (!ou     (op-2* ou))
 
-                  (!eg     (op-2* eg))
-                  (!ne     (op-2* ne))
-                  (!le     (op-2* le))
-                  (!lt     (op-2* lt))
-                  (!ge     (op-2* ge))
-                  (!gt     (op-2* gt))
+                    (!eg     (op-2* eg))
+                    (!ne     (op-2* ne))
+                    (!le     (op-2* le))
+                    (!lt     (op-2* lt))
+                    (!ge     (op-2* ge))
+                    (!gt     (op-2* gt))
 
-                  (!concat (op-2* concatenation))
+                    (!concat (op-2* concatenation))
 
-                  (!neg    (op-1* neg))
-                  (!add    (op-2* add))
-                  (!sub    (op-2* sub))
-                  (!mul    (op-2* mul))
-                  (!div    (op-2* div))
-                  (!pow    (op-2* pow))
+                    (!neg    (op-1* neg))
+                    (!add    (op-2* add))
+                    (!sub    (op-2* sub))
+                    (!mul    (op-2* mul))
+                    (!div    (op-2* div))
+                    (!pow    (op-2* pow))
 
-                  (!afficher-e       (op-3 afficher-e))
-                  (!afficher-f       (op-3 afficher-f))
-                  (!afficher-cr      (op-1 afficher-cr))
-                  (!afficher-nl      (op-1 afficher-nl))
-                  (!afficher-space   (op-1 afficher-space))
-                  (!afficher-newline (op-1 afficher-newline))
-                  (!afficher-chaine  (op-2 afficher-chaine))
-                  (!afficher-u       (op-1 afficher-u))
+                    (!afficher-e       (op-3 afficher-e))
+                    (!afficher-f       (op-3 afficher-f))
+                    (!afficher-cr      (op-1 afficher-cr))
+                    (!afficher-nl      (op-1 afficher-nl))
+                    (!afficher-space   (op-1 afficher-space))
+                    (!afficher-newline (op-1 afficher-newline))
+                    (!afficher-chaine  (op-2 afficher-chaine))
+                    (!afficher-u       (op-1 afficher-u))
                   
-                  (!beep             (op-0 beep))
-                  (!LIRE&STORE       (op-0/1 LIRE&STORE))
-                  (!LIRE&ASTORE1     (op-1/1 LIRE&ASTORE1))
-                  (!LIRE&ASTORE2     (op-2/1 LIRE&ASTORE2))
+                    (!beep             (op-0 beep))
+                    (!LIRE&STORE       (op-0/1 LIRE&STORE))
+                    (!LIRE&ASTORE1     (op-1/1 LIRE&ASTORE1))
+                    (!LIRE&ASTORE2     (op-2/1 LIRE&ASTORE2))
 
-                  (!next-line        (op-0 next-line))
-                  (!retour           (op-0 retour))
-                  (!retour-en        (op-1 retour-en))
-                  (!result           (op-1 result))
-                  (!goto             (op-1 goto))
+                    (!next-line        (op-0 next-line))
+                    (!retour           (op-0 retour))
+                    (!retour-en        (op-1 retour-en))
+                    (!result           (op-1 result))
+                    (!goto             (op-1 goto))
 
 
-                  (!tant-que                  (op-1 tant-que))
-                  (!charger                   (op-2 charger))
-                  (!supprimer-enregistrement  (op-2 supprimer-enregistrement))
-                  (!supprimer-fichier         (op-1 supprimer-fichier))
-                  (!executer                  (op-2 executer))
-                  (!pause          (op-0 pause))
-                  (!terminer       (op-0 terminer))
-                  (!stop           (op-0 stop))
+                    (!tant-que                  (op-1 tant-que))
+                    (!charger                   (op-2 charger))
+                    (!supprimer-enregistrement  (op-2 supprimer-enregistrement))
+                    (!supprimer-fichier         (op-1 supprimer-fichier))
+                    (!executer                  (op-2 executer))
+                    (!pause          (op-0 pause))
+                    (!terminer       (op-0 terminer))
+                    (!stop           (op-0 stop))
                   
-                  (!AREF1&PUSH-REF (op-1/1 AREF1&PUSH-REF))
-                  (!AREF1&PUSH-VAL (op-1/1 AREF1&PUSH-VAL))
-                  (!AREF2&PUSH-REF (op-2/1 AREF2&PUSH-REF))
-                  (!AREF2&PUSH-VAL (op-2/1 AREF2&PUSH-VAL))
+                    (!AREF1&PUSH-REF (op-1/1 AREF1&PUSH-REF))
+                    (!AREF1&PUSH-VAL (op-1/1 AREF1&PUSH-VAL))
+                    (!AREF2&PUSH-REF (op-2/1 AREF2&PUSH-REF))
+                    (!AREF2&PUSH-VAL (op-2/1 AREF2&PUSH-VAL))
 
-                  (!POP&ASTORE1    (op-2/1 POP&ASTORE1))
-                  (!POP&ASTORE2    (op-3/1 POP&ASTORE2))
-                  (!POP&STORE      (op-1/1 POP&STORE))
+                    (!POP&ASTORE1    (op-2/1 POP&ASTORE1))
+                    (!POP&ASTORE2    (op-3/1 POP&ASTORE2))
+                    (!POP&STORE      (op-1/1 POP&STORE))
 
-                  (!push-ref       (op-0/1 push-ref))
-                  (!push-val       (op-0/1 push-val))
-                  (!pushi          (op-0/1 pushi))
+                    (!push-ref       (op-0/1 push-ref))
+                    (!push-val       (op-0/1 push-val))
+                    (!pushi          (op-0/1 pushi))
 
-                  (!chaine         (op-0/1 declare-chaine))
-                  (!tableau1       (op-1/1 declare-tableau1))
-                  (!tableau2       (op-2/1 declare-tableau2))
-                  (!liberer        (op-0/1 declare-liberer))
+                    (!chaine         (op-0/1 declare-chaine))
+                    (!tableau1       (op-1/1 declare-tableau1))
+                    (!tableau2       (op-2/1 declare-tableau2))
+                    (!liberer        (op-0/1 declare-liberer))
 
                   
-                  (!balways        (op-0/1 balways))
-                  (!btrue          (op-1/1 btrue))
-                  (!bfalse         (op-1/1 bfalse))
-                  (!bnever         (op-0/1 bnever))
+                    (!balways        (op-0/1 balways))
+                    (!btrue          (op-1/1 btrue))
+                    (!bfalse         (op-1/1 bfalse))
+                    (!bnever         (op-0/1 bnever))
 
-                  (!faire-jusqu-a  (op-4/1 faire-jusqu-a))
+                    (!faire-jusqu-a  (op-4/1 faire-jusqu-a))
 
-                  (!call           (op-0/2 call))
-                  (!faire-tant-que (op-3/1 faire-tant-que))
-                  (!garer          (op-2/1 garer))
+                    (!call           (op-0/2 call))
+                    (!faire-tant-que (op-3/1 faire-tant-que))
+                    (!garer          (op-2/1 garer))
 
-                  (!comment        (op-0/1 comment))
-                  (otherwise
-                   (error 'lse-error
-                          :format-control "INTERNE MACHINE VIRTUELLE: CODE OPERATION INCONNU ~S"
-                          :format-arguments (list cop))))))))
+                    (!comment        (op-0/1 comment))
+                    (otherwise
+                     (error 'lse-error
+                            :format-control "INTERNE MACHINE VIRTUELLE: CODE OPERATION INCONNU ~S"
+                            :format-arguments (list cop)))))))))
 
       (error (err)
         (io-format *task* "~%ERREUR: ~A~%" err)
-        (pause vm)     ; PAUSE EN LIGNE ### message.
+        (io-format *task* "~%PRET~%")
+        (vm-pause vm) ; no message
         (io-finish-output *task*)
         (error err))
       (user-interrupt (condition)

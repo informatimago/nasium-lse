@@ -316,6 +316,98 @@
   :success)
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; LSE Documentation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defparameter *chapters* (make-hash-table :test (function equalp)))
+(defun find-chapter (title) (gethash title *chapters*))
+
+(defstruct chapter
+  title
+  text)
+
+(defmacro defchapter (title &rest text)
+  `(setf (gethash ',title *chapters*)
+         (make-chapter :title ',title
+                       :text ',(unsplit-string text #\Newline))))
+
+
+;; (find-chapter"instructions")
+
+(defchapter "INSTRUCTIONS"
+    "Voici la liste des instructions disponibles.  
+
+Taper DO)CUMENTATION <instruction> pour avoir la documentation de
+chaque instruction:
+
+affectation            ref ← expression
+appel                  &procid(arguments…)
+liberer                LIBERER id1,…,idn      
+lire                   LIRE id1,…,idn            
+afficher               AFFICHER [format]expr…
+alleren                ALLER EN lino
+si                     SI condition ALORS instruction [SINON instruction]
+debut                  DEBUG instruction;… FIN
+fairejusqua            FAIRE lino POUR var←expri [PAS exprp] JUSQUA exprf
+fairetantque           FAIRE lino POUR var←expri [PAS exprp] TANT QUE exprb
+retour                 RETOUR
+retouren               RETOUR EN lino
+resultat               RESULTAT expr
+garer                  GARER 
+charger                CHARGER
+supprimer              SUPPRIMER
+executer               EXCUTER
+pause                  PAUSE
+terminer               TERMINER
+")
+
+(defchapter "FONCTIONS"
+    "Voici la liste des fonctions disponibles.  
+
+Taper DO)CUMENTATION <fonction> pour avoir la documentation de
+chaque fonction.
+
+PLUS                   a+b, somme de deux nombres;
+MOINS                  a-b, différence de deux nombres;
+NEGATION               -a, négation unaire;
+FOIS                   a*b, produit de deux nombres;
+DIVISE                 a/b, quotient de deux nombres;
+PUISSANCE              a↑b, puissance;
+CONCATENATION          a!b, concatenation de deux chaînes;
+SITERNAIRE             SI condition ALORS expr1 SINON expr2;
+COMPARAISONS           a<b, a<=b, a>b, a>=b, a=b, a#b;
+CONJONCTION            comparaison1 ET comparaison2;
+DISJONCTION            conjonction OU conjonection;
+NEGATION               NON condition;
+
+ENT                    ENT(expr), partie entière;
+ABS                    ABS(expr), valeur absolue;
+EXP                    EXP(expr), exponentiation: e↑expr;
+SIN                    SIN(expr), sinus;
+COS                    COS(expr), cosinus;
+ATG                    ATG(expr), arc tangente;
+RAC                    RAC(expr), racine carrée;
+LGN                    LGN(expr), logarithme népérien;
+ALE                    ALE(expr), valeur aléatoire;
+ATT                    ATT(), signal d'attention utilisateur;
+ETL                    ETL(expr1,expr2), ET Logique;
+OUL                    OUL(expr1,expr2), OU Logique;
+OXL                    OXL(expr1,expr2), OU exclusif Logique;
+TEM                    TEM(), temps;
+DAT                    DAT(), chaîne date;
+LGR                    LGR(ch), longueur chaine;
+POS                    POS(ch,de,sc), position sous-chaîne;
+EQN                    EQN(ch), équivalent numérique;
+EQC                    EQC(ch), équivalent caractère;
+CCA                    CCA(ca), conversion en caractères;
+CNB                    CNB(ch,de), conversion en nombre;
+SCH                    SCH(ch,de,fi), sous-chaîne;
+SKP                    SKP(ch,de[,ev]), saut;
+PTR                    PTR(ch,de[,ev]), pointeur;
+GRL                    GRL(ch,de), groupe de lettres;
+
+")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; LSE Commands
@@ -333,18 +425,27 @@
   name
   grammar 
   arguments
+  oneliner
   documentation
   function)
 
 
 (defmacro defcommand (name grammar arguments &body body)
-  `(make-command
-    :initials       (subseq ,name 0 2)
-    :name          ,name
-    :grammar       ',grammar ;; (when grammar (find-grammar (string grammar)))
-    :arguments     ',arguments
-    :documentation ,(if (stringp (first body)) (first body) "")
-    :function       (lambda ,arguments (block ,(intern name) ,@body))))
+  (let ((oneliner      (if (stringp (first body))
+                           (pop body)
+                           nil))
+        (documentation (if (stringp (first body))
+                           (pop body)
+                           nil)))
+   `(make-command
+     :initials       (subseq ,name 0 2)
+     :name          ,name
+     :grammar       ',grammar ;; (when grammar (find-grammar (string grammar)))
+     :arguments     ',arguments
+     :oneliner      ,oneliner
+     :documentation ,(or documentation oneliner)
+     :Function       (lambda ,arguments (block ,(intern name) ,@body)))))
+
 
 (defvar *command-group* nil
   "The command-group the command being called belongs to.")
@@ -470,10 +571,39 @@
                    (command-initials command)
                    (subseq (command-name command) 2)
                    (mapcar (lambda (line) (split-sequence #\Space line))
-                           (split-sequence #\Newline (command-documentation command))))))
+                           (split-sequence #\Newline (command-oneliner command))))))
     (io-format *task* "~&POUR ENTRER UNE COMMANDE, TAPEZ SES DEUX ~
                          PREMIERES LETTRES, SUIVIES DE CTRL-S.~
                        ~&POUR ANNULER UN CARACTERE, TAPEZ \\.~%"))
+
+  
+  (defcommand "DOCUMENTATION" un-fichier (what)
+    "Affiche la documentation d'une commande ou d'une instruction."
+    (cond
+      ((let ((command (find-command what *command-group*)))
+         (when command
+           (io-format *task* "~%~A)~20A ~{~{~<~%                        ~1,80:;~A~> ~}~^~%                        ~}~%"
+                      (command-initials command)
+                      (subseq (command-name command) 2)
+                      (mapcar (lambda (line) (split-sequence #\Space line))
+                              (split-sequence #\Newline (command-documentation command))))
+           t)))
+      ((let ((chapter (find-chapter what)))
+         (when chapter
+           (io-format *task* "~%~A~%~V,,,'-A~2%~{~{~<~%~1,80:;~A~> ~}~%~}~%"
+                      (chapter-title chapter)
+                      (length (chapter-title chapter))
+                      ""
+                      (mapcar (lambda (line) (split-sequence #\Space line))
+                              (split-sequence #\Newline (chapter-text chapter))))
+           t)))
+      (t
+       (io-format *task* "~%Il n'y a pas de documentation pour ~S~
+                          ~%Essayez les commandes suivantes:~
+                          ~%AI)DE                         donne la liste des commandes;~
+                          ~%DO)CUMENTATION INSTRUCTIONS   donne la liste des instructions;~
+                          ~%DO)CUMENTATION FONCTIONS      donne la liste des fonctions.~2%"
+                  what))))
   
 
   (defcommand "IDENTIFICATION" un-numero (identification)
@@ -868,13 +998,12 @@
 
 
 (defun prendre-etat-console (console-no)
-  (io-new-line *task*)
+  (declare (ignore console-no))
   ;;           verifier le numero correspond a une console existante.
   ;;           Si la zone temporaire locale < taille des fichiers dans la zone
   ;;           temporaire de la console a prendre :
-  ;;           "TRANSFERT FICHIERS TEMPORAIRES IMPOSSIBLE"       
-  )
-
+  ;;           "TRANSFERT FICHIERS TEMPORAIRES IMPOSSIBLE"
+  (lse-error "CETTE COMMANDE N'EST PAS IMPLEMENTEE DANS LA VERSION UNIX DU SYSTEME L.S.E."))
 
 
 
@@ -1205,6 +1334,8 @@
 
   (defcommand "AU REVOIR" nil ()
     "Efface les fichiers temporaires, et passe à l'état dormant."
+    #+lse-unix "La commande AU REVOIR annonce au système qu'il
+peut effacer les fichiers temporaires, et quitter le système L.S.E."
     (au-revoir))
 
   (defcommand "ABREGER"     nil ()
@@ -1212,11 +1343,22 @@
     (abreger))
 
   (defcommand "IN EXTENSO"  nil ()
-    "Complète l'affichage des commandes."
+    "Annule la commande ABREGER: complète l'affichage des commandes."
     (in-extenso))
 
   (defcommand "PAS A PAS"   nil ()
     "Exécution du programme pas-à-pas."
+    #+lse-unix "Peut être utilisée avant EXECUTER, CONTINUER, REPRENDRE.
+
+Fait arrêter l'exécution au début de chaque ligne.  La console repasse
+alors dans l'état «moniteur» et affiche le numéro de la ligne
+atteinte.
+
+Pour faire continuer l'exécution il suffit de frapper RET mais on peut
+aussi utiliser toute autre commande ou le mode «machine de bureau»;
+pour revenir à l'exécution du programme, il faudra alors utiliser la
+commande CONTINUER.
+"
     (pas-a-pas))
   
   (defcommand "NORMAL"      nil ()
@@ -1225,6 +1367,7 @@
 
   (defcommand "LISTER A PARTIR DE"   deux-numeros-optionels (from to)
     "Affiche le programme courant."
+    
     (lister-a-partir-de from to))
 
 
@@ -1301,8 +1444,16 @@ L'effet de cette commande est annulé par la touche ESC."
     (poursuivre-jusqu-en linum))
 
 
+  #-lse-unix
   (defcommand "PRENDRE ETAT CONSOLE"  un-numero (consnum)
     "Copie le programme courant et les fichiers temporaires de la console indiquée."
+    "Cette commande a pour effet de transférer à l'utilisateur le
+programme d'un autre utilisateur travaillant sur la console numéro
+N. Le programme ainsi transféré se trouve dans l'état où l'utilisateur
+l'avait en mémoire.
+
+Sur T1600 cette commande ne transfère que le programme, les variables étant dans l'état non défini.
+Sur MITRA 15, l'état des variables est également transféré."
     (prendre-etat-console consnum))
 
 

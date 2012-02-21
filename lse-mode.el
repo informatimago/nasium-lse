@@ -215,11 +215,11 @@
         (line (progn
                 (forward-line -1)
                 (beginning-of-line)
-                (if (looking-at "[0-9]+")
+                (if (looking-at " *[0-9]+")
                     (let ((curr (string-to-number (match-string 0))))
                       (forward-line -1)
                       (beginning-of-line)
-                      (if (looking-at "[0-9]+")
+                      (if (looking-at " *[0-9]+")
                           (let ((prev (string-to-number (match-string 0))))
                             (+ curr (abs (- curr prev))))
                         (+ 10 curr)))
@@ -231,7 +231,7 @@
       (delete-region (match-beginning 0) (match-end 0)))))
 
 
-(defun* lse-number-region (start end &optional (from 1) (step 1))
+(defun* lse-renumber-region (start end &optional (from 1) (step 1))
   (interactive "r\nnFrom: \nnStep: ")
   (let ((linum from)
         (end (let ((m (make-marker))) (set-marker m end) m)))
@@ -240,7 +240,9 @@
       (beginning-of-line)
       (when (looking-at " *[0-9]+ *")
         (delete-region (match-beginning 0) (match-end 0)))
-      (insert (format "%3d " linum))
+      (if (looking-at "*")
+          (insert (format "%d" linum))
+          (insert (format "%d " linum)))
       (incf linum step)
       (forward-line 1))))
 

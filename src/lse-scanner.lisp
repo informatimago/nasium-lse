@@ -441,6 +441,9 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
   (defparameter letters
     #-LSE-CASE-INSENSITIVE "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     #+LSE-CASE-INSENSITIVE "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+  (defparameter exponent
+    #-LSE-CASE-INSENSITIVE "E"
+    #+LSE-CASE-INSENSITIVE "Ee")
   (defparameter digits             "0123456789")
   (defparameter spaces             " ")
   (defparameter ampersand          "&")
@@ -591,7 +594,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
         (digits   (advance (token tok-numero)))
         (dot      (advance (token tok-nombre))
                   (shift nombre-mantissa))
-        ("E"      (advance :error-on-eof "IL MANQUE L'EXPOSANT APRES 'E'")
+        (exponent (advance :error-on-eof "IL MANQUE L'EXPOSANT APRES 'E'")
                   (shift nombre-exponent))
         ((concat spaces star)
          (shift maybe-commentaire) (produce (token tok-numero)))
@@ -605,7 +608,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
         (digits   (advance (token tok-numero)))
         (dot      (advance (token tok-nombre))
                   (shift nombre-mantissa))
-        ("E"      (advance :error-on-eof "IL MANQUE L'EXPOSANT APRES 'E'")
+        (exponent (advance :error-on-eof "IL MANQUE L'EXPOSANT APRES 'E'")
                   (shift nombre-exponent))
         ((concat spaces star specials specials-2 signs)
          (shift not-commentaire) (produce (token tok-numero)))
@@ -615,7 +618,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
        
        (nombre-mantissa ; 6
         (digits   (advance (token tok-nombre)))
-        ("E"      (advance :not-eof  "IL MANQUE L'EXPOSANT APRES 'E'")
+        (exponent (advance :not-eof  "IL MANQUE L'EXPOSANT APRES 'E'")
                   (shift nombre-exponent))
         ((concat spaces specials specials-2 dot star signs)
          (shift not-commentaire) (produce (token tok-nombre)))

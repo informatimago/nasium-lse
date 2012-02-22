@@ -237,8 +237,8 @@
     :rules (
             (--> un-fichier-et-deux-numeros
                  (seq ident (opt (seq tok-virgule deux-numeros :action deux-numeros)
-                                  :action $1)
-                       :action (cons ident $2))
+                                 :action $1)
+                      :action (cons ident $2))
                  :action $1)
 
             (--> ident
@@ -268,6 +268,7 @@
                  :action (list (chaine-valeur (make-instance 'tok-chaine :value (second $1)))))))
 
 
+(defun parse-ligne (ligne) (list ligne))
 
 (defun valid-line-number-p (lino) (<= 1 lino 255))
 
@@ -437,14 +438,14 @@ GRL                    GRL(ch,de), groupe de lettres;
         (documentation (if (stringp (first body))
                            (pop body)
                            nil)))
-   `(make-command
-     :initials       (subseq ,name 0 2)
-     :name          ,name
-     :grammar       ',grammar ;; (when grammar (find-grammar (string grammar)))
-     :arguments     ',arguments
-     :oneliner      ,oneliner
-     :documentation ,(or documentation oneliner)
-     :Function       (lambda ,arguments (block ,(intern name) ,@body)))))
+    `(make-command
+      :initials       (subseq ,name 0 2)
+      :name          ,name
+      :grammar       ',grammar ;; (when grammar (find-grammar (string grammar)))
+      :arguments     ',arguments
+      :oneliner      ,oneliner
+      :documentation ,(or documentation oneliner)
+      :Function       (lambda ,arguments (block ,(intern name) ,@body)))))
 
 
 (defvar *command-group* nil
@@ -704,7 +705,7 @@ GRL                    GRL(ch,de), groupe de lettres;
     "Gestion des droits d'accès des comptes."
     (io-format *task* " ")
     (unless (string= (io-read-line *task* :echo nil :xoff t) *PASSWORD*)
-      (error-report *task* +error-bad-identifier+)
+      (lse-error "IDENTIFIANT INVALIDE")
       (return-from droits))
     (io-new-line *task*) (io-format *task* "            ANCIEN  NOUVEAU  ") ;
     (io-new-line *task*) (io-format *task* "NO.COMPTE    PDAF     PDAF   ") ;
@@ -749,7 +750,6 @@ GRL                    GRL(ch,de), groupe de lettres;
     (io-new-line *task*))
 
 
-
   (defcommand "BONJOUR" nil ()
     "Activation du mode de travail."
     (io-new-line *task* 2)
@@ -763,14 +763,13 @@ GRL                    GRL(ch,de), groupe de lettres;
     (io-new-line *task*)
     (task-disconnect *task*))
 
-
   ) ;; sleeping
 
 
 
 
 
-(define-condition au-revoir ()
+(define-condition au-revoir (condition) ; not an error.
   ())
 
 (defun au-revoir ()
@@ -792,11 +791,11 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 (defun pas-a-pas ()
   (io-new-line *task*)
-  (setf (task-pas-a-pas *task*) t))
+  (setf (vm-pas-a-pas (task-vm *task*)) t))
 
 (defun normal ()
   (io-new-line *task*)
-  (setf (task-pas-a-pas *task*) nil))
+  (setf (vm-pas-a-pas (task-vm *task*)) nil))
 
 
 
@@ -942,16 +941,14 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 (defun executer-a-partir-de (from to)
-  (io-new-line *task*)
+  ;; (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (unless (or (null to) (vm-line-exist-p vm to))
-      (error 'lse-error
-             :format-control "NUMERO DE LIGNE INEXISTANT ~D"
-             :format-arguments (list to)))
+      (error-bad-line to))
     (when (vm-line-exist-p vm from)
       (vm-reset-variables vm))
     (setf (vm-trap-line vm) to)
-    (vm-goto vm from)
+    (catch 'run-step-done (vm-goto vm from))
     (vm-run vm)))
 
 
@@ -960,9 +957,9 @@ GRL                    GRL(ch,de), groupe de lettres;
   (let ((vm (task-vm *task*)))
     (if (vm-pausedp vm)
         (progn
-         (setf (vm-trap-line vm) nil)
-         (vm-unpause vm)
-         (vm-run vm))
+          (setf (vm-trap-line vm) nil)
+          (vm-unpause vm)
+          (vm-run vm))
         (error 'lse-error
                :format-control "ON NE PEUT PAS CONTINUER UN PROGRAMME QUI N'EST PAS EN PAUSE."))))
 
@@ -971,13 +968,11 @@ GRL                    GRL(ch,de), groupe de lettres;
   (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (unless (or (null to) (vm-line-exist-p vm to))
-      (error 'lse-error
-             :format-control "NUMERO DE LIGNE INEXISTANT ~D"
-             :format-arguments (list to)))
+      (error-bad-line to))
     (when (vm-line-exist-p vm from)
       (vm-reset-stacks vm))
     (setf (vm-trap-line vm) to)
-    (vm-goto vm from)
+    (catch 'run-step-done (vm-goto vm from))
     (vm-run vm)))
 
 
@@ -985,9 +980,7 @@ GRL                    GRL(ch,de), groupe de lettres;
   (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (unless (or (null linum) (vm-line-exist-p vm linum))
-      (error 'lse-error
-             :format-control "NUMERO DE LIGNE INEXISTANT ~D"
-             :format-arguments (list linum)))
+      (error-bad-line linum))
     (if (vm-pausedp vm)
         (progn
           (setf (vm-trap-line vm) linum)
@@ -1069,7 +1062,7 @@ GRL                    GRL(ch,de), groupe de lettres;
                                 :if-does-not-exist :create)
           (if stream
               (loop
-                :for (lino line) :in source
+                :for (nil line) :in source
                 :do (write-line line stream))
               (error 'lse-file-error
                      :pathname path
@@ -1091,7 +1084,7 @@ GRL                    GRL(ch,de), groupe de lettres;
                                 :if-exists :supersede
                                 :if-does-not-exist :create)
           (loop
-            :for (lino line) :in source
+            :for (nil line) :in source
             :do (write-line line stream)))
         (error 'lse-error
                :format-control "IL N'Y A PAS DE PROGRAMME A MODIFIER."
@@ -1258,46 +1251,46 @@ GRL                    GRL(ch,de), groupe de lettres;
   (io-format *task* "  ~A~%" (dat))
   (flet ((list-files (type directory control-string modulo)
            (let* ((files  (directory (make-pathname :name :wild
-                                                   :type (cdr (assoc type *file-types*))
-                                                   :version nil
-                                                   :defaults directory)))
+                                                    :type (cdr (assoc type *file-types*))
+                                                    :version nil
+                                                    :defaults directory)))
                   (width  (reduce (function max) files
                                   :key (lambda (x) (length (pathname-name x)))
                                   :initial-value 5)))
-            (dolist (file files)
-              (io-format *task* control-string
-                         width
-                         (string-upcase (pathname-name file))
-                         (task-account *task*)
-                         (subseq (formate-date (file-write-date file)) 0 8)
-                         (truncate (or (ignore-errors
-                                         (with-open-file (stream file
-                                                                 :direction :input
-                                                                 :element-type '(unsigned-byte 8)
-                                                                 :if-does-not-exist nil)
-                                           (file-length stream)))
-                                       0)
-                                   modulo))))))
+             (dolist (file files)
+               (io-format *task* control-string
+                          width
+                          (string-upcase (pathname-name file))
+                          (task-account *task*)
+                          (subseq (formate-date (file-write-date file)) 0 8)
+                          (truncate (or (ignore-errors
+                                          (with-open-file (stream file
+                                                                  :direction :input
+                                                                  :element-type '(unsigned-byte 8)
+                                                                  :if-does-not-exist nil)
+                                            (file-length stream)))
+                                        0)
+                                    modulo))))))
     
-   (io-format *task* "~%FICHIERS-PROGRAMMES~
+    (io-format *task* "~%FICHIERS-PROGRAMMES~
                      ~%*******************~
                      ~2% NOM NO.COMPTE  DATE  NB.MOTS~
                      ~2%")
-   (list-files :program *current-directory* "~VA  ~2,'0D    ~8A ~5D~%" 2)
+    (list-files :program *current-directory* "~VA  ~2,'0D    ~8A ~5D~%" 2)
 
-   (io-format *task* "~%FICHIERS-PERMANENTS~
+    (io-format *task* "~%FICHIERS-PERMANENTS~
                      ~%*******************~
                      ~2% NOM NO.COMPTE  DATE  NB.SECTEURS~
                      ~2%")
-   (list-files :data *current-directory* "~VA  ~2,'0D    ~8A ~5D~%" +block-size+)
+    (list-files :data *current-directory* "~VA  ~2,'0D    ~8A ~5D~%" +block-size+)
 
-   (io-format *task* "~%FICHIERS-DONNEE TEMPORAIRES~
+    (io-format *task* "~%FICHIERS-DONNEE TEMPORAIRES~
                      ~%*****************************~
                      ~2% NOM CONSOLE NB.SECTEURS~
                      ~2%")
-   (list-files :temporary (make-temporaries-directory) "~VA  ~2,'0D~*     ~5D~%" +block-size+)
-   (io-new-line *task*)
-   (values)))
+    (list-files :temporary (make-temporaries-directory) "~VA  ~2,'0D~*     ~5D~%" +block-size+)
+    (io-new-line *task*)
+    (values)))
 
 
 (defun free-sectors ()
@@ -1395,6 +1388,21 @@ commande CONTINUER.
 
 
   #+developing
+  (defcommand "LE EVALUER UNE EXPRESSION LISP " ligne (ligne)
+    (let* ((*vm* (task-vm *task*))
+           (results)
+           (output (with-output-to-string (*standard-output*)
+                     (handler-case
+                         (setf results (multiple-value-list
+                                        (eval (let ((*package* (find-package "COM.INFORMATIMAGO.LSE"))
+                                                    (*print-right-margin* 80))
+                                                (read-from-string ligne)))))
+                       (error (err)
+                         (format t "~%ERROR: ~A~%" err)
+                         (setf results nil))))))
+      (io-format *task* "~%~A~%~@[=> ~{~S~%~^   ~}~]" output results)))
+  
+  #+developing
   (defcommand "LD DEASSEMBLER A PARTIR DE "     deux-numeros-optionels (from to)
     "Commande de deboguage: Désassemble les lignes de programme."
     (desassembler-a-partir-de from to))
@@ -1464,7 +1472,7 @@ Sur MITRA 15, l'état des variables est également transféré."
   (defcommand "RANGER" un-programme (pgm)
     "Enregistre le programme courant dans un nouveau fichier programme."
     (ranger pgm))
- 
+  
   (defcommand "MODIFIER"  un-programme (pgm)
     "Enregistre le programme courant dans un fichier programme existant."
     (modifier pgm))
@@ -1608,12 +1616,12 @@ Sur MITRA 15, l'état des variables est également transféré."
                           ;;   (io-new-line task))
                           (io-finish-output *task*)
                           (handler-case
-                           (let ((line (io-read-line task
-                                                     :beep (not (task-silence task))
-                                                     :xoff t)))
-                             (if (task-interruption task)
-                                 (io-format *task* "~%PRET~%")
-                                 (command-eval-line task line)))
+                              (let ((line (io-read-line task
+                                                        :beep (not (task-silence task))
+                                                        :xoff t)))
+                                (if (task-interruption task)
+                                    (io-format *task* "~%PRET~%")
+                                    (command-eval-line task line)))
                             (end-of-file (err)
                               (if (and (io-tape-input-p *task*)
                                        (eql (stream-error-stream err) (task-input *task*)))
@@ -1626,7 +1634,8 @@ Sur MITRA 15, l'état des variables est également transféré."
                       (io-format *task* "~%PRET~%")
                       (io-finish-output *task*))
                     (error (err)
-                      (io-format *task* "~%ERREUR: ~A~%" err)
+                      (error-format *task* err)
+                      ;; (io-format *task* "~%ERREUR: ~A~%" err)
                       (io-format *task* "~%PRET~%")
                       (io-finish-output *task*))
                     (user-interrupt (condition)

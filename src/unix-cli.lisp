@@ -61,23 +61,27 @@ BONJOUR     ~8A
 
 (defun main (&optional args)
   (declare (ignore args))
-  (let ((*task* (make-instance 'task
-                    :state :active
-                    :case-insensitive t
-                    :upcase-output nil
-                    :dectech nil
-                    :unicode (unicode-terminal-p)
-                    :terminal (make-instance
-                                  #+swank
-                                  (if (typep *standard-output*
-                                             'swank-backend::slime-output-stream)
-                                      'swank-terminal
-                                      'standard-terminal)
-                                #-swank 'standard-terminal
-                                :input *standard-input*
-                                :output *standard-output*))))
-    (io-format *task* "~?" *unix-banner*  (list *version* (subseq (dat) 9)))
-    (command-repl *task*))
+  (let ((terminal (make-instance
+                      #+swank
+                      (if (typep *standard-output*
+                                 'swank-backend::slime-output-stream)
+                          'swank-terminal
+                          'standard-terminal)
+                    #-swank 'standard-terminal
+                    :input *standard-input*
+                    :output *standard-output*)))
+    (terminal-initialize terminal)
+    (unwind-protect
+         (let ((*task* (make-instance 'task
+                           :state :active
+                           :case-insensitive t
+                           :upcase-output nil
+                           :dectech nil
+                           :unicode (unicode-terminal-p)
+                           :terminal terminal)))
+           (io-format *task* "~?" *unix-banner*  (list *version* (subseq (dat) 9)))
+           (command-repl *task*))
+      (terminal-finalize terminal)))
   0)
 
 

@@ -405,9 +405,13 @@
           (unparse-expression (third expr))
           (princ "_")
           (unparse-expression (fourth expr))
-          (unless (= 1 (fifth expr))
-            (princ " PAS ")
-            (unparse-expression (fifth expr)))
+          (let ((pas (typecase (fifth expr)
+                       (tok-numero (numero-valeur (fifth expr)))
+                       (tok-nombre (nombre-valeur (fifth expr)))
+                       (t          (fifth expr)))))
+            (unless (and (numberp pas) (= 1 pas))
+              (princ " PAS ")
+              (unparse-expression (fifth expr))))
           (princ (case (first expr)
                    (:faire-jusqu-a  " JUSQUA ")
                    (:faire-tant-que " TANT QUE ")))
@@ -909,22 +913,6 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
      (error 'lse-error
             :format-control "INTERNE: UNE LISTE INVALIDE ~S DANS L'ARBRE SYNTAXIQUE."
             :format-arguments (list parse-tree)))))
-
-
-;; zebu:
-#-(and) 
-(defun parse-lse (scanner)
-  (handler-case
-      (lr-parse (progn
-                  (advance-line)
-                  (lambda (parser-data)
-                    (scan-next-token scanner parser-data)))
-                (lambda (msg) (error "ERREUR: ~A" msg))
-                (find-grammar "LSE"))
-    (error (err)
-      (format t "Parsing error ~A" err)
-      (signal err))))
-
 
 
 (defun compile-lse-line (source-line)

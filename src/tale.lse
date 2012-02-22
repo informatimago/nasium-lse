@@ -1,0 +1,6 @@
+1*Auteur: Pascal Bourguignon
+2*Decription: Programme de test: ALE
+10 N_100;A_0.1
+20 SI 0<N ALORS DEBUT N_N-1;A_ALE(A);AFFICHER A;ALLER EN 20 FIN
+30 AFFICHER[/]
+40 TERMINER

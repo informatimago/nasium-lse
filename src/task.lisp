@@ -86,12 +86,10 @@
                          :initform :in-limbo
                          :type (member :in-limbo :to-connect :sleeping :active))
 
-   (input                :accessor task-input
-                         :initform nil
+   (input                :initform nil
                          :documentation "current input stream.
 Can be either (terminal-input-stream terminal) or tape-input.")
-   (output               :accessor task-output
-                         :initform nil
+   (output               :initform nil
                          :documentation "current output stream.
 Can be either (terminal-output-stream terminal) or tape-output.")
 
@@ -101,11 +99,9 @@ Can be either (terminal-output-stream terminal) or tape-output.")
     :documentation "user interaction terminal.")
   
    (tape-input           :initarg :tape-input
-                         :accessor task-tape-input
                          :initform nil
                          :documentation "stream? when a tape is loaded.")
    (tape-output          :initarg :tape-output
-                         :accessor task-tape-output
                          :initform nil
                          :documentation "stream? to a temporary tape")
   
@@ -149,11 +145,13 @@ Can be either (terminal-output-stream terminal) or tape-output.")
                          :documentation "parameter io-read-line.")
    
    (random-state         :accessor task-random-state
-                         :initform (make-random-state) :type random-state)
+                         :initform (make-random-state t) :type random-state)
    (environnement        :accessor task-environnement :initform nil :type (or null environnement))
    (vm                   :reader task-vm
                          :initform (make-instance 'lse-vm) :type lse-vm)))
 
+(defmethod (setf task-input) (stream (task task))
+  (setf (slot-value task 'input) stream))
 
 (defmethod task-input ((task task))
   (with-slots (input) task
@@ -161,6 +159,8 @@ Can be either (terminal-output-stream terminal) or tape-output.")
       (setf input (terminal-input-stream (task-terminal task))))
     input))
 
+(defmethod (setf task-output) (stream (task task))
+  (setf (slot-value task 'output) stream))
 
 (defmethod task-output ((task task))
   (with-slots (output) task
@@ -168,6 +168,8 @@ Can be either (terminal-output-stream terminal) or tape-output.")
       (setf output (terminal-output-stream (task-terminal task))))
     output))
 
+(defmethod (setf task-tape-input) (stream (task task))
+  (setf (slot-value task 'tape-input) stream))
 
 (defmethod task-tape-input ((task task))
   (with-slots (tape-input) task
@@ -175,6 +177,8 @@ Can be either (terminal-output-stream terminal) or tape-output.")
       (setf tape-input (make-string-input-stream "")))
     tape-input))
 
+(defmethod (setf task-tape-output) (stream (task task))
+  (setf (slot-value task 'tape-output) stream))
 
 (defmethod task-tape-output ((task task))
   (with-slots (tape-output) task
@@ -208,7 +212,8 @@ Can be either (terminal-output-stream terminal) or tape-output.")
   (setf *task-count* task-count 
         *tasks*      nil)
   (dotimes (i *task-count*)
-    (push (task-create (1- (- *task-count* i))) *tasks*))
+    (push (make-instance 'task :console (1- (- *task-count* i)))
+          *tasks*))
   (values))
 
 
@@ -222,11 +227,18 @@ Retourne un task qui était inlimbo (il est maintant aconnecter).
 "
   ;;pthread_mutex_lock(&mutex);
   (unwind-protect
-      (let ((result (find-if (function task-state-inlimbo-p) *tasks*)))
-        (when result (task-state-change task :to-connect))
-        result)
+      (let ((task (find-if (function task-state-inlimbo-p) *tasks*)))
+        (when task
+          (setf (task-state task) :to-connect))
+        task)
     (progn ;; pthread_mutex_unlock(&mutex);
       )))
+
+(defmethod task-disconnect ((task task))
+  (declare (ignorable task))
+  ;; for socket tasks, disconnect it.
+  ;; for stdio task, exit?
+  nil)
 
 
 #||

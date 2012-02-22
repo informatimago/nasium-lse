@@ -127,6 +127,27 @@
 (defclass terminal ()
   ())
 
+(defgeneric terminal-initialize (terminal)
+  (:documentation "Initialize the terminal (remote device).")
+  (:method (terminal) terminal))
+
+(defgeneric terminal-finalize (terminal)
+  (:documentation "Finalize the terminal (remote device).")
+  (:method (terminal) terminal))
+
+(defgeneric terminal-columns (terminal)
+  (:documentation "Returns the number of columns in the terminal.")
+  (:method (terminal)
+    (declare (ignorable terminal))
+    80))
+
+(defgeneric terminal-rows (terminal)
+  (:documentation "Returns the number of rows in the terminal.")
+  (:method (terminal)
+    (declare (ignorable terminal))
+    25))
+
+
 (defgeneric terminal-input-stream (terminal)
   (:documentation "Returns the input stream used to read from the terminal.")
   (:method (terminal)
@@ -379,6 +400,7 @@ When false, no automatic echo occurs.")
             (when (< chunk-end end)
               (ecase (aref buffer chunk-end)
                 (#.+CR+               (io-beginning-of-line  task))
+                (#.+LF+               (io-new-line           task))
                 (#.+TAPE-READER-ON+   (io-start-tape-reader  task))
                 (#.+TAPE-PUNCHER-ON+  (io-start-tape-puncher task))
                 (#.+TAPE-PUNCHER-OFF+ (io-stop-tape-puncher  task))

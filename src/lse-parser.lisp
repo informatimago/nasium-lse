@@ -363,10 +363,16 @@
 
             (--> faire
                  (seq tok-FAIRE expression tok-POUR identificateur tok-fleche expression
-                      (opt (seq tok-PAS expression) :action $1)
+                      (opt (seq tok-PAS expression :action expression) :action $1)
                       (alt (seq tok-JUSQUA expression         :action (list :faire-jusqu-a  $2))
                            (seq tok-TANT tok-QUE disjonction  :action (list :faire-tant-que $3)))
-                      :action (list (first $8) $2 $4 $6 (or $7 1) (second $8)))
+                      :action (list (first $8) $2 $4 $6
+                                    (or $7 (make-instance 'tok-numero
+                                               :kind 'tok-numero
+                                               :text "1"
+                                               :column (token-column $6)
+                                               :line (token-line $6)))
+                                    (second $8)))
                  :action $1)
             
             (--> retour

@@ -215,6 +215,10 @@
   (:report print-scanner-error))
 
 
+(defmethod initialize-instance :after ((self lse-scanner-error) &key &allow-other-keys)
+  (setf (slot-value self 'line-number) (slot-value self 'line)))
+
+
 (defmethod print-scanner-error ((err lse-scanner-error) stream)
   (let ((token-length (length (token-text (scanner-error-current-token err)))))
     (format stream

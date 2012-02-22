@@ -96,9 +96,29 @@
 ;; 230 RETOUR
 
 
+;; Therefore we define frames to hold variables.  There's a global frame,
+;; for global variables, and a stack of local frames for procedure local
+;; variables.  The local frames also have the return line and offset for
+;; the procedure.
+
+
+
+;; FRAMES:
 
 (defclass frame ()
-  ((variables :initarg :variables :initform '() :accessor frame-variables)))
+  ((variables :initarg :variables :initform '() :accessor frame-variables)
+   (loop-stack :initform '() :accessor frame-loop-stack)))
+
+(defun loop-stack (vm)
+  (frame-loop-stack (or (first (vm-local-frame-stack vm))
+                        (vm-global-frame vm))))
+
+(defun (setf loop-stack) (new-value vm)
+  (setf (frame-loop-stack (or (first (vm-local-frame-stack vm))
+                              (vm-global-frame vm)))
+        new-value))
+
+
 
 (defclass local-frame (frame)
   ((return.line :initarg :return.line :initform 0 :reader frame-return.line
@@ -110,7 +130,7 @@
   (print-unreadable-object (frame stream :identity t :type t)
     (format stream "with ~D variables: ~(~A~^ ~)"
             (length (frame-variables frame))
-            (sort (mapcar (function variable-name) (frame-variables frame))
+            (sort (mapcar (function car) (frame-variables frame))
                   (function string<))))
   frame)
 
@@ -122,7 +142,7 @@
   var)
 
 (defmethod remove-variable ((frame frame) var)
-  (setf (frame-variables frame) (remove (variable-name var) (frame-variables)
+  (setf (frame-variables frame) (remove (variable-name var) (frame-variables frame)
                                         :key (function car)))
   var)
 
@@ -158,34 +178,45 @@ variable-type may be:
   ((name :initarg :name :accessor variable-name)))
 
 (defmethod print-object ((slot named-slot) stream)
-  (print-unreadable-object (slot stream :identity t :type t)
-    (format stream "~A" (variable-name slot)))
+  (if *print-escape*
+      (print-unreadable-object (slot stream :identity t :type t)
+        (format stream "~A" (variable-name slot)))
+      (format stream "~:@(~A~)" (variable-name slot)))
   slot)
 
 
-;; LSE-VARIABLES;
+;; LSE-VARIABLES:
 
 (defclass lse-variable (named-slot)
   ((type :initarg :type :accessor variable-type :initform 'nombre)
    (value :initarg :value :accessor variable-value :initform :unbound)))
 
+(defmethod print-object ((variable lse-variable) stream)
+  (if *print-escape*
+      (print-unreadable-object (variable stream :identity t :type t)
+        (format stream "~A = ~S of type ~S"
+                (variable-name variable)
+                (variable-value variable)
+                (variable-type variable)))
+      (format stream "~:@(~A~)" (variable-name variable)))
+  variable)
 
 ;; REFERENCE-PARAMETERS:
 
 (defclass reference-parameter (named-slot)
-  ((reference :initarg :reference :accessor parameter-reference)))
+  ((reference :initarg :reference :accessor referenced-variable)))
 
 (defmethod variable-type ((par reference-parameter))
-  (variable-type (parameter-reference par)))
+  (variable-type (referenced-variable par)))
 
 (defmethod (setf variable-type) (new-type (par reference-parameter))
-  (setf (variable-type (parameter-reference par)) new-type))
+  (setf (variable-type (referenced-variable par)) new-type))
 
 (defmethod variable-value ((par reference-parameter))
-  (variable-value (parameter-reference par)))
+  (variable-value (referenced-variable par)))
 
 (defmethod (setf variable-value) (new-value (par reference-parameter))
-  (setf (variable-value (parameter-reference par)) new-value))
+  (setf (variable-value (referenced-variable par)) new-value))
 
 
 ;; VECTEUR-REFS:
@@ -255,23 +286,30 @@ variable-type may be:
    (code-vectors      :reader vm-code-vectors
                       :initform (make-hash-table :test (function eql) :size 256)
                       :documentation "Keys are line numbers, values are lists (line-number code-vector source-line).")
+   (pas-a-pas         :accessor vm-pas-a-pas
+                      :initform nil
+                      :type boolean)
    (trap-line         :accessor vm-trap-line
                       :initform nil
-                      :type (or null (integer 0)))
-   (pc.line           :accessor vm-pc.line
+                      :type (or null (integer 0))
+                      :documentation "The line number where execution will be paused (from EX, RE and PO commands).")
+   (pc.line           :accessor vm-pc.line :reader vm-current-line
                       :initform 0
                       :type (integer 0))
    (pc.offset         :accessor vm-pc.offset
                       :initform 0
                       :type (integer 0))
-   ;; current code vector:
-   (code              :accessor vm-code
+   (code              :accessor vm-code 
                       :initform  #(!next-line)
-                      :type vector )
+                      :type vector
+                      :documentation "The current code vector.")
+   ;; When the VM is in pause, we keep the pc.line, pc.offset and code
+   ;; in those slots, so that we can use the noram pc.line, pc.offset
+   ;; and code slots to execute expressions in the "Machine de bureau"
+   ;; mode.
    (paused.pc.line    :initform nil)
    (paused.pc.offset  :initform nil)
    (paused.code       :initform nil)))
-
 
 
 
@@ -284,6 +322,204 @@ variable-type may be:
             (vm-pc.line vm)))
   vm)
 
+
+
+
+
+
+
+
+
+(defmethod find-variable ((vm lse-vm) ident)
+  "
+RETURN: The variable; the frame it belongs to,
+        or NIL if the variable cannot be found.
+"
+  (multiple-value-bind (var frame) (find-variable (vm-global-frame vm) ident)
+    (if var
+        (values var frame)
+        (and (vm-local-frame-stack vm)
+             (find-variable (vm-local-frame-stack vm) ident)))))
+
+
+(defmethod add-global-variable ((vm lse-vm) var)
+  (add-variable (vm-global-frame vm) var))
+
+
+(defun stack-push (val stack) (vector-push-extend val stack (length stack)))
+(defun stack-pop  (stack)     (vector-pop stack))
+
+
+
+
+
+(defmethod get-program ((vm lse-vm) from to)
+  "Returns a list of (lino line-source) sorted by increasing lino."
+  (let ((lines '()))
+    (maphash (lambda (lino code)
+               (when (and (<= from lino) (or (null to) (<= lino to)))
+                 (push (list lino (decompile-lse-line lino code)) lines)))
+             (vm-code-vectors vm))
+    (sort lines '< :key (function first))))
+
+
+(defmethod erase-program ((vm lse-vm))
+  "
+DO:     Erase the program in the VM.
+RETURN: vm
+"
+  (let ((codes (vm-code-vectors vm)))
+   (maphash (lambda (k v) (declare (ignore v)) (remhash k codes))
+            codes)
+   vm))
+
+(defmethod replace-program ((vm lse-vm) program)
+  "
+DO:      Replace the program in the VM with PROGRAM.
+PROGRAM: a list of (lino code-vector line-source).
+RETURN: vm
+"
+  (erase-program vm)
+  (let ((codes (vm-code-vectors vm)))
+    (dolist (line program vm)
+      (setf (gethash (first line) codes) line))))
+
+
+(defmethod put-line ((vm lse-vm) lino code)
+  (setf (gethash lino (vm-code-vectors vm)) code))
+
+
+(defmethod erase-line-number ((vm lse-vm) lino)
+  (remhash lino (vm-code-vectors vm)))
+
+
+
+(defun extremum (seq lessp)
+  (let ((extremum nil))
+    (map nil (lambda (item)
+               (when (or (null extremum)
+                       (funcall lessp extremum item))
+                   (setf extremum item)))
+         seq)
+    extremum))
+
+(defun maximum (seq &optional (lessp '<)) (extremum seq lessp))
+(defun minimum (seq &optional (lessp '<)) (extremum seq (complement lessp)))
+
+
+(defmethod maximum-line-number ((vm lse-vm))
+  (maximum (HASH-TABLE-KEYS (vm-code-vectors vm))))
+
+
+(defmethod minimum-line-number ((vm lse-vm))
+  (minimum (HASH-TABLE-KEYS (vm-code-vectors vm))))
+
+
+
+(defun line-length-maximum ()
+  #+LSE-T1600 80
+  #+LSE-MITRA-15 80
+  #-(or LSE-T1600 LSE-MITRA-15) 65535)
+
+(defun line-number-maximum ()
+  #+LSE-T1600 255
+  #+LSE-MITRA-15 250
+  #-(or LSE-T1600 LSE-MITRA-15) 65535)
+
+(defun line-number-valid-p (linum)
+  (and (integerp linum) (<= 1 linum (line-number-maximum))))
+
+
+
+;; EXECUTER A PARTIR DE debut[,fin]
+;; 
+;;     Fait exécuter le programme courant de l'utilisateur à partir de la
+;;     ligne de numéro 'debut' (si aucune ligne n'est numéroté 'debut',
+;;     une erreur sera détectée).
+;; 
+;;     L'exécution se poursuivra jusqu'à ce qu'on arrive :
+;; 
+;;         - soit à la ligne de numéro 'fin' ; cette ligne ne sera pas
+;;           exécutée, la console repassera dans l'état «moniteur» et
+;;           affichera 'fin'.
+;; 
+;;         - soit à une des instructions LSE: PAUSE ou TERMINER ou à une
+;;           erreur.  La console repassera dans l'état «moniteur» et
+;;           affichera un message indiquant la cause de l'arrêt et le
+;;           numéro de la ligne où il s'est produit.  Eventuellement, en
+;;           cas d'arrêt dans une procédure, le numéro de la ligne où
+;;           l'on avait appelé cette procédure.
+;; 
+;;         - L'utilisation de la touche ESC arrête également l'exécution.
+;; 
+;; 
+;; REPRENDRE A PARTIR DE debut[,fin]
+;; 
+;;     Permet de reprendre l'exécution sur une ligne différente de celle
+;;     où elle fut interrompue.
+;; 
+;;     Les paramètres 'debut' et 'fin' ont la même signification que ceux
+;;     de la commande EXECUTER, mais la commande REPRENDRE ne change pas
+;;     l'affectation des identificateurs.  Toutes les valeurs antérieures
+;;     a l'interruption sont conservée.
+;; 
+;;     L'exécution du programme est toujours reprise au niveau principal
+;;     (même si le programme avait été interrompu dans une procédure).
+;; 
+;;     
+;; CONTINUER
+;; 
+;;     Permet de relancer l'exécution d'un programme momentanément
+;;     interrompu par l'instruction PAUSE ou la touche d'interruption ESC.
+;; 
+;;     L'exécution reprend à l'endroit où elle fut arrêtée.
+;; 
+;; 
+;; POURSUIVRE JUSQU'EN fin
+;; 
+;;     Relance l'exécution comme CONTINUER mais avec arrêt en ligne 'fin'.
+;; 
+;; 
+;; 
+;; 
+;; T-1600:
+;; TERMINE EN LIGNE ###
+;; PAUSE EN LIGNE ###
+;; 
+;; Mitra-15:
+;; TERMINE
+;; PAUSE
+;; 
+;; 
+;; Arrêt sur point d'arrêt (début de ligne).
+;;   (EXECUTER A PARTIR DE debut[,fin])
+;;   (REPRENDRE A PARTIR DE debut[,fin])
+;;   (POURSUIVRE JUSQU'EN fin)
+;;    Il n'y a qu'un seul point d'arrêt ('fin') au maximum.
+;; 
+;; Arrêt sur PAUSE
+;; 
+;; Arrêt sur TERMINER
+;; 
+;; Arrêt sur ESC
+;;   Implémenté avec la condition USER-INTERRUPT signalée par YIELD-SIGNALS.
+;; 
+;; CONTINUER
+;; POURSUIVRE JUSQU'EN fin
+;;   Sur PAUSE ou ESC.
+;;   Continue là où on en était.
+;;   Poursuivre donne un point d'arrêt.
+;; 
+;; 
+;; EXECUTER A PARTIR DE debut[,fin]
+;;   Reprend au niveau principal.
+;;   Efface la pile des procédures.
+;;   Efface pas les variables globales.
+;; 
+;; REPRENDRE A PARTIR DE debut[,fin]
+;;   Reprend au niveau principal.
+;;   Efface la pile des procédures.
+;;   N'efface pas les variables globales.
 
 
 
@@ -317,6 +553,7 @@ variable-type may be:
   (let ((line (gethash lino (vm-code-vectors vm))))
     (if line
         (progn
+          
           (setf (vm-state     vm) :running
                 (vm-pc.line   vm) lino
                 (vm-pc.offset vm) 0
@@ -324,9 +561,11 @@ variable-type may be:
                 (slot-value vm 'paused.pc.line)   nil
                 (slot-value vm 'paused.pc.offset) nil
                 (slot-value vm 'paused.code)      nil)
-          (when (eql lino (vm-trap-line vm))
-            (pause vm))) ; to get the PAUSE message
-        (lse-error "NUMERO DE LIGNE INEXISTANT ~D" lino)))
+          (when (or (vm-pas-a-pas vm)
+                    (eql lino (vm-trap-line vm)))
+            ;; to get the PAUSE message
+            (pause vm)))
+        (error-bad-line lino)))
   vm)
 
 (defmethod vm-reset-variables ((vm lse-vm))
@@ -354,209 +593,6 @@ variable-type may be:
     :while (eql (vm-state vm) :running)
     :do (run-step vm))
   vm)
-
-
-
-
-#|
-
-
-
-EXECUTER A PARTIR DE debut[,fin]
-
-    Fait exécuter le programme courant de l'utilisateur à partir de la
-    ligne de numéro 'debut' (si aucune ligne n'est numéroté 'debut',
-    une erreur sera détectée).
-
-    L'exécution se poursuivra jusqu'à ce qu'on arrive :
-
-        - soit à la ligne de numéro 'fin' ; cette ligne ne sera pas
-          exécutée, la console repassera dans l'état «moniteur» et
-          affichera 'fin'.
-
-        - soit à une des instructions LSE: PAUSE ou TERMINER ou à une
-          erreur.  La console repassera dans l'état «moniteur» et
-          affichera un message indiquant la cause de l'arrêt et le
-          numéro de la ligne où il s'est produit.  Eventuellement, en
-          cas d'arrêt dans une procédure, le numéro de la ligne où
-          l'on avait appelé cette procédure.
-
-        - L'utilisation de la touche ESC arrête également l'exécution.
-
-
-REPRENDRE A PARTIR DE debut[,fin]
-
-    Permet de reprendre l'exécution sur une ligne différente de celle
-    où elle fut interrompue.
-
-    Les paramètres 'debut' et 'fin' ont la même signification que ceux
-    de la commande EXECUTER, mais la commande REPRENDRE ne change pas
-    l'affectation des identificateurs.  Toutes les valeurs antérieures
-    a l'interruption sont conservée.
-
-    L'exécution du programme est toujours reprise au niveau principal
-    (même si le programme avait été interrompu dans une procédure).
-
-    
-CONTINUER
-
-    Permet de relancer l'exécution d'un programme momentanément
-    interrompu par l'instruction PAUSE ou la touche d'interruption ESC.
-
-    L'exécution reprend à l'endroit où elle fut arrêtée.
-
-
-POURSUIVRE JUSQU'EN fin
-
-    Relance l'exécution comme CONTINUER mais avec arrêt en ligne 'fin'.
-
-
-
-
-T-1600:
-TERMINE EN LIGNE ###
-PAUSE EN LIGNE ###
-
-Mitra-15:
-TERMINE
-PAUSE
-
-
-Arrêt sur point d'arrêt (début de ligne).
-  (EXECUTER A PARTIR DE debut[,fin])
-  (REPRENDRE A PARTIR DE debut[,fin])
-  (POURSUIVRE JUSQU'EN fin)
-   Il n'y a qu'un seul point d'arrêt ('fin') au maximum.
-
-Arrêt sur PAUSE
-
-Arrêt sur TERMINER
-
-Arrêt sur ESC
-
-
-CONTINUER
-POURSUIVRE JUSQU'EN fin
-  Sur PAUSE ou ESC.
-  Continue là où on en était.
-  Poursuivre donne un point d'arrêt.
-
-
-EXECUTER A PARTIR DE debut[,fin]
-  Reprend au niveau principal.
-  Efface la pile des procédures.
-  Efface pas les variables globales.
-
-REPRENDRE A PARTIR DE debut[,fin]
-  Reprend au niveau principal.
-  Efface la pile des procédures.
-  N'efface pas les variables globales.
-
-
-|#
-
-
-
-
-
-(defmethod find-variable ((vm lse-vm) ident)
-  "
-RETURN: The variable; the frame it belongs to,
-        or NIL if the variable cannot be found.
-"
-  (multiple-value-bind (var frame) (find-variable (vm-global-frame vm) ident)
-    (if var
-        (values var frame)
-        (and (vm-local-frame-stack vm)
-             (find-variable (vm-local-frame-stack vm))))))
-
-
-(defmethod add-global-variable ((vm lse-vm) var)
-  (add-variable (vm-global-frame vm) var))
-
-
-(defun stack-push (val stack) (vector-push-extend val stack (length stack)))
-(defun stack-pop  (stack)     (vector-pop stack))
-
-
-
-
-(defun extremum (seq lessp)
-  (let ((extremum nil))
-    (map nil (lambda (item)
-               (when (or (null extremum)
-                       (funcall lessp extremum item))
-                   (setf extremum item)))
-         seq)
-    extremum))
-
-(defun maximum (seq &optional (lessp '<)) (extremum seq lessp))
-(defun minimum (seq &optional (lessp '<)) (extremum seq (complement lessp)))
-
-
-
-
-(defmethod get-program ((vm lse-vm) from to)
-  "Returns a list of (lino line-source) sorted by increasing lino."
-  (let ((lines '()))
-    (maphash (lambda (lino code)
-               (when (and (<= from lino) (or (null to) (<= lino to)))
-                 (push (list lino (decompile-lse-line lino code)) lines)))
-             (vm-code-vectors vm))
-    (sort lines '< :key (function first))))
-
-
-(defmethod erase-program ((vm lse-vm))
-  "
-DO:     Erase the program in the VM.
-RETURN: vm
-"
-  (let ((codes (vm-code-vectors vm)))
-   (maphash (lambda (k v) (remhash k codes)) codes)
-   vm))
-
-(defmethod replace-program ((vm lse-vm) program)
-  "
-DO:      Replace the program in the VM with PROGRAM.
-PROGRAM: a list of (lino code-vector line-source).
-RETURN: vm
-"
-  (erase-program vm)
-  (let ((codes (vm-code-vectors vm)))
-    (dolist (line program vm)
-      (setf (gethash (first line) codes) line))))
-
-
-(defmethod put-line ((vm lse-vm) lino code)
-  (setf (gethash lino (vm-code-vectors vm)) code))
-
-
-(defmethod erase-line-number ((vm lse-vm) lino)
-  (remhash lino (vm-code-vectors vm)))
-
-
-(defmethod maximum-line-number ((vm lse-vm))
-  (maximum (HASH-TABLE-KEYS (vm-code-vectors vm))))
-
-
-(defmethod minimum-line-number ((vm lse-vm))
-  (minimum (HASH-TABLE-KEYS (vm-code-vectors vm))))
-
-
-
-
-(defun line-length-maximum ()
-  #+LSE-T1600 80
-  #+LSE-MITRA-15 80
-  #-(or LSE-T1600 LSE-MITRA-15) 65535)
-
-(defun line-number-maximum ()
-  #+LSE-T1600 255
-  #+LSE-MITRA-15 250
-  #-(or LSE-T1600 LSE-MITRA-15) 65535)
-
-(defun line-number-valid-p (linum)
-  (and (integerp linum) (<= 1 linum (line-number-maximum))))
 
 
 
@@ -637,7 +673,8 @@ RETURN: vm
   (let ((value (deref vm value)))
     (etypecase value
       ((or integer nombre)
-       (io-format *task* (if (and (<= 1e-3 value) (< value 1e6))
+       (io-format *task* (if (or (zerop value)
+                                 (and (<= 1e-3 value) (< value 1e6)))
                              "~A "          
                              "~,,2,,,,'EE ")
                   (let ((tvalue (truncate value)))
@@ -734,9 +771,10 @@ NOTE: on ne peut pas liberer un parametre par reference.
     (if var
         (etypecase var
           (lse-variable          (stack-push var (vm-stack vm)))
-          (reference-parameter   (stack-push (reference-variable var) (vm-stack vm))))
+          (reference-parameter   (stack-push (referenced-variable var) (vm-stack vm))))
         ;; (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident)
-        (stack-push var (vm-stack vm)))))
+        (stack-push (add-global-variable vm (make-instance 'lse-variable :name ident))
+                    (vm-stack vm)))))
 
 (defun push-val (vm ident)
   (check-type ident identificateur)
@@ -769,10 +807,6 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 
 
-
-
-
-
 (defun POP&STORE (vm val ident)
   (check-type ident identificateur)
   (let ((val (deref vm val)))
@@ -781,9 +815,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
       (if var
           (case (variable-type var)
             (nombre
-             (if (nombrep val)
-                 (setf (variable-value var) (un-nombre val))
-                 (lse-error "LA VARIABLE ~A N'EST PAS UNE CHAINE" ident)))
+             (if (chainep val)
+                 (lse-error "LA VARIABLE ~A N'EST PAS UNE CHAINE" ident)
+                 (setf (variable-value var) (un-nombre val))))
             (chaine
              (if (chainep val)
                  (setf (variable-value var) val)
@@ -1012,9 +1046,173 @@ NOTE: on ne peut pas liberer un parametre par reference.
   (declare (ignore vm offset)))
 
 
-;; (:faire-jusqu-a    (op-4/1 faire-jusqu-a))
-;; (:faire-tant-que   (op-3/1 faire-tant-que))
-;; (:tant-que         (op-1 tant-que))
+
+
+
+;; For the FAIRE instructions, the line number is inclusive, and the loop
+;; goes back from the end of that line.  This is processed in the
+;; NEXT-LINE function.  Also, in VM-GOTO, we must check when we exit a
+;; loop.  Therefore we implement FAIRE loops by stacking loop-frames for
+;; embedded loops.  The loop stack is in the frames (global or local
+;; frames) so they're automatically unwound when we return from a
+;; procedure.
+;; Note: the end-line-number can be the same for several embedded loops.
+
+
+(defclass loop-frame ()
+  ((start-line-number :initarg :start-line-number
+                      :reader loop-start-line-number)
+   (start-offset      :initarg :start-offset
+                      :reader loop-offset
+                      :documentation "The code-vector offset for the start of the loop.")
+   (end-line-number   :initarg :end-line-number
+                      :reader loop-end-line-number)
+   (step              :initarg :step
+                      :reader loop-step)
+   (variable          :initarg :variable
+                      :reader loop-variable)))
+
+(defmethod print-object ((self loop-frame) stream)
+  (print-unreadable-object (self stream :identity t :type t)
+    (format stream "~D FAIRE ~D POUR ~A PAS ~S TANT QUE ..."
+            (loop-start-line-number self)
+            (loop-end-line-number self)
+            (loop-variable self)
+            (loop-step self)))
+  self)
+
+
+
+(defclass loop-jusqua (loop-frame)
+  ((limit             :initarg :limit
+                      :reader loop-limit)))
+
+(defmethod print-object ((self loop-jusqua) stream)
+  (print-unreadable-object (self stream :identity t :type t)
+    (format stream "~D FAIRE ~D POUR ~A PAS ~S JUSQUA ~S"
+            (loop-start-line-number self)
+            (loop-end-line-number self)
+            (loop-variable self)
+            (loop-step self)
+            (loop-limit self)))
+  self)
+
+
+(defun faire (vm loop-class lino init pas limit ident)
+  (let ((line (gethash lino (vm-code-vectors vm)))
+        (var (find-variable vm ident)))
+    (if line
+        (progn
+          (let ((init (if limit
+                          (- init pas)
+                          init)))
+            (if var
+                (if (equal (variable-type var) 'nombre)
+                    (setf (variable-value var) init)
+                    (lse-error "LA VARIABLE DE BOUCLE FAIRE ~A EXISTE, MAIS N'EST PAS UNE VARIABLE ARITHMETIQUE" ident))
+                (setf var (add-global-variable vm (make-instance 'lse-variable
+                                                      :name  ident
+                                                      :value init)))))
+          (let ((stack (loop-stack vm)))
+            (when (and stack
+                       (or (<= lino (loop-start-line-number (first stack)))
+                           (< (loop-end-line-number (first stack)) lino)))
+              (error 'lse-error
+                     :line-number (vm-pc.line vm)
+                     :format-control "BOUCLE FAIRE ~D POUR ~A ENCHEVETREE AVEC LA BOUCHE FAIRE ~D POUR ~A DE LA LIGNE ~D"
+                     :format-arguments (list lino var (loop-end-line-number (first stack))
+                                             (loop-variable (first stack))
+                                             (loop-start-line-number (first stack))))))
+          (let ((loop (apply (function make-instance) loop-class
+                             :start-line-number (vm-pc.line vm)
+                             :start-offset (vm-pc.offset vm)
+                             :end-line-number lino
+                             :step pas
+                             :variable var
+                             (when limit (list :limit limit)))))
+            (push loop (loop-stack vm))
+            (when limit (test-end-of-loop vm loop))))
+        (error-bad-line lino))))
+
+
+(defun faire-jusqu-a (vm lino init pas limit ident)
+  (faire vm 'loop-jusqua lino init pas limit ident))
+
+
+(defmethod test-end-of-loop (vm (loop loop-jusqua))
+  "Returns whether the loop goes on (and we've already jumped to the start of the loop)."
+  (with-slots (variable step limit start-line-number start-offset end-line-number) loop
+    (incf (variable-value variable) step)
+    (if (if (minusp step)
+                (> limit (variable-value variable))
+                (< limit (variable-value variable)))
+        (progn
+          ;; end of loop, we exit it.
+          (pop (loop-stack vm))
+          nil)
+        ;; loop over:
+        (setf (vm-pc.line vm) start-line-number
+              (vm-pc.offset vm) start-offset
+              (vm-code vm) (second (gethash start-line-number (vm-code-vectors vm)))))))
+
+
+
+
+(defclass loop-tant-que (loop-frame)
+  ())
+
+
+(defun faire-tant-que (vm lino init pas ident)
+  (faire vm 'loop-tant-que lino init pas nil ident))
+
+
+(defun tant-que (vm test)
+  (let ((stack (loop-stack vm)))
+    (if stack
+        (with-slots (end-line-number) (first stack)
+          (unless (eql (le-booleen test) vrai)
+            ;; end of loop, we exit it.
+            (pop (loop-stack vm))
+            (vm-goto vm (following-line vm end-line-number))))
+        (lse-error "INTERNE: CODE OPERATION TANT-QUE SANS BOUCLE FAIRE ACTIVE."))))
+
+
+(defmethod test-end-of-loop (vm (loop loop-tant-que))
+  (with-slots (variable step start-line-number start-offset) loop
+    (incf (variable-value variable) step)
+    ;; Always loop over, there's a tant-que instruction at the start-offset.
+    (setf (vm-pc.line vm) start-line-number
+          (vm-pc.offset vm) start-offset
+          (vm-code vm) (second (gethash start-line-number (vm-code-vectors vm))))))
+
+
+(defun following-line (vm lino)
+  (let ((max  (maximum-line-number vm)))
+    (loop
+      :while (and (<= lino max)
+                  (not (vm-line-exist-p vm lino)))
+      :do (incf lino))
+    (if (<= lino max)
+        lino
+        (error 'lse-error
+               :line-number (vm-pc.line vm)
+               :format-control "FIN DU PROGRAMME ATTEINTE; IL MANQUE UNE INSTRUCTION TERMINER"
+               :format-arguments (list (vm-pc.line vm))))))
+
+
+(defun next-line (vm)
+  (let ((stack (loop-stack vm)))
+    (if (and stack
+             (= (loop-end-line-number (first stack)) (vm-pc.line vm)))
+        (if (test-end-of-loop vm (first stack))
+            ;; we have jumped to the start of the loop
+            nil
+            ;; try again, we have finished the current loop, and might
+            ;; have another embedded loop ending on the same line.
+            (next-line vm))
+        (vm-goto vm (following-line vm (1+ (vm-pc.line vm)))))))
+
+
 
 
 (defun pause (vm)
@@ -1037,19 +1235,6 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 
 
-(defun next-line (vm)
-  (let ((max  (maximum-line-number vm))
-        (lino (1+ (vm-pc.line vm))))
-    (loop
-      :while (and (<= lino max)
-                  (not (vm-line-exist-p vm lino)))
-      :do (incf lino))
-    (if (<= lino max)
-        (vm-goto vm lino)
-        (error 'lse-error
-               :format-control "FIN DU PROGRAMME ATTEINTE EN LIGNE ~D : IL MANQUE UNE INSTRUCTION TERMINER"
-               :format-arguments (list (vm-pc.line vm))))))
-
 
 (defparameter *primitive-functions*
   (hashtable :elements '((id::ent (ent 1 1))
@@ -1070,14 +1255,14 @@ NOTE: on ne peut pas liberer un parametre par reference.
                          (id::oxl (oxl 2 2))
                          (id::lgr (lgr 1 1))
                          (id::pos (pos 3 3))
-                         (id::eqn (eqn 1 1))
+                         (id::eqn (eqn 1 2))
                          (id::eqc (eqc 1 1))
                          (id::cca (cca 1 1))
                          (id::cnb (cnb 2 3))
                          (id::sch (sch 3 4))
                          (id::skp (skp 2 3))
                          (id::ptr (ptr 2 3))
-                         (id::grl (grl 2 2))
+                         (id::grl (grl 2 3))
                          (id::dat (dat 0 0)))))
 
 
@@ -1114,7 +1299,22 @@ NOTE: on ne peut pas liberer un parametre par reference.
         )))
 
 (defun goto (vm lino)
-  (vm-goto vm lino))
+  (let ((line (gethash lino (vm-code-vectors vm)))
+        (stack (loop-stack vm)))
+    (cond
+      ((null line)
+       (error-bad-line lino))
+      (stack
+       ;; When we GO TO a line outside of the current loop, we unwind it.
+       (if (or (< (loop-start-line-number (first stack)) lino)
+               (<= lino (loop-end-line-number (first stack))))
+           (progn
+             (pop (loop-stack vm))
+             ;; and try again (there may be several embedded loops)
+             (goto vm lino))
+           (vm-goto vm lino)))
+      (t
+       (vm-goto vm lino)))))
 
 (defun retour (vm)
   (if (vm-local-frame-stack vm)
@@ -1126,13 +1326,13 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun retour-en (vm lino)
   (if (vm-local-frame-stack vm)
-      (let ((frame (pop (vm-local-frame-stack vm)))
-            (line (gethash lino (vm-code-vectors vm))))
+      (let ((line (gethash lino (vm-code-vectors vm))))
+        (pop (vm-local-frame-stack vm))
         (if line
             (setf (vm-pc.line   vm) lino
                   (vm-pc.offset vm) 0
                   (vm-code      vm) (second line))
-            (lse-error "NUMERO DE LIGNE INEXISTANT ~D" lino)))
+            (error-bad-line lino)))
       (lse-error "IL N'Y A PAS D'APPEL DE PROCEDURE EN COURS, RETOUR EN IMPOSSIBLE")))
 
 (defun result (vm result)
@@ -1162,129 +1362,134 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defvar *vm* nil "Current LSE-VM.")
 
+(defvar *debug-vm* nil)
+;; (setf *debug-vm* t)
+;; (setf *debug-vm* nil)
 
 (defun run-step (vm)
   (catch 'run-step-done
     (handler-case
-        (handler-bind ((error #'invoke-debugger))
-          (let ((stack (vm-stack vm))
-                (code  (vm-code  vm))
-                (*vm*  vm))
-            (yield-signals '(#.+sigint+))
-            (flet ((spush  (val) (vector-push-extend val stack))
-                   (spop   ()    (vector-pop stack))
-                   (pfetch ()    (prog1 (aref code (vm-pc.offset vm))
-                                   (incf (vm-pc.offset vm)))))
-              (declare (inline spush spop pfetch))
-              (macrolet ((op-1*  (op) `(spush (,op (deref vm (spop)))))
-                         (op-2*  (op) `(spush (let ((b (spop))) (,op (deref vm (spop)) (deref vm b)))))
-                         (op-0   (op) `(,op vm))
-                         (op-1   (op) `(spush (,op vm (spop))))
-                         (op-2   (op) `(spush (let ((b (spop))) (,op vm (spop) b))))
-                         (op-3   (op) `(spush (let ((c (spop)) (b (spop))) (,op vm (spop) b c))))
-                         (op-0/1 (op) `(,op vm (pfetch)))
-                         (op-1/1 (op) `(spush (,op vm (spop) (pfetch))))
-                         (op-2/1 (op) `(spush (let ((b (spop))) (,op vm (spop) b (pfetch)))))
-                         (op-3/1 (op) `(spush (let ((c (spop)) (b (spop))) (,op vm (spop) b c (pfetch)))))
-                         (op-4/1 (op) `(spush (let ((d (spop)) (c (spop)) (b (spop))) (,op vm (spop) b c d (pfetch)))))
-                         (op-0/2 (op) `(,op vm (pfetch) (pfetch))))
-                (let ((cop (pfetch)))
-                  ;; (io-format *task* "~&Executing COP ~A~%" (car (gethash cop *cop-info* (cons cop 0))))
-                  (case cop
+        (flet ((run ()
+                 (let ((stack (vm-stack vm))
+                       (code  (vm-code  vm))
+                       (*vm*  vm))
+                   (yield-signals '(#.+sigint+))
+                   (flet ((spush  (val) (vector-push-extend val stack))
+                          (spop   ()    (vector-pop stack))
+                          (pfetch ()    (prog1 (aref code (vm-pc.offset vm))
+                                          (incf (vm-pc.offset vm)))))
+                     (declare (inline spush spop pfetch))
+                     (macrolet ((op-1*  (op) `(spush (,op (deref vm (spop)))))
+                                (op-2*  (op) `(spush (let ((b (spop))) (,op (deref vm (spop)) (deref vm b)))))
+                                (op-0   (op) `(,op vm))
+                                (op-1   (op) `(spush (,op vm (spop))))
+                                (op-2   (op) `(spush (let ((b (spop))) (,op vm (spop) b))))
+                                (op-3   (op) `(spush (let ((c (spop)) (b (spop))) (,op vm (spop) b c))))
+                                (op-0/1 (op) `(,op vm (pfetch)))
+                                (op-1/1 (op) `(spush (,op vm (spop) (pfetch))))
+                                (op-2/1 (op) `(spush (let ((b (spop))) (,op vm (spop) b (pfetch)))))
+                                (op-3/1 (op) `(spush (let ((c (spop)) (b (spop))) (,op vm (spop) b c (pfetch)))))
+                                (op-4/1 (op) `(spush (let ((d (spop)) (c (spop)) (b (spop))) (,op vm (spop) b c d (pfetch)))))
+                                (op-0/2 (op) `(,op vm (pfetch) (pfetch))))
+                       (let ((cop (pfetch)))
+                         ;; (io-format *task* "~&Executing COP ~A~%" (car (gethash cop *cop-info* (cons cop 0))))
+                         (case cop
 
-                    (!dup    (let ((a (spop))) (spush a) (spush a)))
-                  
-                    (!non    (op-1* non))
-                    (!et     (op-2* et))
-                    (!ou     (op-2* ou))
+                           (!dup    (let ((a (spop))) (spush a) (spush a)))
+                           
+                           (!non    (op-1* non))
+                           (!et     (op-2* et))
+                           (!ou     (op-2* ou))
 
-                    (!eg     (op-2* eg))
-                    (!ne     (op-2* ne))
-                    (!le     (op-2* le))
-                    (!lt     (op-2* lt))
-                    (!ge     (op-2* ge))
-                    (!gt     (op-2* gt))
+                           (!eg     (op-2* eg))
+                           (!ne     (op-2* ne))
+                           (!le     (op-2* le))
+                           (!lt     (op-2* lt))
+                           (!ge     (op-2* ge))
+                           (!gt     (op-2* gt))
 
-                    (!concat (op-2* concatenation))
+                           (!concat (op-2* concatenation))
 
-                    (!neg    (op-1* neg))
-                    (!add    (op-2* add))
-                    (!sub    (op-2* sub))
-                    (!mul    (op-2* mul))
-                    (!div    (op-2* div))
-                    (!pow    (op-2* pow))
+                           (!neg    (op-1* neg))
+                           (!add    (op-2* add))
+                           (!sub    (op-2* sub))
+                           (!mul    (op-2* mul))
+                           (!div    (op-2* div))
+                           (!pow    (op-2* pow))
 
-                    (!afficher-e       (op-3 afficher-e))
-                    (!afficher-f       (op-3 afficher-f))
-                    (!afficher-cr      (op-1 afficher-cr))
-                    (!afficher-nl      (op-1 afficher-nl))
-                    (!afficher-space   (op-1 afficher-space))
-                    (!afficher-newline (op-1 afficher-newline))
-                    (!afficher-chaine  (op-2 afficher-chaine))
-                    (!afficher-u       (op-1 afficher-u))
-                  
-                    (!beep             (op-0 beep))
-                    (!LIRE&STORE       (op-0/1 LIRE&STORE))
-                    (!LIRE&ASTORE1     (op-1/1 LIRE&ASTORE1))
-                    (!LIRE&ASTORE2     (op-2/1 LIRE&ASTORE2))
+                           (!afficher-e       (op-3 afficher-e))
+                           (!afficher-f       (op-3 afficher-f))
+                           (!afficher-cr      (op-1 afficher-cr))
+                           (!afficher-nl      (op-1 afficher-nl))
+                           (!afficher-space   (op-1 afficher-space))
+                           (!afficher-newline (op-1 afficher-newline))
+                           (!afficher-chaine  (op-2 afficher-chaine))
+                           (!afficher-u       (op-1 afficher-u))
+                           
+                           (!beep             (op-0 beep))
+                           (!LIRE&STORE       (op-0/1 LIRE&STORE))
+                           (!LIRE&ASTORE1     (op-1/1 LIRE&ASTORE1))
+                           (!LIRE&ASTORE2     (op-2/1 LIRE&ASTORE2))
 
-                    (!next-line        (op-0 next-line))
-                    (!retour           (op-0 retour))
-                    (!retour-en        (op-1 retour-en))
-                    (!result           (op-1 result))
-                    (!goto             (op-1 goto))
+                           (!next-line        (op-0 next-line))
+                           (!retour           (op-0 retour))
+                           (!retour-en        (op-1 retour-en))
+                           (!result           (op-1 result))
+                           (!goto             (op-1 goto))
 
 
-                    (!tant-que                  (op-1 tant-que))
-                    (!charger                   (op-2 charger))
-                    (!supprimer-enregistrement  (op-2 supprimer-enregistrement))
-                    (!supprimer-fichier         (op-1 supprimer-fichier))
-                    (!executer                  (op-2 executer))
-                    (!pause          (op-0 pause))
-                    (!terminer       (op-0 terminer))
-                    (!stop           (op-0 stop))
-                  
-                    (!AREF1&PUSH-REF (op-1/1 AREF1&PUSH-REF))
-                    (!AREF1&PUSH-VAL (op-1/1 AREF1&PUSH-VAL))
-                    (!AREF2&PUSH-REF (op-2/1 AREF2&PUSH-REF))
-                    (!AREF2&PUSH-VAL (op-2/1 AREF2&PUSH-VAL))
+                           (!tant-que                  (op-1 tant-que))
+                           (!charger                   (op-2 charger))
+                           (!supprimer-enregistrement  (op-2 supprimer-enregistrement))
+                           (!supprimer-fichier         (op-1 supprimer-fichier))
+                           (!executer                  (op-2 executer))
+                           (!pause          (op-0 pause))
+                           (!terminer       (op-0 terminer))
+                           (!stop           (op-0 stop))
+                           
+                           (!AREF1&PUSH-REF (op-1/1 AREF1&PUSH-REF))
+                           (!AREF1&PUSH-VAL (op-1/1 AREF1&PUSH-VAL))
+                           (!AREF2&PUSH-REF (op-2/1 AREF2&PUSH-REF))
+                           (!AREF2&PUSH-VAL (op-2/1 AREF2&PUSH-VAL))
 
-                    (!POP&ASTORE1    (op-2/1 POP&ASTORE1))
-                    (!POP&ASTORE2    (op-3/1 POP&ASTORE2))
-                    (!POP&STORE      (op-1/1 POP&STORE))
+                           (!POP&ASTORE1    (op-2/1 POP&ASTORE1))
+                           (!POP&ASTORE2    (op-3/1 POP&ASTORE2))
+                           (!POP&STORE      (op-1/1 POP&STORE))
 
-                    (!push-ref       (op-0/1 push-ref))
-                    (!push-val       (op-0/1 push-val))
-                    (!pushi          (op-0/1 pushi))
+                           (!push-ref       (op-0/1 push-ref))
+                           (!push-val       (op-0/1 push-val))
+                           (!pushi          (op-0/1 pushi))
 
-                    (!chaine         (op-0/1 declare-chaine))
-                    (!tableau1       (op-1/1 declare-tableau1))
-                    (!tableau2       (op-2/1 declare-tableau2))
-                    (!liberer        (op-0/1 declare-liberer))
+                           (!chaine         (op-0/1 declare-chaine))
+                           (!tableau1       (op-1/1 declare-tableau1))
+                           (!tableau2       (op-2/1 declare-tableau2))
+                           (!liberer        (op-0/1 declare-liberer))
 
-                  
-                    (!balways        (op-0/1 balways))
-                    (!btrue          (op-1/1 btrue))
-                    (!bfalse         (op-1/1 bfalse))
-                    (!bnever         (op-0/1 bnever))
+                           
+                           (!balways        (op-0/1 balways))
+                           (!btrue          (op-1/1 btrue))
+                           (!bfalse         (op-1/1 bfalse))
+                           (!bnever         (op-0/1 bnever))
 
-                    (!faire-jusqu-a  (op-4/1 faire-jusqu-a))
+                           (!faire-jusqu-a  (op-4/1 faire-jusqu-a))
 
-                    (!call           (op-0/2 call))
-                    (!faire-tant-que (op-3/1 faire-tant-que))
-                    (!garer          (op-2/1 garer))
+                           (!call           (op-0/2 call))
+                           (!faire-tant-que (op-3/1 faire-tant-que))
+                           (!garer          (op-2/1 garer))
 
-                    (!comment        (op-0/1 comment))
-                    (otherwise
-                     (error 'lse-error
-                            :format-control "INTERNE MACHINE VIRTUELLE: CODE OPERATION INCONNU ~S"
-                            :format-arguments (list cop)))))))))
-
+                           (!comment        (op-0/1 comment))
+                           (otherwise
+                            (error 'lse-error
+                                   :format-control "INTERNE MACHINE VIRTUELLE: CODE OPERATION INCONNU ~S"
+                                   :format-arguments (list cop))))))))))
+          (if *debug-vm*
+              (handler-bind ((error #'invoke-debugger)) (run))
+              (run)))
       (error (err)
-        (io-format *task* "~%ERREUR: ~A~%" err)
-        (io-format *task* "~%PRET~%")
         (vm-pause vm) ; no message
-        (io-finish-output *task*)
+        ;; (io-format *task* "~%ERREUR: ~A~%" err)
+        ;; (io-format *task* "~%PRET~%")
+        ;; (io-finish-output *task*)
         (error err))
       (user-interrupt (condition)
         (io-format *task* "~%Condition: ~A~%" condition)

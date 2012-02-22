@@ -77,7 +77,44 @@
 ;;----------------------------------------------------------------------
 
 (defclass swank-terminal (standard-terminal)
-  ())
+  ((last-columns :initform 80)
+   (last-rows    :initform 25)))
+
+(defmethod terminal-initialize ((terminal swank-terminal))
+  (eval-in-emacs '(with-current-buffer (slime-repl-buffer)
+                   (font-lock-mode -1))))
+
+(defmethod terminal-finalize ((terminal swank-terminal))
+  (eval-in-emacs '(with-current-buffer (slime-repl-buffer)
+                   (font-lock-mode +1))))
+
+
+(defmethod terminal-columns ((terminal swank-terminal))
+  (declare (ignorable terminal))
+  (let ((new-columns
+         (eval-in-emacs '(with-current-buffer (slime-repl-buffer)
+                          (let ((windows (remove* (slime-repl-buffer) (window-list)
+                                                  :test-not 'eql
+                                                  :key 'window-buffer)))
+                            (and windows (window-width (first windows))))))))
+    (if new-columns
+        (setf (slot-value terminal 'last-columns) new-columns)
+        (slot-value terminal 'last-columns))))
+
+
+(defmethod terminal-rows ((terminal swank-terminal))
+  (declare (ignorable terminal))
+  (let ((new-rows
+         (eval-in-emacs '(with-current-buffer (slime-repl-buffer)
+                          (let ((windows (remove* (slime-repl-buffer) (window-list)
+                                                  :test-not 'eql
+                                                  :key 'window-buffer)))
+                            (and windows (window-height (first windows))))))))
+    (if new-rows
+        (setf (slot-value terminal 'last-rows) new-rows)
+        (slot-value terminal 'last-rows))))
+
+
 
 (defmethod terminal-ring-bell ((terminal swank-terminal))
   (let ((output (terminal-output-stream terminal)))

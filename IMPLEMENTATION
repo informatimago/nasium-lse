@@ -26,7 +26,7 @@ COMMON-LISP Implementation
 Terminal I/O
 ------------
 
-    Since we don't have serveral threads, we must do polling I/O.
+    Since we don't have several threads, we must do polling I/O.
     
     clisp provide extension functions for raw keyboard input.
     
@@ -157,5 +157,6 @@ LSE SYSTEM
     (configuration save)
     (configuration load)
 
-;;;; IMPLEMENTATION                   --                     --          ;;;;
+;;;; THE END ;;;;
+
 

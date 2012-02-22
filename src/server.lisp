@@ -85,41 +85,41 @@ CONFIGURER     Configure le server EMULSE.
 
 
 
-(defmethod client-receive-message ((client lse-console-client) message)
-  (let ((text (message-text message))
-        (*client* client))
-    (format t "LSE received ~S~%" text)
-    (ecase (console-state (client-console client))
-      (:limbo
-       (cond
-         ((string-equal text "deconnecter")
-          (server-remove-client (client-server client) client)
-          (return-from client-receive-message))
-         ((string-equal text "lse")
-          (setf (console-state (client-console client)) :sleeping))
-         ((string-equal text "configurer")
-          (setf (console-state (client-console client)) :configuration))
-         (t
-          (client-send-response client "~%~A~%" *limbo-help*))))
-      (:configuration
-       (client-send-response client "~A"
-                             (with-output-to-string (*standard-output*)
-                               (let ((*error-output* *standard-output*)
-                                     (*standard-input* (make-string-input-stream ""))
-                                     (*terminal-io*    (make-two-way-stream *standard-input*
-                                                                            *standard-output*))
-                                     (*query-io*       *query-io*))
-                                 (configuration-repl-input text)))))
-      ((:sleeping :awake)
-       (client-send-response client "~A"
-                             (with-output-to-string (*standard-output*)
-                               (let ((*error-output* *standard-output*)
-                                     (*standard-input* (make-string-input-stream ""))
-                                     (*terminal-io*    (make-two-way-stream *standard-input*
-                                                                            *standard-output*))
-                                     (*query-io*       *query-io*))
-                                 (lse-repl text)))))))
-  (client-send-prompt client))
+;; (defmethod client-receive-message ((client lse-console-client) message)
+;;   (let ((text (message-text message))
+;;         (*client* client))
+;;     (format t "LSE received ~S~%" text)
+;;     (ecase (console-state (client-console client))
+;;       (:limbo
+;;        (cond
+;;          ((string-equal text "deconnecter")
+;;           (server-remove-client (client-server client) client)
+;;           (return-from client-receive-message))
+;;          ((string-equal text "lse")
+;;           (setf (console-state (client-console client)) :sleeping))
+;;          ((string-equal text "configurer")
+;;           (setf (console-state (client-console client)) :configuration))
+;;          (t
+;;           (client-send-response client "~%~A~%" *limbo-help*))))
+;;       (:configuration
+;;        (client-send-response client "~A"
+;;                              (with-output-to-string (*standard-output*)
+;;                                (let ((*error-output* *standard-output*)
+;;                                      (*standard-input* (make-string-input-stream ""))
+;;                                      (*terminal-io*    (make-two-way-stream *standard-input*
+;;                                                                             *standard-output*))
+;;                                      (*query-io*       *query-io*))
+;;                                  (configuration-repl-input text)))))
+;;       ((:sleeping :awake)
+;;        (client-send-response client "~A"
+;;                              (with-output-to-string (*standard-output*)
+;;                                (let ((*error-output* *standard-output*)
+;;                                      (*standard-input* (make-string-input-stream ""))
+;;                                      (*terminal-io*    (make-two-way-stream *standard-input*
+;;                                                                             *standard-output*))
+;;                                      (*query-io*       *query-io*))
+;;                                  (lse-repl text)))))))
+;;   (client-send-prompt client))
 
 
 
@@ -193,72 +193,72 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 
 
 
-(defun make-buffered-discipline (process-input)
-  (lambda (task event)
-    (when (member event '(:input :error))
-      (funcall process-input task (read-line (iotask-stream task))))))
+;; (defun make-buffered-discipline (process-input)
+;;   (lambda (task event)
+;;     (when (member event '(:input :error))
+;;       (funcall process-input task (read-line (iotask-stream task))))))
 
 
-(defun make-keyboard-discipline (process-input)
-  (let ((buffer (make-array '(128) :element-type 'character :fill-pointer 0)))
-    (lambda (task event)
-      (when (eq :input event)
-        (let* ((ich (read-char (iotask-stream task)))
-               (ch  #+clisp (system::input-character-char ich)
-                    #-clisp ich))
-          (cond 
-           ((null ch))
-           ((= (char-code ch) +cr+)
-            (terpri)
-            (funcall process-input 
-                     task (subseq buffer 0 (fill-pointer buffer)))
-            (setf (fill-pointer buffer) 0))
-           ((or (= (char-code ch) +bs+) (= (char-code ch) +del+))
-            (when (< 0 (fill-pointer buffer))
-              (princ (code-char +bs+))
-              (princ " ")
-              (princ (code-char +bs+))
-              (decf (fill-pointer buffer))))
-           (t
-            (princ ch)
-            (vector-push ch buffer))))
-        (finish-output)))))
+;; (defun make-keyboard-discipline (process-input)
+;;   (let ((buffer (make-array '(128) :element-type 'character :fill-pointer 0)))
+;;     (lambda (task event)
+;;       (when (eq :input event)
+;;         (let* ((ich (read-char (iotask-stream task)))
+;;                (ch  #+clisp (system::input-character-char ich)
+;;                     #-clisp ich))
+;;           (cond 
+;;            ((null ch))
+;;            ((= (char-code ch) +cr+)
+;;             (terpri)
+;;             (funcall process-input 
+;;                      task (subseq buffer 0 (fill-pointer buffer)))
+;;             (setf (fill-pointer buffer) 0))
+;;            ((or (= (char-code ch) +bs+) (= (char-code ch) +del+))
+;;             (when (< 0 (fill-pointer buffer))
+;;               (princ (code-char +bs+))
+;;               (princ " ")
+;;               (princ (code-char +bs+))
+;;               (decf (fill-pointer buffer))))
+;;            (t
+;;             (princ ch)
+;;             (vector-push ch buffer))))
+;;         (finish-output)))))
 
 
 
-(defun server-input (task line)
-  (if (string-equal "(QUIT)" line)
-    (iotask-dequeue task)
-    (configuration-repl-input line)))
+;; (defun server-input (task line)
+;;   (if (string-equal "(QUIT)" line)
+;;     (iotask-dequeue task)
+;;     (configuration-repl-input line)))
 
 
-(defun server-main (&key display) 
-  (if (or display (find-package "SWANK"))
-    (let* ((xterm-io (make-xterm-io-stream :display display))
-           (*standard-output* xterm-io)
-           (*standard-input*  xterm-io)
-           (*error-output*    xterm-io)
-           (*terminal-io*     xterm-io)
-           (*query-io*        xterm-io)
-           (*debug-io*        xterm-io))
-      (iotask-enqueue *standard-input*
-                      (make-buffered-discipline (function server-input))
-                      "xterm")
-      (configuration-repl-start)
-      (iotask-poll-loop))
-    #+clisp (ext:with-keyboard
-                (let ((*standard-input* ext:*keyboard-input*))
-                  (iotask-enqueue ext:*keyboard-input* 
-                                  (make-keyboard-discipline (function server-input))
-                                  "keyboard")
-                  (configuration-repl-start)
-                  (iotask-poll-loop)))
-    #-clisp (progn
-              (iotask-enqueue *standard-input* 
-                              (make-keyboard-discipline (function server-input))
-                              "keyboard")
-              (configuration-repl-start)
-              (iotask-poll-loop))))
+;; (defun server-main (&key display) 
+;;   (if (or display (find-package "SWANK"))
+;;     (let* ((xterm-io (make-xterm-io-stream :display display))
+;;            (*standard-output* xterm-io)
+;;            (*standard-input*  xterm-io)
+;;            (*error-output*    xterm-io)
+;;            (*terminal-io*     xterm-io)
+;;            (*query-io*        xterm-io)
+;;            (*debug-io*        xterm-io))
+;;       (iotask-enqueue *standard-input*
+;;                       (make-buffered-discipline (function server-input))
+;;                       "xterm")
+;;       (configuration-repl-start)
+;;       (iotask-poll-loop))
+;;     #+clisp (ext:with-keyboard
+;;                 (let ((*standard-input* ext:*keyboard-input*))
+;;                   (iotask-enqueue ext:*keyboard-input* 
+;;                                   (make-keyboard-discipline (function server-input))
+;;                                   "keyboard")
+;;                   (configuration-repl-start)
+;;                   (iotask-poll-loop)))
+;;     #-clisp (progn
+;;               (iotask-enqueue *standard-input* 
+;;                               (make-keyboard-discipline (function server-input))
+;;                               "keyboard")
+;;               (configuration-repl-start)
+;;               (iotask-poll-loop))))
 
 
 

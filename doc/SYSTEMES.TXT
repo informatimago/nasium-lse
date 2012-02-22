@@ -6,8 +6,14 @@ Systèmes L.S.E.
 On dérive deux grands modes de fonctionnement du système L.S.E.  
 
 D'une part, une commande unix permettant de développer et utiliser
-interactivement des programmes L.S.E, et permettant de les executés
+interactivement des programmes L.S.E, et permettant de les executer
 comme scripts unix.
+
+Une variante est une application (MacOSX, ou bien utilisant
+ccl+hemlock, et donc fonctionnant sur MacOSX, Windows, et unix).
+L'application fourni son propre GUI, et donc implémente facilement les
+particularités d'un terminal Mitra-15  (X-OFF, echo, bell, Ctrl-A, \).
+
 
 D'autre part, un serveur accessible via le réseau simulant le
 fonctionnement d'un système L.S.E sur Mitra-15, avec plusieurs
@@ -16,6 +22,11 @@ PRENDRE ETAT CONSOLE).  Ce serveur est muni d'une facade permettant de
 sélectionner la machine Mitra-15 virtuelle avec laquel on se connecte,
 et d'un outil d'administration permettant de configurer ces machines
 virtuelles et de les sécuriser (mots-de-passe, etc).
+
+==>  On accède au serveur via telnet, et le serveur utilise le
+     protocole telnet pour gérer le terminal (X-OFF, echo, bell,
+     Ctrl-A, \).
+
 
 
 
@@ -494,6 +505,7 @@ suivant.  Toutes les lignes du programme sont terminée par un code 19
 chaîne.  Puis elle est coupée selon la taille maximum d'un
 enregistrement, et chaque morceau est enregistrés dans des
 enregistrement de numéros successifs commençant par le 1.
+
 
 
 

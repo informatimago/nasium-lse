@@ -46,7 +46,8 @@
            "*SOCKET*" "EVENT-LOOP"
            "MAKE-CONNECT-HANDLER" "MAKE-LISTENER-HANDLER"
            "MAKE-DISCONNECTOR-MAKER"
-           "MAKE-READER-MAKER" "MAKE-WRITER-MAKER")
+           "MAKE-READER-MAKER" "MAKE-WRITER-MAKER"
+           "CLIENT-SOCKET")
   (:documentation "
 This package exports iolib utilities, functions to make handlers.
 "))
@@ -115,6 +116,7 @@ Run the event dispatch loop.
   (values))
 
 
+(defgeneric client-socket (client))
 
 
 (defun make-connect-handler (socket rejector acceptor disconnector-maker reader-maker writer-maker conclusion)

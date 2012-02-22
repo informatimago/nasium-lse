@@ -87,10 +87,10 @@
             :accessor catalog-entry-year
             :initform 0
             :type (integer 0 99))
-   (words   :reader catalog-entry-words
+   (words   :accessor catalog-entry-words
             :type (integer 0)
             :documentation "File size in words.")
-   (sectors :reader catalog-entry-sectors
+   (sectors :accessor catalog-entry-sectors
             :type (integer 0)
             :documentation "File size in sectors.")
    (path    :initarg :path
@@ -196,15 +196,13 @@
   (values))
 
 
-#|
-(defun catalog-find-name (catalog name)    
-  (find name (catalog-entries catalog) 
-        :test (lambda (name entry)
-                (if (member (catalog-type catalog) '(:tape :shelf))
-                  (and (string-equal (catalog-entry-name entry) name)
-                       (catalog-entry-rpath entry)))
-                       (function catalog-entry-name))))));;catalog-find-name
-|#
+;; (defun catalog-find-name (catalog name)    
+;;   (find name (catalog-entries catalog) 
+;;         :test (lambda (name entry)
+;;                 (if (member (catalog-type catalog) '(:tape :shelf))
+;;                     (and (string-equal (catalog-entry-name entry) name)
+;;                          (catalog-entry-rpath entry)))
+;;                 (function catalog-entry-name))))
 
 (defun catalog-find-name-console (catalog name &optional (console *current-console-number*))
   "Finds in the CATALOG the entry belonging to the CONSOLE that has the NAME." 
@@ -862,11 +860,11 @@ DO:   if (member type '(:program :permanent :temporary))
                    ((:permanent) *catalog-permanent*)
                    ((:temporary) nil)
                    (otherwise
-                    (lse-panic 
+                    (lse-error
                      "IMPOSSIBLE DE SUPPRIMER UNE ENTREE DE CATALOGUE ~:
                       DE TYPE ~S." type)))))
     (when catalog
-      (let ((entry (catalog-find-name catalog name)))
+      (let ((entry (catalog-find-name-console catalog name console)))
         (when entry
           (when (/= (catalog-entry-owner entry) user)
             (return-from catalog-delete-file

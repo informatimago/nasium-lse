@@ -46,12 +46,21 @@
 (in-package "COM.INFORMATIMAGO.LSE")
 
 (define-condition lse-error (simple-error)
-  ((code :type symbol :initarg :code)))
+  ((line-number :initarg :line-number
+                :initform nil
+                :reader lse-error-line-number)
+   (code :type symbol :initarg :code)))
 
 (defun lse-error (format-control &rest format-arguments)
   (error 'lse-error
          :format-control format-control
          :format-arguments format-arguments))
+
+(defun error-bad-line (linum)
+  (error 'lse-error
+         :line-number linum
+         :format-control "NUMERO DE LIGNE INEXISTANT ~D"
+         :format-arguments (list linum)))
 
 
 (defparameter +code-message-assoc+
@@ -155,45 +164,37 @@
   (signal (apply (function make-condition) 'lse-error :code code args)))
 
 
-(defun error-report (task code)
-  (when code
-    (let ((entry (assoc code +code-message-assoc+)))
-      (if entry
-        (error-format task "~S" code)
-        (error-format task "~A" (second entry))))))
-
-
-(defun error-format (task format-str &rest args)
+(defun error-format (task error-condition)
   (io-standard-redirection task)
   (io-new-line task)
-  (do* ((+line-length+ 72)
-        (+left-margin+ 4)
-        (message (apply (function format) nil format-str args))
-        (column
-         (if (and (task-environment task)
-                  (< environment-next-action
-                     (environment-current-line (task-environment task))))
-           (prog1 22
-             (io-format task "ERREUR EN LIGNE ~3D : "
-                        (environment-current-line (task-environment task))))
-           (prog1 9
-             (io-format task "ERREUR : ")))
-         0)
-        (i 0 (1+ pos))
-        (pos (- (+ i +line-length+) column)  (+ i +line-length+)))
-      ((>= pos (length message))
-       (io-format task "~VA~A"
-                  (if (> column +left-margin+) 0 +left-margin+) ""
-                  (subseq message i)))
-    (setf pos (do ((pos pos (1- pos)))
-                  ((or (= (char message pos) (character " ")) (> i pos))
-                   pos)))
-    (when (= i pos)
-      (setf pos (- (+ i +line-length+) column)))
-    (io-format task "~VA~A"
-               (if (> column +left-margin+) 0 +left-margin+) ""
-               (subseq message i pos))
-    (io-new-line task))
+  (let* ((line-length   (terminal-columns (task-terminal task)))
+         (+left-margin+ 4)
+         (message       (format nil "~A" error-condition))
+         (errlino       (or (typecase error-condition
+                              (lse-error (lse-error-line-number error-condition))
+                              (t         nil))
+                            (vm-current-line (task-vm task))))
+         (column        (if (zerop errlino)
+                            (prog1 9
+                              (io-format task "ERREUR : "))
+                            (prog1 22
+                              (io-format task "ERREUR EN LIGNE ~3D : " errlino)))))
+    (do* ((i 0 (1+ pos))
+          (pos (- (+ i line-length) column)  (+ i line-length)))
+         ((>= pos (length message))
+          (io-format task "~VA~A"
+                     (if (> column +left-margin+) 0 +left-margin+) ""
+                     (subseq message i)))
+      (setf pos (do ((pos pos (1- pos)))
+                    ((or (eql (char message pos) (character " "))
+                         (> i pos))
+                     pos)))
+      (when (= i pos)
+        (setf pos (- (+ i line-length) column)))
+      (io-format task "~VA~A"
+                 (if (> column +left-margin+) 0 +left-margin+) ""
+                 (subseq message i pos))
+      (io-new-line task)))
   (io-finish-output task)
   (values))
 

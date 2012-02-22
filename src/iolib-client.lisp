@@ -314,7 +314,7 @@ and receive answers.
 
 
 (define-state-machine session-dfa
-    :slots   ((session :initarg :session)
+    :slots   ((session :initarg :session :accessor session)
               (timer   :accessor session-dfa-timer))
   :initial closed
   :states  ((closed

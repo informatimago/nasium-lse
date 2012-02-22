@@ -38,7 +38,7 @@
 (asdf:defsystem :com.informatimago.lse
     :description  "LSE interpreter."
     :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
-    :version "1.0.7"
+    :version "1.0.8"
     :licence "GPL"
     :properties ((#:author-email                   . "pjb@informatimago.com")
                  (#:date                           . "Winter 2012")
@@ -67,15 +67,21 @@
                  (:file "logger")
                  (:file "signal")
                  (:file "environment")
-                 (:file "iolib-message")
+
+                 (:file "iolib-message"       :depends-on ("logger"))
                  (:file "iolib-end-point")
-                 (:file "iolib-utils"         :depends-on ("logger" "signal" "iolib-message"))        
+                 (:file "iolib-utils"         :depends-on ("logger" "signal" "iolib-message" "iolib-end-point"))        
                  (:file "iolib-server"        :depends-on ("logger" "iolib-utils" "iolib-message"))   
                  (:file "iolib-client"        :depends-on ("logger" "iolib-utils" "iolib-message"))   
                  ;;---------------------                                                              
                                                                                                       
                  ;; LSE language                                                                      
-                 (:file "packages")                                                                   
+                 (:file "packages"            :depends-on ("signal"
+                                                           "logger"
+                                                           "iolib-message"
+                                                           "iolib-end-point"
+                                                           "iolib-utils"
+                                                           "iolib-server"))
                                                                                                       
                  ;; (:file "patch-zebu")                                                              
                  ;; (:file "grammar")                                                                 

@@ -206,15 +206,21 @@
 (defun rac  (a)   (let* ((a (deref *vm* a)) (result (sqrt (un-nombre a)))) (un-nombre result)))
 (defun lgn  (a)   (let* ((a (deref *vm* a)) (result (log  (un-nombre a)))) (un-nombre result)))
 
+
+(defun lcg (x)
+  ;; http://en.wikipedia.org/wiki/Linear_congruential_generator
+  (let ((a 1103515245)
+        (c 12345))
+    (logand (+ (* a x) c) #xffffffff)))
+
 (defun ale  (a)
   ;; (ale 0) --> true random
   ;; (ale n) --> pseudo-random from n
-  ;; ==> we should implement a pseudo-random function (or call srand/rand).
   (let ((a (un-nombre (deref *vm* a))))
-    (when (zerop a)
-      (setf (task-random-state *task*) (make-random-state t)))
-    (random 1.0)))
-                         
+    (if (zerop a)
+        (random 1.0)
+        (coerce (/ (lcg (truncate (* #x100000000 a))) #x100000000) 'nombre))))
+
 (defun tem ()    (multiple-value-bind (s m h) (get-decoded-time)
                    (+ (* (+ (* 60 h) m) 60) s)))
 
@@ -253,7 +259,9 @@
   (let* ((ch (deref *vm* ch))
          (po (deref *vm* po)))
     (un-nombre (char-code (aref (la-chaine ch)
-                                (or (and po (1- (un-nombre po))) 0))))))
+                                (if po
+                                    (truncate (1- (un-nombre po)))
+                                    0))))))
 
 
 (defun eqc (co)
@@ -283,6 +291,17 @@
                 ca))))
 
 
+(defun set-va (va value)
+  (let ((value (un-nombre value)))  
+    (etypecase va
+      (lse-variable
+       (if (eql (variable-type va) 'nombre)
+           (setf (variable-value va) value)
+           (lse-error "LA VARIABLE ~A N'EST PAS UN NOMBRE" va))
+       value)
+      (null value))))
+
+
 (defun cnb (ch de &optional va)
   (let* ((ch (la-chaine (deref *vm* ch)))
          (de (deref *vm* de))
@@ -301,18 +320,9 @@
                (return-from cnb
                  (values (un-nombre
                           (or (read-from-string ch nil nil :start debut
-                                                :end (min fin chlen)) 0.0))
-                         (if va
-                             (let ((var (find-variable *vm* va))
-                                   (new-pos (un-nombre fin)))
-                               (if var
-                                   (if (eql (variable-type var) 'nombre)
-                                       (setf (variable-value var) new-pos)
-                                       (lse-error "LA VARIABLE ~A N'EST PAS UN NOMBRE" va))
-                                   (add-global-variable *vm* (make-instance 'lse-variable
-                                                                 :name  va
-                                                                 :value new-pos))))
-                             (un-nombre fin)))))
+                                                :end (min fin chlen))
+                              0.0))
+                         (set-va va (1+ fin)))))
              (eos? (pos) (when  (<= chlen fin) (eos! pos)))
              (match? (pos charseq) (position (aref ch pos) charseq))
              (digit? (pos) (digit-char-p (aref ch pos)))
@@ -342,13 +352,13 @@
       (eos! fin))))
         
 
+
 (defun sch (ch de lo-or-ch &optional va)
   (let* ((ch       (deref *vm* ch))
          (de       (deref *vm* de))
          (lo-or-ch (deref *vm* lo-or-ch))
          (debut (1- (truncate (un-nombre de))))
-         (chlen (length (la-chaine ch)))
-         (new-pos 0))
+         (chlen (length (la-chaine ch))))
     (when (or (< debut 0) (/= (1+ debut) de))
       (error 'argument-invalide
              :op "SCH"
@@ -372,17 +382,8 @@
                         ch :start debut) (1+ chlen))))))
       (setf fin   (min fin   chlen))
       (setf debut (min debut chlen))
-      (when va
-        (let ((var (find-variable *vm* va))
-              (new-pos (un-nombre fin)))
-          (if var
-              (if (eql (variable-type var) 'nombre)
-                  (setf (variable-value var) new-pos)
-                  (lse-error "LA VARIABLE ~A N'EST PAS UN NOMBRE" va))
-              (add-global-variable *vm* (make-instance 'lse-variable
-                                            :name  va
-                                            :value new-pos)))))
-      (values (subseq ch debut fin) (un-nombre fin)))))
+      (values (subseq ch debut fin)
+              (set-va va (1+ fin))))))
 
 
 (defun skp (ch de &optional ev)
@@ -421,7 +422,7 @@
                (length ch)))))
 
 
-(defun grl (ch de)
+(defun grl (ch de &optional va)
   (let* ((ch (deref *vm* ch))
          (de (deref *vm* de))
          (debut (1- (truncate (un-nombre de))))
@@ -435,8 +436,10 @@
     (let ((debut (position-if (function alpha-char-p) ch :start debut)))
       (if debut
           (let ((fin (position-if-not (function alpha-char-p) ch :start debut)))
-            (values (subseq ch debut fin) (or fin (1+ chlen))))
-          (values "" (1+ chlen))))))
+            (values (subseq ch debut fin)
+                    (set-va va (if fin (1+ fin) (1+ chlen)))))
+          (values ""
+                  (set-va va (1+ chlen)))))))
            
 (defun formate-date (universal-time)
   (multiple-value-bind (se mi ho da mo ye) (decode-universal-time universal-time)

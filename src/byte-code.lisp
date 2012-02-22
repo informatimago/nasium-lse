@@ -162,17 +162,19 @@
 ;;----------------------------------------------------------------------
 (cl:in-package "COM.INFORMATIMAGO.LSE")
 
-(defun byte-code-reader (stream ch)
-  (declare (ignore ch))
-  (let ((sym (read stream))
-        (bc-package (find-package "COM.INFORMATIMAGO.LSE.BYTE-CODE")))
-    (multiple-value-bind (bc status) (find-symbol (symbol-name sym) bc-package)
-      (if status
-          (symbol-value bc)
-          (error "There is no bytecode named ~A" sym)))))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defun byte-code-reader (stream ch)
+    (declare (ignore ch))
+    (let ((sym (read stream))
+          (bc-package (find-package "COM.INFORMATIMAGO.LSE.BYTE-CODE")))
+      (multiple-value-bind (bc status) (find-symbol (symbol-name sym) bc-package)
+        (if status
+            (symbol-value bc)
+            (error "There is no bytecode named ~A" sym))))))
 
-(defun enable-byte-code-reader-macro ()
-  (set-macro-character #\! 'byte-code-reader t))
+(defmacro enable-byte-code-reader-macro ()
+  `(eval-when (:compile-toplevel :load-toplevel :execute)
+     (set-macro-character #\! 'byte-code-reader t)))
 
 
 ;;;; THE END ;;;;

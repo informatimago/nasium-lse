@@ -604,6 +604,17 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
        ;; Local Variables
 
        
+    ;; - Appel de  PROCEDURE
+    ;; 
+    ;;   We cannot generate vref or vval for parameters of PROCEDUREs
+    ;;   before knowing what parameters are by reference and what are by
+    ;;   value, therefore before having seen the PROCEDURE declaration in
+    ;;   the source.
+    ;; 
+    ;;   ⚠ Therefore we can generate the code only globally, just before we
+    ;;     run the program.  Chaining or loading parts of the program while
+    ;;     running means we need to recompile it.
+       
        (:decl-procedure
         ;; Les procedures ne sont pas executable, !procedure generates an error.
         

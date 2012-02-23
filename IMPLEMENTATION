@@ -1,11 +1,68 @@
+.. comment: -*- mode:rst; coding:utf-8 -*-
+
+NOTES
+=====
 
 
-Catalogue:
+    - PRendre etat console
+        Mitra-15: copie le programme, les variables, et les fichiers
+        temporaires.
+        TRANSFERT FICHIERS TEMPORAIRES IMPOSSIBLE
+        !! Avec des threads, il faut bloquer les threads de la console source !!
 
-    - Les liens symboliques dans le r�pertoire LSE ne sont pas admis.
+    - Programmmes à execution seule ? (Il faut l'ID du pgm pour le lister).
 
-      (Common-Lisp DIRECTORY returns TRUENAME, which unix CL implementations
-       generally understand as the target path).
+
+
+LEXER,PARSER
+------------
+
+> maybe i don't understand the problem but there is a nice (and fast
+> ;-) lexer in Michael Parkers CLAWK package. It is very portable (i
+> tested it on CMUCL, CLisp, LWW & Corman) and produce (as Michael
+> said) output that is compatible to parsers from LispWorks parser
+> generator tool.
+
+Indeed, they work nicely together.  A simple example: ::
+
+    (defpackage "CALC"
+      (:use "COMMON-LISP" "LEXER" "PARSERGEN")
+      (:export "CALC"))
+
+    (in-package "CALC")
+
+    (deflexer lex
+      ("[:digit:]+" (return (values 'number (num %0))))
+      ("\\+" (return 'plus))
+      ("-" (return 'minus))
+      ("\\*" (return 'times))
+      ("/" (return 'div))
+      ("\\(" (return 'lparen))
+      ("\\)" (return 'rparen))
+      ("[:space:]+"))
+
+    (defparser parse
+      ((expr sum) $1)
+      ((sum sum plus mult) `(+ ,$1 ,$3))
+      ((sum sum minus mult) `(- ,$1 ,$3))
+      ((sum mult) $1)
+      ((mult mult times atom) `(* ,$1 ,$3))
+      ((mult mult div atom) `(/ ,$1 ,$3))
+      ((mult atom) $1)
+      ((atom minus atom) `(- ,$2))
+      ((atom plus atom) `(+ ,$2))
+      ((atom number) $1)
+      ((atom lparen sum rparen) $2))
+
+    (defun calc ()
+      (eval (parse (lex (read-line)))))
+
+    CL-USER 29 > (calc:calc)
+    -(2 + 3 * -5) * 4 / 13
+    4
+
+IMHO lexing is one of the (maybe exceptional) cases where regular
+expressions are simply the Right Thing.
 
 
 
@@ -19,8 +76,17 @@ COMMON-LISP Implementation
     and will fork a new console process of each incoming session.
     
     A pipe between the server process and the console process will be
-    establised to allow for the transfer of state (PRENDRE ETAT CONSOLE)
+    established to allow for the transfer of state (PRENDRE ETAT CONSOLE)
     between the consoles.
+
+
+Catalogue:
+----------
+
+    - Les liens symboliques dans le répertoire LSE ne sont pas admis.
+
+      (Common-Lisp DIRECTORY returns TRUENAME, which unix CL implementations
+       generally understand as the target path).
 
 
 Terminal I/O
@@ -113,9 +179,11 @@ Terminal I/O
 LSE SYSTEM
 ==========
 
+::
+
     emulse [configuration-file]
 
-    commands:
+commands: ::
 
     (connections max-number N)
     (connections enable)
@@ -157,6 +225,7 @@ LSE SYSTEM
     (configuration save)
     (configuration load)
 
-;;;; THE END ;;;;
+
+.. comment: ;;;; THE END ;;;;
 
 

@@ -1,17 +1,24 @@
 ------------------------------------------------------------------------
 
 See doc/EMULSE.TXT
+See doc/SYSTEMES.TXT
+
 
 doc/                Documentation.
-dependencies/       Dependencies (zebu-3.5.5-pjb, etc)
+
+dependencies/       Dependencies (zebu-3.5.5-pjb).  (For now, we use
+                    quicklisp for dependencies, but eventually we'll
+                    have to freeze them and copy them here).
+
 src/                Sources of the LSE interpreter and system.
+
+progr/              Example programs (unix cli format: with LF).         
+
+tapes-xoff/         Example programs (LSE tape format: with X-OFF).
+
 
 
 The dependencies and src are loaded with ASD files:
-
-(cd #P "~/src/pjb/lse-cl/src/")
-(push #P"~/src/pjb/lse-cl/dependencies/zebu-3.5.5-pjb/" asdf:*central-registry*)
-(push #P "~/src/pjb/lse-cl/src/"                        asdf:*central-registry*)
 (asdf-load :com.informatimago.lse)
 
 ------------------------------------------------------------------------

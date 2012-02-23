@@ -17,6 +17,12 @@
 ;;;;MODIFICATIONS
 ;;;;    2012-02-11 <PJB> Created.
 ;;;;BUGS
+;;;;
+;;;;    The file format and this implementation doesn't allow multiple
+;;;;    simultaneous accesses to the files.  This would be a desirable
+;;;;    features to implement multiple-console accesing the same file
+;;;;    (eg. for console to console communication).
+;;;;
 ;;;;LEGAL
 ;;;;    GPL
 ;;;;    

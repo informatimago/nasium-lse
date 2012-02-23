@@ -74,16 +74,31 @@ LSE system:
 
     error.lisp
     catalog.lisp            ENCOURS.
+    file.lisp               LSE Data Files (record based).
     io.lisp                 ENCOURS.
 
-    main.lisp
+
+
+Note: we'll need different ASD files for the different types of
+      executables we can build.
+
+    unix-cli.lisp           The main for a unix CLI LSE system.
+
 
     server-commands.lisp    The EMULSE Configuration commands.
                             TODO: Move and merge configuration structure to configuration.lisp
 
     server.lisp             The EMULSE server.  Uses iolib-server et al.
 
+    simple-server.lisp      ENCOURS, not used.
+
+
+Development files:
+------------------
 
     scratch.lisp            Scratch file.
-    simple-server.lisp      ENCOURS, not used.
-    loader.lisp             Not used anymore. See 'com.informatimago.lse.asd'.
+    loader.lisp             Used during development to quickload the systems.
+
+-- 
+__Pascal Bourguignon__
+Thu Feb 23 03:55:22 CET 2012

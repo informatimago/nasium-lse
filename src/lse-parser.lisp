@@ -400,13 +400,13 @@
 
             (--> supprimer
                  (seq tok-SUPPRIMER expression
-                      (opt (seq tok-virgule expression :action $2) :action $1)
-                      :action  (list :supprimer $2 $3))
+                      (opt (seq tok-virgule expression :action expression))
+                      :action  (list* :supprimer expression $3))
                  :action $1)
 
             (--> executer
-                 (seq tok-EXECUTER expression (opt tok-virgule expression  :action $2)
-                      :action  (list :executer $2 $3))
+                 (seq tok-EXECUTER expression (opt (seq tok-virgule expression :action expression))
+                      :action  (list* :executer $2 $3))
                  :action $1)
 
             

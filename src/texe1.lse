@@ -1,0 +1,6 @@
+1*Auteur: Pascal Bourguignon
+2*Description: Programme de test: EXECUTER
+3 EXECUTER 'TFIC'
+4 EXECUTER 'TFIC',1
+5 EXECUTER 'TFIC',3
+6 EXECUTER 42,'TFIC'

@@ -536,9 +536,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
            :do (setf suite (gen item (case (first stat)
                                        (:ou !ou)
                                        (:et !et)) suite))
-           :finally (return (gen (second stat) (case (first stat)
-                                                 (:ou !ou)
-                                                 (:et !et)) suite))))
+           :finally (return (gen (second stat) suite))))
 
        (:commentaire
         (gen (second stat) next))
@@ -785,11 +783,13 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                              :for expr :in exprs
                              :do (collect (gen (generate-statement expr nil) !afficher-u nil))))
                 ;; (5) afficher[{n}u]expr...
-                (loop
-                  :for expr :in (cddr stat)
-                  :do (progn
-                        (collect (generate-statement expr nil))
-                        (collect (gen !afficher-u nil))))))
+                (progn
+                  (collect (gen !pushi 1 !afficher-newline nil))
+                  (loop
+                    :for expr :in (cddr stat)
+                    :do (progn
+                          (collect (generate-statement expr nil))
+                          (collect (gen !afficher-u nil)))))))
           (nconc result next)))
 
        
@@ -852,28 +852,30 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 
 
        (:garer ;; var enr fic) --> enr fic :garer var
-        (gen (third stat) (fourth stat) !garer
-             (identificateur-nom (second stat))))
-
+        (gen (third stat) (fourth stat) !garer (identificateur-nom (second stat)) next))
+       
        (:charger
-        ;; TODO: this creates the variables var and varstat too (TABLEAU, CHAINE or real)
-        ;;(:charger  var enr fic)         --> enr fic :charger :pop&store var :pop
-        ;;(:charger  var enr fic varstat) --> enr fic :charger :pop&store var :pop&store varstat
+        ;;(:charger  var enr fic)         --> enr fic :charger var nil
+        ;;(:charger  var enr fic varstat) --> enr fic :charger var varstat
         (if (cddddr stat)
-            (gen (third stat) (fourth stat) !charger !pop&store
-                 (second stat) !pop&store (fifth stat) next)
-            (gen (third stat) (fourth stat) !charger !pop&store
-                 (second stat) next)))
+            (gen (third stat) (fourth stat) !charger
+                 (identificateur-nom (second stat))
+                 (identificateur-nom (fifth stat))
+                 next)
+            (gen (third stat) (fourth stat) !charger
+                 (identificateur-nom (second stat))
+                 nil
+                 next)))
        
        (:supprimer
-        (if (cddr stat)
-            (gen (second stat) (third stat)  !supprimer-enregistrement next)
+        (if (third stat)
+            (gen (second stat) (third stat) !supprimer-enregistrement next)
             (gen (second stat) !supprimer-fichier next)))
        
        (:executer
-        (if (cddr stat)
+        (if (third stat)
             (gen (second stat) (third stat)  !executer next)
-            (gen (second stat) !pushi 1   !executer next)))
+            (gen (second stat) !pushi 1      !executer next)))
 
        (:debut
         (loop
@@ -926,7 +928,6 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
   (let ((*scanner* (make-instance 'lse-scanner :source stream)))
    (loop
      :until (typep (scanner-current-token *scanner*) 'tok-eof)
-     :for source-line = (scanner-buffer *scanner*)
      :for parse-tree = (parse-lse *scanner*)
      :when parse-tree
      :collect (append (compile-lse-line-parse-tree parse-tree)
@@ -1211,6 +1212,10 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 
 ;; (compile-lse-line "95 AFFICHER['Après la pause…',/]")
 ;; (compile-lse-line "20 afficher [10/,20x,'Hello',/,20x,5'*',2/]")
+
+
+;; (test/compile-lse-line "4 executer 'tfic'")
+;; (4 #(50 "tfic" 50 1 35 26) "4 EXECUTER 'tfic'")
 
 
 

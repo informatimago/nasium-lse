@@ -36,11 +36,25 @@
 
 (in-package "COM.INFORMATIMAGO.LSE")
 
+(defparameter *tape-banner* "
+------------------------------------------------------------------------ 
+\\     ooo                oooooooooo       oooooooooo                    \\      
+ \\    ooo               oooooooooooo      oooooooooo      ooooooooooo    \\
+  \\   ooo               oooo     ooo      ooo                             \\
+   \\  ooo                oooo             oooooo               o oo        \\
+    > ooo                  oooo           oooooo          ooo o    o        >
+   /......................................................................./        
+  /   ooo              ooo     oooo       ooo             oooo oo oo      /         
+ /    oooooooooo  ooo  oooooooooooo  ooo  oooooooooo  ooo oooo  oo oo    / 
+/     oooooooooo  ooo   oooooooooo   ooo  oooooooooo  ooo  o oooo oo    / 
+------------------------------------------------------------------------ 
+")
+
 (defparameter *unix-banner* "
 L.S.E.
 VERSION ~A-UNIX
 COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
-
+DISTRIBUE SELON LES TERMES DE LA LICENCE GPL 3.
 
 BONJOUR     ~8A
 
@@ -61,26 +75,29 @@ BONJOUR     ~8A
 
 (defun main (&optional args)
   (declare (ignore args))
-  (let ((terminal (make-instance
-                      #+swank
-                      (if (typep *standard-output*
-                                 'swank-backend::slime-output-stream)
-                          'swank-terminal
-                          'standard-terminal)
-                    #-swank 'standard-terminal
-                    :input *standard-input*
-                    :output *standard-output*)))
+  (let* ((terminal (make-instance
+                       #+swank
+                       (if (typep *standard-output*
+                                  'swank-backend::slime-output-stream)
+                           'swank-terminal
+                           'standard-terminal)
+                     #-swank 'standard-terminal
+                     :input *standard-input*
+                     :output *standard-output*))
+         (*task* (make-instance 'task
+                     :state :active
+                     :case-insensitive t
+                     :upcase-output nil
+                     :dectech nil
+                     :unicode (unicode-terminal-p)
+                     :terminal terminal)))
     (terminal-initialize terminal)
     (unwind-protect
-         (let ((*task* (make-instance 'task
-                           :state :active
-                           :case-insensitive t
-                           :upcase-output nil
-                           :dectech nil
-                           :unicode (unicode-terminal-p)
-                           :terminal terminal)))
+         (progn
+           (io-format *task* "~A" *tape-banner*)
            (io-format *task* "~?" *unix-banner*  (list *version* (subseq (dat) 9)))
            (command-repl *task*))
+      (task-close-all-files *task*)
       (terminal-finalize terminal)))
   0)
 

@@ -62,6 +62,19 @@
          :format-control "NUMERO DE LIGNE INEXISTANT ~D"
          :format-arguments (list linum)))
 
+(defun error-no-file (ficname fictype &optional pathname deletep)
+  (error 'lse-file-error
+         :pathname pathname
+         :format-control "FICHIER ~[PROGRAMME~;DONNEE~;TEMPORAIRE~;RUBAN~;RUBAN TEMPORAIRE~] '~A' INEXISTANT~@[ OU INDESTRUCTIBLE~]"
+         :format-arguments (list (case (normalize-fictype fictype)
+                                   (:program        0)
+                                   (:data           1)
+                                   (:temporary      2)
+                                   (:tape           3)
+                                   (:temporary-tape 4))
+                                 ficname
+                                 deletep)))
+
 
 (defparameter +code-message-assoc+
   '(

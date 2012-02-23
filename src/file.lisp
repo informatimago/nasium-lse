@@ -657,4 +657,7 @@ RETURN: The data; a status code
 ;;                                                                :if-exists :append
 ;;                                                                :if-does-not-exist :create)))
 
+;; (dump-lse-file/low-level "/tmp/lse1000/test3.don" )
+
+
 ;;;; THE END ;;;;

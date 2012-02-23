@@ -79,6 +79,7 @@
                          DIV ; arg1 arg2 DIV
                          POW ; arg1 arg2 POW
 
+                         POP ;  x POP
 
                          AFFICHER-E        ; rep e f AFFICHER-E
                          AFFICHER-F        ; rep e f AFFICHER-F

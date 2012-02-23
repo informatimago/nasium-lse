@@ -148,7 +148,12 @@ Can be either (terminal-output-stream terminal) or tape-output.")
                          :initform (make-random-state t) :type random-state)
    (environnement        :accessor task-environnement :initform nil :type (or null environnement))
    (vm                   :reader task-vm
-                         :initform (make-instance 'lse-vm) :type lse-vm)))
+                         :initform (make-instance 'lse-vm) :type lse-vm)
+   (files                :reader task-files
+                         :initform (make-hash-table :test 'equalp)
+                         :documentation "Maps file names to open FILE objects.")))
+
+
 
 (defmethod (setf task-input) (stream (task task))
   (setf (slot-value task 'input) stream))
@@ -190,6 +195,50 @@ Can be either (terminal-output-stream terminal) or tape-output.")
                                 :if-exists :supersede))))
     tape-output))
 
+
+
+
+
+(defmethod task-close-all-files ((task task))
+  (maphash (lambda (name file)
+             (declare (ignore name))
+             (lse-data-file-close file))
+           (task-files task))
+  task)
+
+(defun file-key (name fictype)
+  (let* ((fictype  (cond
+                     ((string-equal fictype "D") :data)
+                     ((string-equal fictype "T") :temporary)
+                     ((member fictype '(:data :temporary)) fictype)
+                     (t (error 'lse-error
+                               :format-control "INDICATEUR DE TYPE DE FICHIER INVALIDE: ~A; ATTENDU: D OU T."
+                               :format-arguments (list fictype))))))
+    (cons name fictype)))
+
+(defmethod task-open-file ((task task) name fictype &key (if-does-not-exist :create))
+  (let ((key (file-key name fictype)))
+    (or (gethash key (task-files task))
+        (let ((file (handler-case (lse-data-file-open (catalog-pathname name fictype)
+                                                      :if-does-not-exist if-does-not-exist)
+                      (file-error (err)
+                        (error-no-file name fictype (file-error-pathname err))))))
+          (when file
+            (setf (gethash key (task-files task)) file))))))
+
+(defmethod task-close-file ((task task) name fictype)
+  (let* ((key (file-key name fictype))
+         (file (gethash key (task-files task))))
+    (when file
+      (remhash key (task-files task))
+      (lse-data-file-close file)))
+  task)
+
+(defmethod task-delete-file ((task task) name fictype)
+  (task-close-file task name fictype)
+  (handler-case (delete-file (catalog-pathname name fictype))
+    (file-error (err)
+      (error-no-file name fictype (file-error-pathname err) t))))
 
 
 

@@ -553,7 +553,6 @@ RETURN: vm
   (let ((line (gethash lino (vm-code-vectors vm))))
     (if line
         (progn
-          
           (setf (vm-state     vm) :running
                 (vm-pc.line   vm) lino
                 (vm-pc.offset vm) 0
@@ -674,7 +673,7 @@ RETURN: vm
     (etypecase value
       ((or integer nombre)
        (io-format *task* (if (or (zerop value)
-                                 (and (<= 1e-3 value) (< value 1e6)))
+                                 (and (<= 1e-3 (abs value)) (< (abs value) 1e6)))
                              "~A "          
                              "~,,2,,,,'EE ")
                   (let ((tvalue (truncate value)))
@@ -834,9 +833,10 @@ NOTE: on ne peut pas liberer un parametre par reference.
              (lse-error "LA VARIABLE ~A N'EST PAS DECLAREE COMME CHAINE." ident)))))))
 
 
+
 (defun POP&ASTORE1 (vm val index ident)
   (check-type ident identificateur)
-  (check-type index nombre)
+  (check-type index (or integer nombre))
   (let ((val (deref vm val)))
    (check-type val (or integer nombre))
    (let ((index (round index))
@@ -851,8 +851,8 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun POP&ASTORE2 (vm val index1 index2 ident)
   (check-type ident identificateur)
-  (check-type index1 nombre)
-  (check-type index2 nombre)
+  (check-type index1 (or integer nombre))
+  (check-type index2 (or integer nombre))
   (let ((val (deref vm val)))
    (check-type val (or integer nombre))
    (let ((index1 (round index1))
@@ -940,7 +940,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun AREF1&PUSH-VAL (vm index ident)
   (check-type ident identificateur)
-  (check-type index nombre)
+  (check-type index (or integer nombre))
   (let ((index (round index))
         (var (find-variable vm ident)))
     (if var
@@ -955,8 +955,8 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun AREF2&PUSH-VAL (vm index1 index2 ident)
   (check-type ident identificateur)
-  (check-type index1 nombre)
-  (check-type index2 nombre)
+  (check-type index1 (or integer nombre))
+  (check-type index2 (or integer nombre))
   (let ((index1 (round index1))
         (index2 (round index2))
         (var (find-variable vm ident)))
@@ -973,7 +973,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun AREF1&PUSH-REF (vm index ident)
   (check-type ident identificateur)
-  (check-type index nombre)
+  (check-type index (or integer nombre))
   (let ((index (round index))
         (var (find-variable vm ident)))
     (if var
@@ -992,8 +992,8 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun AREF2&PUSH-REF (vm index1 index2 ident)
   (check-type ident identificateur)
-  (check-type index1 nombre)
-  (check-type index2 nombre)
+  (check-type index1 (or integer nombre))
+  (check-type index2 (or integer nombre))
   (let ((index1 (round index1))
         (index2 (round index2))
         (var (find-variable vm ident)))
@@ -1297,6 +1297,8 @@ NOTE: on ne peut pas liberer un parametre par reference.
         (error 'pas-implemente :what '(call &procident))
         
         )))
+(eval-when (:compile-toplevel :load-toplevel :execute) (warn "APPEL DES PROCEDURES PAS IMPLEMENTE"))
+
 
 (defun goto (vm lino)
   (let ((line (gethash lino (vm-code-vectors vm)))
@@ -1345,13 +1347,111 @@ NOTE: on ne peut pas liberer un parametre par reference.
       (lse-error "IL N'Y A PAS D'APPEL DE PROCEDURE EN COURS, RESULTAT IMPOSSIBLE")))
 
 
-;; (:garer            (op-2/1 garer))
-;; (:charger                   (op-2 charger))
-;; (:supprimer-enregistrement  (op-2 supprimer-enregistrement))
-;; (:supprimer-fichier         (op-1 supprimer-fichier))
-;; (:executer                  (op-2 executer))
 
 
+
+(defun validate-file-name (name)
+  (cond
+    ((not (stringp name))
+     (lse-error "UN ~[NOMBRE~;TABLEAU~;OBJECT DE TYPE INDETERMINE~] NE PEUT ETRE UTILISE COMME NOM DE FICHIER."
+                (typecase name
+                  ((or integer nombre) 0)
+                  (array               1)
+                  (t                   2))))
+    ((zerop (length name))
+     (lse-error "UNE CHAINE VIDE NE PEUT ETRE UTILISE COMME NOM DE FICHIER."))
+    (t
+     (flet ((validate (name)
+              (unless (every (function alphanumericp) name)
+                (lse-error "UN NOM DE FICHIER NE PEUT CONTENIR QUE DES CARACTERES ALPHANUMERIQUES."))
+              name))
+       (if (char= #\# (aref name 0))
+           (if (= 1 (length name))
+               (lse-error "UNE CHAINE '#' NE PEUT ETRE UTILISE COMME NOM DE FICHIER PERMANENT.")
+               (values (validate (subseq name 1)) :data))
+           (values (validate name) :temporary))))))
+
+
+(defun charger (vm enr fic ident status-ident)
+  (let ((statvar (and status-ident (find-variable vm status-ident))))
+    (when (and status-ident (not statvar))
+      (setf statvar (add-global-variable vm (make-instance 'lse-variable
+                                                :name status-ident
+                                                :type 'nombre
+                                                :value 0))))
+    (multiple-value-bind (ficname fictype) (validate-file-name (deref vm fic))
+      (let ((file (task-open-file *task* ficname fictype
+                                  :if-does-not-exist (if status-ident
+                                                         nil
+                                                         :error)))
+            (enr  (truncate (deref vm enr))))
+        (if file
+            (multiple-value-bind (data status) (read-record file enr)
+              (if (minusp status)
+                  (if status-ident
+                      (setf (variable-value statvar) status)
+                      (error 'lse-file-error
+                             :pathname ficname
+                             :file file
+                             :record-number enr
+                             :format-control "ENREGISTREMENT ~A DANS '~A' INEXISTANT"
+                             :format-arguments (list enr ficname)))
+                  (let ((var (or (find-variable vm ident)
+                                 (add-global-variable vm (make-instance 'lse-variable
+                                                             :name ident)))))
+                    (setf (variable-type var) (case status
+                                                (0 'nombre)
+                                                (1 `(vecteur ,(array-dimension data 0)))
+                                                (2 `(tableau ,(array-dimension data 0)  ,(array-dimension data 1)))
+                                                (3 'chaine))
+                          (variable-value var) data
+                          (variable-value statvar) status))))
+            ;; No file:
+            (if status-ident
+                (setf (variable-value statvar) -2)
+                (error 'lse-file-error
+                       :pathname (catalog-pathname ficname fictype)
+                       :format-control "FICHIER '~A' INEXISTANT OU INACCESSIBLE"
+                       :format-arguments (list ficname))))))))
+
+
+(defun garer (vm enr fic ident)
+  (multiple-value-bind (ficname fictype) (validate-file-name (deref vm fic))
+    (let ((file (task-open-file *task* ficname fictype :if-does-not-exist :create))
+          (enr  (truncate (deref vm enr)))
+          (var  (find-variable vm ident)))
+      (when (or (null var)
+                (eql (variable-value var) :unbound))
+        (lse-error "VARIABLE ~:@(A~) NON DEFINIE" ident))
+      (write-record file enr
+                    (let ((val (variable-value var)))
+                      (typecase val
+                        (integer (un-nombre val))
+                        (t       val)))))))
+
+
+(defun supprimer-enregistrement (vm fic enr)
+  (multiple-value-bind (ficname fictype) (validate-file-name  (deref vm fic))
+    (let ((file (task-open-file *task* ficname fictype :if-does-not-exist :error))
+          (enr  (truncate (deref vm enr))))
+      (delete-record file enr))))
+
+
+(defun supprimer-fichier (vm fic)
+  (let ((ficname (deref vm fic)))
+    (multiple-value-bind (ficname fictype) (validate-file-name ficname)
+      (task-delete-file *task* ficname fictype))))
+
+
+(defun executer (vm fic lino)
+  (let* ((ficname  (validate-file-name (deref vm fic)))
+         (ficpath  (catalog-pathname ficname :program))
+         (lino     (truncate (deref vm lino))))
+    (vm-terminer vm)
+    (replace-program vm (compile-lse-file ficpath ficname))
+    (setf (vm-trap-line vm) nil)
+    (vm-reset-variables vm)
+    (vm-goto vm lino)))
 
                   
 
@@ -1382,20 +1482,19 @@ NOTE: on ne peut pas liberer un parametre par reference.
                      (macrolet ((op-1*  (op) `(spush (,op (deref vm (spop)))))
                                 (op-2*  (op) `(spush (let ((b (spop))) (,op (deref vm (spop)) (deref vm b)))))
                                 (op-0   (op) `(,op vm))
-                                (op-1   (op) `(spush (,op vm (spop))))
-                                (op-2   (op) `(spush (let ((b (spop))) (,op vm (spop) b))))
-                                (op-3   (op) `(spush (let ((c (spop)) (b (spop))) (,op vm (spop) b c))))
+                                (op-1   (op) `(,op vm (spop)))
+                                (op-2   (op) `(let ((b (spop))) (,op vm (spop) b)))
+                                (op-3   (op) `(let ((c (spop)) (b (spop))) (,op vm (spop) b c)))
                                 (op-0/1 (op) `(,op vm (pfetch)))
-                                (op-1/1 (op) `(spush (,op vm (spop) (pfetch))))
-                                (op-2/1 (op) `(spush (let ((b (spop))) (,op vm (spop) b (pfetch)))))
-                                (op-3/1 (op) `(spush (let ((c (spop)) (b (spop))) (,op vm (spop) b c (pfetch)))))
-                                (op-4/1 (op) `(spush (let ((d (spop)) (c (spop)) (b (spop))) (,op vm (spop) b c d (pfetch)))))
-                                (op-0/2 (op) `(,op vm (pfetch) (pfetch))))
+                                (op-1/1 (op) `(,op vm (spop) (pfetch)))
+                                (op-2/1 (op) `(let ((b (spop))) (,op vm (spop) b (pfetch))))
+                                (op-3/1 (op) `(let ((c (spop)) (b (spop))) (,op vm (spop) b c (pfetch))))
+                                (op-4/1 (op) `(let ((d (spop)) (c (spop)) (b (spop))) (,op vm (spop) b c d (pfetch))))
+                                (op-0/2 (op) `(,op vm (pfetch) (pfetch)))
+                                (op-2/2 (op) `(let ((b (spop))) (,op vm (spop) b (pfetch) (pfetch)))))
                        (let ((cop (pfetch)))
                          ;; (io-format *task* "~&Executing COP ~A~%" (car (gethash cop *cop-info* (cons cop 0))))
                          (case cop
-
-                           (!dup    (let ((a (spop))) (spush a) (spush a)))
                            
                            (!non    (op-1* non))
                            (!et     (op-2* et))
@@ -1437,12 +1536,12 @@ NOTE: on ne peut pas liberer un parametre par reference.
                            (!result           (op-1 result))
                            (!goto             (op-1 goto))
 
-
-                           (!tant-que                  (op-1 tant-que))
-                           (!charger                   (op-2 charger))
+                           (!garer                     (op-2/1 garer))
+                           (!charger                   (op-2/2 charger))
                            (!supprimer-enregistrement  (op-2 supprimer-enregistrement))
                            (!supprimer-fichier         (op-1 supprimer-fichier))
                            (!executer                  (op-2 executer))
+                           
                            (!pause          (op-0 pause))
                            (!terminer       (op-0 terminer))
                            (!stop           (op-0 stop))
@@ -1452,6 +1551,8 @@ NOTE: on ne peut pas liberer un parametre par reference.
                            (!AREF2&PUSH-REF (op-2/1 AREF2&PUSH-REF))
                            (!AREF2&PUSH-VAL (op-2/1 AREF2&PUSH-VAL))
 
+                           (!dup            (let ((a (spop))) (spush a) (spush a)))
+                           (!pop            (spop))                           
                            (!POP&ASTORE1    (op-2/1 POP&ASTORE1))
                            (!POP&ASTORE2    (op-3/1 POP&ASTORE2))
                            (!POP&STORE      (op-1/1 POP&STORE))
@@ -1472,10 +1573,11 @@ NOTE: on ne peut pas liberer un parametre par reference.
                            (!bnever         (op-0/1 bnever))
 
                            (!faire-jusqu-a  (op-4/1 faire-jusqu-a))
+                           (!faire-tant-que (op-3/1 faire-tant-que))
+                           (!tant-que       (op-1 tant-que))
 
                            (!call           (op-0/2 call))
-                           (!faire-tant-que (op-3/1 faire-tant-que))
-                           (!garer          (op-2/1 garer))
+                           (!procedure      (lse-error "PROCEDURE N'EST PAS EXECUTABLE."))
 
                            (!comment        (op-0/1 comment))
                            (otherwise
@@ -1503,29 +1605,6 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 
 #||
-
-(:liste-instruction inst . rest) --> inst (:list-instruction rest)
-------------------------------------------------------------------------
-
-gestion des erreurs:
-- handler-case at each vm instruction.
-  When an error occurs, report it and --> :pause
-
-
-------------------------------------------------------------------------
-
-(:Ligne-Programme numero instr...)
-==> compile instr... and store vector in lino.
-
-(:ligne-programme numero (:decl-procedure  decl-procedure))
-==> compile decl-procedure; store vector in lino; store proc.ident in proctable.
-
-(:liberer ident...) --> {:liberer ident}...
-(:chaine  ident...) --> {:chaine ident}...
-(:tableau adecl...)          --> adecl...
-(:adecl ident expr)          --> expr :tableau1 ident
-(:adecl ident expr.1 expr.2) --> expr.1 expr.2 :tableau2 ident
-
 
 references:
 In expressions:
@@ -1577,72 +1656,6 @@ va references are :pop&store'd
     :push  result              --                 --
     pc <-- return-pc       OR  pc <-- goto     or pc <-- return-pc
 
-
-
-(:affectation ident expression)
-   --> expression :pop&store ident
-(:affectation (:aref ident expr) expression)
-   --> expression expr :pop&astore1 ident
-(:affectation (:aref ident expr.1 expr.2) expression)
-   --> expression expr.1 expr.2 :pop&astore2 ident
-
-
-(:lire liste-reference)
-  --> :lire&sore ident
-  --> expr :lire&astore1 ident
-  --> expr.1 expr.2 :lire&astore2 ident
-
-
-(:afficher nil expr...)      --> :pushi n expr... :afficher-u
-(:afficher (form...) expr...)
-(:afficher (form...))
-
-(:rep-1)          --> :pushi 1
-(:rep tok-numero) --> :pushi tok-numero
-(:rep-var)        --> expression
-
-(:spec-chaine rep  tok-litchaine) --> rep :pushi tok-litchaine :afficher-lit
-(:spec-slash rep) --> rep :afficher-newline
-(:spec-space rep) --> rep :afficher-space
-(:spec-cr    rep) --> rep :afficher-cr
-(:spec-nl    rep) --> rep :afficher-nl
-(:spec-u     rep) --> rep expression... :afficher-u
-(:spec-f     rep width precision)
-   --> rep :pushi width :pushi precision expression... :afficher-f
-(:spec-e     rep width precision)
-   --> rep :pushi width :pushi precision expression... :afficher-e
-
-(:aller-en  expression) --> expression :goto
-(:si test then)       --> test :bfalse offset.t then  
-(:si test then else)  --> test :bfalse offset.t then  :balways offset.e else 
-;; same as :xi
-
-(:terminer)  --> :terminer
-(:pause)     --> :pause
-
-(:faire-jusqu-a  lino ident init pas jusqua)
---> lino init pas jusqua :faire-jusqu-a ident
-
-(:faire-tant-que lino ident init pas test)
---> lino init pas :faire-tant-que ident test
-
-==> create a faire bloc. When we reach the end of each line, we must
-    check for loop blocks available for this line. (kind of come from...).
-    10 FAIRE 20 POUR I_1 JUSQUA 5
-    15 AFFICHER I
-    25 AFFICHER 'TERMINE';TERMINER
-
-
-(:garer var enr fic) --> enr fic :garer var
-
-;; TOOD: this creates the variables var and varstat too (TABLEAU, CHAINE or real)
-(:charger  var enr fic)         --> enr fic :charger :pop&store var :pop
-(:charger  var enr fic varstat) --> enr fic :charger :pop&store var :pop&store varstat
-
-(:supprimer fic)          --> fic :supprimer-fic
-(:supprimer fic enr)      --> fic enr :supprimer-enristrement
-(:executer  fic)          --> fic (pushi 1) :executer
-(:executer  fic lino)     --> fic lino      :executer
 
 ||#
 

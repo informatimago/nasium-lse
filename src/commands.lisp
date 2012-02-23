@@ -87,12 +87,15 @@
                 (tok-numero  "[0-9]+"))
     :start deux-numeros-optionels
     :rules ((--> deux-numeros-optionels
-                 (seq tok-numero
-                      (opt (seq tok-virgule tok-numero :action (parse-integer (second $2)))
-                           :action $1)
-                      :action (list (parse-integer (second $1))
-                                    $2))
-                 :action $1)))
+                 (opt (seq tok-numero
+                           (opt (seq tok-virgule tok-numero :action (parse-integer (second $2)))
+                                :action $1)
+                           :action (list (parse-integer (second $1))
+                                         $2))
+                      :action $1)
+                 :action (if $1
+                             $1
+                             (list 1 nil)))))
 
 
 
@@ -265,7 +268,9 @@
     :start un-chemin
     :rules ((--> un-chemin
                  chaine
-                 :action (list (chaine-valeur (make-instance 'tok-chaine :value (second $1)))))))
+                 :action (list (chaine-valeur (make-instance 'tok-chaine
+                                                  :kind 'tok-chaine
+                                                  :text (second chaine)))))))
 
 
 (defun parse-ligne (ligne) (list ligne))
@@ -776,6 +781,7 @@ GRL                    GRL(ch,de), groupe de lettres;
   (io-format *task* "  ~8A" (subseq (dat) 9))
   (io-new-line *task* 3)
   (io-finish-output *task*)
+  (task-close-all-files *task*)
   (setf (task-state *task*) :sleeping)
   (catalog-delete-temporaries (task-console *task*))
   (signal 'au-revoir))
@@ -1018,17 +1024,20 @@ GRL                    GRL(ch,de), groupe de lettres;
     (ensure-directories-exist (make-pathname :name "test" :type "test" :defaults dir))
     dir))
 
+(defun normalize-fictype (fictype)
+  (cond
+    ((string-equal fictype "P") :program)
+    ((string-equal fictype "D") :data)
+    ((string-equal fictype "T") :temporary)
+    ((string-equal fictype "R") :tape)
+    ((string-equal fictype "S") :temporary-tape)
+    ((member fictype '(:program :data :temporary :tape :temporary-tape)) fictype)
+    (t (error 'lse-error
+              :format-control "INDICATEUR DE TYPE DE FICHIER INVALIDE: ~A; ATTENDU: P, D ou T."
+              :format-arguments (list fictype)))))
 
 (defun catalog-pathname (name fictype)
-  (let ((fictype (cond
-                   ((string-equal fictype "P") :program)
-                   ((string-equal fictype "D") :data)
-                   ((string-equal fictype "T") :temporary)
-                   ((string-equal fictype "R") :tape)
-                   ((string-equal fictype "S") :temporary-tape)
-                   (t (error 'lse-error
-                             :format-control "INDICATEUR DE TYPE DE FICHIER INVALIDE: ~A; ATTENDU: P, D ou T."
-                             :format-arguments (list fictype)))))
+  (let ((fictype (normalize-fictype fictype))
         (name (string-downcase name)))
     (make-pathname :name name
                    :type (cdr (assoc fictype *file-types*))
@@ -1239,7 +1248,8 @@ GRL                    GRL(ch,de), groupe de lettres;
   (setf *current-directory*
         (truename (make-pathname
                    :name nil :type nil :version nil
-                   :defaults (merge-pathnames chemin *current-directory*)))))
+                   :defaults (merge-pathnames chemin *current-directory*))))
+  (task-close-all-files *task*))
 
 
 (defun afficher-repertoire-courant ()
@@ -1597,6 +1607,10 @@ Sur MITRA 15, l'état des variables est également transféré."
       #|else empty line, just ignore it.|#)))
 
 
+(defvar *debug-repl* nil)
+;; (setf *debug-repl* nil)
+;; (setf *debug-repl* t)
+
 (defun command-repl (task)
   (let ((*task* task))
     (io-format task "~&PRET~%")
@@ -1606,27 +1620,31 @@ Sur MITRA 15, l'état des variables est également transféré."
           :while (task-state-awake-p task)
           :do (restart-case
                   (handler-case
-                      (handler-bind ((lse-error     (function signal))
-                                     (scanner-error (function signal))
-                                     (parser-error  (function signal))
-                                     (error         (function invoke-debugger)))
-                        (progn
-                          (setf (task-interruption task) nil)
-                          ;; (unless (task-silence task)
-                          ;;   (io-new-line task))
-                          (io-finish-output *task*)
-                          (handler-case
-                              (let ((line (io-read-line task
-                                                        :beep (not (task-silence task))
-                                                        :xoff t)))
-                                (if (task-interruption task)
-                                    (io-format *task* "~%PRET~%")
-                                    (command-eval-line task line)))
-                            (end-of-file (err)
-                              (if (and (io-tape-input-p *task*)
-                                       (eql (stream-error-stream err) (task-input *task*)))
-                                  (io-stop-tape-reader *task*)
-                                  (error err))))))
+                      (flet ((do-it ()
+                               (setf (task-interruption task) nil)
+                               ;; (unless (task-silence task)
+                               ;;   (io-new-line task))
+                               (io-finish-output *task*)
+                               (handler-case
+                                   (let ((line (io-read-line task
+                                                             :beep (not (task-silence task))
+                                                             :xoff t)))
+                                     (if (task-interruption task)
+                                         (io-format *task* "~%PRET~%")
+                                         (command-eval-line task line)))
+                                 (end-of-file (err)
+                                   (if (and (io-tape-input-p *task*)
+                                            (eql (stream-error-stream err) (task-input *task*)))
+                                       (io-stop-tape-reader *task*)
+                                       (error err))))))
+                        (if *debug-repl*
+                            (handler-bind ((lse-error     (function signal))
+                                           (scanner-error (function signal))
+                                           (parser-error  (function signal))
+                                           (file-error    (function signal))
+                                           (error         (function invoke-debugger)))
+                              (do-it))
+                            (do-it)))
                     (scanner-error-invalid-character (err)
                       (io-format *task* "~%ERREUR: ~?~%"
                                  "CARACTERE INVALIDE '~a' EN POSITION ~D"
@@ -1635,7 +1653,6 @@ Sur MITRA 15, l'état des variables est également transféré."
                       (io-finish-output *task*))
                     (error (err)
                       (error-format *task* err)
-                      ;; (io-format *task* "~%ERREUR: ~A~%" err)
                       (io-format *task* "~%PRET~%")
                       (io-finish-output *task*))
                     (user-interrupt (condition)

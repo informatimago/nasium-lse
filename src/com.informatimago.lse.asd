@@ -103,10 +103,11 @@
                  (:file "byte-code"           :depends-on ("packages"))                               
                  (:file "compiler"            :depends-on ("packages" "lse-parser" "byte-code"))      
                  (:file "vm"                  :depends-on ("packages"
-                                                           "error" "byte-code" "functions" "file"))
+                                                           "error" "byte-code"
+                                                           "functions" "file"))
 
                  (:file "commands"            :depends-on ("packages" "error")) 
-                 (:file "task"                :depends-on ("packages" "vm"))
+                 (:file "task"                :depends-on ("packages" "file" "vm" ))
                  (:file "io"                  :depends-on ("packages" "file" "task"))
 
                  ;; LSE cli

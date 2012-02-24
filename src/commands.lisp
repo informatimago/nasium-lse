@@ -17,26 +17,22 @@
 ;;;;    2002-02-12 <PJB> Extracted from lse_main.c
 ;;;;BUGS
 ;;;;LEGAL
-;;;;    GPL
+;;;;    AGPL3
 ;;;;    
-;;;;     Copyright Pascal J. Bourguignon 2000 - 2005
-;;;; 
-;;;;     This file is part of EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
 ;;;;    
-;;;;    This program is free software; you can redistribute it and/or
-;;;;    modify it under the terms of the GNU General Public License
-;;;;    as published by the Free Software Foundation; either version
-;;;;    2 of the License, or (at your option) any later version.
+;;;;    This program is free software: you can redistribute it and/or modify
+;;;;    it under the terms of the GNU Affero General Public License as published by
+;;;;    the Free Software Foundation, either version 3 of the License, or
+;;;;    (at your option) any later version.
 ;;;;    
-;;;;    This program is distributed in the hope that it will be
-;;;;    useful, but WITHOUT ANY WARRANTY; without even the implied
-;;;;    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-;;;;    PURPOSE.  See the GNU General Public License for more details.
+;;;;    This program is distributed in the hope that it will be useful,
+;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;;    GNU Affero General Public License for more details.
 ;;;;    
-;;;;    You should have received a copy of the GNU General Public
-;;;;    License along with this program; if not, write to the Free
-;;;;    Software Foundation, Inc., 59 Temple Place, Suite 330,
-;;;;    Boston, MA 02111-1307 USA
+;;;;    You should have received a copy of the GNU Affero General Public License
+;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;****************************************************************************
 
 (in-package "COM.INFORMATIMAGO.LSE")
@@ -326,6 +322,7 @@
 ;;; LSE Documentation
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
 (defparameter *chapters* (make-hash-table :test (function equalp)))
 (defun find-chapter (title) (gethash title *chapters*))
 
@@ -339,7 +336,38 @@
                        :text ',(unsplit-string text #\Newline))))
 
 
-;; (find-chapter"instructions")
+
+(defchapter "GARANTIE"
+"
+Système L.S.E
+Copyright (C) 2012 Pascal Bourguignon
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"
+    )
+
+(defchapter "COPIE"
+    #.*license*
+    )
+
+(defchapter "SOURCES"
+    "
+Les sources de ce programme sont disponibles sous license AGPLv3
+à l'adresse suivante:
+http://www.ogamita.com/lse/
+")
+
 
 (defchapter "INSTRUCTIONS"
     "Voici la liste des instructions disponibles.  
@@ -565,9 +593,11 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 
+
+
+
 (define-command-group common ()
 
-  
   (defcommand "AIDER" nil ()
     "Affiche la liste des commandes."
     (io-format *task* "~%LES COMMANDES DISPONIBLES SONT:~2%")
@@ -583,7 +613,7 @@ GRL                    GRL(ch,de), groupe de lettres;
                        ~&POUR ANNULER UN CARACTERE, TAPEZ \\.~%"))
 
   
-  (defcommand "DOCUMENTATION" un-fichier (what)
+  (defcommand "DOCUMENTATION" ligne (what)
     "Affiche la documentation d'une commande ou d'une instruction."
     (cond
       ((let ((command (find-command what *command-group*)))
@@ -604,11 +634,15 @@ GRL                    GRL(ch,de), groupe de lettres;
                               (split-sequence #\Newline (chapter-text chapter))))
            t)))
       (t
-       (io-format *task* "~%Il n'y a pas de documentation pour ~S~
-                          ~%Essayez les commandes suivantes:~
-                          ~%AI)DE                         donne la liste des commandes;~
-                          ~%DO)CUMENTATION INSTRUCTIONS   donne la liste des instructions;~
-                          ~%DO)CUMENTATION FONCTIONS      donne la liste des fonctions.~2%"
+       (io-format *task*
+                  "~%Il n'y a pas de documentation pour ~S~
+                   ~%Essayez les commandes suivantes:~
+                   ~%DO)CUMENTATION GARANTIE       indique qu'aucune garantie n'est assurée;~
+                   ~%DO)CUMENTATION COPIE          donne la license et votre liberté de copier;~
+                   ~%DO)CUMENTATION SOURCES        où trouver les sources de ce programme;~
+                   ~%DO)CUMENTATION INSTRUCTIONS   donne la liste des instructions;~
+                   ~%DO)CUMENTATION FONCTIONS      donne la liste des fonctions;~
+                   ~%AI)DE                         donne la liste des commandes.~2%"
                   what))))
   
 
@@ -703,8 +737,11 @@ GRL                    GRL(ch,de), groupe de lettres;
 (defun account-set-right (account fictype right)
   (values))
 
+
+
 (define-command-group sleeping (common)
 
+ 
   
   (defcommand "DROITS"  nil ()
     "Gestion des droits d'accès des comptes."
@@ -1102,9 +1139,9 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 
-
-(defparameter *xoff* (code-char +xoff+))
-(defparameter *nul*  (code-char +nul+))
+(eval-when (:compile-toplevel :load-toplevel :execute)
+ (defparameter *xoff* (code-char +xoff+))
+ (defparameter *nul*  (code-char +nul+)))
 
 (defun split-size (string size)
   (loop

@@ -14,32 +14,30 @@
 ;;;;    2012-02-01 <PJB> Created this .asd file.
 ;;;;BUGS
 ;;;;LEGAL
-;;;;    GPL
+;;;;    AGPL3
 ;;;;    
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
 ;;;;    
-;;;;    This program is free software; you can redistribute it and/or
-;;;;    modify it under the terms of the GNU General Public License
-;;;;    as published by the Free Software Foundation; either version
-;;;;    2 of the License, or (at your option) any later version.
+;;;;    This program is free software: you can redistribute it and/or modify
+;;;;    it under the terms of the GNU Affero General Public License as published by
+;;;;    the Free Software Foundation, either version 3 of the License, or
+;;;;    (at your option) any later version.
 ;;;;    
-;;;;    This program is distributed in the hope that it will be
-;;;;    useful, but WITHOUT ANY WARRANTY; without even the implied
-;;;;    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-;;;;    PURPOSE.  See the GNU General Public License for more details.
+;;;;    This program is distributed in the hope that it will be useful,
+;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;;    GNU Affero General Public License for more details.
 ;;;;    
-;;;;    You should have received a copy of the GNU General Public
-;;;;    License along with this program; if not, write to the Free
-;;;;    Software Foundation, Inc., 59 Temple Place, Suite 330,
-;;;;    Boston, MA 02111-1307 USA
+;;;;    You should have received a copy of the GNU Affero General Public License
+;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
 
 
 (asdf:defsystem :com.informatimago.lse
-    :description  "LSE interpreter."
+    :description  "This system implements a L.S.E. interpreter."
     :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
-    :version "1.0.8"
-    :licence "GPL"
+    :version "1.1.1"
+    :licence "AGPLv3"
     :properties ((#:author-email                   . "pjb@informatimago.com")
                  (#:date                           . "Winter 2012")
                  ((#:albert #:output-dir)          . "/tmp/documentation/com.informatimago.lse/")
@@ -48,19 +46,14 @@
                  ((#:albert #:docbook #:bgcolor)   . "white")
                  ((#:albert #:docbook #:textcolor) . "black"))
 
-    :depends-on (:split-sequence
+    :depends-on (
+                 :split-sequence
                  :alexandria
                  :babel
                  
-                 :iolib.base
-                 :iolib
-
-                 #+clisp :com.informatimago.clisp
-                 #+clisp :com.informatimago.susv3
-
                  :com.informatimago.common-lisp
                  :com.informatimago.rdp
-                 ;; :com.hp.zebu
+                 
                  )
     :components (
                  ;; Some generic utility
@@ -68,26 +61,11 @@
                  (:file "signal")
                  (:file "environment")
 
-                 (:file "iolib-message"       :depends-on ("logger"))
-                 (:file "iolib-end-point")
-                 (:file "iolib-utils"         :depends-on ("logger" "signal" "iolib-message" "iolib-end-point"))        
-                 (:file "iolib-server"        :depends-on ("logger" "iolib-utils" "iolib-message"))   
-                 (:file "iolib-client"        :depends-on ("logger" "iolib-utils" "iolib-message"))   
                  ;;---------------------                                                              
-                                                                                                      
+                 
                  ;; LSE language                                                                      
-                 (:file "packages"            :depends-on ("signal"
-                                                           "logger"
-                                                           "iolib-message"
-                                                           "iolib-end-point"
-                                                           "iolib-utils"
-                                                           "iolib-server"))
-                                                                                                      
-                 ;; (:file "patch-zebu")                                                              
-                 ;; (:file "grammar")                                                                 
-                 ;; (:file "lse-domain")                                                              
-                                                                                                      
-                                                                                                      
+                 (:file "packages"            :depends-on ("signal" "logger"))
+                 
                  (:file "version"             :depends-on ("packages"))
                  (:file "configuration"       :depends-on ("packages"))
                  (:file "error"               :depends-on ("packages"))                               
@@ -95,37 +73,24 @@
                  (:file "file"                :depends-on ("packages"
                                                            "configuration" "error"))
                  
-                 (:file "catalog"             :depends-on ("packages"))                               
-                 (:file "functions"           :depends-on ("packages" "error"))
-                                                                                                      
+                 (:file "catalog"             :depends-on ("packages"))
+                 (:file "variables"           :depends-on ("packages"))
+                 (:file "functions"           :depends-on ("packages" "error" "variables"))
+                 
                  (:file "lse-scanner"         :depends-on ("packages" "error"))
                  (:file "lse-parser"          :depends-on ("packages" "lse-scanner"))                 
                  (:file "byte-code"           :depends-on ("packages"))                               
-                 (:file "compiler"            :depends-on ("packages" "lse-parser" "byte-code"))      
+                 (:file "compiler"            :depends-on ("packages"
+                                                           "version"
+                                                           "lse-parser" "byte-code"))      
                  (:file "vm"                  :depends-on ("packages"
                                                            "error" "byte-code"
-                                                           "functions" "file"))
+                                                           "variables" "functions" "file"))
 
-                 (:file "commands"            :depends-on ("packages" "error")) 
                  (:file "task"                :depends-on ("packages" "file" "vm" ))
                  (:file "io"                  :depends-on ("packages" "file" "task"))
+                 (:file "commands"            :depends-on ("packages" "error" "io" "task")) 
 
-                 ;; LSE cli
-                 (:file "swank-terminal"      :depends-on ("packages" "io"))
-                 (:file "unix-cli"            :depends-on ("packages"
-                                                           "version" "configuration"
-                                                           "commands" "vm" "compiler"
-                                                           "io" "swank-terminal"))
-                 ;; LSE server
-                 (:file "server-commands"     :depends-on ("packages"))
-                 (:file "server"              :depends-on ("packages"
-                                                           "iolib-end-point" "iolib-utils" "iolib-server"
-                                                           "server-commands"
-                                                           "version" "configuration"
-                                                           "task" "commands" "vm" "compiler"))
-
-                 ;; (:file "simple-server")
-                 ;; (:file "main")
                  ))
 
 

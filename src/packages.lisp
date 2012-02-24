@@ -14,24 +14,22 @@
 ;;;;    2012-02-01 <PJB> Extracted from loader.lisp.
 ;;;;BUGS
 ;;;;LEGAL
-;;;;    GPL
+;;;;    AGPL3
 ;;;;    
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
 ;;;;    
-;;;;    This program is free software; you can redistribute it and/or
-;;;;    modify it under the terms of the GNU General Public License
-;;;;    as published by the Free Software Foundation; either version
-;;;;    2 of the License, or (at your option) any later version.
+;;;;    This program is free software: you can redistribute it and/or modify
+;;;;    it under the terms of the GNU Affero General Public License as published by
+;;;;    the Free Software Foundation, either version 3 of the License, or
+;;;;    (at your option) any later version.
 ;;;;    
-;;;;    This program is distributed in the hope that it will be
-;;;;    useful, but WITHOUT ANY WARRANTY; without even the implied
-;;;;    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-;;;;    PURPOSE.  See the GNU General Public License for more details.
+;;;;    This program is distributed in the hope that it will be useful,
+;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;;;    GNU Affero General Public License for more details.
 ;;;;    
-;;;;    You should have received a copy of the GNU General Public
-;;;;    License along with this program; if not, write to the Free
-;;;;    Software Foundation, Inc., 59 Temple Place, Suite 330,
-;;;;    Boston, MA 02111-1307 USA
+;;;;    You should have received a copy of the GNU Affero General Public License
+;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
 
 
@@ -42,7 +40,6 @@
   (:nicknames "LSE")
   (:use "COMMON-LISP"
         "SPLIT-SEQUENCE" "BABEL"
-        ;; "COM.HP.ZEBU" ;; Done by ZEBU anyways.
 
         "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.UTILITY"
         "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.SEQUENCE"
@@ -57,31 +54,32 @@
         "COM.INFORMATIMAGO.COMMON-LISP.PARSER.SCANNER"
 
         "COM.INFORMATIMAGO.SIGNAL"
-        "COM.INFORMATIMAGO.RDP"
-        
-        #+clisp "COM.INFORMATIMAGO.CLISP.XTERM"
-       ))
+        "COM.INFORMATIMAGO.RDP")
+  (:export 
 
+           "TERMINAL" "TERMINAL-INITIALIZE" "TERMINAL-FINALIZE"
+           "TERMINAL-COLUMNS" "TERMINAL-ROWS" "TERMINAL-INPUT-STREAM"
+           "TERMINAL-OUTPUT-STREAM" "TERMINAL-RING-BELL"
+           "TERMINAL-BEGINNING-OF-LINE" "TERMINAL-NEW-LINE"
+           "TERMINAL-WRITE-STRING" "TERMINAL-FINISH-OUTPUT"
+           "TERMINAL-READ-LINE" "TERMINAL-READ" "TERMINAL-ECHO"
 
-(DEFPACKAGE "COM.INFORMATIMAGO.LSE.SERVER"
-  (:nicknames "LSE-SERVER")
-  (:use "COMMON-LISP"
-        "SPLIT-SEQUENCE"
+           "STANDARD-TERMINAL"
 
-        "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.LIST"
-        "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.UTILITY"
-        "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.STRING"
-        "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.PMATCH"
+           "IO-TERMINAL-OUTPUT-P" "IO-TERMINAL-INPUT-P"
+           "IO-TAPE-OUTPUT-P" "IO-TAPE-INPUT-P" "IO-BELL"
+           "IO-BEGINNING-OF-LINE" "IO-NEW-LINE" "IO-FINISH-OUTPUT"
+           "IO-READ-LINE" "IO-READ" "IO-READ-STRING" "IO-READ-NUMBER"
+           "IO-ECHO" "IO-FORMAT"
 
-        #+clisp "COM.INFORMATIMAGO.CLISP.XTERM"
+           "*TASK*" "TASK" "TASK-CLOSE-ALL-FILES"
+           "COMMAND-REPL"
 
-        "COM.INFORMATIMAGO.LSE"
-        "COM.INFORMATIMAGO.LOGGER"
-        "COM.INFORMATIMAGO.IOLIB.UTILS"
-        "COM.INFORMATIMAGO.IOLIB.END-POINT"
-        "COM.INFORMATIMAGO.IOLIB.MESSAGE"
-        "COM.INFORMATIMAGO.IOLIB.SERVER"
-       ))
+           "*VERSION*"
+
+           "DAT"
+           ))
+
 
 
 (defpackage "COM.INFORMATIMAGO.LSE.BYTE-CODE"
@@ -93,20 +91,6 @@
   (:nicknames "ID")
   (:use))
 
-
-;; (defpackage "COM.INFORMATIMAGO.LSE.SOCKET"
-;;   (:nicknames "SOCK")
-;;   (:use "COMMON-LISP"
-;;         #+clisp "SOCKET"
-;;         ;; From IOLIB:
-;;         #-clisp "IOMUX"
-;;         #-clisp "SOCKETS")
-;;   (:export "SOCKET-ACCEPT" "SOCKET-CONNECT" "SOCKET-OPTIONS" 
-;;            "SOCKET-SERVER" "SOCKET-SERVER-CLOSE" "SOCKET-SERVER-HOST" 
-;;            "SOCKET-SERVER-PORT" "SOCKET-SERVICE-PORT" "SOCKET-STATUS" 
-;;            "SOCKET-STREAM-HOST" "SOCKET-STREAM-LOCAL" 
-;;            "SOCKET-STREAM-PEER" "SOCKET-STREAM-PORT" 
-;;            "SOCKET-STREAM-SHUTDOWN" "SOCKET-WAIT" "STREAM-HANDLES"))
 
 ;;; THE END ;;;;
 

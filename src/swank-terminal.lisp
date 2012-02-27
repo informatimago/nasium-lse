@@ -75,16 +75,24 @@
 ;;----------------------------------------------------------------------
 
 (defclass swank-terminal (standard-terminal)
-  ((last-columns :initform 80)
-   (last-rows    :initform 25)))
+  ((last-columns   :initform 80)
+   (last-rows      :initform 25)
+   (buffer         :initform (make-array 80
+                                         :element-type 'character
+                                         :adjustable t
+                                         :fill-pointer 0))
+   (current-column :initform 0)))
 
 (defmethod terminal-initialize ((terminal swank-terminal))
   (eval-in-emacs '(with-current-buffer (slime-repl-buffer)
-                   (font-lock-mode -1))))
+                   (font-lock-mode -1)))
+  (list (terminal-columns terminal)
+        (terminal-rows    terminal)))
 
 (defmethod terminal-finalize ((terminal swank-terminal))
   (eval-in-emacs '(with-current-buffer (slime-repl-buffer)
-                   (font-lock-mode +1))))
+                   (font-lock-mode +1)))
+  (values))
 
 
 (defmethod terminal-columns ((terminal swank-terminal))
@@ -113,19 +121,113 @@
         (slot-value terminal 'last-rows))))
 
 
-
 (defmethod terminal-ring-bell ((terminal swank-terminal))
   (let ((output (terminal-output-stream terminal)))
-    (eval-in-emacs '(beep t))))
+    (eval-in-emacs '(beep t)))
+  (values))
 
-(defmethod terminal-beginning-of-line ((terminal swank-terminal))
+(defmethod terminal-carriage-return ((terminal swank-terminal))
+  (let ((output (terminal-output-stream terminal)))
+    (finish-output output))
+  (with-slots (current-column) terminal
+    (setf current-column 0))
+  (eval-in-emacs '(with-current-buffer (slime-repl-buffer)
+                   (slime-repl-bol)))
+  (values))
+
+(defmethod terminal-move-up ((terminal swank-terminal))
   (let ((output (terminal-output-stream terminal)))
     (finish-output output)
+    ;; TODO: When moving up, if the line is shorter, pad it with spaces…
     (eval-in-emacs '(with-current-buffer (slime-repl-buffer)
-                     (delete-region
-                      (progn (slime-repl-bol) (previous-line 1) (point))
-                      (point-max))))))
+                     (previous-line 1))))
+  (values))
 
+
+(defmethod flush ((terminal swank-terminal))
+  (eval-in-emacs `(with-current-buffer (slime-repl-buffer)
+                    (delete-region
+                     (progn (slime-repl-bol) (point))
+                      (point-max))
+                    (slime-move-point (point-max))))
+  (with-slots (buffer) terminal
+    (let ((output (terminal-output-stream terminal)))
+      (princ buffer output)))
+  (values))
+
+
+(defmethod terminal-new-line ((terminal swank-terminal) &optional (count 1))
+  (flush terminal)
+  (with-slots (current-column buffer) terminal
+    (let ((output (terminal-output-stream terminal)))
+      (loop :repeat count :do (terpri output))
+      (terminal-finish-output terminal)
+      (setf current-column 0
+            (fill-pointer buffer) 0)))
+  (values))
+
+
+(defmethod terminal-line-feed ((terminal swank-terminal) &optional (count 1))
+  (flush terminal)
+  (with-slots (current-column buffer) terminal
+    (let ((output (terminal-output-stream terminal))
+          (line (make-string current-column :initial-element #\space)))
+      (loop :repeat count :do (terpri output) (princ line output))
+      (terminal-finish-output terminal)
+      (fill buffer #\space)))
+  (values))
+
+
+;; (let ((terminal (com.informatimago.lse::task-terminal *task*)))
+;;   (terminal-new-line terminal 4)
+;;   (terminal-write-string terminal "Hello")
+;;   (terminal-write-string terminal (format nil "~D" (slot-value terminal 'current-column)))
+;;   (terminal-line-feed terminal 4)
+;;   (terminal-write-string terminal (format nil "~D" (slot-value terminal 'current-column)))
+;;   (terminal-write-string terminal "world!")
+;;   (terminal-carriage-return terminal)
+;;   (terminal-write-string terminal "Haha!")
+;;   (terminal-new-line terminal 4))
+;; 
+;; (eval-in-emacs `(with-current-buffer (slime-repl-buffer) 
+;;                   (slime-repl-bol) (insert "xxxxxxxxxx")
+;;                   (slime-repl-bol) (forward-char 6) (insert "y")
+;;                   (setf deactivate-mark t)))
+
+(defmethod terminal-write-string ((terminal swank-terminal) string &key (start 0) (end nil))
+  ;; Since slime uses insert to insert new text, it doesn't override
+  ;; previous text.  Therefore we do it ourselves in a buffer, and
+  ;; replace the whole line.
+  (with-slots (last-columns current-column buffer) terminal
+    (let* ((end        (or end (length string)))
+           (size       (- end start))
+           (new-column (+ current-column size)))
+      (when (plusp size)
+        (when (< (array-dimension buffer 0) new-column)
+          (setf buffer (adjust-array buffer (max (* 2 (array-dimension buffer 0))
+                                                 new-column)
+                                     :element-type (array-element-type buffer))))
+        (setf (fill-pointer buffer) (max (fill-pointer buffer) new-column))
+        (replace buffer string :start1 current-column :start2 start :end2 end)
+        (setf current-column new-column)
+        (eval-in-emacs `(with-current-buffer (slime-repl-buffer)
+                          (delete-region
+                           (progn (slime-repl-bol) (point))
+                           (progn (end-of-line)    (point)))
+                          (insert ,buffer)
+                          (slime-repl-bol)
+                          (forward-char ,current-column)
+                          (slime-move-point (point)))))))
+  (values))
+
+
+(defmethod terminal-read-line ((terminal swank-terminal) &key (echo t) (beep nil) (xoff nil))
+  (flush terminal)
+  (call-next-method))
+
+(defmethod terminal-read ((terminal swank-terminal) &key (echo t) (beep nil) (xoff nil))
+  (flush terminal)
+  (call-next-method))
 
 
 #+swank

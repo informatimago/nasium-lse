@@ -43,6 +43,7 @@
        
 
 
+
 ;;; The LSE Virtual Machine
 
 (defclass lse-vm ()
@@ -61,6 +62,8 @@
                                             :adjustable t
                                             :fill-pointer 0)
                       :type vector)
+   (procedures        :reader vm-procedures
+                      :initform (make-hash-table))
    (code-vectors      :reader vm-code-vectors
                       :initform (make-hash-table :test (function eql) :size 256)
                       :documentation "Keys are line numbers, values are lists (line-number code-vector source-line).")
@@ -117,7 +120,7 @@ RETURN: The variable; the frame it belongs to,
     (if var
         (values var frame)
         (and (vm-local-frame-stack vm)
-             (find-variable (vm-local-frame-stack vm) ident)))))
+             (find-variable (first (vm-local-frame-stack vm)) ident)))))
 
 
 (defmethod add-global-variable ((vm lse-vm) var)
@@ -136,9 +139,9 @@ RETURN: The variable; the frame it belongs to,
   (let ((lines '()))
     (maphash (lambda (lino code)
                (when (and (<= from lino) (or (null to) (<= lino to)))
-                 (push (list lino (decompile-lse-line lino code)) lines)))
+                 (push code lines)))
              (vm-code-vectors vm))
-    (sort lines '< :key (function first))))
+    (sort lines '< :key (function code-line))))
 
 
 (defmethod erase-program ((vm lse-vm))
@@ -147,9 +150,12 @@ DO:     Erase the program in the VM.
 RETURN: vm
 "
   (let ((codes (vm-code-vectors vm)))
-   (maphash (lambda (k v) (declare (ignore v)) (remhash k codes))
-            codes)
-   vm))
+    (maphash (lambda (k v) (declare (ignore v)) (remhash k codes))
+             codes))
+  (let ((procedures (vm-procedures vm)))
+    (maphash (lambda (k v) (declare (ignore v)) (remhash k procedures))
+             procedures))
+  vm)
 
 (defmethod replace-program ((vm lse-vm) program)
   "
@@ -158,16 +164,21 @@ PROGRAM: a list of (lino code-vector line-source).
 RETURN: vm
 "
   (erase-program vm)
-  (let ((codes (vm-code-vectors vm)))
-    (dolist (line program vm)
-      (setf (gethash (first line) codes) line))))
+  (dolist (code program vm)
+    (put-line vm (code-line code) code)))
 
 
 (defmethod put-line ((vm lse-vm) lino code)
-  (setf (gethash lino (vm-code-vectors vm)) code))
+  (setf (gethash lino (vm-code-vectors vm)) code)
+  (when (code-procedure code)
+    (setf (gethash (procedure-name (code-procedure code)) (vm-procedures vm))
+          (code-procedure code))))
 
 
 (defmethod erase-line-number ((vm lse-vm) lino)
+  (let ((code (gethash lino (vm-code-vectors vm))))
+    (when (code-procedure code)
+      (remhash (procedure-name (code-procedure code)) (vm-procedures vm))))
   (remhash lino (vm-code-vectors vm)))
 
 
@@ -330,14 +341,16 @@ RETURN: vm
 (defmethod vm-goto ((vm lse-vm) lino)
   (let ((line (gethash lino (vm-code-vectors vm))))
     (if line
-        (progn
+        (let ((frame (or (first (vm-local-frame-stack vm))
+                         (vm-global-frame vm))))
           (setf (vm-state     vm) :running
                 (vm-pc.line   vm) lino
                 (vm-pc.offset vm) 0
-                (vm-code      vm) (second line)
+                (vm-code      vm) (code-vector line)
                 (slot-value vm 'paused.pc.line)   nil
                 (slot-value vm 'paused.pc.offset) nil
-                (slot-value vm 'paused.code)      nil)
+                (slot-value vm 'paused.code)      nil
+                (fill-pointer (vm-stack vm)) (frame-stack-pointer frame))
           (when (or (vm-pas-a-pas vm)
                     (eql lino (vm-trap-line vm)))
             ;; to get the PAUSE message
@@ -381,25 +394,29 @@ RETURN: vm
 
 (defun afficher-nl      (vm rep)
   (declare (ignore vm))
-  (format t "~V,,,VA" rep LF ""))
+  (io-line-feed *task* rep))
 
 (defun afficher-cr      (vm rep)
-  (declare (ignore vm))
-  (format t "~V,,,VA" rep CR ""))
+  (declare (ignore vm rep))
+  (io-carriage-return *task*))
 
 (defun afficher-space   (vm rep)
   (declare (ignore vm))
-  (format t "~VA" rep ""))
+  (io-format *task* "~VA" rep ""))
 
 (defun afficher-newline (vm rep)
   (declare (ignore vm))
-  (format t "~V%" rep))
+  (io-new-line *task* rep))
 
 (defun afficher-chaine (vm rep val)
   (declare (ignore vm))
   (check-type rep (or (integer 1) nombre))
   (check-type val chaine)
-  (loop :repeat (round rep) :do (princ val)))
+  (io-format *task* "~A" 
+             (with-output-to-string (out)
+               (loop
+                 :repeat (round rep)
+                 :do (princ val out)))))
 
 
 
@@ -564,6 +581,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
 
 
+
 (defun deref (vm object)
   (typecase object
     (identificateur
@@ -574,10 +592,19 @@ NOTE: on ne peut pas liberer un parametre par reference.
                  (lse-error "LA VARIABLE ~A N'A PAS ETE INITIALISEE" var)
                  val))
            (lse-error "LA VARIABLE ~A N'EXISTE PAS" object))))
-    (lse-variable
+    ((or lse-variable vecteur-ref tableau-ref)
      (let ((val (variable-value object)))
        (if (indefinip val)
-           (lse-error "LA VARIABLE ~A N'A PAS ETE INITIALISEE" object)
+           (typecase object
+             (lse-variable (lse-error "LA VARIABLE ~A N'A PAS ETE INITIALISEE"
+                                      object))
+             (vecteur-ref  (lse-error "~A[~A] N'A PAS ETE INITIALISEE"
+                                      (variable-name object)
+                                      (reference-index object)))
+             (tableau-ref  (lse-error "~A[~A,~A] N'A PAS ETE INITIALISEE"
+                                      (variable-name object)
+                                      (reference-index1 object)
+                                      (reference-index2 object))))
            val)))
     (otherwise
      object)))
@@ -1012,6 +1039,25 @@ NOTE: on ne peut pas liberer un parametre par reference.
   (throw 'run-step-done nil))
 
 
+(defun goto (vm lino)
+  (let ((line (gethash lino (vm-code-vectors vm)))
+        (stack (loop-stack vm)))
+    (cond
+      ((null line)
+       (error-bad-line lino))
+      (stack
+       ;; When we GO TO a line outside of the current loop, we unwind it.
+       (if (or (< (loop-start-line-number (first stack)) lino)
+               (<= lino (loop-end-line-number (first stack))))
+           (progn
+             (pop (loop-stack vm))
+             ;; and try again (there may be several embedded loops)
+             (goto vm lino))
+           (vm-goto vm lino)))
+      (t
+       (vm-goto vm lino)))))
+
+
 
 
 (defparameter *primitive-functions*
@@ -1044,9 +1090,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                          (id::dat (dat 0 0)))))
 
 
-
-
-(defun call (vm procident nargs)
+(defun call (vm call-type procident nargs)
   (check-type procident identificateur)
   (check-type nargs (integer 0))
   (let ((entry (gethash procident *primitive-functions*)))
@@ -1072,57 +1116,124 @@ NOTE: on ne peut pas liberer un parametre par reference.
                                                  maxargs)
                                              nargs))))
         ;; &procident
-        (error 'pas-implemente :what '(call &procident))
-        
-        )))
-(eval-when (:compile-toplevel :load-toplevel :execute) (warn "APPEL DES PROCEDURES PAS IMPLEMENTE"))
+        (let ((procedure (gethash procident (vm-procedures vm))))
+          (if procedure
+              (if (= nargs (length (procedure-parameters procedure)))
+                  (let ((frame (make-instance 'local-frame
+                                   :procedure-name (procedure-name procedure)
+                                   :call-type call-type
+                                   :return.line (vm-pc.line vm)
+                                   :return.offset (vm-pc.offset vm))))
+                    (loop
+                      :for n :from nargs :by -1
+                      :for (passage parameter) :in (procedure-parameters procedure)
+                      :for argument = (stack-pop (vm-stack vm))
+                      :do (ecase passage
+                            (:par-valeur
+                             (let ((argument (deref argument)))
+                               (add-variable frame
+                                             (make-instance 'lse-variable
+                                                 :name parameter
+                                                 :type (etypecase argument
+                                                         ((or integer nombre) 'nombre)
+                                                         (chaine              'chaine)
+                                                         ((or vecteur tableau)
+                                                          (lse-error "ARGUMENT NO. ~D DE TYPE TABLEAU PASSE PAR VALEUR AU PARAMETRE ~A DE LA PROCEDURE ~A"
+                                                                     n parameter procident)))
+                                                 :value argument))))
+                            (:par-reference
+                             (let ((reference (typecase argument
+                                                (identificateur
+                                                 (let ((var (find-variable vm argument)))
+                                                   (if var
+                                                       var
+                                                       (add-global-variable vm
+                                                                            (make-instance 'lse-variable
+                                                                                :name argument
+                                                                                :type 'nombre)))))
+                                                ((or lse-variable vecteur-ref tableau-ref)
+                                                 argument)
+                                                (otherwise
+                                                 (lse-error
+                                                  "L'ARGUMENT NO. ~D PASSE PAR REFERENCE AU PARAMETRE ~A DE LA PROCEDURE ~A DOIT ETRE UNE REFERENCE A UNE VARIABLE OU UN TABLEAU.")))))
+                               (add-variable frame
+                                             (make-instance 'reference-parameter
+                                                 :name parameter
+                                                 :reference reference))))))
+                    (setf (slot-value frame 'stack-pointer) (fill-pointer (vm-stack vm)))
+                    (push frame (vm-local-frame-stack vm))
+                    (loop
+                      :for local :in (procedure-local-variables procedure)
+                      :do (add-variable frame (make-instance 'lse-variable :name local)))
+                    (let ((line (gethash (procedure-line procedure) (vm-code-vectors vm))))
+                      (if line
+                          (progn
+                            (setf (vm-state     vm) :running
+                                  (vm-pc.line   vm) (procedure-line procedure)
+                                  (vm-pc.offset vm) (procedure-offset procedure)
+                                  (vm-code      vm) (code-vector line))
+                            (when (or (vm-pas-a-pas vm)
+                                      (eql (code-line line) (vm-trap-line vm)))
+                              ;; to get the PAUSE message
+                              (pause vm)))
+                          (lse-error "INTERNE: LE VECTEUR DE CODE POUR LA PROCEDURE ~A EST ABSENT." procident))))
+                  (lse-error "NOMBRE D'ARGUMENTS (~A) DIFFERENT DU NOMBRE DE PARAMETRES (~A) POUR LA PROCEDURE ~A"
+                             nargs (length (procedure-parameters procedure))procident))
+              (lse-error "IL N'Y A PAS DE PROCEDURE NOMMEE ~A" procident))))))
+
+(defun callf (vm procident nargs) (call vm :function  procident nargs))
+(defun callp (vm procident nargs) (call vm :procedure procident nargs))
 
 
-(defun goto (vm lino)
-  (let ((line (gethash lino (vm-code-vectors vm)))
-        (stack (loop-stack vm)))
-    (cond
-      ((null line)
-       (error-bad-line lino))
-      (stack
-       ;; When we GO TO a line outside of the current loop, we unwind it.
-       (if (or (< (loop-start-line-number (first stack)) lino)
-               (<= lino (loop-end-line-number (first stack))))
-           (progn
-             (pop (loop-stack vm))
-             ;; and try again (there may be several embedded loops)
-             (goto vm lino))
-           (vm-goto vm lino)))
-      (t
-       (vm-goto vm lino)))))
 
 (defun retour (vm)
-  (if (vm-local-frame-stack vm)
-      (let ((frame (pop (vm-local-frame-stack vm))))
-        (setf (vm-pc.line   vm) (frame-return.line   frame)
-              (vm-pc.offset vm) (frame-return.offset frame)
-              (vm-code      vm) (second (gethash (vm-pc.line vm) (vm-code-vectors vm)))))
-      (lse-error "IL N'Y A PAS D'APPEL DE PROCEDURE EN COURS, RETOUR IMPOSSIBLE")))
+  (let ((frame (first (vm-local-frame-stack vm))))
+    (cond
+      ((null frame)
+       (lse-error "IL N'Y A PAS D'APPEL DE PROCEDURE EN COURS, RETOUR IMPOSSIBLE"))
+      ((eql :function (frame-call-type frame))
+       (lse-error "RETOUR DANS LA PROCEDURE ~A APPELEE COMME FONCTION."
+                  (frame-procedure-name frame)))
+      (t
+       (pop (vm-local-frame-stack vm))
+       (setf (vm-pc.line   vm) (frame-return.line   frame)
+             (vm-pc.offset vm) (frame-return.offset frame)
+             (vm-code      vm) (code-vector (gethash (vm-pc.line vm) (vm-code-vectors vm)))
+             (fill-pointer (vm-stack vm)) (frame-stack-pointer frame))))))
 
 (defun retour-en (vm lino)
-  (if (vm-local-frame-stack vm)
-      (let ((line (gethash lino (vm-code-vectors vm))))
-        (pop (vm-local-frame-stack vm))
-        (if line
-            (setf (vm-pc.line   vm) lino
-                  (vm-pc.offset vm) 0
-                  (vm-code      vm) (second line))
-            (error-bad-line lino)))
-      (lse-error "IL N'Y A PAS D'APPEL DE PROCEDURE EN COURS, RETOUR EN IMPOSSIBLE")))
+  (let ((frame (first (vm-local-frame-stack vm))))
+    (cond
+      ((null frame)
+       (lse-error "IL N'Y A PAS D'APPEL DE PROCEDURE EN COURS, RETOUR EN IMPOSSIBLE"))
+      (t
+       ;; When call-type is :function we have an exceptionnal return,
+       ;; but it's the same processing.  The stack unwinding is done
+       ;; in vm-goto, from the saved frame-stack-pointer.
+       (let ((line (gethash lino (vm-code-vectors vm))))
+         (pop (vm-local-frame-stack vm))
+         (if line
+             (setf (vm-pc.line   vm) lino
+                   (vm-pc.offset vm) 0
+                   (vm-code      vm) (code-vector line)
+                   (fill-pointer (vm-stack vm)) (frame-stack-pointer frame))
+             (error-bad-line lino)))))))
 
 (defun result (vm result)
-    (if (vm-local-frame-stack vm)
-      (let ((frame (pop (vm-local-frame-stack vm))))
-        (stack-push result (vm-stack vm))
-        (setf (vm-pc.line   vm) (frame-return.line   frame)
-              (vm-pc.offset vm) (frame-return.offset frame)
-              (vm-code      vm) (second (gethash (vm-pc.line vm) (vm-code-vectors vm)))))
-      (lse-error "IL N'Y A PAS D'APPEL DE PROCEDURE EN COURS, RESULTAT IMPOSSIBLE")))
+  (let ((frame (first (vm-local-frame-stack vm))))
+    (cond
+      ((null frame)
+       (lse-error "IL N'Y A PAS D'APPEL DE PROCEDURE EN COURS, RESULTAT IMPOSSIBLE"))
+      ((eql :function (frame-call-type frame))
+       (pop (vm-local-frame-stack vm))
+       (setf (vm-pc.line   vm) (frame-return.line   frame)
+             (vm-pc.offset vm) (frame-return.offset frame)
+             (vm-code      vm) (code-vector (gethash (vm-pc.line vm) (vm-code-vectors vm)))
+             (fill-pointer (vm-stack vm)) (frame-stack-pointer frame))
+       (stack-push result (vm-stack vm)))
+      (t
+       (lse-error "RESULTAT DANS LA PROCEDURE ~A APPELEE COMME SOUS-PROGRAMME."
+                  (frame-procedure-name frame))))))
 
 
 
@@ -1354,7 +1465,8 @@ NOTE: on ne peut pas liberer un parametre par reference.
                            (!faire-tant-que (op-3/1 faire-tant-que))
                            (!tant-que       (op-1 tant-que))
 
-                           (!call           (op-0/2 call))
+                           (!callf          (op-0/2 callf))
+                           (!callp          (op-0/2 callp))
                            (!procedure      (lse-error "PROCEDURE N'EST PAS EXECUTABLE."))
 
                            (!comment        (op-0/1 comment))

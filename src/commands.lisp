@@ -478,7 +478,9 @@ GRL                    GRL(ch,de), groupe de lettres;
       :arguments     ',arguments
       :oneliner      ,oneliner
       :documentation ,(or documentation oneliner)
-      :Function       (lambda ,arguments (block ,(intern name) ,@body)))))
+      :Function       (lambda ,arguments
+                        (block ,(intern name  "COM.INFORMATIMAGO.LSE")
+                          ,@body)))))
 
 
 (defvar *command-group* nil
@@ -488,7 +490,8 @@ GRL                    GRL(ch,de), groupe de lettres;
   (let ((gn (command-grammar command)))
     (if gn
         (apply (command-function command)
-               (funcall (intern (with-standard-io-syntax (format nil "PARSE-~A" gn)))
+               (funcall (intern (with-standard-io-syntax (format nil "PARSE-~A" gn))
+                                 "COM.INFORMATIMAGO.LSE")
                         (io-read-line *task* :beep nil)))
         (funcall (command-function command)))))
 
@@ -843,11 +846,15 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 (defun lister-a-partir-de (from to)
-  (io-format *task* "~:{~*~A~%~}" (get-program (task-vm *task*) from to)))
+  (io-format *task* "~{~A~%~}"
+             (mapcar (function code-source)
+                     (get-program (task-vm *task*) from to))))
 
 
 (defun numero-a-partir-de (from to)
-  (io-format *task* "~:{~A~%~}" (get-program (task-vm *task*) from to)))
+  (io-format *task* "~{~A~%~}"
+             (mapcar (function code-line)
+                     (get-program (task-vm *task*) from to))))
 
 
 (defun desassembler-a-partir-de (from to)
@@ -855,10 +862,10 @@ GRL                    GRL(ch,de), groupe de lettres;
     (maphash (lambda (lino code)
                (when (and (<= from lino) (or (null to) (<= lino to)))
                  (push (list lino
-                             (third code)
+                             (code-source code)
                              (with-output-to-string (*standard-output*)
                                (with-standard-io-syntax
-                                 (disassemble-lse (second code)))))
+                                 (disassemble-lse (code-vector code)))))
                        lines)))
              (vm-code-vectors (task-vm *task*)))
     (io-format *task* "~:{~*~A~%~A~%~}" (sort lines '< :key (function first)))))
@@ -1108,8 +1115,8 @@ GRL                    GRL(ch,de), groupe de lettres;
                                 :if-does-not-exist :create)
           (if stream
               (loop
-                :for (nil line) :in source
-                :do (write-line line stream))
+                :for line :in source
+                :do (write-line (code-source line) stream))
               (error 'lse-file-error
                      :pathname path
                      :format-control "UN PROGRAMME NOMME '~A' EXISTE DEJA; UTILISEZ LA COMMANDE MODIFIER."
@@ -1130,8 +1137,8 @@ GRL                    GRL(ch,de), groupe de lettres;
                                 :if-exists :supersede
                                 :if-does-not-exist :create)
           (loop
-            :for (nil line) :in source
-            :do (write-line line stream)))
+            :for line :in source
+            :do (write-line (code-source line) stream)))
         (error 'lse-error
                :format-control "IL N'Y A PAS DE PROGRAMME A MODIFIER."
                :format-arguments '()))
@@ -1154,7 +1161,7 @@ GRL                    GRL(ch,de), groupe de lettres;
          (vm        (task-vm *task*))
          (source    (get-program vm from to)))
     (if source
-        (let ((buffer (unsplit-string (mapcar (function second) source)
+        (let ((buffer (unsplit-string (mapcar (function code-source) source)
                                       *xoff*
                                       :fill-pointer t :size-increment 2)))
           (vector-push *xoff* buffer)
@@ -1366,6 +1373,40 @@ GRL                    GRL(ch,de), groupe de lettres;
   (io-format *task* "~:{ ~2,'0D       ~5D~%~}" (allocated-temporary-space))
   (io-new-line *task*)
   (values))
+
+
+
+
+;;  We provide a REPL for LE (repl) command for debugging.
+
+(defmacro handling-errors (&body body)
+  `(HANDLER-CASE (progn ,@body)
+     (simple-condition 
+         (ERR) 
+       (io-format *task* "~&~A: ~%" (class-name (class-of err)))
+       (apply (function io-format) *task*
+              (simple-condition-format-control   err)
+              (simple-condition-format-arguments err))
+       (io-format *task* "~&"))
+     (condition 
+         (ERR) 
+       (io-format *task* "~&~A: ~%  ~S~%"
+                  (class-name (class-of err)) err))))
+
+
+(defun repl ()
+  (do ((+eof+ (gensym))
+       (hist 1 (1+ hist)))
+      (nil)
+    (io-format *task* "~%~A[~D]> " (package-name *package*) hist)
+    (handling-errors
+     (setf +++ ++   ++ +   + -   - (read *standard-input* nil +eof+))
+     (when (or (eq - +eof+)
+               (member - '((quit)(exit)(continue)) :test (function equalp)))
+       (return-from repl))
+     (setf /// //   // /   / (multiple-value-list (eval -)))
+     (setf *** **   ** *   * (first /))
+     (io-format *task* "~& --> ~{~S~^ ;~%     ~}~%" /))))
 
 
 
@@ -1594,19 +1635,19 @@ Sur MITRA 15, l'état des variables est également transféré."
 (defun lse-compile-and-execute (task line)
   (let* ((*task* task)
          (code (compile-lse-line line)))
-    (if (zerop (first code))
+    (if (zerop (code-line code))
         ;; instruction line
         (let ((vm (task-vm task)))
           (setf (vm-state vm) :running
                 (vm-pc.line vm) 0
                 (vm-pc.offset vm) 0
-                (vm-code vm) (second code))
+                (vm-code vm) (code-vector code))
           (vm-run vm)
           (io-new-line *task*))
         ;; program line
-        (if (equalp #(!next-line) (second code))
-            (erase-line-number (task-vm task) (first code))
-            (put-line (task-vm task) (first code) code)))))
+        (if (equalp #(!next-line) (code-vector code))
+            (erase-line-number (task-vm task) (code-line code))
+            (put-line (task-vm task) (code-line code) code)))))
 
 
 (defun command-eval-line (task line)
@@ -1628,7 +1669,9 @@ Sur MITRA 15, l'état des variables est également transféré."
                     :format-arguments (list line))
              (progn
                (unless (task-silence task)
-                 (io-beginning-of-line task)
+                 ;; TODO: Move up only when the command is input with CR and echoed as CR/LF, not with X-OFF.
+                 (io-move-up task)
+                 (io-carriage-return task)
                  (io-format task "~A " (if (task-abreger task)
                                            (subseq (command-name command) 0 2)
                                            (command-name command))))
@@ -1644,7 +1687,7 @@ Sur MITRA 15, l'état des variables est également transféré."
       #|else empty line, just ignore it.|#)))
 
 
-(defvar *debug-repl* nil)
+(defvar *debug-repl*o nil)
 ;; (setf *debug-repl* nil)
 ;; (setf *debug-repl* t)
 

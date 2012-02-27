@@ -76,37 +76,93 @@ BONJOUR     ~8A
   #+clisp (ext:getenv var))
 
 
-(defun unicode-terminal-p ()
-  (let ((ctype (getenv "LC_CTYPE")))
-    (not (null (search  ".UTF-8" ctype)))))
+(defun locale-terminal-encoding ()
+  "Returns the terminal encoding specified by the locale(7)."
+  (dolist (var '("LC_ALL" "LC_MESSAGES" "LC_CTYPE")
+               :iso-8859-1) ; some random default…
+    (let* ((val (getenv var))
+           (dot (position #\. val)))
+      (when (and dot (< dot (1- (length val))))
+        (return (intern (string-upcase (subseq val (1+ dot))) "KEYWORD"))))))
+
+
+(defun set-terminal-encoding (encoding)
+  #-(and ccl (not swank)) (declare (ignore encoding))
+  #+(and ccl (not swank))
+  (mapc (lambda (stream)
+          (setf (ccl::stream-external-format stream)
+                (ccl:make-external-format :domain nil
+                                          :character-encoding encoding
+                                          ;; :line-termination line-termination
+                                          )))
+        (list (two-way-stream-input-stream  *terminal-io*)
+              (two-way-stream-output-stream *terminal-io*)))
+  (values))
+
+
+;; (setf ccl:*default-external-format*           :unix
+;;       ccl:*default-file-character-encoding*   :utf-8
+;;       ccl:*default-line-termination*          :unix
+;;       ccl:*default-socket-character-encoding* :utf-8)
+
+
+
+(defgeneric stream-input-stream (stream)
+  (:method ((stream stream))
+    stream)
+  (:method ((stream concatenated-stream))
+    (stream-input-stream (first (concatenated-stream-streams stream))))
+  (:method ((stream echo-stream))
+    (stream-input-stream (echo-stream-input-stream stream)))
+  (:method ((stream synonym-stream))
+    (stream-input-stream (symbol-value (synonym-stream-symbol stream))))
+  (:method ((stream two-way-stream))
+    (stream-input-stream (two-way-stream-input-stream stream))))
+
+(defgeneric stream-output-stream (stream)
+  (:method ((stream stream))
+    stream)
+  (:method ((stream broadcast-stream))
+    (stream-output-stream (first (broadcast-stream-streams stream))))
+  (:method ((stream echo-stream))
+    (stream-input-stream (echo-stream-output-stream stream)))
+  (:method ((stream synonym-stream))
+    (stream-input-stream (symbol-value (synonym-stream-symbol stream))))
+  (:method ((stream two-way-stream))
+    (stream-input-stream (two-way-stream-output-stream stream))))
+
 
 
 (defun main (&optional args)
   (declare (ignore args))
-  (let* ((terminal (make-instance
-                       #+swank
-                       (if (typep *standard-output*
-                                  'swank-backend::slime-output-stream)
-                           'swank-terminal
-                           'standard-terminal)
-                     #-swank 'standard-terminal
-                     :input *standard-input*
-                     :output *standard-output*))
-         (*task* (make-instance 'task
-                     :state :active
-                     :case-insensitive t
-                     :upcase-output nil
-                     :dectech nil
-                     :unicode (unicode-terminal-p)
-                     :terminal terminal)))
-    (terminal-initialize terminal)
-    (unwind-protect
-         (progn
-           (io-format *task* "~A" *tape-banner*)
-           (io-format *task* "~?" *unix-banner*  (list *version* (subseq (dat) 9)))
-           (command-repl *task*))
-      (task-close-all-files *task*)
-      (terminal-finalize terminal)))
+  (let ((encoding (locale-terminal-encoding)))
+    (set-terminal-encoding encoding)
+    (let* ((terminal (make-instance
+                         (progn
+                           #+swank (if (typep (stream-output-stream *terminal-io*)
+                                              'swank-backend::slime-output-stream)
+                                       'swank-terminal
+                                       'terminfo-terminal)
+                           #-swank 'terminfo-terminal)
+                         #-swank :terminfo #-swank (terminfo:set-terminal)
+                         :input  (stream-input-stream  *terminal-io*)
+                         :output (stream-output-stream *terminal-io*)))
+           (task     (make-instance 'task
+                         :state :active
+                         :case-insensitive t
+                         :upcase-output nil
+                         :dectech nil
+                         :unicode #+swank (eql encoding :utf-8) #-swank nil
+                         :terminal terminal)))
+      (setf *task* task)
+      (terminal-initialize terminal)
+      (unwind-protect
+           (progn
+             (io-format *task* "~A" *tape-banner*)
+             (io-format *task* "~?" *unix-banner*  (list *version* (subseq (dat) 9)))
+             (command-repl *task*))
+        (task-close-all-files *task*)
+        (terminal-finalize terminal))))
   0)
 
 

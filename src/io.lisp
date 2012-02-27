@@ -162,8 +162,14 @@
     (declare (ignorable terminal))
     (values)))
 
-(defgeneric terminal-beginning-of-line (terminal)
+(defgeneric terminal-carriage-return (terminal)
   (:documentation "Move the cursor to the beginning of the line (Carriage Return).")
+  (:method (terminal)
+    (declare (ignorable terminal))
+    (values)))
+
+(defgeneric terminal-move-up (terminal)
+  (:documentation "Move the cursor up one line.")
   (:method (terminal)
     (declare (ignorable terminal))
     (values)))
@@ -225,23 +231,32 @@ When false, no automatic echo occurs.")
                   :initform *standard-output*)))
 
 (defparameter *io-bell-char*
-  (or (ignore-errors (read-from-string "#\Bell"))
-      (code-char 7)))
+  (or (ignore-errors (read-from-string "#\\Bell"))
+      (code-char BEL)))
+
+(defparameter *io-line-feed*
+  (or (ignore-errors (read-from-string "#\\Linefeed"))
+      (code-char LF)))
 
 (defmethod terminal-ring-bell ((terminal standard-terminal))
   (let ((output (terminal-output-stream terminal)))
     (princ *io-bell-char* output)
-    (finish-output output)))
+    (terminal-finish-output terminal)))
 
-(defmethod terminal-beginning-of-line ((terminal standard-terminal))
+(defmethod terminal-carriage-return ((terminal standard-terminal))
   (let ((output (terminal-output-stream terminal)))
     (write-char #\Return output)
-    (finish-output output)))
+    (terminal-finish-output terminal)))
 
-(defmethod terminal-new-line ((terminal standard-terminal) &optional count)
+(defmethod terminal-line-feed ((terminal standard-terminal) &optional (count 1))
+  (let ((output (terminal-output-stream terminal)))
+    (loop :repeat count :do (princ *io-line-feed* output))
+    (terminal-finish-output terminal)))
+
+(defmethod terminal-new-line ((terminal standard-terminal) &optional (count 1))
   (let ((output (terminal-output-stream terminal)))
     (loop :repeat count :do (terpri output))
-    (force-output output)))
+    (terminal-finish-output terminal)))
 
 (defmethod terminal-write-string ((terminal standard-terminal) string &key (start 0) (end nil))
   (let ((output (terminal-output-stream terminal)))
@@ -295,10 +310,20 @@ When false, no automatic echo occurs.")
 (defun io-bell (task)
   (terminal-ring-bell (task-terminal task)))
 
-(defun io-beginning-of-line (task)
+(defun io-move-up (task)
   (if (io-terminal-output-p task)
-      (terminal-beginning-of-line (task-terminal task))
+      (terminal-move-up (task-terminal task))
+      (values)))
+
+(defun io-carriage-return (task)
+  (if (io-terminal-output-p task)
+      (terminal-carriage-return (task-terminal task))
       (princ #\Return (task-output task))))
+
+(defun io-line-feed (task &optional (count 1))
+  (if (io-terminal-output-p task)
+      (terminal-line-feed (task-terminal task) count)
+      (format (task-output task) "~V,,,VA" count LF "")))
 
 (defun io-new-line (task &optional (count 1))
   (if (io-terminal-output-p task)
@@ -340,15 +365,13 @@ When false, no automatic echo occurs.")
 
 
 
-;; Some implementations have unicode but don't know #\upwards_arrow, etc.
 
-(defparameter *unicode-leftwards-arrow*
-  (or (ignore-errors (code-char 8592))
-      #\_))
+(defparameter *dectech-leftwards-arrow* (or (ignore-errors (code-char #xfb)) #\_))
+(defparameter *dectech-upwards-arrow*   (or (ignore-errors (code-char #xfc)) #\^))
+(defparameter *unicode-leftwards-arrow* (or (ignore-errors (code-char 8592)) #\_))
+(defparameter *unicode-upwards-arrow*   (or (ignore-errors (code-char 8593)) #\^))
+;; (Some implementations have unicode but don't know #\upwards_arrow, etc.)
 
-(defparameter *unicode-upwards-arrow*
-  (or (ignore-errors (code-char 8593))
-      #\^))
 
 (defun io-substitute (task string)
   (if (io-terminal-output-p task)
@@ -359,11 +382,11 @@ When false, no automatic echo occurs.")
           :for ch :across string
           :do (case ch
                 ((#\_) (cond
-                         (dectech (princ (code-char #xfb)  out))
+                         (dectech (princ *dectech-leftwards-arrow* out))
                          (unicode (princ *unicode-leftwards-arrow* out))
                          (t       (princ ch out))))
                 ((#\^) (cond
-                         (dectech (princ (code-char #xfc)  out))
+                         (dectech (princ *dectech-upwards-arrow* out))
                          (unicode (princ *unicode-upwards-arrow* out))
                          (t       (princ ch out))))
                 (otherwise
@@ -376,9 +399,9 @@ When false, no automatic echo occurs.")
 
 
 
-(defparameter *io-active-codes* (vector +TAPE-READER-ON+ +TAPE-PUNCHER-ON+
+(defparameter *io-active-codes* (vector +TAPE-READER-ON+   +TAPE-PUNCHER-ON+
                                         +TAPE-PUNCHER-OFF+ +TAPE-READER-OFF+
-                                        +CR+))
+                                        +XOFF+ +CR+ +LF+))
 
 
 (defun io-format (task control-string &rest arguments)
@@ -394,13 +417,13 @@ When false, no automatic echo occurs.")
                 (terminal-write-string (task-terminal task) buffer :start start :end chunk-end)
                 (write-string          buffer (task-output   task) :start start :end chunk-end))
             (when (< chunk-end end)
-              (ecase (aref buffer chunk-end)
-                (#.+CR+               (io-beginning-of-line  task))
-                (#.+LF+               (io-new-line           task))
-                (#.+TAPE-READER-ON+   (io-start-tape-reader  task))
-                (#.+TAPE-PUNCHER-ON+  (io-start-tape-puncher task))
-                (#.+TAPE-PUNCHER-OFF+ (io-stop-tape-puncher  task))
-                (#.+TAPE-READER-OFF+  (io-stop-tape-reader   task)))
+              (ecase (char-code (aref buffer chunk-end))
+                ((#.+CR+)               (io-carriage-return    task))
+                ((#.+LF+ #.+XOFF+)      (io-new-line           task)) ; not line-feed.
+                ((#.+TAPE-READER-ON+)   (io-start-tape-reader  task))
+                ((#.+TAPE-PUNCHER-ON+)  (io-start-tape-puncher task))
+                ((#.+TAPE-PUNCHER-OFF+) (io-stop-tape-puncher  task))
+                ((#.+TAPE-READER-OFF+)  (io-stop-tape-reader   task)))
               (incf chunk-end))
             (setf start chunk-end)))))
 

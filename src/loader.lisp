@@ -73,16 +73,21 @@
        (ignore-errors (delete-package :com.informatimago.lse.byte-code))
        (ignore-errors (delete-package :com.informatimago.lse.identifiers)))
 (pushnew #P "/home/pjb/src/pjb/lse-cl/src/"                  asdf:*central-registry*)
-(quick-reload :com.informatimago.lse)
+(quick-reload :com.informatimago.lse.unix-cli)
 (com.informatimago.common-lisp.cesarum.package:add-nickname :COM.INFORMATIMAGO.LSE.IDENTIFIERS :id)
 (in-package   :com.informatimago.lse)
-(print '(in-package   :com.informatimago.lse)) (terpri) (finish-output)
+(print '(in-package   :com.informatimago.lse)) 
+(print '(com.informatimago.lse.unix-cli:main))
+(terpri) (finish-output)
 
 
 
 
 
-
+#|
+    (cd #P "/home/pjb/src/pjb/lse-cl/src/")
+    (load "loader.lisp")
+|#
 
 ;;;; THE END ;;;;
 

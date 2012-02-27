@@ -54,9 +54,8 @@
 ;;    The scanner and parser are provided by lse-scanner.lisp
 ;;    and lse-parser.lisp. 
 ;; 
+;;    GENERATE-EXPRESSION
 ;;    GENERATE-STATEMENT
-;;    GENERATE-SLIST
-;;    COMPILE-SLIST
 ;; 
 ;;    COMPILE-LSE-LINE-PARSE-TREE
 ;;    COMPILE-LSE-LINE
@@ -473,118 +472,606 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 
 
 
-(defun gen (&rest items)
-  (cond
-    ((null (cdr items))
-     (car items))
-    ((or (numberp (car items))
-         (stringp (car items))
-         (and (symbolp (car items))
-              (or (eq (symbol-package (car items)) (find-package "BC"))
-                  (eq (symbol-package (car items)) (find-package "ID")))))
-     (cons (car items) (apply (function gen) (cdr items))))
-    (t
-     (generate-statement (car items) (apply (function gen) (cdr items))))))
+;; (defun gen (&rest items)
+;;   (cond
+;;     ((null (cdr items))
+;;      (car items))
+;;     ((or (numberp (car items))
+;;          (stringp (car items))
+;;          (and (symbolp (car items))
+;;               (or (eq (symbol-package (car items)) (find-package "BC"))
+;;                   (eq (symbol-package (car items)) (find-package "ID")))))
+;;      (cons (car items) (apply (function gen) (cdr items))))
+;;     (t
+;;      (generate-statement (car items) (apply (function gen) (cdr items))))))
+;; 
+;; 
+;; 
+;; (defun generate-statement (stat next)
+;;   (etypecase stat
+;;     ((or integer nombre symbol)
+;;      (cons stat next))
+;;     (token
+;;      (ecase (token-kind stat)
+;;        (tok-chaine         (gen !pushi (chaine-valeur stat) next))
+;;        (tok-nombre         (gen !pushi (nombre-valeur stat) next))
+;;        (tok-numero         (gen !pushi (numero-valeur stat) next))
+;;        (tok-identificateur (gen (identificateur-nom stat) next))
+;;        (tok-commentaire    (gen !comment (token-text stat) next))))
+;;     (cons
+;;      (ecase (first stat)
+;; 
+;;        ((:neg :non)
+;;         (gen (second stat) (case (first stat)
+;;                              (:neg !neg)
+;;                              (:non !non)) next))
+;;        ((:moins :plus :fois :divise :puissance :concat
+;;                 :lt :le :gt :ge :eg :ne)
+;;         (gen (second stat) (third stat)
+;;              (case (first stat)
+;;                (:moins !sub)
+;;                (:plus  !add)
+;;                (:fois  !mul)
+;;                (:divise !div)
+;;                (:puissance !pow)
+;;                (:concat !concat)
+;;                (:lt !lt)
+;;                (:le !le)
+;;                (:gt !gt)
+;;                (:ge !ge)
+;;                (:eg !eg)
+;;                (:ne !ne)) next))
+;;        (:xi
+;;         (let* ((else (gen (fourth stat) next))
+;;                (offset.e (cons-position next else))
+;;                (then (gen (third stat) !balways  offset.e else))
+;;                (offset.t (cons-position else then)))
+;;           (gen (second stat) !bfalse offset.t then)))
+;;        ((:ou :et)
+;;         (loop
+;;            :with suite = next
+;;            :for item :in (reverse (cddr stat))
+;;            :do (setf suite (gen item (case (first stat)
+;;                                        (:ou !ou)
+;;                                        (:et !et)) suite))
+;;            :finally (return (gen (second stat) suite))))
+;; 
+;;        (:commentaire
+;;         (gen (second stat) next))
+;;        
+;;        ((:liberer :chaine)
+;;         (loop
+;;            :with suite = next
+;;            :for item :in (reverse (rest stat))
+;;            :do (setf suite (gen (case (first stat)
+;;                                   (:liberer !liberer)
+;;                                   (:chaine  !chaine))
+;;                                 (identificateur-nom item) suite))
+;;            :finally (return suite)))
+;;        (:tableau
+;;         (loop
+;;            :for item :in (reverse (rest stat))
+;;            :do (setf next (generate-statement item next))
+;;            :finally (return next)))
+;;        (:adecl
+;;         (if (null (cdddr stat))
+;;             (gen (third stat) !tableau1
+;;                  (identificateur-nom (second stat)) next)
+;;             (gen (third stat) (fourth stat) !tableau2
+;;                  (identificateur-nom (second stat)) next)))
+;;        
+;;        ((:aval :aref)
+;;         (if (null (cdddr stat))
+;;             (gen (third stat)
+;;                  (case (first stat)
+;;                    (:aval !aref1&push-val)
+;;                    (:aref !aref1&push-ref))
+;;                  (identificateur-nom (second stat)) next)
+;;             (gen (third stat) (fourth stat)
+;;                  (case (first stat)
+;;                    (:aval !aref2&push-val)
+;;                    (:aref !aref2&push-ref))
+;;                  (identificateur-nom (second stat)) next)))
+;;        ((:vval :vref)
+;;         (gen (case (first stat)
+;;                (:vval !push-val)
+;;                (:vref !push-ref))
+;;              (identificateur-nom (second stat)) next))
+;; 
+;;        ((:fonction :appel)
+;;         (loop
+;;            :with suite = (gen !call (identificateur-nom (second stat))
+;;                               (length (cddr stat)) next)
+;;            :for item :in (reverse (cddr stat))
+;;            :do (setf suite (gen item suite))
+;;            :finally (return suite)))
+;; 
+;;        
+;;        ;; (:decl-procedure ident nil       nil)
+;;        ;; (:decl-procedure ident (fpid...) nil)
+;;        ;; (:decl-procedure ident nil       (locid...))
+;;        ;; (:decl-procedure ident (fpid...) (locid...))
+;;        ;; --> :trap-proc-reached *
+;;        ;; ==> fpid inter locid == arguments par valeur  ==> copier
+;;        ;; ==> fpid diff  locid == arguments par reference
+;;        ;; ==> locid diff fpid  == variable locales --> table variable locale pour la proc.
+;; 
+;;        ;; Parameters by reference
+;;        ;; Parameters by value       = Local variables
+;;        ;; Global Variables
+;;        ;; Local Variables
+;; 
+;;        
+;;     ;; - Appel de  PROCEDURE
+;;     ;; 
+;;     ;;   We cannot generate vref or vval for parameters of PROCEDUREs
+;;     ;;   before knowing what parameters are by reference and what are by
+;;     ;;   value, therefore before having seen the PROCEDURE declaration in
+;;     ;;   the source.
+;;     ;; 
+;;     ;;   ⚠ Therefore we can generate the code only globally, just before we
+;;     ;;     run the program.  Chaining or loading parts of the program while
+;;     ;;     running means we need to recompile it.
+;;        
+;;        (:decl-procedure
+;;         ;; Les procedures ne sont pas executable, !procedure generates an error.
+;;         (destructuring-bind (decl name params locals) stat
+;;           (make-procedure :name name
+;;                           :parameters (mapcar (lambda (param)
+;;                                                 (if (member param locals)
+;;                                                     `(:par-valeur    ,param)
+;;                                                     `(:par-reference ,param)))
+;;                                               params)
+;;                           :local-variables (local-variables (set-difference locals params))
+;;                           :line line
+;;                           :offset ))
+;;         
+;;         (gen !procedure next))
+;;        
+;;        (:resultat   (gen (second stat) !result next))
+;;        (:retour-en  (gen (second stat) !retour-en next))
+;;        (:retour     (gen !retour next))
+;; 
+;;        ;; :result             OR  :retour-en      OR   :retour
+;;        ;; -------------------     ---------------     ------------
+;;        ;; result    <-- :pop  OR  goto <-- :pop   OR   nothing
+;;        ;; 
+;;        ;; return-pc <-- sf.return-pc
+;;        ;; next-sf   <-- sf.next-sf
+;;        ;; argcnt    <-- sf.argcnt
+;;        ;; sf        <-- next-sf
+;;        ;; :pop-sf
+;;        ;; :pop-n argcnt
+;;        ;;                
+;;        ;; :push  result              --                 --
+;;        ;; pc <-- return-pc       OR  pc <-- goto     or pc <-- return-pc
+;; 
+;;        (:affectation
+;;         ;; (:vref ident) expression) --> expression :pop&store ident
+;;         ;; (:aref ident expr) expression) --> expression expr :pop&astore1 ident
+;;         ;; (:aref ident expr.1 expr.2) expression) --> expression expr.1 expr.2 :pop&astore2 ident
+;;         (setf next (cons (identificateur-nom (second (second stat))) next))
+;;         (case (length (second stat))
+;;           (2  (gen (third stat)
+;;                    !pop&store    next))
+;;           (3  (gen (third stat) (third (second stat))
+;;                    !pop&astore1  next))
+;;           (4  (gen (third stat) (third (second stat))
+;;                    (fourth (second stat))
+;;                    !pop&astore2  next))))
+;; 
+;;        (:lire
+;;         ;; (:vref ident) --> :lire&store ident
+;;         ;; (:aref ident expr) -->  expr :lire&astore1 ident
+;;         ;; (:aref ident expr.1 expr.2) -->  expr.1 expr.2 :lire&astore2 ident
+;;         (loop
+;;            :for item :in (reverse (rest stat))
+;;            :do (setf next 
+;;                      (case (length item)
+;;                        (2  (gen !lire&store
+;;                                 (identificateur-nom (second item)) next))
+;;                        (3  (gen (third item) !lire&astore1
+;;                                 (identificateur-nom (second item)) next))
+;;                        (4  (gen (third item) (fourth item) !lire&astore2
+;;                                 (identificateur-nom (second item)) next))))
+;;            :finally (return (gen !beep next))))
+;; 
+;;        (:rep-1     (gen !pushi 1 next))
+;;        (:rep       (gen !pushi (numero-valeur (second stat)) next))
+;;        (:rep-var   (gen !push-val 'id::$index !dup !pushi 1 !add
+;;                         !pop&store 'id::$index !aref1&push-val 'id::$vals
+;;                         next))
+;; 
+;; 
+;;        ;; AFFICHER expr…
+;;        ;; --> (:afficher nil expr…)
+;;        ;;
+;;        ;; AFFICHER [spec…] expr…
+;;        ;; --> (:afficher (spec…) expr…)                 
+;; 
+;;        ;; First, the expr… are evaluated and stored in a TABLEAU $VALS[number of expr…]
+;;        ;; Then $INDEX is set to 1,
+;;        ;; and finally the :afficher-* codops are generated.
+;;        ;; Each :afficher-* operation should use $VALS[$INDEX] and up, incrementing $INDEX.
+;;        
+;;        ;; ['litchaine']
+;;        ;; --> spec ::= (:spec-chaine (:rep-1) litchaine)    ==> (rep litchaine :afficher-u)
+;;        ;; [42'litchaine']
+;;        ;; --> spec ::= (:spec-chaine (:rep 42) litchaine)   ==> (rep litchaine :afficher-u)
+;;        ;; [*'litchaine']
+;;        ;; --> spec ::= (:spec-chaine (:rep-var) litchaine)  ==> (rep litchaine :afficher-u)
+;; 
+;;        ;; [/]
+;;        ;; --> spec ::= (:spec-slash (:rep-1))      ==> (rep :afficher-newline)
+;;        ;; [42/]
+;;        ;; --> spec ::= (:spec-slash (:rep 42))     ==> (rep :afficher-newline)
+;;        ;; [*/]
+;;        ;; --> spec ::= (:spec-slash (:rep-var))    ==> (rep :afficher-newline)
+;; 
+;;        ;; X --> :spec-space    ==> (rep :afficher-space)
+;;        ;; C --> :spec-cr       ==> (rep :afficher-cr)
+;;        ;; L --> :spec-nl       ==> (rep :afficher-nl)
+;; 
+;;        ;; For the following specifiers, only fixed repeatitions are allowed: :rep-1 and (:rep n)
+;;        ;; U --> :spec-u        ==> (rep :afficher-u)
+;;        ;; Fe.d --> (:spec-f rep e d) ==> (rep e d :afficher-f)
+;;        ;; Ee.d --> (:spec-d rep e d) ==> (rep e d :afficher-e)
+;;        
+;;        ;; This rules means that the number of expressions processed is
+;;        ;; known at compilation time.
+;;        
+;;        ;; The format specifiers and the expressions are processed in
+;;        ;; parallel, threfore the following program:
+;;        ;;
+;;        ;; 10 AFFICHER['(',U,')']&P(42)
+;;        ;; 11 TERMINER
+;;        ;; 100 PROCEDURE &P(X)
+;;        ;; 101 AFFICHER['[',U,']']X
+;;        ;; 102 RESULTAT X
+;;        ;;
+;;        ;; should print:
+;;        ;;
+;;        ;; ([42]42)
+;; 
+;;        (:afficher
+;;         ;; (:afficher nil expr...)      --> :pushi n expr... :afficher-u
+;;         ;; (:afficher (form...) expr...)
+;;         ;; (:afficher (form...))
+;; 
+;;         ;; TODO: the $INDEX and $VALS variables should be "local"
+;;         ;; (gen  !LIBERER 'ID::$VALS next)
+;;         (let ((result '())
+;;               (exprs (cddr stat)))
+;;           (labels ((collect (code)
+;;                      (setf result (nconc result (copy-list code))))
+;;                    (spec-simple (spec format)
+;;                      (if (atom spec)
+;;                          (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)
+;;                          (case (first spec)
+;;                            (:rep-1   (collect (gen !pushi 1 nil)))
+;;                            (:rep     (collect (gen !pushi (numero-valeur (second spec)) nil)))
+;;                            (:rep-var (when (null exprs)
+;;                                        (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
+;;                                      (collect (generate-statement (pop exprs) nil)))
+;;                            (otherwise
+;;                             (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)))))
+;;                    (spec-expr (spec op format)
+;;                      (if (atom spec)
+;;                          (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)
+;;                          (case (first spec)
+;;                            (:rep-1 (when (null exprs)
+;;                                      (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
+;;                                    (collect (generate-statement (pop exprs) nil))
+;;                                    (collect op))
+;;                            (:rep   (loop
+;;                                      :repeat (numero-valeur (second spec))
+;;                                      :do (progn
+;;                                            (when (null exprs)
+;;                                              (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
+;;                                            (collect (generate-statement (pop exprs) nil))
+;;                                            (collect op))))
+;;                            (otherwise
+;;                             (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format))))))
+;;             (if (second stat)
+;;                 (loop
+;;                   :for format :in (second stat)
+;;                   :do (ecase (first format)
+;;                         (:spec-chaine
+;;                          ;; (print stat)
+;;                           ;; (print format)
+;;                          (spec-simple (second format) format)
+;;                          (collect (gen (third format) !afficher-chaine nil)))
+;;                         ((:spec-slash :spec-space :spec-cr :spec-nl)
+;;                          (spec-simple (second format) format)
+;;                          (collect (gen (case (first format)
+;;                                          (:spec-slash !afficher-newline)
+;;                                          (:spec-space !afficher-space)
+;;                                          (:spec-cr    !afficher-cr)
+;;                                          (:spec-nl    !afficher-nl))
+;;                                        nil)))
+;;                         ((:spec-f :spec-e)
+;;                          (spec-expr (second format) (gen (third format)
+;;                                                          (fourth format)
+;;                                                          (case (first format)
+;;                                                            (:spec-f !afficher-f)
+;;                                                            (:spec-e !afficher-e))
+;;                                                          nil) format))
+;;                         (:spec-u
+;;                          (spec-expr (second format) (gen !afficher-u nil) format)))
+;;                   :finally (loop
+;;                              :for expr :in exprs
+;;                              :do (collect (gen (generate-statement expr nil) !afficher-u nil))))
+;;                 ;; (5) afficher[{n}u]expr...
+;;                 (progn
+;;                   (collect (gen !pushi 1 !afficher-newline nil))
+;;                   (loop
+;;                     :for expr :in (cddr stat)
+;;                     :do (progn
+;;                           (collect (generate-statement expr nil))
+;;                           (collect (gen !afficher-u nil)))))))
+;;           (nconc result next)))
+;; 
+;;        
+;;        ;; (setf next (gen !pushi (length (cddr stat)) !pop&store 'id::$valscnt next))
+;;        ;; (setf next (gen !pushi 1 !pop&store 'id::$index next))
+;;        ;; (4) set $index to 1
+;;        ;; to avoid too much stack usage, we evalute each expression
+;;        ;; and store it into $vals in turn.
+;;        ;; (3) pop one expression and store them in $vals[$index]
+;;        ;; (2) push one expression 
+;;        ;; (loop
+;;        ;;    :for expr :in (reverse (cddr stat))
+;;        ;;    :for i :from (length (cddr stat)) :downto 1 
+;;        ;;    :do (setf next (gen  !pushi i !pop&astore1 'id::$vals next))
+;;        ;;    :do (setf next (generate-statement expr next)))
+;;        ;; (1) declare the tableau $vals[n]
+;;        ;; (gen  !pushi (length (cddr stat)) !tableau1 'id::$vals next)
+;; 
+;; 
+;;        ;; rep :affiche-u -- 
+;;        ;; 
+;;        ;; @loop: dup pushi 0 eg btrue @end
+;;        ;; dup pushi 1 add swap pushi 1 swap
+;;        ;; aref1&push $vals :afficher-u branch @loop
+;;        ;; @end: pop
+;; 
+;; 
+;; 
+;;        (:aller-en (gen (second stat) !goto next))
+;;        (:si
+;;         ;;(:si test then)       --> test :bfalse offset.t then  
+;;         ;;(:si test then else)  --> test :bfalse offset.t then  :balways offset.e else
+;;         (if (cdddr stat)
+;;             ;; same as :xi
+;;             (let* ((else (gen (fourth stat) next))
+;;                    (offset.e (cons-position next else))
+;;                    (then (gen (third stat) !balways  offset.e else))
+;;                    (offset.t (cons-position else then)))
+;;               (gen (second stat) !bfalse offset.t then))
+;;             (let* ((then (gen (third stat) next))
+;;                    (offset.t (cons-position next then)))
+;;               (gen (second stat) !bfalse offset.t then))))
+;; 
+;;        (:terminer (gen !terminer next))
+;;        (:pause    (gen !pause    next))
+;; 
+;;        (:faire-jusqu-a ;; lino ident init pas jusqua)
+;;         ;; --> lino init pas jusqua :faire-jusqu-a ident
+;;         (gen (second stat) (fourth stat) (fifth stat) (sixth stat)
+;;              !faire-jusqu-a (third stat) next))
+;; 
+;;        (:faire-tant-que ;; lino ident init pas test)
+;;         ;; --> lino init pas :faire-tant-que ident test
+;;         (gen (second stat) (fourth stat) (fifth stat) 
+;;              !faire-tant-que (third stat)
+;;              (sixth stat) !tant-que next))
+;; 
+;;        ;; ==> create a faire bloc. When we reach the end of each line, we must
+;;        ;;     check for loop blocks available for this line. (kind of come from...).
+;; 
+;; 
+;;        (:garer ;; var enr fic) --> enr fic :garer var
+;;         (gen (third stat) (fourth stat) !garer (identificateur-nom (second stat)) next))
+;;        
+;;        (:charger
+;;         ;;(:charger  var enr fic)         --> enr fic :charger var nil
+;;         ;;(:charger  var enr fic varstat) --> enr fic :charger var varstat
+;;         (if (cddddr stat)
+;;             (gen (third stat) (fourth stat) !charger
+;;                  (identificateur-nom (second stat))
+;;                  (identificateur-nom (fifth stat))
+;;                  next)
+;;             (gen (third stat) (fourth stat) !charger
+;;                  (identificateur-nom (second stat))
+;;                  nil
+;;                  next)))
+;;        
+;;        (:supprimer
+;;         (if (third stat)
+;;             (gen (second stat) (third stat) !supprimer-enregistrement next)
+;;             (gen (second stat) !supprimer-fichier next)))
+;;        
+;;        (:executer
+;;         (if (third stat)
+;;             (gen (second stat) (third stat)  !executer next)
+;;             (gen (second stat) !pushi 1      !executer next)))
+;; 
+;;        (:debut
+;;         (loop
+;;            :for i :in (reverse (cdr stat))
+;;            :do (setf next (generate-statement i next))
+;;            :finally (return next)))))))
 
 
-(defun generate-statement (stat next)
-  (etypecase stat
+
+(defstruct procedure
+  name
+  (parameters      '())
+  (local-variables '())
+  line
+  (offset 1))
+
+(defstruct code
+  (line      0)
+  (vector    (make-array 8 :adjustable t :fill-pointer 0))
+  (procedure nil)
+  (source    nil))
+
+(defun code-offset (code)
+  (fill-pointer (code-vector code)))
+
+(defun gen-code (code code1 &rest codes)
+  (dolist (item (cons code1 codes))
+    (if (or (numberp item)
+            (stringp item)
+            (and (symbolp item)
+                 (or (eq (symbol-package item) (find-package "BC"))
+                     (eq (symbol-package item) (find-package "ID")))))
+        (vector-push-extend item
+                            (code-vector code)
+                            (length (code-vector code)))
+        (error "Invalid code ~S" item))))
+
+
+
+(defun generate-expression (code expression)
+  (etypecase expression
+    (null)
     ((or integer nombre symbol)
-     (cons stat next))
+     (gen-code code expression))
     (token
-     (ecase (token-kind stat)
-       (tok-chaine         (gen !pushi (chaine-valeur stat) next))
-       (tok-nombre         (gen !pushi (nombre-valeur stat) next))
-       (tok-numero         (gen !pushi (numero-valeur stat) next))
-       (tok-identificateur (gen (identificateur-nom stat) next))
-       (tok-commentaire    (gen !comment (token-text stat) next))))
+     (ecase (token-kind expression)
+       (tok-chaine         (gen-code code !pushi (chaine-valeur expression)))
+       (tok-nombre         (gen-code code !pushi (nombre-valeur expression)))
+       (tok-numero         (gen-code code !pushi (numero-valeur expression)))
+       (tok-identificateur (gen-code code (identificateur-nom expression)))
+       (tok-commentaire    (gen-code code !comment (token-text expression)))))
+    (atom (error "Unknown expression ~S" expression))
     (cons
-     (ecase (first stat)
+     (case (first expression)
 
        ((:neg :non)
-        (gen (second stat) (case (first stat)
-                             (:neg !neg)
-                             (:non !non)) next))
+        (generate-expression code (second expression))
+        (gen-code code (case (first expression)
+                                (:neg !neg)
+                                (:non !non))))
        ((:moins :plus :fois :divise :puissance :concat
                 :lt :le :gt :ge :eg :ne)
-        (gen (second stat) (third stat)
-             (case (first stat)
-               (:moins !sub)
-               (:plus  !add)
-               (:fois  !mul)
-               (:divise !div)
-               (:puissance !pow)
-               (:concat !concat)
-               (:lt !lt)
-               (:le !le)
-               (:gt !gt)
-               (:ge !ge)
-               (:eg !eg)
-               (:ne !ne)) next))
+        (generate-expression code (second expression))
+        (generate-expression code (third  expression))
+        (gen-code code (case (first expression)
+                                (:moins !sub)
+                                (:plus  !add)
+                                (:fois  !mul)
+                                (:divise !div)
+                                (:puissance !pow)
+                                (:concat !concat)
+                                (:lt !lt)
+                                (:le !le)
+                                (:gt !gt)
+                                (:ge !ge)
+                                (:eg !eg)
+                                (:ne !ne))))
        (:xi
-        (let* ((else (gen (fourth stat) next))
-               (offset.e (cons-position next else))
-               (then (gen (third stat) !balways  offset.e else))
-               (offset.t (cons-position else then)))
-          (gen (second stat) !bfalse offset.t then)))
+        (generate-expression code (second expression))
+        (gen-code code !bfalse)
+        (let ((index.t (code-offset code)))
+          (gen-code code 0)
+          (generate-expression code (third expression))
+          (gen-code code !balways)
+          (let ((index.e (code-offset code)))
+            (gen-code code 0)
+            (generate-expression code (fourth expression))
+            (let ((index.f (code-offset code)))
+              (setf (aref (code-vector code) index.t) (- index.e index.t)
+                    (aref (code-vector code) index.e) (- index.f index.e 1))))))
+       
        ((:ou :et)
+        (generate-expression code (second expression))
         (loop
-           :with suite = next
-           :for item :in (reverse (cddr stat))
-           :do (setf suite (gen item (case (first stat)
-                                       (:ou !ou)
-                                       (:et !et)) suite))
-           :finally (return (gen (second stat) suite))))
+          :with operator = (case (first expression)
+                             (:ou !ou)
+                             (:et !et))
+          :for item :in (cddr expression)
+          :do (progn
+                (generate-expression code item)
+                (gen-code code operator))))
+    
+       ((:aval :aref)
+        (if (null (cdddr expression))
+            (progn
+              (generate-expression code (third expression))
+              (gen-code code
+                        (case (first expression)
+                          (:aval !aref1&push-val)
+                          (:aref !aref1&push-ref))
+                        (identificateur-nom (second expression))))
+            (progn
+              (generate-expression code (third  expression))
+              (generate-expression code (fourth expression))
+              (gen-code code 
+                        (case (first expression)
+                          (:aval !aref2&push-val)
+                          (:aref !aref2&push-ref))
+                        (identificateur-nom (second expression))))))
+       ((:vval :vref)
+        (gen-code code (case (first expression)
+                                (:vval !push-val)
+                                (:vref !push-ref))
+                  (identificateur-nom (second expression))))
+
+       ((:fonction)
+        (loop
+          :for item :in (cddr expression)
+          :do (generate-expression code item)
+          :finally (gen-code code !callf
+                             (identificateur-nom (second expression))
+                             (length (cddr expression)))))
+
+       (t
+        (error "Unknown expression ~S" expression)))))
+  code)
+
+
+(defun generate-statement (code statement)
+  (etypecase statement
+    (null)
+    (atom (error "Unknown statement ~S" statement))
+    (cons
+     (case (first statement)
 
        (:commentaire
-        (gen (second stat) next))
-       
+        (generate-expression code (second statement)))       
+
        ((:liberer :chaine)
         (loop
-           :with suite = next
-           :for item :in (reverse (rest stat))
-           :do (setf suite (gen (case (first stat)
-                                  (:liberer !liberer)
-                                  (:chaine  !chaine))
-                                (identificateur-nom item) suite))
-           :finally (return suite)))
+          :with operator = (case (first statement)
+                             (:liberer !liberer)
+                             (:chaine  !chaine))
+          :for item :in (rest statement)
+          :do (gen-code code operator (identificateur-nom item))))
+
        (:tableau
         (loop
-           :for item :in (reverse (rest stat))
-           :do (setf next (generate-statement item next))
-           :finally (return next)))
-       (:adecl
-        (if (null (cdddr stat))
-            (gen (third stat) !tableau1
-                 (identificateur-nom (second stat)) next)
-            (gen (third stat) (fourth stat) !tableau2
-                 (identificateur-nom (second stat)) next)))
-       
-       ((:aval :aref)
-        (if (null (cdddr stat))
-            (gen (third stat)
-                 (case (first stat)
-                   (:aval !aref1&push-val)
-                   (:aref !aref1&push-ref))
-                 (identificateur-nom (second stat)) next)
-            (gen (third stat) (fourth stat)
-                 (case (first stat)
-                   (:aval !aref2&push-val)
-                   (:aref !aref2&push-ref))
-                 (identificateur-nom (second stat)) next)))
-       ((:vval :vref)
-        (gen (case (first stat)
-               (:vval !push-val)
-               (:vref !push-ref))
-             (identificateur-nom (second stat)) next))
+          :for item :in (rest statement)
+          :do (destructuring-bind (adecl ident index.1 &optional index.2) item
+                (unless (eql :adecl adecl)
+                  (error "Unknown statement ~S" (list :tableau item)))
+                (generate-expression code index.1)
+                (if index.2
+                    (progn
+                      (generate-expression code index.2)
+                      (gen-code code !tableau2))
+                    (gen-code code !tableau1))
+                (gen-code code (identificateur-nom ident)))))
 
-       ((:fonction :appel)
+       ((:appel)
         (loop
-           :with suite = (gen !call (identificateur-nom (second stat))
-                              (length (cddr stat)) next)
-           :for item :in (reverse (cddr stat))
-           :do (setf suite (gen item suite))
-           :finally (return suite)))
+          :for item :in (cddr statement)
+          :do (generate-expression code item)
+          :finally (gen-code code !callp
+                             (identificateur-nom (second statement))
+                             (length (cddr statement)))))
 
        
        ;; (:decl-procedure ident nil       nil)
@@ -602,75 +1089,88 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
        ;; Local Variables
 
        
-    ;; - Appel de  PROCEDURE
-    ;; 
-    ;;   We cannot generate vref or vval for parameters of PROCEDUREs
-    ;;   before knowing what parameters are by reference and what are by
-    ;;   value, therefore before having seen the PROCEDURE declaration in
-    ;;   the source.
-    ;; 
-    ;;   ⚠ Therefore we can generate the code only globally, just before we
-    ;;     run the program.  Chaining or loading parts of the program while
-    ;;     running means we need to recompile it.
+       ;; - Appel de  PROCEDURE
+       ;; 
+       ;;   We cannot generate vref or vval for parameters of PROCEDUREs
+       ;;   before knowing what parameters are by reference and what are by
+       ;;   value, therefore before having seen the PROCEDURE declaration in
+       ;;   the source.
+       ;; 
+       ;;   ⚠ Therefore we can generate the code only globally, just before we
+       ;;     run the program.  Chaining or loading parts of the program while
+       ;;     running means we need to recompile it.
        
-       (:decl-procedure
-        ;; Les procedures ne sont pas executable, !procedure generates an error.
-        
-        (gen !procedure next))
-       
-       (:resultat   (gen (second stat) !result next))
-       (:retour-en  (gen (second stat) !retour-en next))
-       (:retour     (gen !retour next))
 
        ;; :result             OR  :retour-en      OR   :retour
        ;; -------------------     ---------------     ------------
        ;; result    <-- :pop  OR  goto <-- :pop   OR   nothing
        ;; 
        ;; return-pc <-- sf.return-pc
-       ;; next-sf   <-- sf.next-sf
+       ;;-sf   <-- sf.next-sf
        ;; argcnt    <-- sf.argcnt
-       ;; sf        <-- next-sf
+       ;; sf        <---sf
        ;; :pop-sf
        ;; :pop-n argcnt
        ;;                
        ;; :push  result              --                 --
        ;; pc <-- return-pc       OR  pc <-- goto     or pc <-- return-pc
 
+
+       (:decl-procedure
+        ;; Les procedures ne sont pas executable, !procedure generates an error.
+        (gen-code code !procedure)
+        (destructuring-bind (decl name params locals) statement
+          (declare (ignore decl))
+          (let ((params (mapcar (function identificateur-nom)  params))
+                (locals (mapcar (function identificateur-nom)  locals)))
+           (setf (code-procedure code)
+                 (make-procedure :name (identificateur-nom name)
+                                 :parameters (nreverse
+                                              (mapcar (lambda (param)   
+                                                        (if (member param locals)
+                                                            `(:par-valeur    ,param)
+                                                            `(:par-reference ,param)))
+                                                      params))
+                                 :local-variables (set-difference locals params)
+                                 :line (code-line code)
+                                 :offset (code-offset code))))))
+       
+       (:resultat   (generate-expression code (second statement))
+                    (gen-code code !result))
+       (:retour-en  (generate-expression code (second statement))
+                    (gen-code code !retour-en))
+       (:retour     (gen-code code !retour))
+
        (:affectation
         ;; (:vref ident) expression) --> expression :pop&store ident
         ;; (:aref ident expr) expression) --> expression expr :pop&astore1 ident
         ;; (:aref ident expr.1 expr.2) expression) --> expression expr.1 expr.2 :pop&astore2 ident
-        (setf next (cons (identificateur-nom (second (second stat))) next))
-        (case (length (second stat))
-          (2  (gen (third stat)
-                   !pop&store    next))
-          (3  (gen (third stat) (third (second stat))
-                   !pop&astore1  next))
-          (4  (gen (third stat) (third (second stat))
-                   (fourth (second stat))
-                   !pop&astore2  next))))
+        (generate-expression code (third statement))
+        (ecase (length (second statement))
+          (2  (gen-code code !pop&store))
+          (3  (generate-expression code (third (second statement)))
+              (gen-code code !pop&astore1))
+          (4  (generate-expression code (third  (second statement)))
+              (generate-expression code (fourth (second statement)))
+              (gen-code code !pop&astore2)))
+        (gen-code code (identificateur-nom (second (second statement)))))
 
        (:lire
         ;; (:vref ident) --> :lire&store ident
         ;; (:aref ident expr) -->  expr :lire&astore1 ident
         ;; (:aref ident expr.1 expr.2) -->  expr.1 expr.2 :lire&astore2 ident
+        (gen-code code !beep) 
         (loop
-           :for item :in (reverse (rest stat))
-           :do (setf next 
-                     (case (length item)
-                       (2  (gen !lire&store
-                                (identificateur-nom (second item)) next))
-                       (3  (gen (third item) !lire&astore1
-                                (identificateur-nom (second item)) next))
-                       (4  (gen (third item) (fourth item) !lire&astore2
-                                (identificateur-nom (second item)) next))))
-           :finally (return (gen !beep next))))
-
-       (:rep-1     (gen !pushi 1 next))
-       (:rep       (gen !pushi (numero-valeur (second stat)) next))
-       (:rep-var   (gen !push-val 'id::$index !dup !pushi 1 !add
-                        !pop&store 'id::$index !aref1&push-val 'id::$vals
-                        next))
+          :for item :in (rest statement)
+          :do (progn 
+                (ecase (length item)
+                  (2  (gen-code code !lire&store))
+                  (3  (generate-expression code (third  statement))
+                      (gen-code code !lire&astore1))
+                  (4  (generate-expression code (third  statement))
+                      (generate-expression code (fourth statement))
+                      (gen-code code !lire&astore2)))
+                (gen-code code (identificateur-nom (second item))))))
 
 
        ;; AFFICHER expr…
@@ -727,199 +1227,197 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
         ;; (:afficher nil expr...)      --> :pushi n expr... :afficher-u
         ;; (:afficher (form...) expr...)
         ;; (:afficher (form...))
-
-        ;; TODO: the $INDEX and $VALS variables should be "local"
-        ;; (gen  !LIBERER 'ID::$VALS next)
-        (let ((result '())
-              (exprs (cddr stat)))
-          (labels ((collect (code)
-                     (setf result (nconc result (copy-list code))))
-                   (spec-simple (spec format)
+        (let ((exprs (cddr statement)))
+          (labels ((spec-simple (spec format)
                      (if (atom spec)
                          (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)
                          (case (first spec)
-                           (:rep-1   (collect (gen !pushi 1 nil)))
-                           (:rep     (collect (gen !pushi (numero-valeur (second spec)) nil)))
+                           (:rep-1   (gen-code code !pushi 1))
+                           (:rep     (gen-code code !pushi (numero-valeur (second spec))))
                            (:rep-var (when (null exprs)
                                        (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
-                                     (collect (generate-statement (pop exprs) nil)))
+                                     (generate-expression code (pop exprs)))
                            (otherwise
                             (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)))))
-                   (spec-expr (spec op format)
+                   (spec-expr (spec ops format)
                      (if (atom spec)
                          (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)
                          (case (first spec)
                            (:rep-1 (when (null exprs)
                                      (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
-                                   (collect (generate-statement (pop exprs) nil))
-                                   (collect op))
+                                   (generate-expression code (pop exprs))
+                                   (dolist (op ops) (gen-code code op)))
                            (:rep   (loop
                                      :repeat (numero-valeur (second spec))
                                      :do (progn
                                            (when (null exprs)
                                              (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
-                                           (collect (generate-statement (pop exprs) nil))
-                                           (collect op))))
+                                           (generate-expression code (pop exprs))
+                                           (dolist (op ops) (gen-code code op)))))
                            (otherwise
                             (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format))))))
-            (if (second stat)
+            (if (second statement)
                 (loop
-                  :for format :in (second stat)
+                  :for format :in (second statement)
                   :do (ecase (first format)
                         (:spec-chaine
-                         ;; (print stat)
-                          ;; (print format)
+                         ;; (print statement)
+                         ;; (print format)
                          (spec-simple (second format) format)
-                         (collect (gen (third format) !afficher-chaine nil)))
+                         (generate-expression code (third format))
+                         (gen-code code !afficher-chaine))
                         ((:spec-slash :spec-space :spec-cr :spec-nl)
                          (spec-simple (second format) format)
-                         (collect (gen (case (first format)
-                                         (:spec-slash !afficher-newline)
-                                         (:spec-space !afficher-space)
-                                         (:spec-cr    !afficher-cr)
-                                         (:spec-nl    !afficher-nl))
-                                       nil)))
+                         (gen-code code (case (first format)
+                                          (:spec-slash !afficher-newline)
+                                          (:spec-space !afficher-space)
+                                          (:spec-cr    !afficher-cr)
+                                          (:spec-nl    !afficher-nl))))
                         ((:spec-f :spec-e)
-                         (spec-expr (second format) (gen (third format)
-                                                         (fourth format)
-                                                         (case (first format)
-                                                           (:spec-f !afficher-f)
-                                                           (:spec-e !afficher-e))
-                                                         nil) format))
+                         (spec-expr (second format)
+                                    (list !pushi (numero-valeur (third format))
+                                          !pushi (numero-valeur (fourth format))
+                                          (case (first format)
+                                            (:spec-f !afficher-f)
+                                            (:spec-e !afficher-e)))
+                                    format))
                         (:spec-u
-                         (spec-expr (second format) (gen !afficher-u nil) format)))
+                         (spec-expr (second format) '(!afficher-u) format)))
                   :finally (loop
                              :for expr :in exprs
-                             :do (collect (gen (generate-statement expr nil) !afficher-u nil))))
+                             :do (progn
+                                   (generate-expression code expr)
+                                   (gen-code code !afficher-u))))
                 ;; (5) afficher[{n}u]expr...
                 (progn
-                  (collect (gen !pushi 1 !afficher-newline nil))
+                  (gen-code code !pushi 1 !afficher-newline)
                   (loop
-                    :for expr :in (cddr stat)
+                    :for expr :in (cddr statement)
                     :do (progn
-                          (collect (generate-statement expr nil))
-                          (collect (gen !afficher-u nil)))))))
-          (nconc result next)))
+                          (generate-expression code expr)
+                          (gen-code code !afficher-u))))))))
 
        
-       ;; (setf next (gen !pushi (length (cddr stat)) !pop&store 'id::$valscnt next))
-       ;; (setf next (gen !pushi 1 !pop&store 'id::$index next))
-       ;; (4) set $index to 1
-       ;; to avoid too much stack usage, we evalute each expression
-       ;; and store it into $vals in turn.
-       ;; (3) pop one expression and store them in $vals[$index]
-       ;; (2) push one expression 
-       ;; (loop
-       ;;    :for expr :in (reverse (cddr stat))
-       ;;    :for i :from (length (cddr stat)) :downto 1 
-       ;;    :do (setf next (gen  !pushi i !pop&astore1 'id::$vals next))
-       ;;    :do (setf next (generate-statement expr next)))
-       ;; (1) declare the tableau $vals[n]
-       ;; (gen  !pushi (length (cddr stat)) !tableau1 'id::$vals next)
 
+       (:aller-en (generate-expression code (second statement))
+                  (gen-code code !goto))
 
-       ;; rep :affiche-u -- 
-       ;; 
-       ;; @loop: dup pushi 0 eg btrue @end
-       ;; dup pushi 1 add swap pushi 1 swap
-       ;; aref1&push $vals :afficher-u branch @loop
-       ;; @end: pop
-
-
-
-       (:aller-en (gen (second stat) !goto next))
        (:si
         ;;(:si test then)       --> test :bfalse offset.t then  
         ;;(:si test then else)  --> test :bfalse offset.t then  :balways offset.e else
-        (if (cdddr stat)
-            ;; same as :xi
-            (let* ((else (gen (fourth stat) next))
-                   (offset.e (cons-position next else))
-                   (then (gen (third stat) !balways  offset.e else))
-                   (offset.t (cons-position else then)))
-              (gen (second stat) !bfalse offset.t then))
-            (let* ((then (gen (third stat) next))
-                   (offset.t (cons-position next then)))
-              (gen (second stat) !bfalse offset.t then))))
+        (generate-expression code (second statement))
+        (gen-code code !bfalse)
+        (let ((index.t (code-offset code)))
+          (gen-code code 0)
+          (generate-statement code (third statement))
+          (if (fourth statement)
+              (progn
+                (gen-code code !balways)
+                (let ((index.e (code-offset code)))
+                  (gen-code code 0)
+                  (generate-statement code (fourth statement))
+                  (let ((index.f (code-offset code)))
+                    (setf (aref (code-vector code) index.t) (- index.e index.t)
+                          (aref (code-vector code) index.e) (- index.f index.e)))))
+              (let ((index.e (code-offset code)))
+                (setf (aref (code-vector code) index.t) (- index.e index.t 1))))))
 
-       (:terminer (gen !terminer next))
-       (:pause    (gen !pause    next))
+       (:terminer (gen-code code !terminer))
+       (:pause    (gen-code code !pause   ))
 
        (:faire-jusqu-a ;; lino ident init pas jusqua)
         ;; --> lino init pas jusqua :faire-jusqu-a ident
-        (gen (second stat) (fourth stat) (fifth stat) (sixth stat)
-             !faire-jusqu-a (third stat) next))
+        (generate-expression code (second statement))
+        (generate-expression code (fourth statement))
+        (generate-expression code (fifth  statement))
+        (generate-expression code (sixth  statement))
+        (gen-code code !faire-jusqu-a (identificateur-nom (third statement))))
 
        (:faire-tant-que ;; lino ident init pas test)
         ;; --> lino init pas :faire-tant-que ident test
-        (gen (second stat) (fourth stat) (fifth stat) 
-             !faire-tant-que (third stat)
-             (sixth stat) !tant-que next))
+        (generate-expression code (second statement))
+        (generate-expression code (fourth statement))
+        (generate-expression code (fifth  statement))
+        (gen-code code !faire-tant-que (identificateur-nom (third statement)))
+        (generate-expression code (sixth  statement))
+        (gen-code code !tant-que))
 
        ;; ==> create a faire bloc. When we reach the end of each line, we must
        ;;     check for loop blocks available for this line. (kind of come from...).
 
 
        (:garer ;; var enr fic) --> enr fic :garer var
-        (gen (third stat) (fourth stat) !garer (identificateur-nom (second stat)) next))
+        (generate-expression code (third statement))
+        (generate-expression code (fourth statement))
+        (gen-code code !garer (identificateur-nom (second statement))))
        
        (:charger
         ;;(:charger  var enr fic)         --> enr fic :charger var nil
         ;;(:charger  var enr fic varstat) --> enr fic :charger var varstat
-        (if (cddddr stat)
-            (gen (third stat) (fourth stat) !charger
-                 (identificateur-nom (second stat))
-                 (identificateur-nom (fifth stat))
-                 next)
-            (gen (third stat) (fourth stat) !charger
-                 (identificateur-nom (second stat))
-                 nil
-                 next)))
+        (generate-expression code (third statement))
+        (generate-expression code (fourth statement))
+        (if (cddddr statement)
+            (gen-code code !charger
+                      (identificateur-nom (second statement))
+                      (identificateur-nom (fifth statement)))
+            (gen-code code !charger
+                      (identificateur-nom (second statement))
+                      nil)))
        
        (:supprimer
-        (if (third stat)
-            (gen (second stat) (third stat) !supprimer-enregistrement next)
-            (gen (second stat) !supprimer-fichier next)))
+        (generate-expression code (second statement))
+        (if (third statement)
+            (progn
+              (generate-expression code (third statement))
+              (gen-code code !supprimer-enregistrement))
+            (gen-code code !supprimer-fichier)))
        
        (:executer
-        (if (third stat)
-            (gen (second stat) (third stat)  !executer next)
-            (gen (second stat) !pushi 1      !executer next)))
+        (generate-expression code (second statement))
+        (if (third statement)
+            (progn
+              (generate-expression code (third statement))
+              (gen-code code !executer))
+            (gen-code code !pushi 1 !executer)))
 
        (:debut
-        (loop
-           :for i :in (reverse (cdr stat))
-           :do (setf next (generate-statement i next))
-           :finally (return next)))))))
+        (compile-statement-list code (rest statement)))
+
+       (t
+         (error "Unknown statement ~S" statement)))))
+  code)
 
 
-
-(defun generate-slist (slist final)    ; generate bytes for a statement list
-  (if slist
-      (generate-statement (car slist) (generate-slist (cdr slist) final))
-      (list final)))
-
-(defun compile-slist (slist final)            ; compile statement list
-  (let ((bytes (generate-slist slist final)))
-    (make-array (length bytes) :initial-contents bytes)))
+(defun compile-statement-list (code slist)
+  (dolist (statement slist code)
+    (generate-statement code statement)))
 
 
 (defun compile-lse-line-parse-tree (parse-tree)
   ;; (let ((*print-pretty* nil)) (terpri) (princ "Parse tree: ") (prin1 parse-tree) (terpri))
   (cond
-    ((null parse-tree) (list 0 #()))           ; nothing to do
+    ((null parse-tree)
+     (let ((code (make-code :line 0)))
+       (gen-code code !stop)                    ; nothing to do
+       code))
     ((atom parse-tree)
      (error 'lse-error
             :format-control "INTERNE: UN ATOME ~S DANS L'ARBRE SYNTAXIQUE."
             :format-arguments (list parse-tree)))
     ((eq (car parse-tree) :liste-instructions)
-     (list 0 (compile-slist (cdr parse-tree) !STOP)))
+     (let ((code (make-code :line 0)))
+       (compile-statement-list code (cdr parse-tree))
+       (gen-code code !stop)
+       code))
     ((eq (car parse-tree) :ligne-programme)
      (let ((linum (numero-valeur (cadr parse-tree))))
        (unless (line-number-valid-p linum)
          (lse-error "NUMERO DE LIGNE INVALIDE ~D; CE DEVRAIT ETRE UN ENTIER ENTRE 1 ET ~D INCLUS."
                     linum (line-number-maximum)))
-       (list linum (compile-slist (cddr parse-tree) !NEXT-LINE))))
+       (let ((code (make-code :line linum)))
+         (compile-statement-list code (cddr parse-tree))
+         (gen-code code !next-line)
+         code)))
     (t
      (error 'lse-error
             :format-control "INTERNE: UNE LISTE INVALIDE ~S DANS L'ARBRE SYNTAXIQUE."
@@ -928,19 +1426,21 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 
 (defun compile-lse-line (source-line)
   (let* ((*scanner*  (make-instance 'lse-scanner :source source-line))
-         (parse-tree (parse-lse *scanner*)))
-    (append (compile-lse-line-parse-tree parse-tree)
-            (list (unparse-slist parse-tree)))))
+         (parse-tree (parse-lse *scanner*))
+         (code       (compile-lse-line-parse-tree parse-tree)))
+    (setf (code-source code)  (unparse-slist parse-tree))
+    code))
 
 
 (defun compile-lse-stream (stream)
   (let ((*scanner* (make-instance 'lse-scanner :source stream)))
-   (loop
-     :until (typep (scanner-current-token *scanner*) 'tok-eof)
-     :for parse-tree = (parse-lse *scanner*)
-     :when parse-tree
-     :collect (append (compile-lse-line-parse-tree parse-tree)
-                      (list (unparse-slist parse-tree))))))
+    (loop
+      :until (typep (scanner-current-token *scanner*) 'tok-eof)
+      :for parse-tree = (parse-lse *scanner*)
+      :when parse-tree
+      :collect (let ((code (compile-lse-line-parse-tree parse-tree)))
+                 (setf (code-source code)  (unparse-slist parse-tree))
+                 code))))
 
 
 (defun compile-lse-file (source &optional name)
@@ -960,7 +1460,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
   (declare (ignore lino))
   ;; For now, we cheat, we don't decompile anything, we just return
   ;; the unparsed source kept along with the code vector.
-  (third code))
+  (code-source code))
 
 
 (defun decompile-lse-line-2 (lino byte-code)
@@ -1060,7 +1560,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                                GOTO       ; line GOTO
 
                                TANT-QUE                 ; test TANT-QUE
-                               CHARGER                  ; enr fic CHARGER
+                               CHARGER                  ; enr fic CHARGER datavar statusvar
                                SUPPRIMER-ENREGISTREMENT ; enr fic SUPPRIMER-ENREGISTREMENT
                                SUPPRIMER-FICHIER        ;     fic SUPPRIMER-FICHIER
                                EXECUTER  ; fic lin EXECUTED
@@ -1147,7 +1647,8 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
          :initially (format t "~&")
          :with pc = 0
          :for line :in listing
-         :do (progn (if (member pc labels)
+         :do (progn (format t "~3D: " pc)
+                    (if (member pc labels)
                         (format t "@~6:A " pc)
                         (format t "        "))
                     (format t "~32:A"
@@ -1194,12 +1695,12 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 (defun test/compile-lse-stream (src)
   (loop
     :for line = (read-line src nil nil)
-    :do (terpri) (princ ";; |  ") (write-string line)
     :while line
+    :do (terpri) (princ ";; |  ") (write-string line)
     :do (let ((comp (compile-lse-line line)))
           (print comp)
-          (print (first comp))
-          (print (disassemble-lse (second comp))))
+          (print (code-source comp))
+          (print (disassemble-lse (code-vector comp))))
     :finally (terpri) (finish-output))
   (values))
 
@@ -1225,6 +1726,13 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 
 ;; (test/compile-lse-line "4 executer 'tfic'")
 ;; (4 #(50 "tfic" 50 1 35 26) "4 EXECUTER 'tfic'")
+
+;; (test/parse-string "6 TABLEAU V[3],M[2,2]")
+;; (test/compile-lse-string "6 TABLEAU V[3],M[2,2]")
+
+
+
+
 
 
 

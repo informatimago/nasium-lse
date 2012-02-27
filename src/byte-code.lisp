@@ -95,7 +95,6 @@
                          GOTO       ; line GOTO
 
                          TANT-QUE                 ; test TANT-QUE
-                         CHARGER                  ; enr fic CHARGER
                          SUPPRIMER-ENREGISTREMENT ; enr fic SUPPRIMER-ENREGISTREMENT
                          SUPPRIMER-FICHIER        ;     fic SUPPRIMER-FICHIER
                          EXECUTER  ; fic lin EXECUTED
@@ -141,7 +140,9 @@
                          comment ; COMMENT comment
                          ))
 
-  (cl:defparameter *2* '(CALL            ; CALL identificateur-procedure nombre-d-argument
+  (cl:defparameter *2* '(CALLP           ; CALLP identificateur-procedure nombre-d-argument
+                         CALLF           ; CALLF identificateur-procedure nombre-d-argument
+                         CHARGER                  ; enr fic CHARGER data status
                          ))
 
   (cl:defparameter *cops* (cl:append *0* *1* *2*)))

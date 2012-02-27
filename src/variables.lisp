@@ -96,8 +96,11 @@
 ;; FRAMES:
 
 (defclass frame ()
-  ((variables :initarg :variables :initform '() :accessor frame-variables)
-   (loop-stack :initform '() :accessor frame-loop-stack)))
+  ((variables      :initarg :variables :initform '() :accessor frame-variables)
+   (loop-stack     :initform '() :accessor frame-loop-stack)
+   (stack-pointer  :initarg :stack :initform 0 :reader frame-stack-pointer
+                   :documentation "The stack pointer upon entry in the procedure.
+It's needed to unwind the stack when the procedure exits exceptionnaly.")))
 
 (defun loop-stack (vm)
   (frame-loop-stack (or (first (vm-local-frame-stack vm))
@@ -111,10 +114,14 @@
 
 
 (defclass local-frame (frame)
-  ((return.line :initarg :return.line :initform 0 :reader frame-return.line
-                :documentation "The return line.")
-   (return.offset :initarg :return.offset :initform 0 :reader frame-return.offset
-                  :documentation "The offset into the code vector of the return line.")))
+  ((procedure-name :initarg :procedure-name :reader frame-procedure-name)
+   (call-type      :initarg :call-type :initform :procedure :reader frame-call-type
+                   :type (member :procedure :function))
+   (return.line    :initarg :return.line :initform 0 :reader frame-return.line
+                   :documentation "The return line.")
+   (return.offset  :initarg :return.offset :initform 0 :reader frame-return.offset
+                   :documentation "The offset into the code vector of the return line.")))
+
 
 (defmethod print-object ((frame frame) stream)
   (print-unreadable-object (frame stream :identity t :type t)
@@ -224,10 +231,12 @@ variable-type may be:
   'nombre)
 
 (defmethod variable-value ((self vecteur-ref))
-  (aref (reference-vecteur self) (reference-index self)))
+  (aref (reference-vecteur self)
+        (1- (reference-index self))))
 
 (defmethod (setf variable-value) (new-value (self vecteur-ref))
-  (setf (aref (reference-vecteur self) (reference-index self)) new-value))
+  (setf (aref (reference-vecteur self)
+              (1- (reference-index self))) new-value))
 
 
 
@@ -247,10 +256,14 @@ variable-type may be:
   'nombre)
 
 (defmethod variable-value ((self tableau-ref))
-  (aref (reference-tableau self) (reference-index1 self) (reference-index2 self)))
+  (aref (reference-tableau self)
+        (1- (reference-index1 self))
+        (1- (reference-index2 self))))
 
 (defmethod (setf variable-value) (new-value (self tableau-ref))
-  (setf (aref (reference-tableau self) (reference-index1 self) (reference-index2 self)) new-value))
+  (setf (aref (reference-tableau self)
+              (1- (reference-index1 self))
+              (1- (reference-index2 self))) new-value))
 
 
 

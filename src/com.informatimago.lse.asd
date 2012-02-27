@@ -82,14 +82,16 @@
                  (:file "byte-code"           :depends-on ("packages"))                               
                  (:file "compiler"            :depends-on ("packages"
                                                            "version"
-                                                           "lse-parser" "byte-code"))      
+                                                           "lse-scanner" "lse-parser" "byte-code"))
                  (:file "vm"                  :depends-on ("packages"
-                                                           "error" "byte-code"
+                                                           "error" "byte-code" "compiler"
                                                            "variables" "functions" "file"))
 
                  (:file "task"                :depends-on ("packages" "file" "vm" ))
                  (:file "io"                  :depends-on ("packages" "file" "task"))
-                 (:file "commands"            :depends-on ("packages" "error" "io" "task")) 
+                 (:file "commands"            :depends-on ("packages"
+                                                           "error" "version"
+                                                           "io" "compiler" "task")) 
 
                  ))
 

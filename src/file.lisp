@@ -448,6 +448,10 @@ RETURN: The data; a status code
 
 
 
+;;;---------------------------------------------------------------------
+;;; Test functions
+;;;---------------------------------------------------------------------
+
 (defun record-table-as-sorted-list (record-table)
   (sort (let ((pairs '()))
           (maphash (lambda (k v) (push (list k v) pairs)) record-table)

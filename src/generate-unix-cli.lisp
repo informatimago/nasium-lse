@@ -33,8 +33,10 @@
 ;;;;**************************************************************************
 
 (in-package "CL-USER")
+(cd "/home/pjb/src/pjb/lse-cl/src/")
+(pushnew (pwd) asdf:*central-registry* :test 'equal)
 
-#+clisp (progn (princ "Package OS: ") (print (find-package "OS")) (finish-output))
+
 
 (setf *print-right-margin* 80
       *print-pretty* t
@@ -45,24 +47,29 @@
 (pushnew :lse-unix             *features*)
 
 
-#+ccl (asdf:run-shell-command "rm -rf /home/pjb/.cache/common-lisp/kuiper.lan.informatimago.com/ccl-1.7-f94-linux-amd64/home/pjb/src/git/pjb/lse-cl/src/")
-#+clisp (asdf:run-shell-command "rm -rf /home/pjb/.cache/common-lisp/kuiper.lan.informatimago.com/clisp-2.49-unix/home/pjb/src/git/pjb/lse-cl/src/")
+#+ (and ccl linux) (asdf:run-shell-command "rm -rf /home/pjb/.cache/common-lisp/kuiper.lan.informatimago.com/ccl-1.7-f94-linux-amd64/home/pjb/src/git/pjb/lse-cl/src/")
+#+ (and ccl darwin) (asdf:run-shell-command "rm -rf /Users/pjb/.cache/common-lisp/triton.lan.informatimago.com/ccl-1.7-f94-macosx-ppc32/home/pjb/src/git/pjb/lse-cl/src/")
+#+ (and clisp linux) (asdf:run-shell-command "rm -rf /home/pjb/.cache/common-lisp/kuiper.lan.informatimago.com/clisp-2.49-unix/home/pjb/src/git/pjb/lse-cl/src/")
+#+ (and clisp darwin) (asdf:run-shell-command "rm -rf /Users/pjb/.cache/common-lisp/triton.lan.informatimago.com/clisp-2.49-unix/home/pjb/src/git/pjb/lse-cl/src/")
 
 
 (ql:quickload :com.informatimago.lse.unix-cli)
 
 
+(defparameter *system-licenses*
+  '(("cl-ppcre" . "BSD-2")
+    ("split-sequence" . :unknown)
+    ("terminfo" . "MIT")))
 
 (defun asdf-system-name (system)
   (slot-value system 'asdf::name))
 
-(defun asdf-system-license (system)
-  (let ((system  (asdf:find-system system)))
+(defun asdf-system-license (system-name)
+  (let ((system  (asdf:find-system system-name)))
     (if (slot-boundp system 'asdf::licence)
         (slot-value system 'asdf::licence)
-        :unknown)))
-
-
+        (or (cdr (assoc system-name *system-licenses* :test 'string-equal))
+            :unknown))))
 
 (defun system-depends-on (system)
   (delete (string-downcase system)
@@ -81,32 +88,36 @@
     (list (string-downcase system)))
    :test 'string=))
 
-
 (print (let ((system :com.informatimago.lse.unix-cli))
          (mapcar (lambda (system)
                    (cons system
                          (asdf-system-license system)))
                  (system-depends-on/recursive system))))
+(terpri)
+(finish-output)
 
 
-
-
-
-#+ccl (progn (terpri) (princ "ccl:save-application will exit.") (terpri))
-#+ccl (ccl:save-application "lse"
+#+ccl (progn (terpri) (princ "ccl:save-application will exit.") (terpri) (finish-output))
+#+ccl (ccl:save-application (cond
+                              ((string-equal (machine-type) "Power Macintosh") "lse-ccl-ppc")
+                              ((string-equal (machine-type) "x86_64")          "lse-ccl-x86_64")
+                              (t                                               "lse-ccl-x86"))
                             :toplevel-function (function com.informatimago.lse.unix-cli:main)
                             :init-file nil
                             :error-handler :quit-quitely
                             ;; :application-class ccl:lisp-development-system
                             ;; :clear-clos-cache t
-                            :purify t
+                            :purify nil
                             ;; :impurify t
                             :mode #o755
                             :prepend-kernel t
                             ;; :native t
                             ) 
 
-#+clisp (ext:saveinitmem "lse"
+#+clisp (ext:saveinitmem  (cond
+                            ((string-equal (machine-type) "Power Macintosh") "lse-clisp-ppc")
+                            ((string-equal (machine-type) "x86_64")          "lse-clisp-x86_64")
+                            (t                                               "lse-clisp-x86"))
                          :quiet t
                          :verbose t
                          :norc t
@@ -122,7 +133,6 @@
                          :executable t) 
 #|
     (cd "/home/pjb/src/pjb/lse-cl/src/")
-    (pushnew (pwd) asdf:*central-registry* :test 'equal)
     (load "generate-unix-cli.lisp")
 |#
 ;;;; THE END ;;;;

@@ -212,21 +212,71 @@
 
 
 (defmethod initialize-instance :after ((self lse-scanner-error) &key &allow-other-keys)
-  (setf (slot-value self 'line-number) (slot-value self 'line)))
+  (setf (slot-value self 'line-number) (scanner-error-line self)))
 
+
+
+(define-condition lse-source-error (lse-error)
+  ((buffer
+    :initarg :buffer
+    :accessor lse-source-error-buffer
+    :type     (or null string)
+    :initform nil)))
+
+
+
+(define-condition lse-scanner-error (lse-source-error scanner-error)
+  ()
+  (:report print-scanner-error))
+
+(defmethod initialize-instance :after ((self lse-scanner-error) &key &allow-other-keys)
+  (setf (slot-value self 'line-number) (scanner-error-line self)))
 
 (defmethod print-scanner-error ((err lse-scanner-error) stream)
-  (let ((token-length (length (token-text (scanner-error-current-token err)))))
+  (let ((token-length (length (token-text (scanner-error-current-token err))))
+        (*print-pretty* nil))
     (format stream
-            "~&~A~%~V@A~%~:[~:*~A~;~]:~D:~D: ~?~%"
-            (scanner-error-buffer err)
-            (scanner-error-column err)
-            (make-string token-length :initial-element (character "^"))
+            "~:[~*COLONNE ~D : ~;~:*~A:~D:~D: ~]~?~%~A~%~V@A~A"
             (let ((source (scanner-source (scanner-error-scanner err))))
               (unless (stringp source) (ignore-errors (pathname source))))
             (scanner-error-line err) (scanner-error-column err)
+
             (scanner-error-format-control err)
-            (scanner-error-format-arguments err))))
+            (scanner-error-format-arguments err)
+            
+            (lse-source-error-buffer err)
+            (scanner-error-column err) ""
+            (make-string token-length :initial-element (character "^")))))
+
+
+
+(define-condition lse-parser-error (lse-source-error parser-error)
+  ()
+  (:report print-parser-error))
+
+(defmethod initialize-instance :after ((self lse-parser-error) &key &allow-other-keys)
+  (setf (slot-value self 'line-number) (parser-error-line self)
+        (slot-value self 'buffer) (scanner-buffer (parser-error-scanner self))))
+
+(defmethod print-parser-error ((err lse-parser-error) stream)
+  (let ((*print-pretty* nil))
+    (format stream
+            "~:[~*COLONNE ~D : ~;~:*~A:~D:~D: ~]~?~%~:[~;~:*~A~%~V@A~A~]"
+            (let ((source (scanner-source (parser-error-scanner err))))
+              (unless (stringp source) (ignore-errors (pathname source))))
+            (parser-error-line err) (parser-error-column err)
+
+            (parser-error-format-control err)
+            (parser-error-format-arguments err)
+            
+            (lse-source-error-buffer err)
+            (parser-error-column err) ""
+            (character "^"))))
+
+(define-condition lse-parser-error-unexpected-token (lse-parser-error)
+  ())
+
+
 
 
 
@@ -265,21 +315,46 @@
         ;;       (scanner-current-text scanner)
         ;;       (scanner-column scanner))
         (scan-next-token scanner))
-      (error 'parser-error-unexpected-token
+      (error 'lse-parser-error-unexpected-token
              :line   (scanner-line scanner)
              :column (scanner-column scanner)
              :grammar (grammar-named 'lse)
              :scanner scanner
              :non-terminal-stack (copy-list *non-terminal-stack*)
-             :format-control "At position ~D, expected ~S, not ~A (~S)~%~S~%~{~A --> ~S~}"
-             :format-arguments (list
-                                (scanner-column scanner)
-                                token
-                                (scanner-current-token scanner)
-                                (token-text (scanner-current-token scanner))
-                                *non-terminal-stack*
-                                (assoc (first *non-terminal-stack*)
-                                       (grammar-rules (grammar-named 'lse)))))))
+             :format-control "ATTENDU ~A, PAS ~A (~S)~%PILE NON TERMINAUX: ~A~%PRODUCTION: ~{~A --> ~A~}"
+             :format-arguments
+             (list
+              (token-kind-label (token-kind token))
+              (token-kind-label (token-kind (scanner-current-token scanner)))
+              (token-text (scanner-current-token scanner))
+              *non-terminal-stack*
+              (clean-up-rule (assoc (first *non-terminal-stack*)
+                                     (grammar-rules (grammar-named 'lse))))))))
+
+
+(defun clean-up-rule (rule)
+  (labels ((clean-up-rhs (rhs)
+             (if (atom rhs)
+                 rhs
+                 (ecase (first rhs)
+                   ((seq)
+                    (if (null (rest (second rhs)))
+                        (clean-up-rhs (first (second rhs)))
+                        (cons 'seq
+                              (mapcar (function clean-up-rhs)
+                                      (second rhs)))))
+                   ((opt)
+                    (cons 'opt
+                          (mapcar (function clean-up-rhs)
+                                  (second rhs))))
+                   ((alt)
+                    (if (null (rest (second rhs)))
+                        (clean-up-rhs (first (second rhs)))
+                        (cons 'alt
+                              (mapcar (function clean-up-rhs)
+                                      (second rhs)))))))))
+    (list (first rule) (clean-up-rhs (second rule)))))
+
 
 (defmethod initialize-instance :after ((self lse-scanner) &rest args)
   (declare (ignore args))
@@ -567,8 +642,8 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
         (specials-2   (start) (advance (motcle)) (shift speciaux-2))
         ((concat specials dot star signs)
          (start) (advance (motcle)) (produce (motcle)))
-        (others     (scan-error "CARACTERE INVALIDE '~C' (~D)"
-                                (code-char code) code)))
+        (others       (scan-error "CARACTERE INVALIDE '~C' (~D)"
+                                  (code-char code) code)))
        
        (in-format                       ; must be state 2
         ;; same as not-commentaire, but ident-first may be formatspec.

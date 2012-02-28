@@ -176,9 +176,9 @@
 (defun error-format (task error-condition)
   (io-standard-redirection task)
   (io-new-line task)
-  (let* ((line-length   (terminal-columns (task-terminal task)))
+  (let* ((message       (split-sequence #\Newline (princ-to-string error-condition)))
+         (line-length   (terminal-columns (task-terminal task)))
          (+left-margin+ 4)
-         (message       (format nil "~A" error-condition))
          (errlino       (or (typecase error-condition
                               (lse-error (lse-error-line-number error-condition))
                               (t         nil))
@@ -188,22 +188,25 @@
                               (io-format task "ERREUR : "))
                             (prog1 22
                               (io-format task "ERREUR EN LIGNE ~3D : " errlino)))))
-    (do* ((i 0 (1+ pos))
-          (pos (- (+ i line-length) column)  (+ i line-length)))
-         ((>= pos (length message))
-          (io-format task "~VA~A"
-                     (if (> column +left-margin+) 0 +left-margin+) ""
-                     (subseq message i)))
-      (setf pos (do ((pos pos (1- pos)))
-                    ((or (eql (char message pos) (character " "))
-                         (> i pos))
-                     pos)))
-      (when (= i pos)
-        (setf pos (- (+ i line-length) column)))
-      (io-format task "~VA~A"
-                 (if (> column +left-margin+) 0 +left-margin+) ""
-                 (subseq message i pos))
-      (io-new-line task)))
+    (flet ((format-line (line)
+             (do* ((i 0 (1+ pos))
+                   (pos (- (+ i line-length) column)  (+ i line-length)))
+                  ((>= pos (length line))
+                   (io-format task "~VA~A~%"
+                              (if (> column +left-margin+) 0 +left-margin+) ""
+                              (subseq line i))
+                   (setf column 0))
+               (setf pos (do ((pos pos (1- pos)))
+                             ((or (eql (char line pos) (character " "))
+                                  (> i pos))
+                              pos)))
+               (when (= i pos)
+                 (setf pos (- (+ i line-length) column)))
+               (io-format task "~VA~A~%"
+                          (if (> column +left-margin+) 0 +left-margin+) ""
+                          (subseq line i pos)))))
+      (dolist (line message)
+        (format-line line))))
   (io-finish-output task)
   (values))
 

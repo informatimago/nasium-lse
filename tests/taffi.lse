@@ -19,8 +19,8 @@
 39 AFFICHER[/,72'-',/]
 40 AFFICHER[/,'Formats variables']
 42 AFFICHER[/,*'*']42
-44 AFFICHER[*/,'4 nouvelles lignes.']4
-45 AFFICHER[*L,'4 nouvelles lignes.']4
+44 AFFICHER[*/,'4 nouvelles lignes (new-line).']4
+45 AFFICHER[*L,'4 nouvelles lignes (line-feed.']4
 46 AFFICHER[/,*X,'<- 42 espaces.']42
 48 AFFICHER[/,*'*',*C,'<- 4 retour']4,4
 49 AFFICHER[/,72'-',/]

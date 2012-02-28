@@ -177,7 +177,7 @@ RETURN: vm
 
 (defmethod erase-line-number ((vm lse-vm) lino)
   (let ((code (gethash lino (vm-code-vectors vm))))
-    (when (code-procedure code)
+    (when (and code (code-procedure code))
       (remhash (procedure-name (code-procedure code)) (vm-procedures vm))))
   (remhash lino (vm-code-vectors vm)))
 
@@ -1087,7 +1087,11 @@ NOTE: on ne peut pas liberer un parametre par reference.
                          (id::skp (skp 2 3))
                          (id::ptr (ptr 2 3))
                          (id::grl (grl 2 3))
-                         (id::dat (dat 0 0)))))
+                         (id::dat (dat 0 0))
+                         #+developing (id::lisp (lisp-eval 1 3)))))
+
+
+
 
 
 (defun call (vm call-type procident nargs)
@@ -1484,9 +1488,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
         ;; (io-finish-output *task*)
         (error err))
       (user-interrupt (condition)
-        (io-format *task* "~%Condition: ~A~%" condition)
-        (io-format *task* "~%PRET~%")
+        ;; (io-format *task* "~%Condition: ~A~%" condition)
         (vm-pause vm) ; no message
+        (io-format *task* "~%PRET~%")
         (io-finish-output *task*)))
     t))
 

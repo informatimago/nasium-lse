@@ -259,17 +259,16 @@
 
 
 
-(defgrammar un-chemin
-    :terminals  ((chaine "'(('')?[^']*)*'"))
-    :start un-chemin
-    :rules ((--> un-chemin
-                 chaine
-                 :action (list (chaine-valeur (make-instance 'tok-chaine
-                                                  :kind 'tok-chaine
-                                                  :text (second chaine)))))))
+;; (defgrammar un-chemin
+;;     :terminals  ((chaine "'(('')?[^']*)*'"))
+;;     :start un-chemin
+;;     :rules ((--> un-chemin
+;;                  chaine
+;;                  :action (list (chaine-valeur (make-instance 'tok-chaine
+;;                                                   :kind 'tok-chaine
+;;                                                   :text (second chaine)))))))
 
-
-(defun parse-ligne (ligne) (list ligne))
+(defun parse-une-ligne (ligne) (list ligne))
 
 (defun valid-line-number-p (lino) (<= 1 lino 255))
 
@@ -616,7 +615,7 @@ GRL                    GRL(ch,de), groupe de lettres;
                        ~&POUR ANNULER UN CARACTERE, TAPEZ \\.~%"))
 
   
-  (defcommand "DOCUMENTATION" ligne (what)
+  (defcommand "DOCUMENTATION" une-ligne (what)
     "Affiche la documentation d'une commande ou d'une instruction."
     (cond
       ((let ((command (find-command what *command-group*)))
@@ -770,7 +769,7 @@ GRL                    GRL(ch,de), groupe de lettres;
               (oa (account-check-right account :tempoauto))
               (of (account-check-right account :tempofixe))
               np nd na nf)
-          (io-beginning-of-line *task*)
+          (io-carriage-return *task*)
           (io-format *task* 
                      "   ~2,'0D       ~{~[0~;1~]~}     "
                      account (list op od oa of))
@@ -788,7 +787,7 @@ GRL                    GRL(ch,de), groupe de lettres;
                 (account-set-right account :tempoauto na)
                 (account-set-right account :tempofixe nf))
               (setf np op  nd od  na oa  nf of))
-          (io-beginning-of-line *task*)
+          (io-carriage-return *task*)
           (io-format *task*
                      "   ~2,'0D       ~{~[0~;1~]~}      ~{~[0~;1~]~}    "
                      account (list op od oa of) (list np nd na nf)) )))
@@ -846,18 +845,21 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 (defun lister-a-partir-de (from to)
+  (io-new-line *task*)
   (io-format *task* "~{~A~%~}"
              (mapcar (function code-source)
                      (get-program (task-vm *task*) from to))))
 
 
 (defun numero-a-partir-de (from to)
+  (io-new-line *task*)
   (io-format *task* "~{~A~%~}"
              (mapcar (function code-line)
                      (get-program (task-vm *task*) from to))))
 
 
 (defun desassembler-a-partir-de (from to)
+  (io-new-line *task*)
   (let ((lines '()))
     (maphash (lambda (lino code)
                (when (and (<= from lino) (or (null to) (<= lino to)))
@@ -1454,7 +1456,7 @@ commande CONTINUER.
 
 
 
-  (defcommand "ETAGERE DE RUBANS"  un-chemin (chemin) 
+  (defcommand "ETAGERE DE RUBANS"  une-ligne (chemin) 
     "Selectionne une étagère de rubans perforés."
     (etagere-de-rubans chemin))
 
@@ -1476,7 +1478,7 @@ commande CONTINUER.
 
 
   #+developing
-  (defcommand "LE EVALUER UNE EXPRESSION LISP " ligne (ligne)
+  (defcommand "LE EVALUER UNE EXPRESSION LISP " une-ligne (ligne)
     (let* ((*vm* (task-vm *task*))
            (results)
            (output (with-output-to-string (*standard-output*)
@@ -1608,7 +1610,7 @@ Sur MITRA 15, l'état des variables est également transféré."
     (utilisation-disque))
 
 
-  (defcommand "CHANGER REPERTOIRE" un-chemin (nouveau-repertoire)
+  (defcommand "CHANGER REPERTOIRE" une-ligne (nouveau-repertoire)
     "Change le répertoire courant."
     (changer-repertoire nouveau-repertoire))
 
@@ -1687,12 +1689,13 @@ Sur MITRA 15, l'état des variables est également transféré."
       #|else empty line, just ignore it.|#)))
 
 
-(defvar *debug-repl*o nil)
+(defvar *debug-repl* nil)
 ;; (setf *debug-repl* nil)
 ;; (setf *debug-repl* t)
 
 (defun command-repl (task)
-  (let ((*task* task))
+  (let ((*task* task)
+        (*print-case* :upcase))
     (io-format task "~&PRET~%")
     (io-finish-output task)
     (handler-case

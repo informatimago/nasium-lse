@@ -232,6 +232,39 @@
                                     (truncate (un-nombre (deref *vm* b))))))
 
 
+
+
+#+developing
+(defun lisp-eval (expr &optional (print 0) (noerr 0))
+  "
+1* FONCTION LISP(EXPR,PRINT,NOERR)
+2* PRINT=0 => LISP() N'AFFICHE RIEN;
+3* PRINT=1 => LISP() AFFICHE LES RESULTATS DE L'EXPRESSION LISP.
+4 PRINT_1
+5* NOERR=0 => SI UNE ERREUR EST DETECTEE ELLE EST RAPPORTEE NORMALEMENT.
+6* NOERR=1 => SI UNE ERREUR EST DETECTEE, LISP() RETOURNE 0.0.
+7 NOERR_1
+8 A_LISP('(TRUNCATE 10 3)',PRINT,NOERR)
+9 TERMINER
+"
+  (let ((expr  (deref *vm* expr))
+        (print (deref *vm* print))
+        (noerr (deref *vm* noerr))
+        (*package* (find-package #-(and) "COMMON-LISP-USER"
+                                 "COM.INFORMATIMAGO.LSE")))
+    (handler-case
+        (let ((results (multiple-value-list (eval (read-from-string expr)))))
+          (when (plusp print)
+            (io-format *task* "~%--> ~{~S~^~%    ~}~%" results))
+          (typecase (first results)
+            ((or integer nombre chaine) (first results))
+            (t (prin1-to-string (first results)))))
+      (error (err)
+        (if (plusp noerr)
+            0.0
+            (error err))))))
+
+
 (defun concatenation (a b)
   (la-chaine (concatenate 'string (la-chaine (deref *vm* a)) (la-chaine (deref *vm* b)))))
 

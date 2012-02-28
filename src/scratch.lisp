@@ -222,3 +222,41 @@ _______________________________________________________________________________
        test/dump-lse-file
        test/dump-lse-file/low-level
        test/file)
+(car )
+(ccl::basic-character-output-stream)
+
+
+(in-package "COM.INFORMATIMAGO.LSE")
+(let ((terminal (task-terminal *task*))
+      (count 1))
+  (declare (ignorable count))
+  (terminal-new-line terminal 2)
+  (terminal-write-string terminal "Hello")
+  (terminal-line-feed (task-terminal *task*))
+  ;; (with-slots (COM.INFORMATIMAGO.LSE.UNIX-CLI::current-column
+  ;;              COM.INFORMATIMAGO.LSE.UNIX-CLI::buffer) terminal
+  ;;   (COM.INFORMATIMAGO.LSE.UNIX-CLI::flush terminal)
+  ;;   (let ((output (terminal-output-stream terminal)))
+  ;;     (loop :repeat count :do (terpri output))
+  ;;     (terminal-finish-output terminal)
+  ;;     (fill COM.INFORMATIMAGO.LSE.UNIX-CLI::buffer #\space)
+  ;;     (COM.INFORMATIMAGO.LSE.UNIX-CLI::show-buffer terminal)
+  ;;     (list COM.INFORMATIMAGO.LSE.UNIX-CLI::current-column
+  ;;           COM.INFORMATIMAGO.LSE.UNIX-CLI::buffer
+  ;;           )))
+  (terminal-write-string terminal "world")
+  (terminal-new-line terminal 2)
+  )
+
+(let ((terminal (task-terminal *task*))
+      (count 1))
+  (declare (ignorable count))
+  (terminal-new-line terminal 2)
+  (terminal-write-string terminal "__________________________________________________")
+  (terminal-carriage-return (task-terminal *task*))
+  (terminal-write-string terminal "enter: ")
+  (terminal-read-line terminal))
+
+
+
+

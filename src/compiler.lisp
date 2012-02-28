@@ -1424,9 +1424,27 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
             :format-arguments (list parse-tree)))))
 
 
+(defun lse-parser (*scanner*)
+  (handler-bind ((parser-error-unexpected-token
+                  (lambda (err)
+                    (error 'lse-parser-error-unexpected-token
+                           :line    (parser-error-line err)
+                           :column  (parser-error-column err)
+                           :grammar (parser-error-grammar err)
+                           :scanner (parser-error-scanner err)
+                           :non-terminal-stack (parser-error-non-terminal-stack err)
+                           :format-control "SYMBOLE INATTENDU ~A ~S"
+                           :format-arguments
+                           (let ((token (scanner-current-token
+                                         (parser-error-scanner err))))
+                             (list (token-kind-label (token-kind token))
+                                   (token-text token)))))))
+      (parse-lse *scanner*)))
+
+
 (defun compile-lse-line (source-line)
   (let* ((*scanner*  (make-instance 'lse-scanner :source source-line))
-         (parse-tree (parse-lse *scanner*))
+         (parse-tree (lse-parser *scanner*))
          (code       (compile-lse-line-parse-tree parse-tree)))
     (setf (code-source code)  (unparse-slist parse-tree))
     code))
@@ -1436,7 +1454,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
   (let ((*scanner* (make-instance 'lse-scanner :source stream)))
     (loop
       :until (typep (scanner-current-token *scanner*) 'tok-eof)
-      :for parse-tree = (parse-lse *scanner*)
+      :for parse-tree = (lse-parser *scanner*)
       :when parse-tree
       :collect (let ((code (compile-lse-line-parse-tree parse-tree)))
                  (setf (code-source code)  (unparse-slist parse-tree))
@@ -1680,7 +1698,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
   (let ((*scanner* (make-instance 'lse-scanner :source src)))
    (loop
      :until (typep (scanner-current-token *scanner*) 'tok-eof)
-     :collect  (parse-lse *scanner*))))
+     :collect  (lse-parser *scanner*))))
 
 
 (defun test/parse-file (path)

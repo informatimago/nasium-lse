@@ -48,16 +48,41 @@
   ())
 
 
+(defun clean-regexp (reg)
+  (if (position #\\ reg)
+      (with-output-to-string (out)
+        (loop
+          :with i = 0
+          :while (< i (length reg))
+          :do (let ((ch (aref reg i)))
+                (incf i)
+                (case ch
+                  (#\\       (when (< i (length reg))
+                               (princ (aref reg i) out)
+                               (incf i)))
+                  (otherwise (princ ch out))))))
+      reg))
+
 (defun token-kind-label (kind)
   (case kind
-    (tok-chaine         'chaine)
-    (tok-commentaire    'commentaire)
-    (tok-identificateur 'identificateur)
-    (tok-procident      'procident)
-    (tok-motcle         'motcle)
-    (tok-nombre         'nombre)
-    (tok-numero         'numero)
-    (otherwise          kind)))
+    (tok-chaine         "CHAINE")
+    (tok-commentaire    "COMMENTAIRE")
+    (tok-identificateur "IDENTIFICATEUR")
+    (tok-procident      "IDENTIFICATEUR DE PROCEDURE")
+    (tok-motcle         "MOT CLE")
+    (tok-nombre         "NOMBRE")
+    (tok-numero         "NUMERO")
+    (otherwise
+     (let* ((grammar (grammar-named 'lse))
+            (entry   (assoc kind (grammar-terminals grammar))))
+       (cond
+         (entry
+          (clean-regexp (second entry)))
+         ((and (< 4 (length (string kind)))
+               (string= "TOK-" kind :end2 4))
+          (subseq (string kind) 4))
+         (t
+          kind))))))
 
 
 (defmethod print-object ((self lse-token) stream)
@@ -245,7 +270,7 @@
             (scanner-error-format-arguments err)
             
             (lse-source-error-buffer err)
-            (scanner-error-column err) ""
+            (1- (scanner-error-column err)) ""
             (make-string token-length :initial-element (character "^")))))
 
 
@@ -270,7 +295,7 @@
             (parser-error-format-arguments err)
             
             (lse-source-error-buffer err)
-            (parser-error-column err) ""
+            (1- (parser-error-column err)) ""
             (character "^"))))
 
 (define-condition lse-parser-error-unexpected-token (lse-parser-error)
@@ -317,11 +342,13 @@
         (scan-next-token scanner))
       (error 'lse-parser-error-unexpected-token
              :line   (scanner-line scanner)
-             :column (scanner-column scanner)
+             :column (token-column (scanner-current-token scanner))
              :grammar (grammar-named 'lse)
              :scanner scanner
              :non-terminal-stack (copy-list *non-terminal-stack*)
-             :format-control "ATTENDU ~A, PAS ~A (~S)~%PILE NON TERMINAUX: ~A~%PRODUCTION: ~{~A --> ~A~}"
+             :format-control
+             #+developing "ATTENDU ~S, PAS ~A ~S~%PILE NON TERMINAUX: ~A~%PRODUCTION: ~{~A --> ~A~}"
+             #-developing "ATTENDU ~S, PAS ~A ~S"
              :format-arguments
              (list
               (token-kind-label (token-kind token))

@@ -44,10 +44,11 @@
   (let ((rt (copy-readtable)))
     (setf (readtable-case rt) :preserve)
     (set-syntax-from-char #\> #\) rt)
-    (set-dispatch-macro-character #\# #\<
-                                  (lambda (stream subchar dispchar)
-                                    `(emacs-unreadable ,@(read-delimited-list #\> stream t)))
-                                  rt)
+    (set-dispatch-macro-character
+     #\# #\<
+     (lambda (stream subchar dispchar)
+       `(emacs-unreadable ,@(read-delimited-list #\> stream t)))
+     rt)
     rt))
 
 
@@ -145,6 +146,7 @@
 
 
 (defmethod flush ((terminal swank-terminal))
+  "Flush the terminal, ie. outputs the BUFFER line definitively."
   (eval-in-emacs `(with-current-buffer (slime-repl-buffer)
                     (delete-region
                      (progn (slime-repl-bol) (point))
@@ -154,6 +156,19 @@
     (let ((output (terminal-output-stream terminal)))
       (princ buffer output)))
   (values))
+
+(defmethod show-buffer ((terminal swank-terminal))
+  "Replace the last line ('unflushed') in the slime buffer with the
+contents of the BUFFER, moving the cursor too the CURRENT-COLUMN."
+  (with-slots (current-column buffer) terminal
+    (eval-in-emacs `(with-current-buffer (slime-repl-buffer)
+                      (delete-region
+                       (progn (slime-repl-bol) (point))
+                       (progn (end-of-line)    (point)))
+                      (insert ,buffer)
+                      (slime-repl-bol)
+                      (forward-char ,current-column)
+                      (slime-move-point (point))))))
 
 
 (defmethod terminal-new-line ((terminal swank-terminal) &optional (count 1))
@@ -170,12 +185,13 @@
 (defmethod terminal-line-feed ((terminal swank-terminal) &optional (count 1))
   (flush terminal)
   (with-slots (current-column buffer) terminal
-    (let ((output (terminal-output-stream terminal))
-          (line (make-string current-column :initial-element #\space)))
-      (loop :repeat count :do (terpri output) (princ line output))
-      (terminal-finish-output terminal)
-      (fill buffer #\space)))
+    (let ((output (terminal-output-stream terminal)))
+      (loop :repeat count :do (terpri output))
+      (terminal-finish-output terminal))
+    (fill buffer #\space))
+  (show-buffer terminal)
   (values))
+
 
 
 ;; (let ((terminal (com.informatimago.lse::task-terminal *task*)))
@@ -210,23 +226,17 @@
         (setf (fill-pointer buffer) (max (fill-pointer buffer) new-column))
         (replace buffer string :start1 current-column :start2 start :end2 end)
         (setf current-column new-column)
-        (eval-in-emacs `(with-current-buffer (slime-repl-buffer)
-                          (delete-region
-                           (progn (slime-repl-bol) (point))
-                           (progn (end-of-line)    (point)))
-                          (insert ,buffer)
-                          (slime-repl-bol)
-                          (forward-char ,current-column)
-                          (slime-move-point (point)))))))
+        (show-buffer terminal))))
   (values))
 
 
 (defmethod terminal-read-line ((terminal swank-terminal) &key (echo t) (beep nil) (xoff nil))
+  ;; (terminal-new-line terminal 0)
   (flush terminal)
   (call-next-method))
 
 (defmethod terminal-read ((terminal swank-terminal) &key (echo t) (beep nil) (xoff nil))
-  (flush terminal)
+  (terminal-new-line terminal 0)
   (call-next-method))
 
 

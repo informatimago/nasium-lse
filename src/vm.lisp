@@ -155,6 +155,16 @@ RETURN: vm
   (let ((procedures (vm-procedures vm)))
     (maphash (lambda (k v) (declare (ignore v)) (remhash k procedures))
              procedures))
+  (do-symbols (s "COM.INFORMATIMAGO.LSE.IDENTIFIERS")
+    (unintern s))
+  (setf (vm-state     vm) :idle
+        (vm-pc.line   vm) 0
+        (vm-pc.offset vm) 0
+        (vm-code      vm) #(!next-line)
+        (slot-value vm 'paused.pc.line)   nil
+        (slot-value vm 'paused.pc.offset) nil
+        (slot-value vm 'paused.code)      nil
+        (fill-pointer (vm-stack vm))      0)
   vm)
 
 (defmethod replace-program ((vm lse-vm) program)
@@ -1134,7 +1144,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                       :for argument = (stack-pop (vm-stack vm))
                       :do (ecase passage
                             (:par-valeur
-                             (let ((argument (deref argument)))
+                             (let ((argument (deref *vm* argument)))
                                (add-variable frame
                                              (make-instance 'lse-variable
                                                  :name parameter
@@ -1356,7 +1366,8 @@ NOTE: on ne peut pas liberer un parametre par reference.
 (defvar *vm* nil "Current LSE-VM.")
 
 (defvar *debug-vm* nil)
-;; (setf *debug-vm* t)
+;; (setf *debug-vm* '(:cop))
+;; (setf *debug-vm* '(:error))
 ;; (setf *debug-vm* nil)
 
 (defun run-step (vm)
@@ -1385,8 +1396,14 @@ NOTE: on ne peut pas liberer un parametre par reference.
                                 (op-4/1 (op) `(let ((d (spop)) (c (spop)) (b (spop))) (,op vm (spop) b c d (pfetch))))
                                 (op-0/2 (op) `(,op vm (pfetch) (pfetch)))
                                 (op-2/2 (op) `(let ((b (spop))) (,op vm (spop) b (pfetch) (pfetch)))))
+                       #+developing
+                       (when (member :cop *debug-vm*)
+                         (let ((*standard-output* *trace-output*))
+                           (disassemble-lse (vm-code vm)
+                                            :start (vm-pc.offset vm)
+                                            :one-instruction t)
+                           (force-output)))
                        (let ((cop (pfetch)))
-                         ;; (io-format *task* "~&Executing COP ~A~%" (car (gethash cop *cop-info* (cons cop 0))))
                          (case cop
                            
                            (!non    (op-1* non))
@@ -1478,9 +1495,14 @@ NOTE: on ne peut pas liberer un parametre par reference.
                             (error 'lse-error
                                    :format-control "INTERNE MACHINE VIRTUELLE: CODE OPERATION INCONNU ~S"
                                    :format-arguments (list cop))))))))))
-          (if *debug-vm*
+          
+          #-developing
+          (run)
+          #+developing
+          (if (member :error *debug-vm*)
               (handler-bind ((error #'invoke-debugger)) (run))
               (run)))
+      
       (error (err)
         (vm-pause vm) ; no message
         ;; (io-format *task* "~%ERREUR: ~A~%" err)
@@ -1488,7 +1510,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
         ;; (io-finish-output *task*)
         (error err))
       (user-interrupt (condition)
-        ;; (io-format *task* "~%Condition: ~A~%" condition)
+        #-developing (declare (ignore condition))
+        #+developing (progn (format *trace-output* "~%Condition: ~A~%" condition)
+                            (force-output *trace-output*))
         (vm-pause vm) ; no message
         (io-format *task* "~%PRET~%")
         (io-finish-output *task*)))

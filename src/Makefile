@@ -32,12 +32,12 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #*****************************************************************************
 
-BUILD_HOSTS = kuiper galatea # triton lassell
+BUILD_HOSTS = kuiper galatea lassell # triton
 
 all:ChangeLog
 	@for host in $(BUILD_HOSTS) ; do \
 		echo "// Building on $$host" ;\
-		ssh $$host make -C $$(pwd) unix-cli ;\
+		ssh $$host bash -c "git pull ; make -C $$(pwd) unix-cli" ;\
 	 done
 
 help:

@@ -138,7 +138,7 @@ ourselves."
 ;; (setupterm (cffi:null-pointer) 1 (cffi:null-pointer))
 ;; 
 ;; (print (list
-;;         (iolib.syscalls:getenv "TERM")
+;;         (getenv "TERM")
 ;;         (tigetflag "eo")
 ;;         (tigetnum  "cols")
 ;;         (tigetnum  "lines")))

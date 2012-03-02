@@ -71,10 +71,6 @@ BONJOUR     ~8A
 
 
 
-(defun getenv (var)
-  #-clisp (iolib.syscalls:getenv var)
-  #+clisp (ext:getenv var))
-
 
 (defun locale-terminal-encoding ()
   "Returns the terminal encoding specified by the locale(7)."

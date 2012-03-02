@@ -66,6 +66,7 @@
                  ;; LSE language                                                                      
                  (:file "packages"            :depends-on ("signal" "logger"))
                  
+                 (:file "os"                  :depends-on ("packages"))
                  (:file "version"             :depends-on ("packages"))
                  (:file "configuration"       :depends-on ("packages"))
                  (:file "error"               :depends-on ("packages"))                               
@@ -91,7 +92,7 @@
                  (:file "io"                  :depends-on ("packages" "file" "task"))
                  (:file "commands"            :depends-on ("packages"
                                                            "error" "version"
-                                                           "io" "compiler" "task")) 
+                                                           "os" "io" "compiler" "task")) 
 
                  ))
 

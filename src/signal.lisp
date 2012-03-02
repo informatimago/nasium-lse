@@ -126,7 +126,7 @@ This package exports macros to help unix signal handling.
 
 
 (defun yield-signals (signals)
-  #+ccl
+  #+(and ccl (not windows-target))
   (dolist (signum signals)
     (when (ccl:wait-for-signal signum 0)
       (signal 'user-interrupt :signal signum))))

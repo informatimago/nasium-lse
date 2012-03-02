@@ -33,7 +33,8 @@
 ;;;;**************************************************************************
 
 (in-package "CL-USER")
-(cd "/home/pjb/src/pjb/lse-cl/src/")
+#+windows-target (cd #P"/cygwin/home/pjb/src/pjb/lse-cl/src/")
+#-windows-target (cd #P"/home/pjb/src/pjb/lse-cl/src/")
 (pushnew (pwd) asdf:*central-registry* :test 'equal)
 
 
@@ -51,6 +52,8 @@
 
 #+ (and ccl linux) (asdf:run-shell-command "rm -rf /home/pjb/.cache/common-lisp/kuiper.lan.informatimago.com/ccl-1.7-f94-linux-amd64/home/pjb/src/git/pjb/lse-cl/src/")
 #+ (and ccl darwin) (asdf:run-shell-command "rm -rf /Users/pjb/.cache/common-lisp/triton.lan.informatimago.com/ccl-1.7-f94-macosx-ppc32/home/pjb/src/git/pjb/lse-cl/src/")
+#+(and ccl windows)
+(mapc 'delete-file (directory "C:/cygwin/home/pjb/.cache/common-lisp/lassell/ccl-1.7-f95-win-amd64/C/cygwin/home/pjb/src/pjb/lse-cl/src/*.*"))
 #+ (and clisp linux) (asdf:run-shell-command "rm -rf /home/pjb/.cache/common-lisp/kuiper.lan.informatimago.com/clisp-2.49-unix/home/pjb/src/git/pjb/lse-cl/src/")
 #+ (and clisp darwin) (asdf:run-shell-command "rm -rf /Users/pjb/.cache/common-lisp/triton.lan.informatimago.com/clisp-2.49-unix/home/pjb/src/git/pjb/lse-cl/src/")
 
@@ -102,12 +105,15 @@
   "RETURN: (system distrib release)
 System and distrib are keywords, release is a string."
   (values
-   (let ((path (format nil "/tmp/distribution-~8,36r.txt" (random (expt 2 32)))))
+   (let ((path (format nil "distribution-~8,36r.txt" (random (expt 2 32)))))
      (unwind-protect
           (if (zerop (asdf:run-shell-command (format nil "distribution > ~S" path)))
               (with-open-file (file path)
                 (let ((*package* (find-package "KEYWORD")))
                   (list (read file) (read file) (read-line file))))
+              #+(and ccl windows-target)
+              '(:cygwin :unknown "1.7.11,0.260,5,3")
+              #-(and ccl windows-target)
               (list :unknown :unknown :unknown))
        (ignore-errors (delete-file path))))))
 
@@ -141,10 +147,19 @@ System and distrib are keywords, release is a string."
           (or (cdr (assoc (machine-type)
                           '(("Power Macintosh" . "ppc")
                             ("x86_64"          . "x86_64")
+                            ("x64"             . "x86_64")
                             ("x86"             . "x86")
                             ("i686"            . "i686")
                             ("i386"            . "i686"))
                           :test (function string-equal))))))
+
+(defun executable-filename (base)
+  (format nil "~A~A" (executable-name base)
+          #+(or windows win32) ".exe"
+          #-(or windows win32) ""))
+
+
+
 
 (defun date ()
   (multiple-value-bind (se mi ho da mo ye dow dls tz)
@@ -156,13 +171,14 @@ System and distrib are keywords, release is a string."
 
 (defun write-manifest ()
   (let ((system :com.informatimago.lse.unix-cli)
-        (base   (executable-name *program-name*)))
+        (base   (executable-name     *program-name*))
+        (exec   (executable-filename *program-name*)))
     (with-open-file (*standard-output*  (format nil "~A.manifest" base)
                                          :direction :output
                                          :if-does-not-exist :create
                                          :if-exists :supersede)
-      (format t "Manifest for ~A~%~V,,,'-<~>~2%" base
-              (+ (length "Manifest for ") (length base)))
+      (format t "Manifest for ~A~%~V,,,'-<~>~2%" exec
+              (+ (length "Manifest for ") (length exec)))
       (let* ((entries '(date
                         lisp-implementation-type
                         lisp-implementation-version
@@ -196,10 +212,11 @@ System and distrib are keywords, release is a string."
 
 
 
+(format t "~%Generating ~A~%" (executable-filename *program-name*))
 
-#+ccl (progn (terpri) (princ "ccl:save-application will exit.") (terpri) (finish-output))
+#+ccl (progn (princ "ccl:save-application will exit.") (terpri) (finish-output))
 #+ccl (ccl:save-application
-       (executable-name *program-name*)
+       (executable-filename *program-name*)
        :toplevel-function (function com.informatimago.lse.unix-cli:main)
        :init-file nil
        :error-handler :quit-quitely
@@ -213,7 +230,7 @@ System and distrib are keywords, release is a string."
        ) 
 
 #+clisp (ext:saveinitmem
-         (executable-name "lse")
+         (executable-filename "lse")
          :quiet t
          :verbose t
          :norc t
@@ -229,6 +246,10 @@ System and distrib are keywords, release is a string."
          :executable t)
 #+clisp (ext:quit)
 
+
+;; (print (list (find :swank *features*) (find-package "SWANK")))
+;; (terpri)
+;; (finish-output)
 
 #|
     (cd "/home/pjb/src/pjb/lse-cl/src/")

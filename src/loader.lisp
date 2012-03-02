@@ -33,7 +33,8 @@
 ;;;;****************************************************************************
 
 (in-package :cl-user)
-(cd      #P "/home/pjb/src/pjb/lse-cl/src/")
+#+windows-target (cd #P"/cygwin/home/pjb/src/pjb/lse-cl/src/")
+#-windows-target (cd #P"/home/pjb/src/pjb/lse-cl/src/")
 
 ;; (defun delete-package-and-users (package)
 ;;   (mapc 'delete-package-and-users  (package-used-by-list package))
@@ -65,6 +66,7 @@
       *print-pretty* t
       *print-case* :downcase)
 
+#-windows-target
 (asdf:run-shell-command "rm -rf /home/pjb/.cache/common-lisp/kuiper.lan.informatimago.com/ccl-1.7-f94-linux-amd64/home/pjb/src/git/pjb/lse-cl/src/")
 
 (in-package :cl-user)
@@ -72,7 +74,7 @@
        (ignore-errors (delete-package :com.informatimago.lse))
        (ignore-errors (delete-package :com.informatimago.lse.byte-code))
        (ignore-errors (delete-package :com.informatimago.lse.identifiers)))
-(pushnew #P "/home/pjb/src/pjb/lse-cl/src/"                  asdf:*central-registry*)
+(pushnew (pwd)  asdf:*central-registry*)
 (quick-reload :com.informatimago.lse.unix-cli)
 (com.informatimago.common-lisp.cesarum.package:add-nickname :COM.INFORMATIMAGO.LSE.IDENTIFIERS :id)
 (in-package   :com.informatimago.lse)

@@ -1,17 +1,17 @@
 ;;;; -*- mode:lisp;coding:utf-8 -*-
 ;;;;**************************************************************************
-;;;;FILE:               unix-cli-package.lisp
+;;;;FILE:               os.lisp
 ;;;;LANGUAGE:           Common-Lisp
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
 ;;;;    
-;;;;    This defines the unix-cli package.
+;;;;    This file contains some OS function that are implementation dependant.
 ;;;;    
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
-;;;;    2012-02-23 <PJB> Created.
+;;;;    2012-03-02 <PJB> Created.
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
@@ -32,16 +32,37 @@
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
 
+(in-package "COM.INFORMATIMAGO.LSE.OS")
 
-(in-package "COMMON-LISP-USER")
+(defun getenv (var)
+  #+ccl             (ccl::getenv var)
+  #+clisp           (ext:getenv var)
+  #-(or ccl
+        clisp)      (iolib.syscalls:getenv var))
 
 
-(DEFPACKAGE "COM.INFORMATIMAGO.LSE.UNIX-CLI"
-  (:nicknames "LSE-CLI")
-  (:use "COMMON-LISP"
-        "COM.INFORMATIMAGO.LSE.OS"
-        "COM.INFORMATIMAGO.LSE")
-  (:export "MAIN"))
+(defun getuid ()
+  #+ccl            (ccl::getuid)
+  #+clisp          (posix:uid)
+  #-(or ccl
+        clisp)     (asdf::get-uid))
+
+
+(defun run-shell-command (control-string &rest arguments)
+  "Interpolate ARGS into CONTROL-STRING as if by FORMAT, and
+synchronously execute the result using a Bourne-compatible shell, with
+output to *VERBOSE-OUT*.  Returns the shell's exit code."
+  #-ccl (asdf:run-shell-command control-string arguments)
+  #+ccl
+  (let ((command (apply #'format nil control-string args)))
+    (asdf-message "; $ ~A~%" command)
+    (nth-value 1
+               (ccl:external-process-status
+                (ccl:run-program #+windows-target "C:/cygwin/bin/sh"
+                                 #-windows-target "/bin/sh"
+                                 (list "-c" command)
+                                 :input nil :output *verbose-out*
+                                 :wait t)))))
 
 
 ;;;; THE END ;;;;

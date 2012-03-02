@@ -49,9 +49,9 @@
     :depends-on (
                  :terminfo
                  
-                 #-clisp :iolib.base
-                 #-clisp :iolib.os
-                 #-clisp :iolib.syscalls
+                 #-(or clisp (and ccl windows-target)) :iolib.base
+                 #-(or clisp (and ccl windows-target)) :iolib.os
+                 #-(or clisp (and ccl windows-target)) :iolib.syscalls
 
                  :com.informatimago.lse
                  )

@@ -1067,7 +1067,7 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 (defun make-temporaries-directory ()
-  (let ((dir (pathname (format nil "/tmp/lse~D/" (asdf::get-uid)))))
+  (let ((dir (pathname (format nil "/tmp/lse~D/" (getuid)))))
     (ensure-directories-exist (make-pathname :name "test" :type "test" :defaults dir))
     dir))
 

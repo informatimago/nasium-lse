@@ -36,6 +36,11 @@
 (in-package "COMMON-LISP-USER")
 
 
+(defpackage "COM.INFORMATIMAGO.LSE.OS"
+  (:use "COMMON-LISP")
+  (:export "GETENV" "GETUID"))
+
+
 (DEFPACKAGE "COM.INFORMATIMAGO.LSE"
   (:nicknames "LSE")
   (:use "COMMON-LISP"
@@ -54,7 +59,9 @@
         "COM.INFORMATIMAGO.COMMON-LISP.PARSER.SCANNER"
 
         "COM.INFORMATIMAGO.SIGNAL"
-        "COM.INFORMATIMAGO.RDP")
+        "COM.INFORMATIMAGO.RDP"
+
+        "COM.INFORMATIMAGO.LSE.OS")
   (:export 
 
            "TERMINAL" "TERMINAL-INITIALIZE" "TERMINAL-FINALIZE"
@@ -82,6 +89,7 @@
 
            "DAT"
            ))
+
 
 
 

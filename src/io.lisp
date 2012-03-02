@@ -279,6 +279,19 @@ When false, no automatic echo occurs.")
       (setf (terminal-echo terminal) saved-echo))))
 
 
+(defparameter *lse-readtable*
+  (loop
+    :with rt =  (copy-readtable nil)
+    :for i :below char-code-limit
+    :for ch = (code-char i)
+    :when ch
+    :do (set-macro-character ch nil nil rt)
+    :finally (return rt))
+  "A readtable to read L.S.E. data.  Ie, just numbers.
+Symbols will signal an error,
+and strings are read with read-line.")
+
+
 (defmethod terminal-read ((terminal standard-terminal) &key (echo t) (beep nil) (xoff nil))
   (declare (ignore xoff)) ; TODO: implement xoff on terminals.
   (let ((saved-echo (terminal-echo terminal)))
@@ -288,7 +301,12 @@ When false, no automatic echo occurs.")
          (progn
            (when beep
              (terminal-ring-bell terminal))
-           (read (terminal-input-stream terminal)))
+           (handler-case (let ((*read-eval* nil)
+                               (*readtable* *lse-readtable*))
+                           (read (terminal-input-stream terminal)))
+             (reader-error ()
+               (clear-input (terminal-input-stream terminal))
+               (lse-error "ENTREE INVALIDE"))))
       (setf (terminal-echo terminal) saved-echo))))
 
 ;;----------------------------------------------------------------------
@@ -340,7 +358,6 @@ When false, no automatic echo occurs.")
       (terminal-read-line (task-terminal task) :echo echo :beep beep :xoff xoff)
       (read-line (task-input task))))
 
-
 (defun io-read (task)
   (if (io-terminal-input-p task)
       (terminal-read (task-terminal task))
@@ -355,7 +372,6 @@ When false, no automatic echo occurs.")
       (integer (un-nombre value))
       (nombre  value)
       (t (lse-error "UN NOMBRE ETAIT ATTENDU, PAS ~S" value)))))
-
 
 (defun io-echo (task)
    (terminal-echo (task-terminal task)))

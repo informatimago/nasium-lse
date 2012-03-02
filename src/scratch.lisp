@@ -231,6 +231,15 @@ _______________________________________________________________________________
       (count 1))
   (declare (ignorable count))
   (terminal-new-line terminal 2)
+  (terminal-write-string terminal "__________________________________________________")
+  (terminal-carriage-return (task-terminal *task*))
+  (terminal-write-string terminal "enter: ")
+  (terminal-read-line terminal))
+
+(let ((terminal (task-terminal *task*))
+      (count 1))
+  (declare (ignorable count))
+  (terminal-new-line terminal 2)
   (terminal-write-string terminal "Hello")
   (terminal-line-feed (task-terminal *task*))
   ;; (with-slots (COM.INFORMATIMAGO.LSE.UNIX-CLI::current-column
@@ -244,18 +253,31 @@ _______________________________________________________________________________
   ;;     (list COM.INFORMATIMAGO.LSE.UNIX-CLI::current-column
   ;;           COM.INFORMATIMAGO.LSE.UNIX-CLI::buffer
   ;;           )))
-  (terminal-write-string terminal "world")
-  (terminal-new-line terminal 2)
-  )
+  (list
+   (terminal-write-string terminal "world")
+   (terminal-carriage-return terminal)
+   (terminal-write-string terminal "->")
+   (terminal-new-line terminal 2)
+   (terminal-write-string terminal "String:")
+   (terminal-read-line terminal)
+   (terminal-write-string terminal "[After]")
+   (terminal-new-line terminal 1)
+   (terminal-write-string terminal "String:")
+   (terminal-read-line terminal)
+   (terminal-carriage-return terminal)
+   (terminal-write-string terminal "[After]")
+   (terminal-new-line terminal 2)
+   (terminal-write-string terminal "Number:")
+   (terminal-read terminal)
+   (terminal-write-string terminal "[After]")
+   (terminal-new-line terminal 1)
+   (terminal-write-string terminal "Number:")
+   (terminal-read terminal)
+   (terminal-carriage-return terminal)
+   (terminal-write-string terminal "[After]")
+   (terminal-new-line terminal 2)
+   (clear-input (terminal-input-stream terminal))))
 
-(let ((terminal (task-terminal *task*))
-      (count 1))
-  (declare (ignorable count))
-  (terminal-new-line terminal 2)
-  (terminal-write-string terminal "__________________________________________________")
-  (terminal-carriage-return (task-terminal *task*))
-  (terminal-write-string terminal "enter: ")
-  (terminal-read-line terminal))
 
 
 

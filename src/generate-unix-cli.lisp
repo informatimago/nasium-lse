@@ -37,6 +37,8 @@
 (pushnew (pwd) asdf:*central-registry* :test 'equal)
 
 
+(defparameter *program-name* "lse")
+
 
 (setf *print-right-margin* 80
       *print-pretty* t
@@ -88,49 +90,146 @@
     (list (string-downcase system)))
    :test 'string=))
 
-(print (let ((system :com.informatimago.lse.unix-cli))
-         (mapcar (lambda (system)
-                   (cons system
-                         (asdf-system-license system)))
-                 (system-depends-on/recursive system))))
-(terpri)
-(finish-output)
+
+
+;; kuiper          Linux kuiper 2.6.38-gentoo-r6-pjb-c9 #2 SMP Wed Jul 13 00:23:08 CEST 2011 x86_64 Intel(R) Core(TM) i7 CPU 950 @ 3.07GHz GenuineIntel GNU/Linux
+;; hubble          Linux hubble 2.6.34-gentoo-r1-d3 #5 SMP PREEMPT Mon Sep 6 13:17:41 CEST 2010 i686 QEMU Virtual CPU version 0.13.0 GenuineIntel GNU/Linux
+;; voyager         Linux voyager.informatimago.com 2.6.18-6-k7 #1 SMP Mon Oct 13 16:52:47 UTC 2008 i686 GNU/Linux
+;; galatea         Darwin galatea.lan.informatimago.com 11.3.0 Darwin Kernel Version 11.3.0: Thu Jan 12 18:48:32 PST 2012; root:xnu-1699.24.23~1/RELEASE_I386 i386
+;; neuron          Darwin neuron.intergruas.com 9.8.0 Darwin Kernel Version 9.8.0: Wed Jul 15 16:55:01 PDT 2009; root:xnu-1228.15.4~1/RELEASE_I386 i386
+
+(defun distribution ()
+  "RETURN: (system distrib release)
+System and distrib are keywords, release is a string."
+  (values
+   (let ((path (format nil "/tmp/distribution-~8,36r.txt" (random (expt 2 32)))))
+     (unwind-protect
+          (if (zerop (asdf:run-shell-command (format nil "distribution > ~S" path)))
+              (with-open-file (file path)
+                (let ((*package* (find-package "KEYWORD")))
+                  (list (read file) (read file) (read-line file))))
+              (list :unknown :unknown :unknown))
+       (ignore-errors (delete-file path))))))
+
+
+
+(defun system-release ()
+  (values
+   (let ((path (format nil "/tmp/uname-~8,36r.txt" (random (expt 2 32)))))
+     (if (zerop (asdf:run-shell-command (format nil "uname -r > ~S" path)))
+         (with-open-file (file path) (read-line file))
+         "unknown"))))
+
+
+(defun executable-name (base)
+  (format nil "~A-~A-~A-~A"
+          base
+          (or (cdr (assoc (lisp-implementation-type)
+                          '(("Clozure Common Lisp" . "ccl")
+                            ("CLISP"               . "clisp")
+                            ("CMU Common Lisp"     . "cmucl")
+                            ("SBCL"                . "sbcl"))
+                          :test (function string-equal)))
+              "unknown")
+          (format nil "~(~{~A-~A-~A~}~)" (distribution))
+          #-(and)
+          (progn
+            #+darwin (concatenate 'string "darwin" (system-release))
+            #+linux  "linux"
+            #+win32  "win32"
+            #-(or darwin linux win32) "unknown")
+          (or (cdr (assoc (machine-type)
+                          '(("Power Macintosh" . "ppc")
+                            ("x86_64"          . "x86_64")
+                            ("x86"             . "x86")
+                            ("i686"            . "i686")
+                            ("i386"            . "i686"))
+                          :test (function string-equal))))))
+
+(defun date ()
+  (multiple-value-bind (se mi ho da mo ye dow dls tz)
+      (decode-universal-time (get-universal-time))
+    (declare (ignore dow dls))
+    (format nil "~4,'0D-~2,'0D-~2,'0D ~2,'0D:~2,'0D:~2,'0D ~:[+~;-~]~4,'0:D"
+            ye mo da ho mi se (minusp tz) (abs (* 100 tz)))))
+
+
+(defun write-manifest ()
+  (let ((system :com.informatimago.lse.unix-cli)
+        (base   (executable-name *program-name*)))
+    (with-open-file (*standard-output*  (format nil "~A.manifest" base)
+                                         :direction :output
+                                         :if-does-not-exist :create
+                                         :if-exists :supersede)
+      (format t "Manifest for ~A~%~V,,,'-<~>~2%" base
+              (+ (length "Manifest for ") (length base)))
+      (let* ((entries '(date
+                        lisp-implementation-type
+                        lisp-implementation-version
+                        machine-type
+                        machine-version
+                        machine-instance
+                        distribution
+                        system-release))
+             (width (reduce 'max entries :key (lambda (x) (length (string x))))))
+        (dolist (fun entries)
+          (format t "~(~VA~) : ~A~%" width fun (funcall fun))))
+      (terpri)
+      (let* ((entries      (sort (mapcar (lambda (system)
+                                           (list system (asdf-system-license system)))
+                                         (system-depends-on/recursive system))
+                                 'string< :key 'first))
+             (system-width  (reduce 'max entries :key (lambda (x) (length (first x)))))
+             (license-width (reduce 'max entries :key (lambda (x) (length (string (second x)))))))
+        (format t "~:(~VA~)  ~:(~A~)~%~V,,,'-<~>  ~V,,,'-<~>~%"
+                  system-width 'system "license"
+                  system-width license-width)
+        (loop
+          :for (system license) :in entries
+          :do (format t "~VA  ~A~%" system-width system license))
+        (format t "~V,,,'-<~>  ~V,,,'-<~>~%" system-width license-width))
+      (terpri)))
+  (values))
+
+
+(write-manifest)
+
+
 
 
 #+ccl (progn (terpri) (princ "ccl:save-application will exit.") (terpri) (finish-output))
-#+ccl (ccl:save-application (cond
-                              ((string-equal (machine-type) "Power Macintosh") "lse-ccl-ppc")
-                              ((string-equal (machine-type) "x86_64")          "lse-ccl-x86_64")
-                              (t                                               "lse-ccl-x86"))
-                            :toplevel-function (function com.informatimago.lse.unix-cli:main)
-                            :init-file nil
-                            :error-handler :quit-quitely
-                            ;; :application-class ccl:lisp-development-system
-                            ;; :clear-clos-cache t
-                            :purify nil
-                            ;; :impurify t
-                            :mode #o755
-                            :prepend-kernel t
-                            ;; :native t
-                            ) 
+#+ccl (ccl:save-application
+       (executable-name *program-name*)
+       :toplevel-function (function com.informatimago.lse.unix-cli:main)
+       :init-file nil
+       :error-handler :quit-quitely
+       ;; :application-class ccl:lisp-development-system
+       ;; :clear-clos-cache t
+       :purify nil
+       ;; :impurify t
+       :mode #o755
+       :prepend-kernel t
+       ;; :native t
+       ) 
 
-#+clisp (ext:saveinitmem  (cond
-                            ((string-equal (machine-type) "Power Macintosh") "lse-clisp-ppc")
-                            ((string-equal (machine-type) "x86_64")          "lse-clisp-x86_64")
-                            (t                                               "lse-clisp-x86"))
-                         :quiet t
-                         :verbose t
-                         :norc t
-                         :init-function (lambda ()
-                                          (ext:exit (handler-case
-                                                        (com.informatimago.lse.unix-cli:main)
-                                                      (error ()
-                                                        1))))
-                         :script t
-                         :documentation "Système & Interpréteur L.S.E"
-                         :start-package "COMMON-LISP-USER"
-                         :keep-global-handlers nil
-                         :executable t) 
+#+clisp (ext:saveinitmem
+         (executable-name "lse")
+         :quiet t
+         :verbose t
+         :norc t
+         :init-function (lambda ()
+                          (ext:exit (handler-case
+                                        (com.informatimago.lse.unix-cli:main)
+                                      (error ()
+                                        1))))
+         :script t
+         :documentation "Système & Interpréteur L.S.E"
+         :start-package "COMMON-LISP-USER"
+         :keep-global-handlers nil
+         :executable t)
+#+clisp (ext:quit)
+
+
 #|
     (cd "/home/pjb/src/pjb/lse-cl/src/")
     (load "generate-unix-cli.lisp")

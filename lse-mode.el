@@ -206,42 +206,74 @@
   (run-hooks 'lse-mode-hook))
 
 
-
 (defun lse-newline ()
   "Insert newline and line number incremented with the same step as previously."
   (interactive)
-  (if (looking-at " *\\([0-9]+\\)[ *]")
-      (let ((linum (1- (string-to-number (match-string 1)))))
-        (beginning-of-line)
-        (insert (format "%d " linum))
-        (let ((pt (point)))
-          (newline)
-          (goto-char pt)))
-      (progn
-        (newline)
-        (let ((nlpt (point))
-              (line (progn
-                      (forward-line -1)
-                      (beginning-of-line)
-                      (if (looking-at " *[0-9]+")
-                          (let ((curr (string-to-number (match-string 0)))
-                                (curpos (point)))
+  (cond
+    ((looking-at " *\\([0-9]+\\)\\([ *]\\|$\\)")
+     ;; Before a line number
+     (let* ((linum  (1- (string-to-number (match-string 1))))
+            (pt     (point))
+            (before (buffer-substring (progn (beginning-of-line) (point)) pt)))
+       (if (string= "" (string-trim " " before))
+           ;; nothing before
+           (progn
+             (delete-region (progn (beginning-of-line) (point)) pt)
+             (insert (format "%d \n" linum)))
+           ;; a line number in the middle of the line
+           (progn
+             (goto-char pt)
+             (insert "\n")))))
+    ((looking-at "\\( *\n *\\)\\([0-9]+\\)\\([ *]\\|$\\)")
+     ;; At the end of a line, followed by a line with a number.
+     (let* ((nl.start (match-beginning 1))
+            (nl.end   (match-end       1))
+            (folnum   (string-to-number (match-string 2)))
+            (curnum   (progn (beginning-of-line)
+                             (if (looking-at " *\\([0-9]+\\)\\([ *]\\|$\\)")
+                                 (string-to-number (match-string 1))
+                                 (- folnum 2))))
+            (prenum   (if (< (point-min) (point))
+                          (progn
                             (forward-line -1)
                             (beginning-of-line)
-                            (cond
-                              ((= curpos (point))
-                               (1+ curr))
-                              ((looking-at " *[0-9]+")
-                               (let ((prev (string-to-number (match-string 0))))
-                                 (+ curr (abs (- curr prev)))))
-                              (t
-                               (+ 10 curr))))
-                          10))))
-          (goto-char nlpt)
-          (beginning-of-line)
-          (insert (format "%d " line))
-          (when (looking-at " +")
-            (delete-region (match-beginning 0) (match-end 0)))))))
+                            (if (looking-at " *\\([0-9]+\\)\\([ *]\\|$\\)")
+                                (string-to-number (match-string 1))
+                                0))
+                          0))
+            (increm   (max 1 (min (- folnum curnum) (- curnum folnum))))
+            (newnum   (1+ curnum)))
+       (goto-char nl.start)
+       (delete-region nl.start nl.end)
+       (insert (format "\n%d \n" newnum))
+       (forward-char -1)))
+    (t
+     ;; Elsewhere
+     (insert "\n")
+     (let ((nlpt (point))
+           (line (progn
+                   (forward-line -1)
+                   (beginning-of-line)
+                   (if (looking-at " *[0-9]+")
+                       (let ((curr (string-to-number (match-string 0)))
+                             (curpos (point)))
+                         (forward-line -1)
+                         (beginning-of-line)
+                         (cond
+                           ((= curpos (point))
+                            (1+ curr))
+                           ((looking-at " *[0-9]+")
+                            (let ((prev (string-to-number (match-string 0))))
+                              (+ curr (abs (- curr prev)))))
+                           (t
+                            (+ 10 curr))))
+                       (progn
+                         10)))))
+       (goto-char nlpt)
+       (beginning-of-line)
+       (insert (format "%d " line))
+       (when (looking-at " +")
+         (delete-region (match-beginning 0) (match-end 0)))))))
 
 
 (defun* lse-renumber-region (start end &optional (from 1) (step 1))

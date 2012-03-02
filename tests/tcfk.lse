@@ -16,11 +16,11 @@
 26 AFFICHER[4X,'#']
 28 AFFICHER[/,10X,34'#',/]
 30 AFFICHER[C,79X,C,10X,'#',10X,'#',10X,'#',10X,'#']
-31 A_LISP('(slot-value (task-terminal *task*) ''com.informatimago.lse.unix-cli::current-column)',1);TERMINER
-32 AFFICHER[X,':'];LIRE TEM;LIRE UNIT
-34 SI UNIT='C' ALORS &CFK(TEM)
-36 SI UNIT='F' ALORS &FCK(TEM)
-38 SI UNIT='K' ALORS &KCF(TEM)
+31* A_LISP('(slot-value (task-terminal *task*) ''com.informatimago.lse.unix-cli::current-column)',1);TERMINER
+32 AFFICHER[X,':'];LIRE TEMP,UNIT
+34 SI UNIT='C' ALORS &CFK(TEMP)
+36 SI UNIT='F' ALORS &FCK(TEMP)
+38 SI UNIT='K' ALORS &KCF(TEMP)
 40 SI UNIT='FIN' ALORS ALLER EN 44
 42 ALLER EN 30
 44 AFFICHER[C,79X,C];TERMINER
@@ -30,7 +30,7 @@
 58 PROCEDURE &FCK(F)
 60 C_(F-32)/1.8;K_(F-32)/1.8+273.16
 62 &AFF(C,F,K);RETOUR EN 28
-66 PROCEDURE &KCF(F)
+66 PROCEDURE &KCF(K)
 68 C_K-273.16;F_(K-273.16)*1.8+32
 70 &AFF(C,F,K);RETOUR EN 28
 74 PROCEDURE &AFF(C,F,K)

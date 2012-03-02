@@ -993,7 +993,7 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 (defun executer-a-partir-de (from to)
-  ;; (io-new-line *task*)
+  (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (unless (or (null to) (vm-line-exist-p vm to))
       (error-bad-line to))
@@ -1044,6 +1044,7 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 (defun prendre-etat-console (console-no)
   (declare (ignore console-no))
+  (io-new-line *task*)
   ;;           verifier le numero correspond a une console existante.
   ;;           Si la zone temporaire locale < taille des fichiers dans la zone
   ;;           temporaire de la console a prendre :
@@ -1099,6 +1100,7 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 (defun appeler (pgm)
+  (io-new-line *task*)
   (let* ((path      (catalog-pathname pgm :p))
          (vm        (task-vm *task*)))
     (vm-terminer vm)
@@ -1107,6 +1109,7 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 (defun ranger (pgm)
+  (io-new-line *task*)
   (let* ((path      (catalog-pathname pgm :p))
          (vm        (task-vm *task*))
          (source    (get-program vm 1 nil)))
@@ -1130,7 +1133,8 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 (defun modifier (pgm)
-  (let* ((path      (catalog-pathname pgm :p))
+ (io-new-line *task*)
+   (let* ((path      (catalog-pathname pgm :p))
          (vm        (task-vm *task*))
          (source    (get-program vm 1 nil)))
     (if source
@@ -1159,6 +1163,7 @@ GRL                    GRL(ch,de), groupe de lettres;
     :collect (subseq string start (min (+ start size) len))))
 
 (defun decoder (fichier from to)
+  (io-new-line *task*)
   (let* ((path      (catalog-pathname fichier :T))
          (vm        (task-vm *task*))
          (source    (get-program vm from to)))
@@ -1184,6 +1189,7 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 (defun encoder (fichier from to)
+  (io-new-line *task*)
   (let* ((path      (catalog-pathname fichier :T))
          (vm        (task-vm *task*)))
     (let ((file (lse-data-file-open path :if-does-not-exist nil)))
@@ -1225,6 +1231,7 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 (defun effacer-lignes (liste-de-numeros)
+  (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (if (eql :all liste-de-numeros)
         (when (minimum-line-number vm)
@@ -1240,11 +1247,13 @@ GRL                    GRL(ch,de), groupe de lettres;
               (erase-line-number vm item))))))
 
 (defun eliminer-commentaires ()
+  (io-new-line *task*)
   (error 'pas-implemente
          :what 'eliminer-commentaires))
 
 
 (defun cataloguer (temporaire permanent)
+  (io-new-line *task*)
   (let ((src-path (catalog-pathname temporaire :t))
         (dst-path (catalog-pathname permanent  :d)))
     (with-open-file (src src-path
@@ -1270,6 +1279,7 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 (defun supprimer-tous-les-fichiers-temporaires ()
+  (io-new-line *task*)
   (dolist (path (directory (make-pathname :name :wild
                                           :type (cdr (assoc :temporary *file-types*))
                                           :case :local
@@ -1279,6 +1289,7 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 (defun supprimer (fichier stype)
+  (io-new-line *task*)
   (let ((path (catalog-pathname fichier stype)))
     (delete-file path))
   (values))
@@ -1287,6 +1298,7 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 (defun changer-repertoire (chemin)
+  (io-new-line *task*)
   (when (and (stringp chemin)
              (< 1 (length chemin))
              (char/= #\/ (aref chemin (1- (length chemin)))))
@@ -1299,7 +1311,8 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 (defun afficher-repertoire-courant ()
-  (io-format *task* "~%REPERTOIRE COURANT: ~A~%" *current-directory*))
+  (io-new-line *task*)
+  (io-format *task* "REPERTOIRE COURANT: ~A~%" *current-directory*))
 
 
 
@@ -1450,11 +1463,7 @@ commande CONTINUER.
 
   (defcommand "LISTER A PARTIR DE"   deux-numeros-optionels (from to)
     "Affiche le programme courant."
-    
     (lister-a-partir-de from to))
-
-
-
 
   (defcommand "ETAGERE DE RUBANS"  une-ligne (chemin) 
     "Selectionne une étagère de rubans perforés."
@@ -1479,6 +1488,7 @@ commande CONTINUER.
 
   #+developing
   (defcommand "LE EVALUER UNE EXPRESSION LISP " une-ligne (ligne)
+    (io-new-line *task*)
     (let* ((*vm* (task-vm *task*))
            (results)
            (output (with-output-to-string (*standard-output*)
@@ -1495,11 +1505,13 @@ commande CONTINUER.
   #+developing
   (defcommand "LD DEASSEMBLER A PARTIR DE "     deux-numeros-optionels (from to)
     "Commande de deboguage: Désassemble les lignes de programme."
+    (io-new-line *task*)
     (desassembler-a-partir-de from to))
 
   #+developing
   (defcommand "LP DEASSEMBLER/PERFORER A PARTIR DE "  deux-numeros-optionels (from to)
     "Commande de deboguage: Désassemble les lignes de programme."
+    (io-new-line *task*)
     (io-start-tape-puncher *task*)
     (unwind-protect (desassembler-a-partir-de from to)
       (io-stop-tape-puncher *task*))
@@ -1672,7 +1684,7 @@ Sur MITRA 15, l'état des variables est également transféré."
              (progn
                (unless (task-silence task)
                  ;; TODO: Move up only when the command is input with CR and echoed as CR/LF, not with X-OFF.
-                 (io-move-up task)
+                 ;; (io-move-up task)
                  (io-carriage-return task)
                  (io-format task "~A " (if (task-abreger task)
                                            (subseq (command-name command) 0 2)
@@ -1680,7 +1692,8 @@ Sur MITRA 15, l'état des variables est également transféré."
                (command-call command)))))
       
       ((< 0 (length line))
-       ;; soit une instruction, soit une ligne de programme... 
+       ;; soit une instruction, soit une ligne de programme...
+       (io-new-line task)
        (if (task-state-awake-p task)
            (lse-compile-and-execute task line)
            (error "COMMANDE INVALIDE EN L'ETAT ~A~%ESSAYER LA COMMANDE AI(DE).~%"

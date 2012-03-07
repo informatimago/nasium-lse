@@ -137,13 +137,26 @@ BONJOUR     ~8A
     (set-terminal-encoding encoding)
     (let* ((terminal (make-instance
                          (progn
-                           #+swank (if (typep (stream-output-stream *terminal-io*)
-                                              'swank-backend::slime-output-stream)
-                                       'swank-terminal
-                                       #+unix 'unix-terminal
-                                       #-unix 'standard-terminal)
-                           #+(and (not swank) unix)       'unix-terminal
-                           #+(and (not swank) (not unix)) 'standard-terminal)
+                           #+swank
+                           (cond
+                             ((typep (stream-output-stream *terminal-io*)
+                                     'swank-backend::slime-output-stream)
+                              'swank-terminal)
+                             #+unix
+                             ((member (getenv "TERM") '("emacs" "dumb")
+                                      :test (function string=))
+                              'standard-terminal)
+                             (t
+                              'unix-terminal))
+                           #+(and (not swank) unix)
+                           (cond
+                             ((member (getenv "TERM") '("emacs" "dumb")
+                                      :test (function string=))
+                              'standard-terminal)
+                             (t
+                              'unix-terminal))
+                           #+(and (not swank) (not unix))
+                           'standard-terminal)
                          :input-stream  (stream-input-stream  *terminal-io*)
                          :output-stream (stream-output-stream *terminal-io*)))
            (task     (make-instance 'task

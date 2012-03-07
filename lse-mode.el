@@ -93,7 +93,7 @@
       ;; (define-key map "_"  'lse-assign)
       (define-key map "\n"  'lse-newline)
       (define-key map "\r"  'lse-newline)
-      (define-key map "\C-c\C-z" 'suspend-emacs)
+      ;; (define-key map "\C-c\C-z" 'suspend-emacs)
       (setq lse-mode-map map)) )
 
 ;;(define-key  lse-mode-map "_"  'self-insert-command)
@@ -291,6 +291,10 @@
       (incf linum step)
       (forward-line 1))))
 
+;; TODO: implement a command to renumber the whole file that will
+;;       update the line number in the instructions ALLER EN …,
+;;       RETOUR EN …, and FAIRE … POUR
+
 
 
 
@@ -375,6 +379,6 @@
 
 
 (provide 'lse-mode)
-;;(provide 'lse)
+
 
 ;;;; THE END ;;;;

@@ -230,7 +230,7 @@ System and distrib are keywords, release is a string."
        ) 
 
 #+clisp (ext:saveinitmem
-         (executable-filename "lse")
+         (executable-filename *program-name*)
          :quiet t
          :verbose t
          :norc t

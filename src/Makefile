@@ -51,7 +51,10 @@ ChangeLog:
 	git log > ChangeLog
 
 unix-cli:
-	ccl --batch --load generate-unix-cli.lisp
+	ccl --batch --load generate-unix-cli.lisp | tee /tmp/unix-cli.log 
+	awk '/Generating/{print $$2}' < /tmp/unix-cli.log | ( read executable ; rm -f lse ; ln -sf $$executable lse )
+symlink:
+	awk '/Generating/{print $$2}' < /tmp/unix-cli.log | ( read executable ; rm -f lse ; ln -sf $$executable lse )
 
 variables:
 	@echo pwd=$$(pwd)

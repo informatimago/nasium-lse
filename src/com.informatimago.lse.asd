@@ -92,6 +92,7 @@
                  (:file "io"                  :depends-on ("packages" "file" "task"))
                  (:file "commands"            :depends-on ("packages"
                                                            "error" "version"
+                                                           "catalog" "functions"
                                                            "os" "io" "compiler" "task")) 
 
                  ))

@@ -77,6 +77,7 @@
         "COM.INFORMATIMAGO.RDP"
 
         "COM.INFORMATIMAGO.LSE.OS")
+  (:shadow "DOCUMENTATION")
   (:export
    "LSE-ERROR"
 

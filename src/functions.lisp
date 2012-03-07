@@ -222,7 +222,13 @@
 (defun tem ()    (multiple-value-bind (s m h) (get-decoded-time)
                    (+ (* (+ (* 60 h) m) 60) s)))
 
-(defun att ()    (error 'pas-implemente :what "ATT"))
+(defun att ()
+  (if (task-signal *task*)
+      (progn
+        (setf (task-signal *task*) nil)
+        1)
+      0))
+
 (defun dis (a) (declare (ignore a))  (error 'pas-implemente :what "DIS"))
 (defun etl (a b) (un-nombre (logand (truncate (un-nombre (deref *vm* a)))
                                     (truncate (un-nombre (deref *vm* b))))))

@@ -49,17 +49,31 @@
     :depends-on (
                  :terminfo
                  
-                 #-(or clisp (and ccl windows-target)) :iolib.base
-                 #-(or clisp (and ccl windows-target)) :iolib.os
-                 #-(or clisp (and ccl windows-target)) :iolib.syscalls
+                 :cffi
+                 :uffi
 
+                 :trivial-gray-streams
+                 
+                 #+(and unix (not clisp)) :iolib.base
+                 #+(and unix (not clisp)) :iolib.os
+                 #+(and unix (not clisp)) :iolib.syscalls
+                 #+(and unix (not clisp)) :iolib.termios
+                 
+                 
                  :com.informatimago.lse
                  )
     :components (
+
+                 (:file "patch-cffi-uffi")
+                 
                  (:file "unix-cli-package")
                  (:file "swank-terminal"      :depends-on ("unix-cli-package"))
+                 (:file "unix-terminal"       :depends-on ("unix-cli-package"))
                  (:file "terminfo-terminal"   :depends-on ("unix-cli-package"))
-                 (:file "unix-cli"            :depends-on ("unix-cli-package" "swank-terminal"))
+                 (:file "unix-cli"            :depends-on ("unix-cli-package"
+                                                           "swank-terminal"
+                                                           "terminfo-terminal"
+                                                           "unix-terminal"))
                  ))
 
 

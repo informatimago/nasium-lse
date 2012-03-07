@@ -341,7 +341,7 @@
              aval
              (- aval))))))
 
-(eval-when (:compile-toplevel :execute)
+(eval-when (:compile-toplevel :load-toplevel :execute)
   ;; (gen-ieee-encoding float-64 'double-float 11 53)
   (gen-ieee-encoding float-32 'single-float  8 24))
 

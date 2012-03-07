@@ -1377,7 +1377,12 @@ NOTE: on ne peut pas liberer un parametre par reference.
                  (let ((stack (vm-stack vm))
                        (code  (vm-code  vm))
                        (*vm*  vm))
-                   (yield-signals '(#.+sigint+))
+                   (handler-case
+                       (terminal-yield (task-terminal *task*))
+                     (user-interrupt (condition)
+                       (if (eql +sigquit+ (user-interrupt-signal condition))
+                           (setf (task-signal *task*) t)
+                           (signal condition))))
                    (flet ((spush  (val) (vector-push-extend val stack))
                           (spop   ()    (vector-pop stack))
                           (pfetch ()    (prog1 (aref code (vm-pc.offset vm))

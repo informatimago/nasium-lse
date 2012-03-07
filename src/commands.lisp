@@ -748,7 +748,7 @@ GRL                    GRL(ch,de), groupe de lettres;
   (defcommand "DROITS"  nil ()
     "Gestion des droits d'accès des comptes."
     (io-format *task* " ")
-    (unless (string= (io-read-line *task* :echo nil :xoff t) *PASSWORD*)
+    (unless (string= (io-read-line *task* :echo nil) *PASSWORD*)
       (lse-error "IDENTIFIANT INVALIDE")
       (return-from droits))
     (io-new-line *task*) (io-format *task* "            ANCIEN  NOUVEAU  ") ;
@@ -757,7 +757,7 @@ GRL                    GRL(ch,de), groupe de lettres;
       :with account = -1
       :for line = (progn (io-new-line *task*)
                          (io-format *task* "COMPTE NO. : ") ;
-                         (io-read-line *task* :xoff t))
+                         (io-read-line *task*))
       :until (string= line "FIN")
       :do
       (setf account (if (zerop (length line))
@@ -773,7 +773,7 @@ GRL                    GRL(ch,de), groupe de lettres;
           (io-format *task* 
                      "   ~2,'0D       ~{~[0~;1~]~}     "
                      account (list op od oa of))
-          (setf line (io-read-line *task* :xoff t))
+          (setf line (io-read-line *task*))
           (if (and (= 4 (length line))
                    (every (lambda (ch) (position ch "01")) line))
               (progn
@@ -1153,8 +1153,8 @@ GRL                    GRL(ch,de), groupe de lettres;
 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
- (defparameter *xoff* (code-char +xoff+))
- (defparameter *nul*  (code-char +nul+)))
+ (defparameter *xoff* (code-char xoff))
+ (defparameter *nul*  (code-char nul)))
 
 (defun split-size (string size)
   (loop
@@ -1683,8 +1683,6 @@ Sur MITRA 15, l'état des variables est également transféré."
                     :format-arguments (list line))
              (progn
                (unless (task-silence task)
-                 ;; TODO: Move up only when the command is input with CR and echoed as CR/LF, not with X-OFF.
-                 ;; (io-move-up task)
                  (io-carriage-return task)
                  (io-format task "~A " (if (task-abreger task)
                                            (subseq (command-name command) 0 2)
@@ -1722,9 +1720,7 @@ Sur MITRA 15, l'état des variables est également transféré."
                                ;;   (io-new-line task))
                                (io-finish-output *task*)
                                (handler-case
-                                   (let ((line (io-read-line task
-                                                             :beep (not (task-silence task))
-                                                             :xoff t)))
+                                   (let ((line (io-read-line task :beep (not (task-silence task)))))
                                      (if (task-interruption task)
                                          (io-format *task* "~%PRET~%")
                                          (command-eval-line task line)))
@@ -1758,6 +1754,7 @@ Sur MITRA 15, l'état des variables est également transféré."
                 (continue ()
                   :report "CONTINUER")))
       (au-revoir () (values)))))
+
 
 
 ;; (test/command-grammars)

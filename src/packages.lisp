@@ -38,7 +38,22 @@
 
 (defpackage "COM.INFORMATIMAGO.LSE.OS"
   (:use "COMMON-LISP")
-  (:export "GETENV" "GETUID"))
+  (:export "GETENV" "GETUID"
+           "RUN-SHELL-COMMAND"
+           "MAKE-FD-STREAM" "FD-STREAM-P" "FD-STREAM-FD")
+  (:documentation "A portability layer for a few OS operators."))
+
+
+(defpackage "COM.INFORMATIMAGO.LSE.BYTE-CODE"
+  (:nicknames "BC")
+  (:use)
+  (:documentation "The package where the byte-code symbols for the LSE VM are interned."))
+
+
+(defpackage "COM.INFORMATIMAGO.LSE.IDENTIFIERS"
+  (:nicknames "ID")
+  (:use)
+  (:documentation "The pacakge where the identifiers for the LSE language are interned."))
 
 
 (DEFPACKAGE "COM.INFORMATIMAGO.LSE"
@@ -62,45 +77,38 @@
         "COM.INFORMATIMAGO.RDP"
 
         "COM.INFORMATIMAGO.LSE.OS")
-  (:export 
+  (:export
+   "LSE-ERROR"
 
-           "TERMINAL" "TERMINAL-INITIALIZE" "TERMINAL-FINALIZE"
-           "TERMINAL-COLUMNS" "TERMINAL-ROWS" "TERMINAL-INPUT-STREAM"
-           "TERMINAL-OUTPUT-STREAM" "TERMINAL-RING-BELL"
-           "TERMINAL-CARRIAGE-RETURN" "TERMINAL-LINE-FEED"
-           "TERMINAL-MOVE-UP"
-           "TERMINAL-NEW-LINE"
-           "TERMINAL-WRITE-STRING" "TERMINAL-FINISH-OUTPUT"
-           "TERMINAL-READ-LINE" "TERMINAL-READ" "TERMINAL-ECHO"
+   "TERMINAL" "TERMINAL-INITIALIZE" "TERMINAL-FINALIZE"
+   "TERMINAL-COLUMNS" "TERMINAL-ROWS" "TERMINAL-INPUT-STREAM"
+   "TERMINAL-OUTPUT-STREAM" "TERMINAL-RING-BELL"
+   "TERMINAL-CARRIAGE-RETURN" "TERMINAL-LINE-FEED"
+   "TERMINAL-NEW-LINE"
+   "TERMINAL-WRITE-STRING" "TERMINAL-FINISH-OUTPUT"
+   "TERMINAL-READ-LINE" "TERMINAL-READ" "TERMINAL-ECHO"
+   
+   "STANDARD-TERMINAL"
+   "INPUT-STREAM" "OUTPUT-STREAM"
+   "WITH-TEMPORARY-ECHO"
+   
+   "IO-TERMINAL-OUTPUT-P" "IO-TERMINAL-INPUT-P"
+   "IO-TAPE-OUTPUT-P" "IO-TAPE-INPUT-P" "IO-BELL"
+   "IO-CARRIAGE-RETURN"
+   "IO-NEW-LINE" "IO-FINISH-OUTPUT"
+   "IO-READ-LINE" "IO-READ" "IO-READ-STRING" "IO-READ-NUMBER"
+   "IO-ECHO" "IO-FORMAT"
 
-           "STANDARD-TERMINAL"
+   "*TASK*" "TASK"
+   "TASK-INTERRUPTION" "TASK-SIGNAL"
+   "TASK-CLOSE-ALL-FILES"
+   "COMMAND-REPL"
 
-           "IO-TERMINAL-OUTPUT-P" "IO-TERMINAL-INPUT-P"
-           "IO-TAPE-OUTPUT-P" "IO-TAPE-INPUT-P" "IO-BELL"
-           "IO-MOVE-UP" "IO-CARRIAGE-RETURN"
-           "IO-NEW-LINE" "IO-FINISH-OUTPUT"
-           "IO-READ-LINE" "IO-READ" "IO-READ-STRING" "IO-READ-NUMBER"
-           "IO-ECHO" "IO-FORMAT"
+   "*VERSION*"
 
-           "*TASK*" "TASK" "TASK-CLOSE-ALL-FILES"
-           "COMMAND-REPL"
-
-           "*VERSION*"
-
-           "DAT"
-           ))
-
-
-
-
-(defpackage "COM.INFORMATIMAGO.LSE.BYTE-CODE"
-  (:nicknames "BC")
-  (:use))
-
-
-(defpackage "COM.INFORMATIMAGO.LSE.IDENTIFIERS"
-  (:nicknames "ID")
-  (:use))
+   "DAT"
+   )
+  (:documentation "The LSE language and system implementation."))
 
 
 ;;; THE END ;;;;

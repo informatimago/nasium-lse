@@ -131,7 +131,7 @@ Can be either (terminal-output-stream terminal) or tape-output.")
                          :documentation "PA-S A PAS - execution pas à pas.") 
    (interruption         :accessor task-interruption     :initform nil :type boolean
                          :documentation "ESC")
-   (signal               :accessor task-siganl           :initform nil :type boolean
+   (signal               :accessor task-signal           :initform nil :type boolean
                          :documentation "CTRL-A  Utilisé par ATT()")
 
    (echo                 :initarg :echo

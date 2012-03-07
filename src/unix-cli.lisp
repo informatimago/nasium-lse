@@ -74,12 +74,14 @@ BONJOUR     ~8A
 
 (defun locale-terminal-encoding ()
   "Returns the terminal encoding specified by the locale(7)."
-  (dolist (var '("LC_ALL" "LC_MESSAGES" "LC_CTYPE")
+  (dolist (var '("LC_ALL" "LC_CTYPE" "LANG")
                :iso-8859-1) ; some random default…
     (let* ((val (getenv var))
-           (dot (position #\. val)))
+           (dot (position #\. val))
+           (at  (position #\@ val :start (or dot (length val)))))
       (when (and dot (< dot (1- (length val))))
-        (return (intern (string-upcase (subseq val (1+ dot))) "KEYWORD"))))))
+        (return (intern (string-upcase (subseq val (1+ dot) (or at (length val))))
+                        "KEYWORD"))))))
 
 
 (defun set-terminal-encoding (encoding)
@@ -138,11 +140,12 @@ BONJOUR     ~8A
                            #+swank (if (typep (stream-output-stream *terminal-io*)
                                               'swank-backend::slime-output-stream)
                                        'swank-terminal
-                                       'terminfo-terminal)
-                           #-swank 'terminfo-terminal)
-                         #-swank :terminfo #-swank (terminfo:set-terminal)
-                         :input  (stream-input-stream  *terminal-io*)
-                         :output (stream-output-stream *terminal-io*)))
+                                       #+unix 'unix-terminal
+                                       #-unix 'standard-terminal)
+                           #+(and (not swank) unix)       'unix-terminal
+                           #+(and (not swank) (not unix)) 'standard-terminal)
+                         :input-stream  (stream-input-stream  *terminal-io*)
+                         :output-stream (stream-output-stream *terminal-io*)))
            (task     (make-instance 'task
                          :state :active
                          :case-insensitive t

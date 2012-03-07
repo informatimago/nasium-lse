@@ -37,7 +37,7 @@ BUILD_HOSTS = kuiper galatea lassell # triton
 all:ChangeLog
 	@for host in $(BUILD_HOSTS) ; do \
 		echo "// Building on $$host" ;\
-		ssh $$host bash -c "git pull ; make -C $$(pwd) unix-cli" ;\
+		ssh $$host make -C $$(pwd) unix-cli ;\
 	 done
 
 help:

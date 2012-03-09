@@ -118,6 +118,7 @@ termios with TERMIOS-FREE."
                            :initform nil
                            :reader terminal-modern-mode
                            :documentation "
+This must be set before TERMINAL-INITIALIZE is called.
 When false (default), the terminal works like on the MITRA-15 LSE System:
 C-s (X-OFF) to send input to the computer.
 C-a (SOH)   to send a signal to the program.
@@ -129,6 +130,12 @@ last line, (it's erased before line feed) so that users may see up to
 where they've written.
 
 When true, the terminal works more like a modern unix terminal;
+")
+   (cr-as-xoff             :initarg :cr-as-xoff
+                           :accessor terminal-cr-as-xoff
+                           :documentation "
+When true, CR works like XOFF, without being read into strings.
+Valid only whe MODERN-MODE is false.
 ")
    (terminfo               :initarg :terminfo
                            :initform (terminfo:set-terminal (getenv "TERM"))
@@ -142,18 +149,55 @@ When true, the terminal works more like a modern unix terminal;
                                                  :fill-pointer 0))
    (input-read             :initform 0)
    (input-finished         :initform nil)
-   (vintr                  :initform 0)
-   (vquit                  :initform 0)
-   (vsusp                  :initform 0)
-   (vkill                  :initform 0)
-   (veof                   :initform 0)
-   (veol                   :initform 0)
-   (veol2                  :initform 0)
-   (verase                 :initform 0)
-   (vwerase                :initform 0)
-   (vreprint               :initform 0)
-   (vstart                 :initform 0)
-   (vstop                  :initform 0)))
+   (vintr                  :initform 0   :reader terminal-vintr)
+   (vquit                  :initform 0   :reader terminal-vquit)
+   (vsusp                  :initform 0   :reader terminal-vsusp)
+   (vkill                  :initform 0   :reader terminal-vkill)
+   (veof                   :initform 0   :reader terminal-veof)
+   (veol                   :initform 0   :reader terminal-veol)
+   (veol2                  :initform 0   :reader terminal-veol2)
+   (verase                 :initform 0   :reader terminal-verase)
+   (vwerase                :initform 0   :reader terminal-vwerase)
+   (vreprint               :initform 0   :reader terminal-vreprint)
+   (vstart                 :initform 0   :reader terminal-vstart)
+   (vstop                  :initform 0   :reader terminal-vstop)))
+
+
+
+(defmethod (setf terminal-modern-mode) (new-mode (terminal unix-terminal))
+  (with-slots (modern-mode input-file-descriptor) terminal
+    (if new-mode
+        ;; Modern mode: get the characters from the termios.
+        (let ((ccs (terminal-control-characters input-file-descriptor)))
+          (setf vintr    (cdr (assoc :vintr    ccs))
+                vquit    (cdr (assoc :vquit    ccs))
+                vsusp    (cdr (assoc :vsusp    ccs))
+                vkill    (cdr (assoc :vkill    ccs))
+                veof     (cdr (assoc :veof     ccs))
+                veol     (let ((eol (cdr (assoc :veol     ccs))))
+                           (if (zerop eol)
+                               #x0d
+                               eol))
+                veol2    (cdr (assoc :veol2    ccs))
+                verase   (cdr (assoc :verase   ccs))
+                vwerase  (cdr (assoc :vwerase  ccs))
+                vreprint (cdr (assoc :vreprint ccs))
+                vstart   (cdr (assoc :vstart   ccs))
+                vstop    (cdr (assoc :vstop    ccs))))
+        ;;  Mitra-15 mode:
+        (setf vintr    #x1b            ; ESC
+              vquit    #x01            ; Ctrl-A
+              vsusp    0
+              vkill    0
+              veof     0
+              veol     #x13            ; X-OFF
+              veol2    #x0d            ; CR
+              verase   #x5C            ; \
+              vwerase  0
+              vreprint 0
+              vstart   0
+              vstop    0))
+    (setf modern-mode new-mode)))
 
 
 (defparameter *external-format/iso-8859-1*
@@ -167,7 +211,8 @@ When true, the terminal works more like a modern unix terminal;
 
 
 (defmethod initialize-instance :after ((terminal unix-terminal) &rest args
-                                       &key input-stream output-stream input-fd output-fd)
+                                       &key modern-mode
+                                       input-stream output-stream input-fd output-fd)
   (declare (ignorable args))
   (assert (not (and input-stream input-fd))
           () ":INPUT-STREAM is mutually exclusive with :INPUT-FD")
@@ -207,7 +252,8 @@ When true, the terminal works more like a modern unix terminal;
   (setf (slot-value terminal 'input-file-descriptor)   input-fd
         (slot-value terminal 'output-file-descriptor)  output-fd
         (slot-value terminal 'input-stream)            input-stream
-        (slot-value terminal 'output-stream)           output-stream)
+        (slot-value terminal 'output-stream)           output-stream
+        (terminal-modern-mode terminal) modern-mode)
   terminal)
 
 ;; (ccl::stream-device *terminal-io*  :input)
@@ -224,230 +270,199 @@ When true, the terminal works more like a modern unix terminal;
              'terminal-initialize (class-name (class-of terminal))))
     (setf saved-termios (terminal-control-attributes input-file-descriptor))
     (if modern-mode
-        (progn
-          (let ((ccs (terminal-control-characters input-file-descriptor)))
-            (setf vintr    (cdr (assoc :vintr    ccs))
-                  vquit    (cdr (assoc :vquit    ccs))
-                  vsusp    (cdr (assoc :vsusp    ccs))
-                  vkill    (cdr (assoc :vkill    ccs))
-                  veof     (cdr (assoc :veof     ccs))
-                  veol     (let ((eol (cdr (assoc :veol     ccs))))
-                             (if (zerop eol)
-                                 #x0d
-                                 eol))
-                  veol2    (cdr (assoc :veol2    ccs))
-                  verase   (cdr (assoc :verase   ccs))
-                  vwerase  (cdr (assoc :vwerase  ccs))
-                  vreprint (cdr (assoc :vreprint ccs))
-                  vstart   (cdr (assoc :vstart   ccs))
-                  vstop    (cdr (assoc :vstop    ccs))))
-          (iolib.serial:stty
-           input-file-descriptor
-           :cooked  t
+        (iolib.serial:stty
+         input-file-descriptor
+         :cooked  t
 
-           ;; Input control:
-           :istrip  nil ; strip off eigth bit (should be nil for utf-8 input)
-           :inlrc   nil ; translate NL to CR on input
-           :igncr   nil ; ignore CR  on input
-           :icrnl   t   ; translate CR to NL on input.
-           ;; :iuclc   nil ; map uppercase to lower (not POSIX).
-           :ixon    nil ; XON/XOFF flow control on output.
-           :ixoff   nil ; XON/XOFF flow control on input.
-           :ixany   nil ; Typing any character to restart stopped output.
-           :imaxbel nil ; Ring Bell when input queue is full.
-           :iutf8   nil ; UTF-8 input (for character erase in cooked mode).
-           ;; We don't process utf-8 on unix-terminal (we would have to decode utf-8 to implement erase ourselves in raw).
+         ;; Input control:
+         :istrip  nil ; strip off eigth bit (should be nil for utf-8 input)
+         :inlrc   nil ; translate NL to CR on input
+         :igncr   nil ; ignore CR  on input
+         :icrnl   t   ; translate CR to NL on input.
+         ;; :iuclc   nil ; map uppercase to lower (not POSIX).
+         :ixon    nil ; XON/XOFF flow control on output.
+         :ixoff   nil ; XON/XOFF flow control on input.
+         :ixany   nil ; Typing any character to restart stopped output.
+         :imaxbel nil ; Ring Bell when input queue is full.
+         :iutf8   nil ; UTF-8 input (for character erase in cooked mode).
+         ;; We don't process utf-8 on unix-terminal (we would have to decode utf-8 to implement erase ourselves in raw).
 
-           ;; Output control:
-           :opost   nil     ; implementation defined output processing.
-           ;; :olcuc   nil     ; map lowercase touppercase (not POSIX).
-           :onlcr   nil     ; map NL to CR-NL on output.
-           :ocrnl   nil     ; map CR to NL on output.
-           :onocr   t       ; output CR at column 0.
-           :onlret  nil     ; don't output CR (ie. output CR).
-           :ofill   nil ; send  fill characters for a delay (instead of timer).
-           ;; :ofdel   nil ; (not POSIX, not linux) fill character is NUL; t =  fill character is DEL.
-           :nldly   :nl0   ; Newline delay mask (member :nl0 :nl1)
-           :crdly   :cr0   ; CR delay mask (member :cr0 :cr1 :cr2 :cr3)
-           :tabdly  :tab0 ; TAB delay mask  (member :tab0 :tab1 :tab2 :tab3)
-           :bsdly   :bs0  ; Backspace delay mask (member :bs0 :bs1)
-           :vtdly   :vt0  ; Vertical tab delay mask (member :vt0 :vt1)
-           :ffdly   :ff0  ; Form feed delay mask (member :ff0 :ff1)
+         ;; Output control:
+         :opost   nil     ; implementation defined output processing.
+         ;; :olcuc   nil     ; map lowercase touppercase (not POSIX).
+         :onlcr   nil     ; map NL to CR-NL on output.
+         :ocrnl   nil     ; map CR to NL on output.
+         :onocr   t       ; output CR at column 0.
+         :onlret  nil     ; don't output CR (ie. output CR).
+         :ofill   nil ; send  fill characters for a delay (instead of timer).
+         ;; :ofdel   nil ; (not POSIX, not linux) fill character is NUL; t =  fill character is DEL.
+         :nldly   :nl0   ; Newline delay mask (member :nl0 :nl1)
+         :crdly   :cr0   ; CR delay mask (member :cr0 :cr1 :cr2 :cr3)
+         :tabdly  :tab0 ; TAB delay mask  (member :tab0 :tab1 :tab2 :tab3)
+         :bsdly   :bs0  ; Backspace delay mask (member :bs0 :bs1)
+         :vtdly   :vt0  ; Vertical tab delay mask (member :vt0 :vt1)
+         :ffdly   :ff0  ; Form feed delay mask (member :ff0 :ff1)
 
-           ;; For modem control:
-           ;; ;; :cbaud    speed mask
-           ;; ;; :cbaudex  speed mask
-           ;; :csize    :cs8 ; (member :cs5 :cs6 :cs7 :cs8)
-           ;; :cstopb   nil  ; set two stop bits
-           ;; :cread    t    ; enable receiver
-           ;; :parenb   nil  ; parity generation on  output and parity checking on input.
-           ;; :parodd   nil  ;  if set then parity is odd otherwise parity is even.
-           ;; :hupcl    nil  ; lowoer modem conotrollines after last  process closes the device (hang-up).
-           ;; :clocal   t    ; ignoroe modem control lines.
-           ;; :loblk    nil  ; (not POSIX, not linux)
-           ;; ;; :cibaud   mask for input speed
-           ;; ;; :cmspar   use stick (mark/space) parity.
-           ;; :crtscts t    ; hardware flow control.
+         ;; For modem control:
+         ;; ;; :cbaud    speed mask
+         ;; ;; :cbaudex  speed mask
+         ;; :csize    :cs8 ; (member :cs5 :cs6 :cs7 :cs8)
+         ;; :cstopb   nil  ; set two stop bits
+         ;; :cread    t    ; enable receiver
+         ;; :parenb   nil  ; parity generation on  output and parity checking on input.
+         ;; :parodd   nil  ;  if set then parity is odd otherwise parity is even.
+         ;; :hupcl    nil  ; lowoer modem conotrollines after last  process closes the device (hang-up).
+         ;; :clocal   t    ; ignoroe modem control lines.
+         ;; :loblk    nil  ; (not POSIX, not linux)
+         ;; ;; :cibaud   mask for input speed
+         ;; ;; :cmspar   use stick (mark/space) parity.
+         ;; :crtscts t    ; hardware flow control.
 
 
-           ;; Line control:
+         ;; Line control:
 
-           ;; We can deal with signals on linux, so go ahead (but not on
-           ;; MS-Windows, but there, we'd have to write a windows-terminal
-           ;; class…
-           
-           :isig    nil ; when the character INTR, QUIT, SUSP, or DSUSP are received, generate the signal.
-           :icanon  t   ; canonical mode.
-           ;; :xcase  nil ; (not POSIX) (and :icanon :xcase) => upper case terminal
-           :echoe   t   ;             (and :icanon :echoe) => ERASE and WERASE erase the previous character and word.
-           :echok   t   ;             (and :icanon :echok) => KILL  erase current line.
-           :echonl  nil ;             (and :icanon :echonl) => echo the NL  even when :echo is t.
-           :echoke  nil ;             (and :icanon :echoke) => KILL is echoed by erasing each character on the line (as specified by :echoe and :echoprt).
-           :echoprt nil ; (not POSIX) (and :icanon :iecho :echoprt) => characters are printed as they are erased. ( /a\  ??? )
-           :echo    t   ; echo of input characters
-           :echoctl nil ; (not POSIX) (:echo :echoctl) control codes (not TAB,  NL, START, STOP) are  echoed as ^X
-           ;; :defecho nil ; (not POSIX, not linux) Echo only when a process is reading.
-           ;; :flusho  nil ; (not POSIX, not linux) output is flushed.  Toggled by the DISCARD character.
-           :noflsh  t   ; Disable flushing input and output when signaling INT, QUIT and SUSP.
-           :tostop  nil ; sends SIGTTOU to processes who writes to this terminal.
-           ;; :pendin  nil ; (not POSIX, not linux) input queue is reprinted when next char is read.
-           :iexten  nil ; implementation-defined input-processing. To enable EOL2, LNEXT, REPRINT, WERASE, and IUCLC.
-
-           ;; Character control:
-           :vintr    0 ; SIGINT                                    needs :isig t
-           :vquit    0 ; SIGQUIT                                   needs :isig t
-           :vsusp    0 ; SIGSUSP                                   needs :isig t
-           ;; :vdsusp  0 ; (not POSIX, not LINUX) SIGSUSP when read  needs :isig t :iexten t
-
-           :vmin     1 ; minimum number of characters for noncanonical read       
-           :vtime    0 ; timeout in decisecond for noncanonical read
-
-           :verase   0 ; erase character                           needs :icanon t
-           :vkill    0 ; erase line                                needs :icanon t
-           :veof     0 ; send input buffer (= eof when empty)      needs :icanon t
-           :veol     0 ; additionnal end of line character         needs :icanon t
-           :veol2    0 ; yet additionnal end of line character     needs :icanon t (not POSIX)
-           :vwerase  0 ; (not POSIX) word erase                    needs :icanon t :iexten t
-           :vreprint 0 ; (not POSIX) reprint unread characters     needs :icanon t :iexten t
-
-           :vstart  0 ; The X-ON character                        needs :ixon
-           :vstop   0 ; The X-OFF character                       needs :ixon
-
-           ;; :vswtch   0             ; (not POSIX, not linux) switch character.
-           ;; :vlnext   0             ; (not POSIX, not LINUX) literal next       needs :iexten t
-           ;; :vdiscard 0             ; (not POSIX, not LINUX) toggle start/stop discarding output needs :iexten t
-           ;; :vstatus  0             ; (not POSIX, not LINUX) status request
-           ))
-        (progn
-         ;;  Mitra-15 mode:
-          (setf vintr    #x1b ; ESC
-                vquit    #x01 ; Ctrl-A
-                vsusp    0
-                vkill    0
-                veof     0
-                veol     #x13 ; X-OFF
-                veol2    #x0d ; CR
-                verase   #x5C ; \
-                vwerase  0
-                vreprint 0
-                vstart   0
-                vstop    0)
-         (iolib.serial:stty
-          input-file-descriptor
-          :raw     t
-
-          ;; Input control:
-          :istrip  nil ; strip off eigth bit (should be nil for utf-8 input)
-          :inlrc   nil ; translate NL to CR on input
-          :igncr   nil ; ignore CR  on input
-          :icrnl   nil ; translate CR to NL on input.
-          ;; :iuclc   nil ; map uppercase to lower (not POSIX).
-          :ixon    nil ; XON/XOFF flow control on output. ???
-          :ixoff   nil ; XON/XOFF flow control on input.
-          :ixany   nil ; Typing any character to restart stopped output.
-          :imaxbel nil ; Ring Bell when input queue is full.
-          :iutf8   nil ; UTF-8 input (for character erase in cooked mode).
-          ;; We don't process utf-8 on unix-terminal (we would have to decode utf-8 to implement erase ourselves in raw).
-
-          ;; Output control:
-          :opost   nil     ; implementation defined output processing.
-          ;; :olcuc   nil     ; map lowercase touppercase (not POSIX).
-          :onlcr   nil     ; map NL to CR-NL on output.
-          :ocrnl   nil     ; map CR to NL on output.
-          :onocr   t       ; output CR at column 0.
-          :onlret  nil     ; don't output CR (ie. output CR).
-          :ofill   nil ; send  fill characters for a delay (instead of timer).
-          ;; :ofdel   nil ; (not POSIX, not linux) fill character is NUL; t =  fill character is DEL.
-          :nldly   :nl0   ; Newline delay mask (member :nl0 :nl1)
-          :crdly   :cr0   ; CR delay mask (member :cr0 :cr1 :cr2 :cr3)
-          :tabdly  :tab0 ; TAB delay mask  (member :tab0 :tab1 :tab2 :tab3)
-          :bsdly   :bs0  ; Backspace delay mask (member :bs0 :bs1)
-          :vtdly   :vt0  ; Vertical tab delay mask (member :vt0 :vt1)
-          :ffdly   :ff0  ; Form feed delay mask (member :ff0 :ff1)
-
-          ;; For modem control:
-          ;; ;; :cbaud    speed mask
-          ;; ;; :cbaudex  speed mask
-          ;; :csize    :cs8 ; (member :cs5 :cs6 :cs7 :cs8)
-          ;; :cstopb   nil  ; set two stop bits
-          ;; :cread    t    ; receiver
-          ;; :parenb   nil  ; parity generation on  output and parity checking on input.
-          ;; :parodd   nil  ; if set then parity is odd otherwise parity is even.
-          ;; :hupcl    nil  ; lower modem control lines after last  process closes the device (hang-up).
-          ;; :clocal   t    ; ignore modem control lines.
-          ;; :loblk    nil  ; (not POSIX, not linux)
-          ;; ;; :cibaud   mask for input speed
-          ;; ;; :cmspar   use stick (mark/space) parity.
-          ;; :crtscts t    ;  hardware flow control.
-
-
-          ;; Line control:
-
-          ;; Some implementations cannot really deal with signals, or
-          ;; at all eg. on MS-Windows, so we'll do without them.
+         ;; We can deal with signals on linux, so go ahead (but not on
+         ;; MS-Windows, but there, we'd have to write a windows-terminal
+         ;; class…
          
-          :isig     nil ;  when the character INTR, QUIT, SUSP, or DSUSP are received, generate the signal.
-          :icanon   nil ; canonical mode.
-          ;; :xcase    nil ; (not POSIX) (and :icanon :xcase) => upper case terminal
-          :echoe    nil ;             (and :icanon :echoe) => ERASE and WERASE erase the previous character and word.
-          :echok    nil ;             (and :icanon :echok) => KILL  erase current line.
-          :echonl   nil ;             (and :icanon :echonl) =>  echo the NL  even when :echo is t.
-          :echoke   nil ;             (and :icanon :echoke) => KILL is echoed by erasing each character on the line (as specified by :echoe and :echoprt).
-          :echoprt  nil ; (not POSIX) (and :icanon :iecho :echoprt) => characters are printed as they are erased. ( /a\  ??? )
-          :echo     t   ; echo of input characters
-          :echoctl  nil ; (not POSIX) (:echo :echoctl) control codes (not TAB,  NL, START, STOP) are  echoed as ^X
-          ;; :defecho  nil ; (not POSIX, not linux) Echo only when a process is reading.
-          ;; :flusho   nil ; (not POSIX, not linux) output is flushed.  Toggled by the DISCARD character.
-          :noflsh   t ; Disable flushing input and output when signaling INT, QUIT and SUSP.
-          :tostop   nil ; sends SIGTTOU to processes who writes to this terminal.
-          ;; :pendin   nil ; (not POSIX, not linux) input queue is reprinted when next char is read.
-          :iexten   nil ; implementation-defined input-processing. To enable EOL2, LNEXT, REPRINT, WERASE, and IUCLC.
+         :isig    nil ; when the character INTR, QUIT, SUSP, or DSUSP are received, generate the signal.
+         :icanon  t   ; canonical mode.
+         ;; :xcase  nil ; (not POSIX) (and :icanon :xcase) => upper case terminal
+         :echoe   t   ;             (and :icanon :echoe) => ERASE and WERASE erase the previous character and word.
+         :echok   t   ;             (and :icanon :echok) => KILL  erase current line.
+         :echonl  nil ;             (and :icanon :echonl) => echo the NL  even when :echo is t.
+         :echoke  nil ;             (and :icanon :echoke) => KILL is echoed by erasing each character on the line (as specified by :echoe and :echoprt).
+         :echoprt nil ; (not POSIX) (and :icanon :iecho :echoprt) => characters are printed as they are erased. ( /a\  ??? )
+         :echo    t   ; echo of input characters
+         :echoctl nil ; (not POSIX) (:echo :echoctl) control codes (not TAB,  NL, START, STOP) are  echoed as ^X
+         ;; :defecho nil ; (not POSIX, not linux) Echo only when a process is reading.
+         ;; :flusho  nil ; (not POSIX, not linux) output is flushed.  Toggled by the DISCARD character.
+         :noflsh  t   ; Disable flushing input and output when signaling INT, QUIT and SUSP.
+         :tostop  nil ; sends SIGTTOU to processes who writes to this terminal.
+         ;; :pendin  nil ; (not POSIX, not linux) input queue is reprinted when next char is read.
+         :iexten  nil ; implementation-defined input-processing. To enable EOL2, LNEXT, REPRINT, WERASE, and IUCLC.
 
-          ;; Character control:
-          :vintr    0 ; SIGINT                                    needs :isig t
-          :vquit    0 ; SIGQUIT                                   needs :isig t
-          :vsusp    0 ; SIGSUSP                                   needs :isig t
-          ;; :vdsusp  0 ; (not POSIX, not LINUX) SIGSUSP when read  needs :isig t :iexten t
+         ;; Character control:
+         :vintr    0 ; SIGINT                                    needs :isig t
+         :vquit    0 ; SIGQUIT                                   needs :isig t
+         :vsusp    0 ; SIGSUSP                                   needs :isig t
+         ;; :vdsusp  0 ; (not POSIX, not LINUX) SIGSUSP when read  needs :isig t :iexten t
 
-          :vmin     1 ; minimum number of characters for noncanonical read       
-          :vtime    0 ; timeout in decisecond for noncanonical read
+         :vmin     1 ; minimum number of characters for noncanonical read       
+         :vtime    0 ; timeout in decisecond for noncanonical read
 
-          :verase   0 ; erase character                           needs :icanon t
-          :vkill    0 ; erase line                                needs :icanon t
-          :veof     0 ; send input buffer (= eof when empty)      needs :icanon t
-          :veol     0 ; additionnal end of line character         needs :icanon t
-          :veol2    0 ; yet additionnal end of line character     needs :icanon t (not POSIX)
-          :vwerase  0 ; (not POSIX) word erase                    needs :icanon t :iexten t
-          :vreprint 0 ; (not POSIX) reprint unread characters     needs :icanon t :iexten t
+         :verase   0 ; erase character                           needs :icanon t
+         :vkill    0 ; erase line                                needs :icanon t
+         :veof     0 ; send input buffer (= eof when empty)      needs :icanon t
+         :veol     0 ; additionnal end of line character         needs :icanon t
+         :veol2    0 ; yet additionnal end of line character     needs :icanon t (not POSIX)
+         :vwerase  0 ; (not POSIX) word erase                    needs :icanon t :iexten t
+         :vreprint 0 ; (not POSIX) reprint unread characters     needs :icanon t :iexten t
 
-          :vstart  0 ; The X-ON character                        needs :ixon
-          :vstop   0 ; The X-OFF character                       needs :ixon
+         :vstart  0 ; The X-ON character                        needs :ixon
+         :vstop   0 ; The X-OFF character                       needs :ixon
 
-          ;; :vswtch   0             ; (not POSIX, not linux) switch character.
-          ;; :vlnext   0             ; (not POSIX, not LINUX) literal next       needs :iexten t
-          ;; :vdiscard 0             ; (not POSIX, not LINUX) toggle start/stop discarding output needs :iexten t
-          ;; :vstatus  0             ; (not POSIX, not LINUX) status request
-          ))))
+         ;; :vswtch   0             ; (not POSIX, not linux) switch character.
+         ;; :vlnext   0             ; (not POSIX, not LINUX) literal next       needs :iexten t
+         ;; :vdiscard 0             ; (not POSIX, not LINUX) toggle start/stop discarding output needs :iexten t
+         ;; :vstatus  0             ; (not POSIX, not LINUX) status request
+         )
+        (iolib.serial:stty
+         input-file-descriptor
+         :raw     t
+
+         ;; Input control:
+         :istrip  nil ; strip off eigth bit (should be nil for utf-8 input)
+         :inlrc   nil ; translate NL to CR on input
+         :igncr   nil ; ignore CR  on input
+         :icrnl   nil ; translate CR to NL on input.
+         ;; :iuclc   nil ; map uppercase to lower (not POSIX).
+         :ixon    nil ; XON/XOFF flow control on output. ???
+         :ixoff   nil ; XON/XOFF flow control on input.
+         :ixany   nil ; Typing any character to restart stopped output.
+         :imaxbel nil ; Ring Bell when input queue is full.
+         :iutf8   nil ; UTF-8 input (for character erase in cooked mode).
+         ;; We don't process utf-8 on unix-terminal (we would have to decode utf-8 to implement erase ourselves in raw).
+
+         ;; Output control:
+         :opost   nil     ; implementation defined output processing.
+         ;; :olcuc   nil     ; map lowercase touppercase (not POSIX).
+         :onlcr   nil     ; map NL to CR-NL on output.
+         :ocrnl   nil     ; map CR to NL on output.
+         :onocr   t       ; output CR at column 0.
+         :onlret  nil     ; don't output CR (ie. output CR).
+         :ofill   nil ; send  fill characters for a delay (instead of timer).
+         ;; :ofdel   nil ; (not POSIX, not linux) fill character is NUL; t =  fill character is DEL.
+         :nldly   :nl0   ; Newline delay mask (member :nl0 :nl1)
+         :crdly   :cr0   ; CR delay mask (member :cr0 :cr1 :cr2 :cr3)
+         :tabdly  :tab0 ; TAB delay mask  (member :tab0 :tab1 :tab2 :tab3)
+         :bsdly   :bs0  ; Backspace delay mask (member :bs0 :bs1)
+         :vtdly   :vt0  ; Vertical tab delay mask (member :vt0 :vt1)
+         :ffdly   :ff0  ; Form feed delay mask (member :ff0 :ff1)
+
+         ;; For modem control:
+         ;; ;; :cbaud    speed mask
+         ;; ;; :cbaudex  speed mask
+         ;; :csize    :cs8 ; (member :cs5 :cs6 :cs7 :cs8)
+         ;; :cstopb   nil  ; set two stop bits
+         ;; :cread    t    ; receiver
+         ;; :parenb   nil  ; parity generation on  output and parity checking on input.
+         ;; :parodd   nil  ; if set then parity is odd otherwise parity is even.
+         ;; :hupcl    nil  ; lower modem control lines after last  process closes the device (hang-up).
+         ;; :clocal   t    ; ignore modem control lines.
+         ;; :loblk    nil  ; (not POSIX, not linux)
+         ;; ;; :cibaud   mask for input speed
+         ;; ;; :cmspar   use stick (mark/space) parity.
+         ;; :crtscts t    ;  hardware flow control.
+
+
+         ;; Line control:
+
+         ;; Some implementations cannot really deal with signals, or
+         ;; at all eg. on MS-Windows, so we'll do without them.
+         
+         :isig     nil ;  when the character INTR, QUIT, SUSP, or DSUSP are received, generate the signal.
+         :icanon   nil ; canonical mode.
+         ;; :xcase    nil ; (not POSIX) (and :icanon :xcase) => upper case terminal
+         :echoe    nil ;             (and :icanon :echoe) => ERASE and WERASE erase the previous character and word.
+         :echok    nil ;             (and :icanon :echok) => KILL  erase current line.
+         :echonl   nil ;             (and :icanon :echonl) =>  echo the NL  even when :echo is t.
+         :echoke   nil ;             (and :icanon :echoke) => KILL is echoed by erasing each character on the line (as specified by :echoe and :echoprt).
+         :echoprt  nil ; (not POSIX) (and :icanon :iecho :echoprt) => characters are printed as they are erased. ( /a\  ??? )
+         :echo     t   ; echo of input characters
+         :echoctl  nil ; (not POSIX) (:echo :echoctl) control codes (not TAB,  NL, START, STOP) are  echoed as ^X
+         ;; :defecho  nil ; (not POSIX, not linux) Echo only when a process is reading.
+         ;; :flusho   nil ; (not POSIX, not linux) output is flushed.  Toggled by the DISCARD character.
+         :noflsh   t ; Disable flushing input and output when signaling INT, QUIT and SUSP.
+         :tostop   nil ; sends SIGTTOU to processes who writes to this terminal.
+         ;; :pendin   nil ; (not POSIX, not linux) input queue is reprinted when next char is read.
+         :iexten   nil ; implementation-defined input-processing. To enable EOL2, LNEXT, REPRINT, WERASE, and IUCLC.
+
+         ;; Character control:
+         :vintr    0 ; SIGINT                                    needs :isig t
+         :vquit    0 ; SIGQUIT                                   needs :isig t
+         :vsusp    0 ; SIGSUSP                                   needs :isig t
+         ;; :vdsusp  0 ; (not POSIX, not LINUX) SIGSUSP when read  needs :isig t :iexten t
+
+         :vmin     1 ; minimum number of characters for noncanonical read       
+         :vtime    0 ; timeout in decisecond for noncanonical read
+
+         :verase   0 ; erase character                           needs :icanon t
+         :vkill    0 ; erase line                                needs :icanon t
+         :veof     0 ; send input buffer (= eof when empty)      needs :icanon t
+         :veol     0 ; additionnal end of line character         needs :icanon t
+         :veol2    0 ; yet additionnal end of line character     needs :icanon t (not POSIX)
+         :vwerase  0 ; (not POSIX) word erase                    needs :icanon t :iexten t
+         :vreprint 0 ; (not POSIX) reprint unread characters     needs :icanon t :iexten t
+
+         :vstart  0 ; The X-ON character                        needs :ixon
+         :vstop   0 ; The X-OFF character                       needs :ixon
+
+         ;; :vswtch   0             ; (not POSIX, not linux) switch character.
+         ;; :vlnext   0             ; (not POSIX, not LINUX) literal next       needs :iexten t
+         ;; :vdiscard 0             ; (not POSIX, not LINUX) toggle start/stop discarding output needs :iexten t
+         ;; :vstatus  0             ; (not POSIX, not LINUX) status request
+         )))
   terminal)
 
 
@@ -528,7 +543,6 @@ When true, the terminal works more like a modern unix terminal;
 (defun unix-signal (pid signum)
   (iolib.syscalls:kill pid signum))
 
-
 (defun read-one-char (terminal)
   ;; MITRA-15    UNIX          x
   ;; \           erase         to \"erase\" the previous character.
@@ -558,7 +572,10 @@ When true, the terminal works more like a modern unix terminal;
                (cond
                  ((= code veof)   #|close the stream|#)
                  ((= code veol)   (setf input-finished t) (terminal-write-string terminal " "))
-                 ((= code veol2)  (vector-push-extend ch buffer 1) (setf input-finished t))
+                 ((= code veol2)
+                  (unless (terminal-cr-as-xoff terminal)
+                    (vector-push-extend ch buffer 1))
+                  (setf input-finished t))
                  ((= code verase)
                   (when (plusp (fill-pointer buffer))
                     ;; when modern-mode, erase the character on display
@@ -577,7 +594,6 @@ When true, the terminal works more like a modern unix terminal;
                   )
                  (t
                   (vector-push-extend ch buffer (length buffer))))))))))))
-
 
 
 
@@ -605,14 +621,6 @@ When true, the terminal works more like a modern unix terminal;
               (when input-finished
                 (return (finish)))))))))
 
-
-(defgrammar donnee-lse
-    :terminals ((nombre " *[-+]?[0-9]+(.[0-9]+([Ee][-+]?[0-9]+?)?)?($| *)"))
-    :skip-spaces nil
-    :start donnee-lse
-    :rules ((--> donnee-lse
-                 nombre :action (multiple-value-list
-                                 (read-from-string (second $1))))))
 
 
 (defmethod terminal-read ((terminal unix-terminal) &key (echo t) (beep nil))
@@ -642,6 +650,29 @@ When true, the terminal works more like a modern unix terminal;
               (read-one-char terminal)
               (when input-finished
                 (return (finish)))))))))
+
+
+(defmethod terminal-key ((terminal unix-terminal) keysym)
+  (declare (ignorable terminal))
+  (let ((code (funcall (ecase keysym
+                         (:escape    (function terminal-vintr))
+                         (:attention (function terminal-vquit))
+                         (:xoff      (function terminal-veol))
+                         (:delete    (function terminal-verase)))
+                       terminal)))
+    (cond
+      ((or (null code) (zerop code)) "(PAS DISPONIBLE)")
+      ((= code  13) "[ENTRÉE]")
+      ((= code  27) "[ÉCHAPEMENT]")
+      ((< code  32) (format nil "[CONTROL-~C]"
+                            (code-char (logand #x7f (+ 64 code)))))
+      ((= code  32) "[ESPACE]")
+      ((= code 127) "[EFFACEMENT]")
+      (t (format nil "[~A]" (code-char code))))))
+
+
+
+
 
 
 (defun test/unix-terminal ()

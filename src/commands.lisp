@@ -48,6 +48,15 @@
 ;; and we don't keep tabulation because it's not valid.
 
 
+(defgrammar donnee-lse
+    ;; Note: this is used to read numbers by LIRE (terminal-read).
+    :terminals ((nombre " *[-+]?[0-9]+(.[0-9]+([Ee][-+]?[0-9]+?)?)?($| *)"))
+    :skip-spaces nil
+    :start donnee-lse
+    :rules ((--> donnee-lse
+                 nombre :action (multiple-value-list
+                                 (read-from-string (second $1))))))
+
 (defgrammar numero-de-ligne
     :terminals    ((tok-numero  "[0-9]+"))
     :start numero-de-ligne
@@ -92,7 +101,6 @@
                  :action (if $1
                              $1
                              (list 1 nil)))))
-
 
 
 (defgrammar liste-de-numeros
@@ -204,8 +212,6 @@
                  :action $1)))
 
 
-
-
 (defgrammar deux-fichiers
     :terminals ((tok-virgule ",")
                 (tok-identificateur "[A-Za-z][A-Za-z0-9]*"))
@@ -225,6 +231,7 @@
                       ;;           text)
                       :action (second $1))
                  :action $1)))
+
 
 
 
@@ -267,6 +274,25 @@
 ;;                  :action (list (chaine-valeur (make-instance 'tok-chaine
 ;;                                                   :kind 'tok-chaine
 ;;                                                   :text (second chaine)))))))
+
+
+(defparameter *syntaxes*
+  '((numero-de-ligne              . "<N>")
+    (un-numero                    . "<N>")
+    (deux-numeros                 . "<N1>,<N2>")
+    (deux-numeros-optionels       . "[<N1>[,<N2>]]")
+    (liste-de-numeros             . "* | <N1>[,<N2>[...,<Nn>]...] | <N1> A <N2>")
+    (un-programme                 . "<NOMPG>")
+    (un-fichier                   . "<NOMFI>")
+    (deux-fichiers                . "<NOMF1>,<NOMF2>")
+    (un-fichier-et-deux-numeros   . "<NOMFI>[,<N1>[,<N2>]]")
+    (une-ligne                    . "<TEXTE>")
+    (arguments-supprimer          . "* | <NOMFI>,P|D|T")))
+
+(defun syntax (grammar-name)
+  (cdr (assoc grammar-name *syntaxes*)))
+
+
 
 (defun parse-une-ligne (ligne) (list ligne))
 
@@ -317,130 +343,7 @@
   :success)
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; LSE Documentation
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-(defparameter *chapters* (make-hash-table :test (function equalp)))
-(defun find-chapter (title) (gethash title *chapters*))
-
-(defstruct chapter
-  title
-  text)
-
-(defmacro defchapter (title &rest text)
-  `(setf (gethash ',title *chapters*)
-         (make-chapter :title ',title
-                       :text ',(unsplit-string text #\Newline))))
-
-
-
-(defchapter "GARANTIE"
-    "
-Système L.S.E
-Copyright (C) 2012 Pascal Bourguignon
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"
-  )
-
-(defchapter "COPIE"
-    #.*license*
-  )
-
-(defchapter "SOURCES"
-    "
-Les sources de ce programme sont disponibles sous license AGPLv3
-à l'adresse suivante:
-http://www.ogamita.com/lse/
-")
-
-
-(defchapter "INSTRUCTIONS"
-    "Voici la liste des instructions disponibles.  
-
-Taper DO)CUMENTATION <instruction> pour avoir la documentation de
-chaque instruction:
-
-affectation            ref ← expression
-appel                  &procid(arguments…)
-liberer                LIBERER id1,…,idn      
-lire                   LIRE id1,…,idn            
-afficher               AFFICHER [format]expr…
-alleren                ALLER EN lino
-si                     SI condition ALORS instruction [SINON instruction]
-debut                  DEBUG instruction;… FIN
-fairejusqua            FAIRE lino POUR var←expri [PAS exprp] JUSQUA exprf
-fairetantque           FAIRE lino POUR var←expri [PAS exprp] TANT QUE exprb
-retour                 RETOUR
-retouren               RETOUR EN lino
-resultat               RESULTAT expr
-garer                  GARER 
-charger                CHARGER
-supprimer              SUPPRIMER
-executer               EXCUTER
-pause                  PAUSE
-terminer               TERMINER
-")
-
-(defchapter "FONCTIONS"
-    "Voici la liste des fonctions disponibles.  
-
-Taper DO)CUMENTATION <fonction> pour avoir la documentation de
-chaque fonction.
-
-PLUS                   a+b, somme de deux nombres;
-MOINS                  a-b, différence de deux nombres;
-NEGATION               -a, négation unaire;
-FOIS                   a*b, produit de deux nombres;
-DIVISE                 a/b, quotient de deux nombres;
-PUISSANCE              a↑b, puissance;
-CONCATENATION          a!b, concatenation de deux chaînes;
-SITERNAIRE             SI condition ALORS expr1 SINON expr2;
-COMPARAISONS           a<b, a<=b, a>b, a>=b, a=b, a#b;
-CONJONCTION            comparaison1 ET comparaison2;
-DISJONCTION            conjonction OU conjonection;
-NEGATION               NON condition;
-
-ENT                    ENT(expr), partie entière;
-ABS                    ABS(expr), valeur absolue;
-EXP                    EXP(expr), exponentiation: e↑expr;
-SIN                    SIN(expr), sinus;
-COS                    COS(expr), cosinus;
-ATG                    ATG(expr), arc tangente;
-RAC                    RAC(expr), racine carrée;
-LGN                    LGN(expr), logarithme népérien;
-ALE                    ALE(expr), valeur aléatoire;
-ATT                    ATT(), signal d'attention utilisateur;
-ETL                    ETL(expr1,expr2), ET Logique;
-OUL                    OUL(expr1,expr2), OU Logique;
-OXL                    OXL(expr1,expr2), OU exclusif Logique;
-TEM                    TEM(), temps;
-DAT                    DAT(), chaîne date;
-LGR                    LGR(ch), longueur chaine;
-POS                    POS(ch,de,sc), position sous-chaîne;
-EQN                    EQN(ch), équivalent numérique;
-EQC                    EQC(ch), équivalent caractère;
-CCA                    CCA(ca), conversion en caractères;
-CNB                    CNB(ch,de), conversion en nombre;
-SCH                    SCH(ch,de,fi), sous-chaîne;
-SKP                    SKP(ch,de[,ev]), saut;
-PTR                    PTR(ch,de[,ev]), pointeur;
-GRL                    GRL(ch,de), groupe de lettres;
-
-")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; LSE Commands
@@ -476,16 +379,20 @@ GRL                    GRL(ch,de), groupe de lettres;
         (setf (cdr entry) command-group)
         (push (cons name command-group) *command-groups*))))
 
-(defgeneric find-command (command group)
-  (:method ((command command) (group command-group))
-    (find-command (command-initials command) group))
-  (:method ((command string) (group command-group))
+(defgeneric find-command (command group &key in-extenso) 
+  (:method ((command command) (group command-group) &key (in-extenso nil))
+    (find-command (if in-extenso
+                      (command-name command)
+                      (command-initials command))
+                  group :in-extenso in-extenso))
+  (:method ((command string) (group command-group) &key (in-extenso nil))
     (or (find command (command-group-commands group)
-              :test
-              #-LSE-CASE-INSENSITIVE (function string=)
-              #+LSE-CASE-INSENSITIVE (function string-equal)
-              :key (function command-initials))
-        (some (lambda (supergroup) (find-command command (symbol-value supergroup)))
+              :test (function string-equal)
+              :key (if in-extenso
+                       (function command-name)
+                       (function command-initials)))
+        (some (lambda (supergroup) (find-command command (symbol-value supergroup)
+                                                 :in-extenso in-extenso))
               (command-group-supergroups group)))))
 
 
@@ -510,7 +417,8 @@ GRL                    GRL(ch,de), groupe de lettres;
           (error "There's no command group named ~S" group))))
   (:method ((command command) (group command-group))
     (let* ((duplicate (find-command command group)))
-      (when duplicate
+      (when (and duplicate
+                 (string/= (command-name command) (command-name duplicate)))
         (error "There is already a command with same initials as ~S: ~S."
                (command-name command)
                (command-name duplicate))))
@@ -632,6 +540,7 @@ Bound by COMMAND-EVAL-LINE.")
 
 
 (define-command-group common   ())
+#-lse-unix
 (define-command-group sleeping (common))
 (define-command-group awake    (common))
 
@@ -640,59 +549,67 @@ Bound by COMMAND-EVAL-LINE.")
 ;;; Commands common to all states.
 ;;;---------------------------------------------------------------------
 
+(format nil "~20<~>")
+
+
 (defcommand "AIDER" common nil ()
-  "Affiche la liste des commandes."
+  "Affiche la liste des commandes disponibles."
   (io-format *task* "~%LES COMMANDES DISPONIBLES SONT:~2%")
   (let ((*print-right-margin* 80))
     (dolist (command (all-commands *command-group*))
-      (io-format *task* "~A)~20A ~{~{~<~%                        ~1,80:;~A~> ~}~^~%                        ~}~%"
+      (io-format *task* "~A)~20A ~{~{~<~%~24<~>~1,80:;~A~> ~}~^~%~24<~>~}~%"
                  (command-initials command)
                  (subseq (command-name command) 2)
                  (mapcar (lambda (line) (split-sequence #\Space line))
-                         (split-sequence #\Newline (command-oneliner command))))))
-  (io-format *task* "~&POUR ENTRER UNE COMMANDE, TAPEZ SES DEUX ~
-                         PREMIERES LETTRES, SUIVIES DE CTRL-S.~
-                       ~&POUR ANNULER UN CARACTERE, TAPEZ \\.~%"))
-
+                         (split-sequence #\Newline (process-doc (command-oneliner command)))))))
+  (io-format *task* (process-doc "~%POUR ENTRER UNE COMMANDE, TAPEZ SES DEUX ~
+                                    PREMIERES LETTRES, SUIVIES DE [XOFF].~
+                                  ~%POUR ANNULER UN CARACTERE, TAPEZ [DEL].~%")))
 
 
 (defcommand "DOCUMENTATION" common une-ligne (what)
   "Affiche la documentation d'une commande ou d'une instruction."
-  (cond
-    ((let ((command (find-command what *command-group*)))
-       (when command
-         (io-format *task* "~%~A)~20A ~{~{~<~%                        ~1,80:;~A~> ~}~^~%                        ~}~%"
-                    (command-initials command)
-                    (subseq (command-name command) 2)
-                    (mapcar (lambda (line) (split-sequence #\Space line))
-                            (split-sequence #\Newline (command-documentation command))))
-         t)))
-    ((let ((chapter (find-chapter what)))
-       (when chapter
-         (io-format *task* "~%~A~%~V,,,'-A~2%~{~{~<~%~1,80:;~A~> ~}~%~}~%"
-                    (chapter-title chapter)
-                    (length (chapter-title chapter))
-                    ""
-                    (mapcar (lambda (line) (split-sequence #\Space line))
-                            (split-sequence #\Newline (chapter-text chapter))))
-         t)))
-    (t
-     (io-format *task*
-                "~%Il n'y a pas de documentation pour ~S~
-                   ~%Essayez les commandes suivantes:~
-                   ~%DO)CUMENTATION GARANTIE       indique qu'aucune garantie n'est assurée;~
-                   ~%DO)CUMENTATION COPIE          donne la license et votre liberté de copier;~
-                   ~%DO)CUMENTATION SOURCES        où trouver les sources de ce programme;~
-                   ~%DO)CUMENTATION INSTRUCTIONS   donne la liste des instructions;~
-                   ~%DO)CUMENTATION FONCTIONS      donne la liste des fonctions;~
-                   ~%AI)DE                         donne la liste des commandes.~2%"
-                what))))
+  (let ((width (terminal-columns (task-terminal *task*))))
+    (cond
+      ((string-equal what "COMMANDES") (aider))
+      ((let ((command (or (find-command what *command-group* :in-extenso nil)
+                          (find-command what *command-group* :in-extenso t))))
+         (when command
+           (io-format *task* "~2%~A)~A ~@[~A~]~2%"
+                      (command-initials command)
+                      (subseq (command-name command) 2)
+                      (syntax (command-grammar command)))
+           (write-documentation *task* (command-documentation command))
+           t)))
+      ((let ((chapter (find-chapter what)))
+         (when chapter
+           (io-format *task* "~2%~A~%~V,,,'-<~>~2%"
+                      (chapter-title chapter)
+                      (length (chapter-title chapter)))
+           (if (stringp (chapter-text chapter))
+               (write-documentation *task* (chapter-text chapter))
+               (funcall (chapter-text chapter) chapter))
+           t)))
+      (t
+       (io-format *task*
+                  "~A"
+                  (process-doc
+                   (format nil "~2%Il n'y a pas de documentation pour ~S~%~A~%"
+                           what
+                           "Essayez les commandes suivantes:
+DO)CUMENTATION GARANTIE       indique qu'aucune garantie n'est assurée;
+DO)CUMENTATION COPIE          donne la license et votre liberté de copier;
+DO)CUMENTATION SOURCES        où trouver les sources de ce programme;
+DO)CUMENTATION INSTRUCTIONS   donne la liste des instructions;
+DO)CUMENTATION FONCTIONS      donne la liste des fonctions;
+DO)CUMENTATION COMMANDES      donne la liste des commandes;
+AI)DE                         donne la liste des commandes.")))))))
 
-
+#-lse-unix
 (defcommand "IDENTIFICATION" common un-numero (identification)
   "Permet à l'utilisateur de s'identifier."
   (declare (ignore identification))
-  (error 'pas-implemente 'identification)
+  (error 'pas-implemente :what 'identification)
   ;;     void lse_cmd_identification(lse_travail_t* travail)
   ;;     {
   ;;         lse_cmd_parser_t parser;
@@ -788,8 +705,7 @@ Bound by COMMAND-EVAL-LINE.")
   (values))
 
 
-
-
+#-lse-unix
 (defcommand "DROITS" sleeping nil ()
   "Gestion des droits d'accès des comptes."
   (io-format *task* " ")
@@ -803,12 +719,12 @@ Bound by COMMAND-EVAL-LINE.")
     :for line = (progn (io-new-line *task*)
                        (io-format *task* "COMPTE NO. : ") ;
                        (io-read-line *task*))
-    :until (string= line "FIN")
+    :until (string-equal line "FIN")
     :do
     (setf account (if (zerop (length line))
                       (mod (1+ account) 100)
                       (parse-integer line :junk-allowed nil)))
-    (when (<= 0 account 99)
+    (if (<= 0 account 99)
       (let ((op (account-check-right account :programme))
             (od (account-check-right account :permanent))
             (oa (account-check-right account :tempoauto))
@@ -835,10 +751,12 @@ Bound by COMMAND-EVAL-LINE.")
         (io-carriage-return *task*)
         (io-format *task*
                    "   ~2,'0D       ~{~[0~;1~]~}      ~{~[0~;1~]~}    "
-                   account (list op od oa of) (list np nd na nf)) )))
+                   account (list op od oa of) (list np nd na nf)) )
+      (io-format *task* "NO. DE COMPTE INVALIDE (DOIT ETRE UN NOMBRE ENTRE 00 et 99).~%")))
   (io-new-line *task*))
 
 
+#-lse-unix
 (defcommand "BONJOUR" sleeping nil ()
   "Activation du mode de travail."
   (io-new-line *task* 2)
@@ -846,7 +764,7 @@ Bound by COMMAND-EVAL-LINE.")
              (task-console *task*) (dat))
   (setf (task-state *task*) :active))
 
-
+#-lse-unix
 (defcommand "ADIEUX" sleeping nil ()
   "Déconnexion."
   (io-new-line *task*)
@@ -915,11 +833,13 @@ Bound by COMMAND-EVAL-LINE.")
   ())
 
 (defcommand "AU REVOIR" awake nil ()
-  "Efface les fichiers temporaires, et passe à l'état dormant."
+  #+lse-unix "Efface les fichiers temporaires, et quite le système L.S.E."
+  #-lse-unix "Efface les fichiers temporaires, et passe à l'état dormant."
   #+lse-unix "La commande AU REVOIR annonce au système qu'il
 peut effacer les fichiers temporaires, et quitter le système L.S.E."
-  #-lse-unix "La commande AU REVOIR retourne à l'état dormant,
-en attente d'une nouvelle connexion (via la commande BONJOUR)."
+  #-lse-unix "La commande AU REVOIR efface les fichiers temporaires et
+retourne à l'état dormant, en attente d'une nouvelle connexion (via la
+commande BONJOUR)."
   (io-format *task* "  ~8A" (subseq (dat) 9))
   (io-new-line *task* 3)
   (io-finish-output *task*)
@@ -944,6 +864,10 @@ en attente d'une nouvelle connexion (via la commande BONJOUR)."
 
 (defcommand "LISTER A PARTIR DE" awake   deux-numeros-optionels (from to)
   "Affiche le programme courant."
+  "Fait afficher le programme courant de l'utilisateur, à partir de la
+ligne N1 jusqu'à la ligne N2, si N2 est présent, sinon jusqu'à la fin.
+En cours de listage, la touche d'interruption [ESC] peut être utilisée
+pour l'arrêter.  "
   (io-new-line *task*)
   (io-format *task* "~{~A~%~}"
              (mapcar (function code-source)
@@ -951,6 +875,8 @@ en attente d'une nouvelle connexion (via la commande BONJOUR)."
 
 (defcommand "NUMERO A PARTIR DE" awake   deux-numeros-optionels (from to)
   "Affiche les numéros de lignes utilisés."
+  "Fait afficher les numéros de lignes utilisés à partir du numéro N1
+jusqu'au numéro N2, si N2 est présent, sinon jusqu'à la fin"
   (io-new-line *task*)
   (io-format *task* "~{~A~%~}"
              (mapcar (function code-line)
@@ -959,6 +885,10 @@ en attente d'une nouvelle connexion (via la commande BONJOUR)."
 
 (defcommand "EFFACER LIGNES" awake liste-de-numeros (liste-de-numeros)
   "Efface les lignes indiquées."
+  "Si * est donné, efface tout le programme courant de l'utilisateur.
+Sinon supprime les lignes dont les numéros sont indiqués par N1, N2,
+... Nn, ou les lignes de numéro N1 à N2 inclus, dans le programme
+courant de l'utilisateur."
   (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (if (eql :all liste-de-numeros)
@@ -974,7 +904,7 @@ en attente d'une nouvelle connexion (via la commande BONJOUR)."
                 :do (erase-line-number vm lino))
               (erase-line-number vm item))))))
 
-
+#-(and)
 (defcommand "ELIMINER COMMENTAIRES" awake  nil ()
   "Elimine les commentaires."
   (io-new-line *task*)
@@ -1012,8 +942,14 @@ en attente d'une nouvelle connexion (via la commande BONJOUR)."
                  comment))
     (io-new-line *task*)))
 
+
 (defcommand "ETAGERE DE RUBANS" awake  une-ligne (chemin) 
   "Selectionne une étagère de rubans perforés."
+  "Les rubans perforés sont simulés par des fichiers.  Ils sont
+conservés sur des \"étagère\", c'est à dire, enregistrés dans des répertoires.
+
+Cette commande permet de sélectionner le répertoire où les rubans
+perforés sont enregistrés."
   (io-new-line *task*)
   (when (and (stringp chemin)
              (< 1 (length chemin))
@@ -1025,6 +961,7 @@ en attente d'une nouvelle connexion (via la commande BONJOUR)."
                    :defaults (merge-pathnames chemin *current-directory*))))
   (io-format *task* "~&L'ETAGERE DE RUBAN COURANTE EST: ~A~%" *current-shelf*)
   (lister-rubans))
+
 
 (defcommand "SELECTIONNER RUBAN" awake un-fichier (ruban)
   "Selectionne un ruban de l'étagère et le place dans le lecteur de ruban."
@@ -1038,6 +975,7 @@ en attente d'une nouvelle connexion (via la commande BONJOUR)."
 
 (defcommand "RUBAN" awake nil ()
   "Active la lecture du ruban perforé."
+  "Cette commande déclenche le lecteur de ruban de la télétype."
   (io-new-line *task*)
   (silence)
   (io-start-tape-reader *task*))
@@ -1058,12 +996,30 @@ en attente d'une nouvelle connexion (via la commande BONJOUR)."
 
 (defcommand "PERFORER A PARTIR DE" awake deux-numeros-optionels (from to)
   "Perfore le programme courant sur ruban perforé."
+  "Permet d'obtenir un ruban perforé comme support du programme
+L.S.E. rentré à la console.
+
+Cette commande simule le ruban perforé en écrivant sur un fichier
+temporaire.  Le ruban ainsi perforé peut alors être archivé sur une
+étagère avec la commande ARCHIVER RUBAN.
+
+Le programme est perforé à partir de la ligne N1 jusqu'à la ligne N2,
+si N2 est présent sinon jusqu'à la fin."
+  #-(and) "Permet d'obtenir un ruban perforé comme support du programme
+L.S.E. rentré à la console.
+
+Cette commande n'est effective que pour l'utilisateur travaillant sur
+la télétype (TTY).
+
+Le programme est perforé à partir de la ligne N1 jusqu'à la ligne N2,
+si N2 est présent sinon jusqu'à la fin."
   (io-new-line *task*)
   (io-start-tape-puncher *task*)
   (unwind-protect (lister-a-partir-de from to)
     (io-stop-tape-puncher *task*))
   (punch "PERFORATION EFFECTUEE")
   (io-format *task* "~&PERFORATION EFFECTUEE.~%"))
+
 
 (defcommand "ARCHIVER RUBAN" awake un-fichier (ruban)
   "Nomme le ruban qui vient d'être perforé et l'archive sur l'étagère."
@@ -1091,16 +1047,17 @@ en attente d'une nouvelle connexion (via la commande BONJOUR)."
 
 
 (defcommand "SILENCE" awake  nil ()
+  "Supprime l'affichage de tout ce que l'utilisateur tape au clavier."
   "Supprime l'affichage de tout ce que l'utilisateur tape au clavier.
-L'effet de cette commande est annulé par la touche ESC."
+L'effet de cette commande est annulé par la touche [ESC] ou par
+commande ECHO."
   (io-new-line *task*)
-  (setf (io-echo      *task*) nil)
   (setf (task-silence *task*) t))
 
-(defcommand "UNSILENCE" awake  nil ()
+
+(defcommand "ECHO" awake  nil ()
   "Active l'affichage de tout ce que l'utilisateur tape au clavier."
   (io-new-line *task*)
-  (setf (io-echo      *task*) t)
   (setf (task-silence *task*) nil))
 
 
@@ -1109,7 +1066,7 @@ L'effet de cette commande est annulé par la touche ESC."
 
 (defcommand "PAS A PAS" awake   nil ()
   "Exécution du programme pas-à-pas."
-  #+lse-unix "Peut être utilisée avant EXECUTER, CONTINUER, REPRENDRE.
+  "Peut être utilisée avant EXECUTER, CONTINUER, REPRENDRE.
 
 Fait arrêter l'exécution au début de chaque ligne.  La console repasse
 alors dans l'état «moniteur» et affiche le numéro de la ligne
@@ -1123,6 +1080,7 @@ commande CONTINUER.
   (io-new-line *task*)
   (setf (vm-pas-a-pas (task-vm *task*)) t))
 
+
 (defcommand "NORMAL" awake      nil ()
   "Annule la commande PAS A PAS."
   (io-new-line *task*)
@@ -1131,6 +1089,25 @@ commande CONTINUER.
 
 (defcommand "EXECUTER A PARTIR DE" awake deux-numeros-optionels (from to)
   "Exécute le programme."
+  "Fait passer la console de l'état «moniteur» à l'état «exécution».
+
+Fait exécuter le programme courant de l'utilisateur à partir de la
+ligne de numéro N1 (si aucune ligne de numéro N1 existe, une erreur
+sera détectée).
+
+L'exécution se poursuivra jusqu'à ce qu'on arrive :
+
+- soit à la ligne de numéro N2 ; cette ligne ne sera pas exécutée, la
+  console repassera dans l'état «mooniteur» et affichera N2.
+
+- soit à l'une des instructions LSE : PAUSE ou TERMINER ou à une
+  erreur.  La console repassera dans l'état «moniteur» et affichera un
+  message indiquant la cause de l'arrêt et le numéro de la ligne où il
+  s'est produit.  Éventuellement, en cas d'arrêt dans une procédure,
+  le numéro de la ligne où l'on avait appelé cette procédure.
+
+- L'utilisation de la touche d'interruption [ESC] arrête également
+  l'exécution."
   (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (unless (or (null to) (vm-line-exist-p vm to))
@@ -1139,24 +1116,39 @@ commande CONTINUER.
       (vm-reset-variables vm))
     (setf (vm-trap-line vm) to)
     (catch 'run-step-done (vm-goto vm from))
-    (vm-run vm)))
+    (vm-run vm)
+    (setf (task-pas-a-pas-first *task*) (task-pas-a-pas *task*))))
 
 
 (defcommand "CONTINUER" awake             nil ()
   "Continue l'exécution du programme après une pause."
+  "Permet de relancer l'exécution d'un programme momentanément
+interroompu par l'instruction PAUSE ou la touche d'interruption
+[ESC].  L'exécution reprend à l'endroit où elle fut arrêtée."
   (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (if (vm-pausedp vm)
         (progn
           (setf (vm-trap-line vm) nil)
           (vm-unpause vm)
-          (vm-run vm))
+          (vm-run vm)
+          (setf (task-pas-a-pas-first *task*) (task-pas-a-pas *task*)))
         (error 'lse-error
                :format-control "ON NE PEUT PAS CONTINUER UN PROGRAMME QUI N'EST PAS EN PAUSE."))))
 
 
 (defcommand "REPRENDRE A PARTIR DE" awake deux-numeros-optionels (from to)
   "Reprend l'exécution du programme après une pause."
+  "Permet de reprendre l'exécution sur une ligne différente de celle
+où elle fut interrompue.
+
+- Les parametres N1 et N2 ont la même signification que ceux de la
+  commande EXECUTER, mais la commande REPRENDRE ne change pas
+  l'affectatioon des indentificateurs.  Toutes les valeurs antérieures
+  à l'interruption sont conservées.
+
+L'exécution du programme est toujours reprise au niveau principal
+\(même si le programme avait été interrompu dans une procédure)."
   (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (unless (or (null to) (vm-line-exist-p vm to))
@@ -1165,11 +1157,13 @@ commande CONTINUER.
       (vm-reset-stacks vm))
     (setf (vm-trap-line vm) to)
     (catch 'run-step-done (vm-goto vm from))
-    (vm-run vm)))
+    (vm-run vm)
+    (setf (task-pas-a-pas-first *task*) (task-pas-a-pas *task*))))
 
 
 (defcommand "POURSUIVRE JUSQU'EN" awake   numero-de-ligne (linum)
   "Continue l'exécution du programme jusqu'à la ligne indiquée."
+  "Relance l'exécution comme CONTINUER, mais avec un arrêt en ligne N."
   (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (unless (or (null linum) (vm-line-exist-p vm linum))
@@ -1178,7 +1172,8 @@ commande CONTINUER.
         (progn
           (setf (vm-trap-line vm) linum)
           (vm-unpause vm)
-          (vm-run vm))
+          (vm-run vm)
+          (setf (task-pas-a-pas-first *task*) (task-pas-a-pas *task*)))
         (error 'lse-error
                :format-control "ON NE PEUT PAS POURSUIVRE UN PROGRAMME QUI N'EST PAS EN PAUSE."))))
 
@@ -1205,6 +1200,15 @@ Sur MITRA 15, l'état des variables est également transféré."
 
 (defcommand "APPELER" awake  un-programme (pgm)
   "Charge un fichier programme en mémoire."
+  "Commande d'appel d'un programme déjà sur le disque.
+
+Le fichier programme dont le nom NOMPG est indiqué dans le répertoire
+courant est chargé en mémoire, remplaçant le programme courant.
+L'utilisateur peut alors l'exécuter, le lister, le modifier, etc.
+
+Voir les commandes AFFICHER REPERTOIRE, CHANGER REPERTOIRE, RANGER,
+MODIFIER."
+  
   (io-new-line *task*)
   (let* ((path      (catalog-pathname pgm :p))
          (vm        (task-vm *task*)))
@@ -1214,6 +1218,14 @@ Sur MITRA 15, l'état des variables est également transféré."
 
 (defcommand "RANGER" awake un-programme (pgm)
   "Enregistre le programme courant dans un nouveau fichier programme."
+  "Permet de ranger sur le disque un programme utilisateur.
+
+Le programme courant est enregistré dans un fichier de nom NOMPG
+indiqué, dans le répertoire courant.  Le fichier doit préalablement ne
+pas exister, et sera créé.
+
+Voir les commandes AFFICHER REPERTOIRE, CHANGER REPERTOIRE, TABLE DES
+FICHIERS, APPELER, MODIFIER."
   (io-new-line *task*)
   (let* ((path      (catalog-pathname pgm :p))
          (vm        (task-vm *task*))
@@ -1236,8 +1248,18 @@ Sur MITRA 15, l'état des variables est également transféré."
                :format-arguments '()))
     (values)))
 
+
 (defcommand "MODIFIER" awake  un-programme (pgm)
   "Enregistre le programme courant dans un fichier programme existant."
+  "Permet de ranger sur le disque un programme utilisateur.
+
+Le programme courant est enregistré dans un fichier de nom NOMPG
+indiqué, dans le répertoire courant.  Le fichier doit exister
+préalablement, et il est mis à jour par le nouveau programme.
+
+Voir les commandes AFFICHER REPERTOIRE, CHANGER REPERTOIRE, TABLE DES
+FICHIERS, APPELER, RANGER."
+  
   (io-new-line *task*)
   (let* ((path      (catalog-pathname pgm :p))
          (vm        (task-vm *task*))
@@ -1263,6 +1285,7 @@ Sur MITRA 15, l'état des variables est également transféré."
   (defparameter *xoff* (code-char xoff))
   (defparameter *nul*  (code-char nul)))
 
+
 (defun split-size (string size)
   (loop
     :with len = (length string)
@@ -1270,8 +1293,57 @@ Sur MITRA 15, l'état des variables est également transféré."
     :collect (subseq string start (min (+ start size) len))))
 
 
+(defcommand "DECODER" awake un-fichier-et-deux-numeros (fichier &optional (from 1) (to nil))
+  "Enregistre le programme dans un fichier donnée."
+
+  "Le programme courant est garé en fichier temporaire sous le nom
+NOMFI, depuis la ligne N1 jusqu'à la ligne N2.
+
+Si N2 est omis, on rangera de la ligne N1 jusqu'à la dernière ligne du
+programme.
+
+Si N1 et N2 sont omis, on rangera tout le programme de l'utilisateur.
+
+Le programme est rangé sous forme de chaîne de caractères, chaque
+ligne étant terminé par un code X-OFF (19) et avec un code NUL (0) à
+la fin, dans des enregistrements consécutifs partant du numéro 1.
+
+Voir les commandes ENCODER, APPELER, RANGER, MODIFIER."
+  (io-new-line *task*)
+  (let* ((path      (catalog-pathname fichier :T))
+         (vm        (task-vm *task*))
+         (source    (get-program vm from to)))
+    (if source
+        (let ((buffer (unsplit-string (mapcar (function code-source) source)
+                                      *xoff*
+                                      :fill-pointer t :size-increment 2)))
+          (vector-push *xoff* buffer)
+          (vector-push *nul*  buffer)
+          (let ((file (lse-data-file-open path
+                                          :if-exists :supersede
+                                          :if-does-not-exist :create)))
+            (unwind-protect
+                 (loop
+                   :for rn :from 1
+                   :for chunk :in (split-size buffer *max-record-chaine-size*)
+                   :do (write-record file rn chunk))
+              (lse-data-file-close file))))
+        (error 'lse-error
+               :format-control "IL N'Y A PAS DE PROGRAMME A DECODER."
+               :format-arguments '()))
+    (values)))
+
+
 (defcommand "ENCODER" awake un-fichier-et-deux-numeros (fichier &optional (from 1) (to nil))
   "Charge un programme à partir d'un fichier donnée."
+
+  "Cette commande est la commande symétrique de DECODER, les
+parametres NOMFI, N1 et N2 on la même signfication.
+
+Cette commande consiste à lire les instructions contenues dans le
+fichier à décoder et à les compiler.
+
+Voir les commandes DECODER, APPELER, RANGER, MODIFIER."
   (io-new-line *task*)
   (let* ((path      (catalog-pathname fichier :T))
          (vm        (task-vm *task*)))
@@ -1303,35 +1375,18 @@ Sur MITRA 15, l'état des variables est également transféré."
                  :format-arguments (list fichier))))))
 
 
-(defcommand "DECODER" awake un-fichier-et-deux-numeros (fichier &optional (from 1) (to nil))
-  "Enregistre le programme dans un fichier donnée."
-  (io-new-line *task*)
-  (let* ((path      (catalog-pathname fichier :T))
-         (vm        (task-vm *task*))
-         (source    (get-program vm from to)))
-    (if source
-        (let ((buffer (unsplit-string (mapcar (function code-source) source)
-                                      *xoff*
-                                      :fill-pointer t :size-increment 2)))
-          (vector-push *xoff* buffer)
-          (vector-push *nul*  buffer)
-          (let ((file (lse-data-file-open path
-                                          :if-exists :supersede
-                                          :if-does-not-exist :create)))
-            (unwind-protect
-                 (loop
-                   :for rn :from 1
-                   :for chunk :in (split-size buffer *max-record-chaine-size*)
-                   :do (write-record file rn chunk))
-              (lse-data-file-close file))))
-        (error 'lse-error
-               :format-control "IL N'Y A PAS DE PROGRAMME A DECODER."
-               :format-arguments '()))
-    (values)))
-
-
 (defcommand "CATALOGUER" awake  deux-fichiers (temporaire permanent)
   "Copie un fichier temporaire dans un fichier permanent."
+
+  "NOMF1 est un fichier temporaire existant.  NOMF2 est un fichier permanent.
+
+Cette commande permet de mettre en bibliothèque sous le nom NOMF2 le
+fichier données NOMF1 qui devient donc un fichier permanent.
+
+Les fichiers permanents sont garés dans le répertoire courant.
+
+Voir les commandes: AFFICHER REPERTOIRE, CHANGER REPERTOIRE, TABLE DES
+FICHIERS."
   (io-new-line *task*)
   (let ((src-path (catalog-pathname temporaire :t))
         (dst-path (catalog-pathname permanent  :d)))
@@ -1377,18 +1432,26 @@ Sur MITRA 15, l'état des variables est également transféré."
 
 (defcommand "SUPPRIMER" awake arguments-supprimer (fichier &optional fictype)
   "Supprime un fichier de type indiqué, ou supprime tous les fichiers temporaires (*)."
+  "
+SUPPRIMER * supprime tous les fichiers temporaires.
+
+SUPPRIMER NOMFI,P|D|T supprime le fichier Programme, Donnée permanent,
+ou Temporaire indiqué."
   (if (equal fichier '*)
       (supprimer-tous-les-fichiers-temporaires)
       (supprimer fichier fictype)))
 
 
-(defcommand "AFFICHER REPERTOIRE COURANT" awake nil ()
+(defcommand "AFFICHER REPERTOIRE" awake nil ()
   "Affiche le répertoire courant."
   (io-new-line *task*)
   (io-format *task* "REPERTOIRE COURANT: ~A~%" *current-directory*))
 
+
 (defcommand "CHANGER REPERTOIRE" awake une-ligne (nouveau-repertoire)
   "Change le répertoire courant."
+  "Change le répertoire courant.  Le TEXTE donné désigne un chemin
+absolu ou relatif à l'ancien répertoire courant."
   (io-new-line *task*)
   (when (and (stringp nouveau-repertoire)
              (< 1 (length nouveau-repertoire))
@@ -1403,6 +1466,10 @@ Sur MITRA 15, l'état des variables est également transféré."
 
 (defcommand "TABLE DES FICHIERS" awake nil ()
   "Liste la table des fichiers (répertoire courant, et fichiers temporaires)."
+  "Cette comamnde liste tous les fichiers programmes et donnée du
+répertoire courant, et les fichiers temporaires.
+
+Voir la commande UTILISATION DISQUE."
   (io-format *task* "  ~A~%" (dat))
   (flet ((list-files (type directory control-string modulo)
            (let* ((files  (directory (make-pathname :name :wild
@@ -1465,6 +1532,10 @@ Sur MITRA 15, l'état des variables est également transféré."
 
 (defcommand "UTILISATION DISQUE" awake nil ()
   "Liste la table des fichiers (répertoire courant, et fichiers temporaires)."
+    "Cette comamnde liste tous les fichiers programmes et donnée du
+répertoire courant, et les fichiers temporaires.
+
+Voir la commande TABLE DES FICHIERS."
   (table-des-fichiers)
   (io-format *task* "~%NOMBRE DE SECTEUR LIBRES:~D~
                      ~%*************************~
@@ -1520,6 +1591,7 @@ Sur MITRA 15, l'état des variables est également transféré."
 
 #+developing
 (defcommand "LE EVALUER UNE EXPRESSION LISP" awake une-ligne (ligne)
+  "Commande de déboguage: évaluation d'une expression LISP."
   (io-new-line *task*)
   (let* ((*vm* (task-vm *task*))
          (results)
@@ -1552,13 +1624,29 @@ Sur MITRA 15, l'état des variables est également transféré."
 
 #+developing
 (defcommand "LP DEASSEMBLER/PERFORER A PARTIR DE" awake  deux-numeros-optionels (from to)
-  "Commande de deboguage: Désassemble les lignes de programme."
+  "Commande de deboguage: Désassemble les lignes de programme en perforant un ruban."
   (io-new-line *task*)
   (io-start-tape-puncher *task*)
   (unwind-protect (ld-desassembler-a-partir-de from to)
     (io-stop-tape-puncher *task*))
   (punch "PERFORATION EFFECTUEE")
   (io-format *task* "~%PERFORATION EFFECTUEE.~%"))
+
+
+
+#+developing
+(defun initialize-debugging-task ()
+  (setf *command-group* awake
+        *task* (make-instance 'task
+                    :state :active
+                    :case-insensitive t
+                    :upcase-output nil
+                    :dectech nil
+                    :unicode nil
+                    :terminal (make-instance 'standard-terminal
+                                  :input-stream  (stream-input-stream  *terminal-io*)
+                                  :output-stream (stream-output-stream *terminal-io*)))))
+
 
 
 
@@ -1595,11 +1683,12 @@ Sur MITRA 15, l'état des variables est également transféré."
 (defun command-eval-line (task line)
   (let ((*task* task))
     (cond
-
+      
       ((and (= 2 (length line))
             (alpha-char-p (aref line 0))
             (alpha-char-p (aref line 1)))
        ;; looks like a command
+       (setf (task-pas-a-pas-first *task*) nil)
        (let* ((command-group (ecase (task-state task)
                                (:sleeping sleeping)
                                (:active   awake)))
@@ -1619,12 +1708,16 @@ Sur MITRA 15, l'état des variables est également transféré."
       
       ((< 0 (length line))
        ;; soit une instruction, soit une ligne de programme...
+       (setf (task-pas-a-pas-first *task*) nil)
        (io-new-line task)
        (if (task-state-awake-p task)
            (lse-compile-and-execute task line)
            (error "COMMANDE INVALIDE EN L'ETAT ~A~%ESSAYER LA COMMANDE AI(DE).~%"
                   (task-state-label (task-state task)))))
 
+      ((task-pas-a-pas-first *task*)       
+       (continuer))
+      
       #|else empty line, just ignore it.|#)))
 
 
@@ -1650,7 +1743,10 @@ Sur MITRA 15, l'état des variables est également transféré."
                                (handler-case
                                    (let ((line (io-read-line task :beep (not (task-silence task)))))
                                      (if (task-interruption task)
-                                         (io-format *task* "~%PRET~%")
+                                         (progn
+                                          (io-standard-redirection task)
+                                          (echo)
+                                          (io-format *task* "~%PRET~%"))
                                          (command-eval-line task line)))
                                  (end-of-file (err)
                                    (if (and (io-tape-input-p *task*)
@@ -1676,7 +1772,10 @@ Sur MITRA 15, l'état des variables est également transféré."
                       (io-format *task* "~%PRET~%")
                       (io-finish-output *task*))
                     (user-interrupt (condition)
+                      #+developing
                       (io-format *task* "~%Condition: ~A~%" condition)
+                      (io-standard-redirection task)
+                      (echo)
                       (io-format *task* "~%PRET~%")
                       (io-finish-output *task*)))
                 (continue ()

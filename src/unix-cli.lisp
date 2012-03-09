@@ -130,35 +130,85 @@ BONJOUR     ~8A
     (stream-input-stream (two-way-stream-output-stream stream))))
 
 
+(defun o-ou-n-p (&optional control &rest arguments)
+  (loop
+    (when control
+      (format *query-io* "~? (O/N) ? " control arguments))
+    (finish-output *query-io*)
+    (let* ((input (string-left-trim " " (read-line *query-io*)))
+           (rep   (subseq input 0 (min 1 (length input)))))
+      (cond
+        ((string-equal rep "O") (return t))
+        ((string-equal rep "N") (return nil))
+        (t (format *query-io* "REPONSE INVALIDE: ~S; TAPEZ 'O' OU 'N'.~%" rep))))))
+
+
+(defun configuration-interactive (task terminal terminal-class)
+  (terpri)
+  (when (o-ou-n-p "VOULEZ VOUS UNE CONFIGURATION PARTICULIERE")
+    (setf (task-case-insensitive task)
+          (not (o-ou-n-p "EST CE QU'IL FAUT REJETER LES MINUSCULES")))
+    (setf (task-upcase-output task)
+          (o-ou-n-p "EST CE QU'IL FAUT TOUT IMPRIMER EN MAJUSCULES"))
+    (setf (task-accented-output task)
+          (o-ou-n-p "EST CE QUE LE TERMINAL SUPPORTE LES LETTRES ACCENTUÉES"))
+    (when (and (eq terminal-class 'unix-terminal)
+               (not (member (getenv "TERM") '("emacs" "dumb"))))
+      (format *query-io* "~%CHOIX DU MODE DE SAISIE~%")
+      (format *query-io* "
+MODE MITRA-15:
+[CONTROL-S]      POUR ENTRER LES DONNEES.
+[\\]              POUR 'EFFACER' LE CARACTERE PRECEDENT.
+[ESCAPE]         POUR INTERROMPRE.
+[CONTROL-A]      POUR ENVOYER LE SIGNAL D'ATTENTION (FONCTION ATT()).
+[ENTREE]         POUR ENTRER LES DONNEES, MAIS AJOUTE LE CODE CR AUX CHAINES.
+")
+      (format *query-io* "
+MODE MODERNE:
+~@[~14A POUR ENTRER LES DONNEES.~]
+~@[~14A POUR EFFACER LE CARACTERE PRECEDENT.~]
+~@[~14A POUR INTERROMPRE.~]
+~@[~14A POUR ENVOYER LE SIGNAL D'ATTENTION (FONCTION ATT()).~]
+"
+              (terminal-key terminal :xoff)
+              (terminal-key terminal :delete)
+              (terminal-key terminal :escape)
+              (terminal-key terminal :attention))
+      (terpri)
+      (unless (setf (terminal-modern-mode terminal)
+                    (o-ou-n-p "FAUT-IL UTILISER LE MODE MODERNE"))
+        (setf (terminal-cr-as-xoff terminal)
+              (o-ou-n-p "FAUT-IL TRAITER RETOUR COMME X-OFF")))))
+  (terpri))
 
 (defun main (&optional args)
   (declare (ignore args))
   (let ((encoding (locale-terminal-encoding)))
     (set-terminal-encoding encoding)
-    (let* ((terminal (make-instance
-                         (progn
-                           #+swank
-                           (cond
-                             ((typep (stream-output-stream *terminal-io*)
-                                     'swank-backend::slime-output-stream)
-                              'swank-terminal)
-                             #+unix
-                             ((member (getenv "TERM") '("emacs" "dumb")
-                                      :test (function string=))
-                              'standard-terminal)
-                             (t
-                              'unix-terminal))
-                           #+(and (not swank) unix)
-                           (cond
-                             ((member (getenv "TERM") '("emacs" "dumb")
-                                      :test (function string=))
-                              'standard-terminal)
-                             (t
-                              'unix-terminal))
-                           #+(and (not swank) (not unix))
-                           'standard-terminal)
-                         :input-stream  (stream-input-stream  *terminal-io*)
-                         :output-stream (stream-output-stream *terminal-io*)))
+    (let* ((terminal-class (progn
+                             #+swank
+                             (cond
+                               ((typep (stream-output-stream *terminal-io*)
+                                       'swank-backend::slime-output-stream)
+                                'swank-terminal)
+                               #+unix
+                               ((member (getenv "TERM") '("emacs" "dumb")
+                                        :test (function string=))
+                                'standard-terminal)
+                               (t
+                                'unix-terminal))
+                             #+(and (not swank) unix)
+                             (cond
+                               ((member (getenv "TERM") '("emacs" "dumb")
+                                        :test (function string=))
+                                'standard-terminal)
+                               (t
+                                'unix-terminal))
+                             #+(and (not swank) (not unix))
+                             'standard-terminal))
+           (terminal (make-instance terminal-class
+                            :input-stream  (stream-input-stream  *terminal-io*)
+                            :output-stream (stream-output-stream *terminal-io*)))
            (task     (make-instance 'task
                          :state :active
                          :case-insensitive t
@@ -166,6 +216,7 @@ BONJOUR     ~8A
                          :dectech nil
                          :unicode #+swank (eql encoding :utf-8) #-swank nil
                          :terminal terminal)))
+      (configuration-interactive task terminal terminal-class)
       (setf *task* task)
       (terminal-initialize terminal)
       (unwind-protect

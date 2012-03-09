@@ -1,6 +1,6 @@
 ;;;; -*- mode:lisp;coding:utf-8 -*-
 ;;;;**************************************************************************
-;;;;FILE:               com.informatimago.common-lisp.asd
+;;;;FILE:               com.informatimago.lse.unix-cli.asd
 ;;;;LANGUAGE:           Common-Lisp
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
@@ -34,10 +34,10 @@
 
 
 (asdf:defsystem :com.informatimago.lse.unix-cli
-    :description  "This system defines the unix CLI lse interpreter"
+    :description  "This system defines the unix CLI L.S.E. interpreter"
     :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
-    :version "1.1.1"
-    :licence "AGPLv3"
+    :version "1.2.1"
+    :licence "AGPL3"
     :properties ((#:author-email                   . "pjb@informatimago.com")
                  (#:date                           . "Winter 2012")
                  ((#:albert #:output-dir)          . "/tmp/documentation/com.informatimago.lse.unix-cli/")

@@ -611,9 +611,9 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                                     (entry (rassoc text (if (= state in-format)
                                                             *tokens+format-specifiers*
                                                             *tokens*)
-                                                   :test
-                                                   #-LSE-CASE-INSENSITIVE (function string=)
-                                                   #+LSE-CASE-INSENSITIVE (function string-equal))))
+                                                   :test (if (task-case-insensitive *task*)
+                                                             (function string-equal)
+                                                             (function string=)))))
                                (when entry
                                  (make-instance 'tok-motcle
                                      :kind (car entry)
@@ -622,11 +622,11 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                                      :column (scanner-column scanner)))))
          (token  (tok)      `(make-instance ',tok
                                  :kind ',tok
-                                 :text
-                                 #-LSE-CASE-INSENSITIVE (subseq buffer start index)
-                                 #+LSE-CASE-INSENSITIVE ,(if  (member tok '(tok-chaine tok-commentaire)) 
-                                                             `(subseq buffer start index)
-                                                             `(string-upcase (subseq buffer start index)))
+                                 :text ,(if (member tok '(tok-chaine tok-commentaire)) 
+                                            `(subseq buffer start index)
+                                            `(if (task-case-insensitive *task*)
+                                                 (string-upcase (subseq buffer start index))
+                                                 (subseq buffer start index)))
                                  :line (scanner-line scanner)
                                  :column start)))
       (when (<= buflen index)

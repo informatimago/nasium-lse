@@ -73,7 +73,8 @@
   (setf (task-output task) (task-tape-output task)))
 
 
-(defun io-standard-redirection (task)
+(defun io-standard-redirection
+  (task)
   (io-stop-tape-puncher task)
   (io-stop-tape-reader  task)
   (setf (task-silence task) nil)
@@ -181,6 +182,16 @@ When false, no automatic echo occurs.")
     (declare (ignorable terminal))
     (values)))
 
+(defgeneric terminal-key (terminal keysym)
+  (:documentation "Maps the keysym to the key-chord that must be typed on that terminal.")
+  (:method (terminal keysym)
+    (declare (ignorable terminal))
+    (ecase keysym
+      (:escape    "[ESC]")
+      (:attention "[CTRL-A]")
+      (:xoff      "[CTRL-S]")
+      (:delete    "[\\]"))))
+
 ;;----------------------------------------------------------------------
 ;; Standard I/O Terminal
 ;;----------------------------------------------------------------------
@@ -274,19 +285,29 @@ and strings are read with read-line.")
         (clear-input (terminal-input-stream terminal))
         (lse-error "ENTREE INVALIDE")))))
 
+
+(defmethod terminal-key ((terminal standard-terminal) keysym)
+  (declare (ignorable terminal))
+  (ecase keysym
+    (:escape    "[CONTRÔLE-C]")
+    (:attention "(PAS DISPONIBLE)")
+    (:xoff      "[ENTRÉE]")
+    (:delete    "[EFFACEMENT]")))
+
+
 ;;----------------------------------------------------------------------
 
 (defun io-terminal-output-p (task)
-  (eql (task-output task) (terminal-output-stream (task-terminal task))))
+  (eql (task-output-stream task) (terminal-output-stream (task-terminal task))))
 
 (defun io-terminal-input-p  (task)
-  (eql (task-input task) (terminal-input-stream (task-terminal task))))
+  (eql (task-input-stream task) (terminal-input-stream (task-terminal task))))
 
 (defun io-tape-output-p (task)
-  (eql (task-output task) (task-tape-output task)))
+  (eql (task-output-stream task) (task-tape-output task)))
 
 (defun io-tape-input-p  (task)
-  (eql (task-input task) (task-tape-input task)))
+  (eql (task-input-stream task) (task-tape-input task)))
 
 
 

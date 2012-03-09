@@ -83,9 +83,11 @@
                          :type (member :in-limbo :to-connect :sleeping :active))
 
    (input                :initform nil
+                         :reader task-input-stream
                          :documentation "current input stream.
 Can be either (terminal-input-stream terminal) or tape-input.")
    (output               :initform nil
+                         :reader task-output-stream
                          :documentation "current output stream.
 Can be either (terminal-output-stream terminal) or tape-output.")
 
@@ -122,13 +124,22 @@ Can be either (terminal-output-stream terminal) or tape-output.")
                          :initform t
                          :type boolean
                          :documentation "whether the output should be upcased.")
+   (accented-output      :initarg :accented-output
+                         :accessor task-accented-output
+                         :initform t
+                         :type boolean
+                         :documentation "Whether the output can contain accented characters.")
 
    (abreger              :accessor task-abreger          :initform nil :type boolean
-                         :documentation "AB-REGER - le système ne complète pas les commandes.")
-   (silence              :accessor task-silence          :initform nil :type boolean
-                         :documentation "SI-LENCE - suppression de l'echo (utilisateur, ruban).") 
+                         :documentation "AB)REGER - le système ne complète pas les commandes.")
+   (silence              :reader task-silence            :initform nil :type boolean
+                         :documentation "SI)LENCE - suppression de l'echo (utilisateur, ruban).") 
    (pas-a-pas            :accessor task-pas-a-pas        :initform nil :type boolean
-                         :documentation "PA-S A PAS - execution pas à pas.") 
+                         :documentation "PA)S A PAS - execution pas à pas.")
+   (pas-a-pas-first      :accessor task-pas-a-pas-first
+                         :initform nil
+                         :documentation "Set to true when pas-a-pas just stopped,
+so that if next command is ine, we continue automatically.")
    (interruption         :accessor task-interruption     :initform nil :type boolean
                          :documentation "ESC")
    (signal               :accessor task-signal           :initform nil :type boolean
@@ -149,6 +160,10 @@ Can be either (terminal-output-stream terminal) or tape-output.")
                          :initform (make-hash-table :test 'equalp)
                          :documentation "Maps file names to open FILE objects.")))
 
+
+(defmethod (setf task-silence) (new-flag (task task))
+  (setf (io-echo *task*)           (not new-flag)
+        (slot-value task 'silence) (not (not new-flag))))
 
 
 (defmethod (setf task-input) (stream (task task))

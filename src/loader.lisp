@@ -59,8 +59,9 @@
 
 
 (pushnew :developing           *features*)
-(pushnew :LSE-CASE-INSENSITIVE *features*)
+(pushnew :lse-case-insensitive *features*)
 (pushnew :lse-unix             *features*)
+(pushnew :lse-extensions       *features*)
 
 (setf *print-right-margin* 200
       *print-pretty* t

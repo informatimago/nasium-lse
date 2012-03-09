@@ -15,6 +15,7 @@
 ;;;;    2005-08-25 <PJB> Created.
 ;;;;BUGS
 ;;;;    LIRE must take into account the type of the variable.
+;;;;    NON est une extension; voir comment le rendre optionel.
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    

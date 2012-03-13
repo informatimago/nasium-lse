@@ -34,6 +34,8 @@
 
 (in-package "COM.INFORMATIMAGO.LSE.UNIX-CLI")
 
+(defvar *default-program-name* "lse")
+
 (defparameter *tape-banner* "
 ------------------------------------------------------------------------ 
 \\     ooo                oooooooooo       oooooooooo                    \\      
@@ -80,7 +82,10 @@ BONJOUR     ~8A
            (dot (position #\. val))
            (at  (position #\@ val :start (or dot (length val)))))
       (when (and dot (< dot (1- (length val))))
-        (return (intern (string-upcase (subseq val (1+ dot) (or at (length val))))
+        (return (intern (let ((name (string-upcase (subseq val (1+ dot) (or at (length val))))))
+                          (if (and (prefixp "ISO" name) (not (prefixp "ISO-" name)))
+                              (concatenate 'string "ISO-" (subseq name 3))
+                              name))
                         "KEYWORD"))))))
 
 
@@ -98,91 +103,7 @@ BONJOUR     ~8A
   (values))
 
 
-;; (setf ccl:*default-external-format*           :unix
-;;       ccl:*default-file-character-encoding*   :utf-8
-;;       ccl:*default-line-termination*          :unix
-;;       ccl:*default-socket-character-encoding* :utf-8)
-
-
-
-(defgeneric stream-input-stream (stream)
-  (:method ((stream stream))
-    stream)
-  (:method ((stream concatenated-stream))
-    (stream-input-stream (first (concatenated-stream-streams stream))))
-  (:method ((stream echo-stream))
-    (stream-input-stream (echo-stream-input-stream stream)))
-  (:method ((stream synonym-stream))
-    (stream-input-stream (symbol-value (synonym-stream-symbol stream))))
-  (:method ((stream two-way-stream))
-    (stream-input-stream (two-way-stream-input-stream stream))))
-
-(defgeneric stream-output-stream (stream)
-  (:method ((stream stream))
-    stream)
-  (:method ((stream broadcast-stream))
-    (stream-output-stream (first (broadcast-stream-streams stream))))
-  (:method ((stream echo-stream))
-    (stream-input-stream (echo-stream-output-stream stream)))
-  (:method ((stream synonym-stream))
-    (stream-input-stream (symbol-value (synonym-stream-symbol stream))))
-  (:method ((stream two-way-stream))
-    (stream-input-stream (two-way-stream-output-stream stream))))
-
-
-(defun o-ou-n-p (&optional control &rest arguments)
-  (loop
-    (when control
-      (format *query-io* "~? (O/N) ? " control arguments))
-    (finish-output *query-io*)
-    (let* ((input (string-left-trim " " (read-line *query-io*)))
-           (rep   (subseq input 0 (min 1 (length input)))))
-      (cond
-        ((string-equal rep "O") (return t))
-        ((string-equal rep "N") (return nil))
-        (t (format *query-io* "REPONSE INVALIDE: ~S; TAPEZ 'O' OU 'N'.~%" rep))))))
-
-
-(defun configuration-interactive (task terminal terminal-class)
-  (terpri)
-  (when (o-ou-n-p "VOULEZ VOUS UNE CONFIGURATION PARTICULIERE")
-    (setf (task-case-insensitive task)
-          (not (o-ou-n-p "EST CE QU'IL FAUT REJETER LES MINUSCULES")))
-    (setf (task-upcase-output task)
-          (o-ou-n-p "EST CE QU'IL FAUT TOUT IMPRIMER EN MAJUSCULES"))
-    (setf (task-accented-output task)
-          (o-ou-n-p "EST CE QUE LE TERMINAL SUPPORTE LES LETTRES ACCENTUÉES"))
-    (when (and (eq terminal-class 'unix-terminal)
-               (not (member (getenv "TERM") '("emacs" "dumb"))))
-      (format *query-io* "~%CHOIX DU MODE DE SAISIE~%")
-      (format *query-io* "
-MODE MITRA-15:
-[CONTROL-S]      POUR ENTRER LES DONNEES.
-[\\]              POUR 'EFFACER' LE CARACTERE PRECEDENT.
-[ESCAPE]         POUR INTERROMPRE.
-[CONTROL-A]      POUR ENVOYER LE SIGNAL D'ATTENTION (FONCTION ATT()).
-[ENTREE]         POUR ENTRER LES DONNEES, MAIS AJOUTE LE CODE CR AUX CHAINES.
-")
-      (format *query-io* "
-MODE MODERNE:
-~@[~14A POUR ENTRER LES DONNEES.~]
-~@[~14A POUR EFFACER LE CARACTERE PRECEDENT.~]
-~@[~14A POUR INTERROMPRE.~]
-~@[~14A POUR ENVOYER LE SIGNAL D'ATTENTION (FONCTION ATT()).~]
-"
-              (terminal-key terminal :xoff)
-              (terminal-key terminal :delete)
-              (terminal-key terminal :escape)
-              (terminal-key terminal :attention))
-      (terpri)
-      (unless (setf (terminal-modern-mode terminal)
-                    (o-ou-n-p "FAUT-IL UTILISER LE MODE MODERNE"))
-        (setf (terminal-cr-as-xoff terminal)
-              (o-ou-n-p "FAUT-IL TRAITER RETOUR COMME X-OFF")))))
-  (terpri))
-
 (defun main (&optional args)
-  (declare (ignore args))
   (let ((encoding (locale-terminal-encoding)))
     (set-terminal-encoding encoding)
     (let* ((terminal-class (progn
@@ -191,42 +112,47 @@ MODE MODERNE:
                                ((typep (stream-output-stream *terminal-io*)
                                        'swank-backend::slime-output-stream)
                                 'swank-terminal)
-                               #+unix
-                               ((member (getenv "TERM") '("emacs" "dumb")
-                                        :test (function string=))
-                                'standard-terminal)
+                               ;; #+unix
+                               ;; ((member (getenv "TERM") '("emacs" "dumb")
+                               ;;          :test (function string=))
+                               ;;  'standard-terminal)
                                (t
-                                'unix-terminal))
+                                #+unix 'unix-terminal
+                                #-unix 'standard-terminal))
                              #+(and (not swank) unix)
-                             (cond
-                               ((member (getenv "TERM") '("emacs" "dumb")
-                                        :test (function string=))
-                                'standard-terminal)
-                               (t
-                                'unix-terminal))
+                             'unix-terminal
                              #+(and (not swank) (not unix))
                              'standard-terminal))
            (terminal (make-instance terminal-class
-                            :input-stream  (stream-input-stream  *terminal-io*)
-                            :output-stream (stream-output-stream *terminal-io*)))
+                         :input-stream  (stream-input-stream  *terminal-io*)
+                         :output-stream (stream-output-stream *terminal-io*)))
            (task     (make-instance 'task
                          :state :active
                          :case-insensitive t
                          :upcase-output nil
                          :dectech nil
-                         :unicode #+swank (eql encoding :utf-8) #-swank nil
+                         :unicode (eql encoding :utf-8)
                          :terminal terminal)))
-      (configuration-interactive task terminal terminal-class)
-      (setf *task* task)
-      (terminal-initialize terminal)
-      (unwind-protect
-           (progn
-             (io-format *task* "~A" *tape-banner*)
-             (io-format *task* "~?" *unix-banner*  (list *version* (subseq (dat) 9)))
-             (command-repl *task*))
-        (task-close-all-files *task*)
-        (terminal-finalize terminal))))
-  0)
+      (setf *task* task) ; to help debugging, we keep the task in the global binding.
+      (setf *program-name* (or (program-name) *default-program-name*))
+      (or (parse-options (or args (arguments)))
+          (progn
+            (apply-options *options* *task*)
+            (terminal-initialize terminal)
+            (unwind-protect
+                 (let ((*debugger-hook*
+                        (lambda (condition debugger-hook)
+                          ;; We shouldn't come here.
+                          (when debugger-hook
+                            (terminal-finalize terminal))
+                          (format *debug-io* "~%My advice: exit after debugging.~%"))))
+                   (io-format *task* "~A" *tape-banner*)
+                   (io-format *task* "~?" *unix-banner*  (list *version* (subseq (dat) 9)))
+                   (command-repl *task*))
+              (task-close-all-files *task*)
+              (terminal-finalize terminal))
+            ex-ok)))))
+
 
 
 ;;;; THE END ;;;;

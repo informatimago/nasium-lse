@@ -453,8 +453,8 @@ Lorsque l'utilisateur tape [CTRL-A], ATT() retourne transitoirement 1."
       0))
 
 
-#-(AND)
-#+lse-extensions
+
+#+(and lse-extensions (or))
 (defunction dis (a)
   "DIS(A)
 
@@ -463,14 +463,30 @@ Résultat: Une chaine contenant le contenu du secteur numéro A du disque."
 
 
 
+
 #+lse-extensions
 (defunction etl (a b)
-  "ET logique bit-à-bit"
-  "ETL(A,B)
+   "ET logique bit-à-bit"
+   "ETL(A,B)
 
 Résultat: le ET logique bit-à-bit entre les bits de A et ceux de B."
-  (un-nombre (logand (truncate (un-nombre (deref *vm* a)))
-                     (truncate (un-nombre (deref *vm* b))))))
+   (un-nombre (logand (truncate (un-nombre (deref *vm* a)))
+                      (truncate (un-nombre (deref *vm* b))))))
+
+;; (unless (fboundp 'etl)
+;;    (format t "ETL not bound~% *features* = ~S~%" *features*)
+;;    (format t "~S" #+lse-extensions 'lse-extensions #-lse-extensions '(not lse-extensions))
+;;    (format t "~S" (macroexpand '(defunction etl (a b)
+;;                                  "ET logique bit-à-bit"
+;;                                  "ETL(A,B)
+;; 
+;; Résultat: le ET logique bit-à-bit entre les bits de A et ceux de B."
+;;                                  (un-nombre (logand (truncate (un-nombre (deref *vm* a)))
+;;                                              (truncate (un-nombre (deref *vm* b))))))
+;;                                ))
+;;    (finish-output)
+;;    #+ccl (ccl:quit))
+
 
 
 #+lse-extensions
@@ -866,10 +882,17 @@ Note: Cette fonction n'est pas conforme Y2K, elle retourne 00 pour 2000."
                (format t "~A " (second op))
                (assert
                 (equal (ignore-errors (un-nombre (funcall (first op) (- a 10.0))))
-                       (ignore-errors (funcall (second op) (- a 10.0))))))
+                       (ignore-errors (funcall (second op) (- a 10.0))))
+                () "~S : ~S = ~S /= ~S = ~S"
+                (second op)
+                '(ignore-errors (un-nombre (funcall (first op) (- a 10.0))))
+                 (ignore-errors (un-nombre (funcall (first op) (- a 10.0))))
+                 (ignore-errors (funcall (second op) (- a 10.0)))
+                 '(ignore-errors (funcall (second op) (- a 10.0)))))
              (format t "~%")
              (dotimes (b 21)
                (format t "     ~3D: " b)
+               #+lse-extensions
                (dolist (op `((+ add) (- sub) (* mul) (/ div)
                              (,(lambda (a b)
                                        (expt a (if (and (< a 0) (= b (truncate b)))
@@ -882,7 +905,13 @@ Note: Cette fonction n'est pas conforme Y2K, elle retourne 00 pour 2000."
                  (assert
                   (equal
                    (ignore-errors (un-nombre (funcall (first op) (- a 10.0) (- b 10.0))))
-                   (ignore-errors (funcall (second op) (- a 10.0) (- b 10.0))))))
+                   (ignore-errors (funcall (second op) (- a 10.0) (- b 10.0))))
+                  () "~S : ~S = ~S /= ~S = ~S"
+                  (second op)
+                  '(ignore-errors (un-nombre (funcall (first op) (- a 10.0) (- b 10.0))))
+                  (ignore-errors (un-nombre (funcall (first op) (- a 10.0) (- b 10.0))))
+                  (ignore-errors (funcall (second op) (- a 10.0) (- b 10.0)))
+                  '(ignore-errors (funcall (second op) (- a 10.0) (- b 10.0)))))
                (format t "~%")))
            ;; Boolean:
            (format t "NON~%")
@@ -1104,9 +1133,4 @@ Note: Cette fonction n'est pas conforme Y2K, elle retourne 00 pour 2000."
           (test)))))
 
 
-
-(test/fonctions :silence t)
-
-
 ;;;; THE END ;;;;
-

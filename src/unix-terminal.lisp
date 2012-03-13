@@ -43,18 +43,47 @@
 
 
 
-
-(defun terminal-control-attributes (fd &optional action)
+(defun termios-attributes (fd &optional action)
   "Allocates a new termios foreign structure, fills it with current
 values for the specified file descriptor FD, and return it.
 ACTION is ignored."
   (declare (ignore action))
   (let ((termios (cffi:foreign-alloc 'iolib.serial:termios)))
-    (iolib.serial:%tcgetattr fd termios)
+    (iolib.serial::%tcgetattr fd termios)
     termios))
 
-(defun terminal-control-character (termios cc)
-  "Return the  control character value."
+
+(defun (setf termios-attributes) (new-termios fd action)
+  "Sets the given NEW-TERMIOS (which has been obtained with the
+TERMIOS-ATTRIBUTES function to the specified file descriptor FD.
+
+ACTION specifies when the setting occurs:
+        :now    immediately
+        :drain  after all output has been transmitted.
+        :flush  after all output has been transmitted, and all input is discaded.
+"
+  (check-type action (member :now :drain :flush))
+  (iolib.serial::%tcsetattr fd (ecase action
+                                (:now :tcsanow)
+                                (:drain :tcsadrain)
+                                (:flush :tcsaflush))
+                           new-termios)
+  new-termios)
+
+
+
+
+(defun termios-flag (termios flag)
+  "Returns the flag from the corresponding TERMIOS field."
+  (let ((type (iolib.serial::which-termios-keyword flag)))
+    (unless type
+      (error "Unknown termios option ~a" flag))
+    (not (plusp (logand (cffi:foreign-slot-value termios 'iolib.serial:termios type)
+                        (cffi:foreign-enum-value type flag))))))
+
+
+(defun termios-control-character (termios cc)
+  "Returns the control character value."
   (cffi:mem-aref (cffi:foreign-slot-pointer termios
                                             'iolib.serial:termios
                                             'iolib.serial::control-chars)
@@ -63,49 +92,318 @@ ACTION is ignored."
                  (cffi:foreign-enum-value 'iolib.serial:control-character cc)))
 
 
-(defun (setf terminal-control-attributes) (new-termios fd action)
-  "
-
-Sets the given NEW-TERMIOS (which has been obtained with the
-TERMINAL-CONTROL-ATTRIBUTES function to the specified file descriptor FD.
-
-ACTION specifies when the setting occurs:
-        :now    immediately
-        :drain  after all output has been transmitted.
-        :flush  after all output has been transmitted, and all input is discaded.
-"
-  (check-type action (member :now :drain :flush))
-  (iolib.serial:%tcsetattr fd (ecase action
-                                (:now :tcsanow)
-                                (:drain :tcsadrain)
-                                (:flush :tcsaflush))
-                           new-termios)
-  new-termios)
-
 (defun termios-free (termios)
-  "Deallocate the TERMIOS structure returned by TERMINAL-CONTROL-ATTRIBUTES."
+  "Deallocate the TERMIOS structure returned by TERMIOS-ATTRIBUTES."
   (cffi:foreign-free termios))
 
 
-(defmacro with-terminal-control-attributes ((termios-variable fd) &body body)
+(defmacro with-termios-attributes ((termios-variable fd) &body body)
   "Binds the variable passed to TERMIOS-VARIABLE to a termios
-structure returned by (terminal-control-attributes fd), and execute
+structure returned by (termios-attributes fd), and execute
 \(progn BODY) in an unwind-protect.  The cleanup dealloocates the
 termios with TERMIOS-FREE."
   (let ((vtermios (gensym)))
-    `(let* ((,vtermios (terminal-control-attributes ,fd))
+    `(let* ((,vtermios (termios-attributes ,fd))
             (,termios-variable ,vtermios))
        (unwind-protect  (progn ,@body)
          (termios-free ,vtermios)))))
 
 
-(defun terminal-control-characters (fd)
-  (let ((termios (terminal-control-attributes fd)))
-    (mapcar (lambda (cc) (cons cc (terminal-control-character termios cc)))
-            '(:vintr :vquit :vsusp :vkill :veof :veol :veol2
-              :verase :vwerase :vreprint :vstart :vstop))))
+(defun lispify-flags (termios)
+  "Return an a-list mapping flags keywords to code."
+  (mapcan (lambda (flag) (list flag (termios-flag termios flag)))
+          '(
+            ;; cflags
+            #+(or linux bsd) :cbaud
+            #+(or linux bsd) :cbaudex
+            :csize
+            :cstopb
+            :cread
+            :parenb
+            :parodd
+            :hupcl
+            :clocal
+            #-linux :loblk
+            #+(or linux bsd) :cibaud
+            #+(or linux bsd) :cmspar
+            #+(or linux bsd) :crtscts
+            ;; lflags
+            :isig
+            :icanon
+            #-linux xcase
+            :echo
+            :echoe
+            :echok
+            :echonl
+            #+(or linux bsd) :echoctl
+            #+(or linux bsd) :echoprt
+            #+(or linux bsd) :echoke
+            #-linux :defecho
+            #+bsd :flusho
+            :noflsh
+            :tostop
+            #+bsd :pendin
+            :iexten
+            ;; iflags
+            :ignbrk
+            :brkint
+            :ignpar
+            :parmrk
+            :inpck
+            :istrip
+            :inlcr
+            :igncr
+            :icrnl
+            #+linux :iuclc
+            :ixon
+            ;; XSI features are #+xfi marked in sb-posix grovel file,
+            ;; but (find xsi *features*) return NIL
+            ;; so i'm leaving xsi features unmarked 
+            :ixany
+            :ixoff
+            #-linux :imaxbel
+            #+linux :iutf8
+            ;; oflags
+            :opost
+            #+linux :olcuc
+            :onlcr
+            :ocrnl
+            :onocr
+            :onlret
+            :ofill
+            #-linux :ofdel
+            #+(or linux bsd) :nldly
+            #+(or linux bsd) :crdly
+            #+(or linux bsd) :tabdly
+            #+(or linux bsd) :bsdly
+            #+(or linux bsd) :vtdly
+            #+(or linux bsd) :ffdly)))
 
 
+(defun lispify-control-characters (termios)
+  "Return an a-list mapping control-character keywords to code."
+  (mapcan (lambda (cc) (list cc (termios-control-character termios cc)))
+          '(:vintr
+            :vquit
+            :verase
+            :vkill
+            :veof
+            :vmin
+            :veol
+            :vtime
+            #+linux :veol2
+            #-linux :vswtch
+            :vstart
+            :vstop
+            :vsusp
+            #-linux :vdsusp
+            #+linux :vlnext
+            #+linux :vwerase
+            #+linux :vreprint
+            #-linux :vdiscard
+            #-linux :vstatus)))
+
+
+(defun lispify-attributes (termios)
+  (append (lispify-flags termios) (lispify-control-characters termios)))
+
+
+(defun compare-terminal-attributes (old new)
+    "
+RETURN: A sublist of options that didn't change successfully;
+        A sublist of options successfully changed.
+"
+
+    (loop
+      :with different = '()
+      :with same      = '()
+      :for (okey oval) :on old
+      :for (nkey nval) :on new
+      :do (progn
+            (unless (eq okey nkey)
+              (error "~S internal error ~S /= ~S"
+                     'compare-terminal-attributes okey nkey))
+            (if (equal oval nval)
+                (progn
+                  (push okey same)
+                  (push oval same))
+                (progn
+                  (push nkey different)
+                  (push nval different))))
+      :finally (return (values (nreverse different)
+                               (nreverse same)))))
+
+
+(defun compare-termios (old new)
+  "
+RETURN: A sublist of options that didn't change successfully;
+        A sublist of options successfully changed.
+"
+  (compare-terminal-attributes (lispify-attributes old)
+                               (lispify-attributes new)))
+
+
+
+
+
+(defun stty (serial &rest options &key
+             RAW COOKED EVENP ODDP speed input-speed output-speed
+             ;; cflags
+             #+(or linux bsd) cbaud
+             #+(or linux bsd) cbaudex
+             csize cs5 cs6 cs7 cs8
+             cstopb
+             cread
+             parenb
+             parodd
+             hupcl
+             clocal
+             #-linux loblk
+             #+(or linux bsd) cibaud
+             #+(or linux bsd) cmspar
+             #+(or linux bsd) crtscts
+             ;; lflags
+             isig
+             icanon
+             #-linux xcase
+             echo
+             echoe
+             echok
+             echonl
+             #+(or linux bsd) echoctl
+             #+(or linux bsd) echoprt
+             #+(or linux bsd) echoke
+             #-linux defecho
+             #+bsd flusho
+             noflsh
+             tostop
+             #+bsd pendin
+             iexten
+             ;; iflags
+             ignbrk
+             brkint
+             ignpar
+             parmrk
+             inpck
+             istrip
+             inlcr
+             igncr
+             icrnl
+             #+linux iuclc
+             ixon
+             ;; XSI features are #+xfi marked in sb-posix grovel file,
+             ;; but (find xsi *features*) return NIL
+             ;; so i'm leaving xsi features unmarked 
+             ixany
+             ixoff
+             #-linux imaxbel
+             #+linux iutf8
+             ;; oflags
+             opost
+             #+linux olcuc
+             onlcr
+             ocrnl
+             onocr
+             onlret
+             ofill
+             #-linux ofdel
+             #+(or linux bsd) nldly  #+(or linux bsd) nl0 #+(or linux bsd) nl1
+             #+(or linux bsd) crdly  #+(or linux bsd) cr0 #+(or linux bsd) cr1 #+(or linux bsd) cr2 #+(or linux bsd) cr3
+             #+(or linux bsd) tabdly #+(or linux bsd) tab0 #+(or linux bsd) tab1 #+(or linux bsd) tab2 #+(or linux bsd) tab3
+             #+(or linux bsd) bsdly  #+(or linux bsd) bs0 #+(or linux bsd) bs1
+             #+(or linux bsd) vtdly  #+(or linux bsd) vt0 #+(or linux bsd) vt1
+             #+(or linux bsd) ffdly  #+(or linux bsd) ff0 #+(or linux bsd) ff1
+             
+             ;; control characters             
+             vintr
+             vquit
+             verase
+             vkill
+             veof
+             vmin
+             veol
+             vtime
+             #+linux veol2
+             #-linux vswtch
+             vstart
+             vstop
+             vsusp
+             #-linux vdsusp
+             #+linux vlnext
+             #+linux vwerase
+             #+linux vreprint
+             #-linux vdiscard
+             #-linux vstatus
+             )
+  "
+DO:       Implement stty(1) in a lispy way.
+SERIAL:   can be a stream or a file descriptoro.
+OPTIONS:  should be p-list of termios keywords and values:
+          NIL or T for flags or one of :RAW, :COOKED, :EVENP or :ODDP,
+          or integers for control characters or :SPEED.
+EXAMPLES:  
+
+   :inlcr t         set corresponding flag,
+   :inlcr nil       reset it,
+   :speed 115200    set corresponding speed,
+   :vtime 0         setup corresponding control character value.
+   
+   Setup for 8n1 mode:          (stty fd :evenp nil)
+   Setup speed:                 (stty fd :speed 115200) or (stty my-stream :speed 115200)
+   Setup raw mode and speed:    (stty fd :speed 11520 :raw t) 
+   Setup cooked mode:           (stty fd :raw nil)
+
+RETURN: A sublist of options that didn't change successfully;
+        A sublist of options successfully changed.
+"
+  (let ((fd (etypecase serial
+              (integer serial)
+              (stream  (iolib.serial::fd-of serial)))))
+    (flet ((speed-to-baud (speed)
+             (intern (format nil "B~A" speed) "KEYWORD")))
+      (cffi:with-foreign-objects ((termios 'iolib.serial:termios)
+                                  (newterm 'iolib.serial:termios))
+        (iolib.serial::%tcgetattr fd termios)
+        
+        (loop
+          :for (key value) :on options :by (function cddr)
+          :do (case key
+                (:speed        (let ((baud (speed-to-baud speed)))
+                                 (iolib.serial::%cfsetispeed termios baud)
+                                 (iolib.serial::%cfsetospeed termios baud)))
+                (:input-speed  (let ((baud (speed-to-baud speed)))
+                                 (iolib.serial::%cfsetispeed termios baud)))
+                (:output-speed (let ((baud (speed-to-baud speed)))
+                                 (iolib.serial::%cfsetospeed termios baud)))
+                (:RAW          (if raw
+                                   (iolib.serial::make-raw-termios    termios)
+                                   (iolib.serial::make-cooked-termios termios)))
+                (:COOKED       (if cooked
+                                   (iolib.serial::make-cooked-termios termios)
+                                   (iolib.serial::make-raw-termios    termios)))
+                (:EVENP        (if evenp
+                                   (iolib.serial::make-evenp-termios termios)
+                                   (iolib.serial::make-oddp-termios  termios)))
+                (:ODDP         (if evenp
+                                   (iolib.serial::make-oddp-termios  termios)
+                                   (iolib.serial::make-evenp-termios termios)))
+                (otherwise
+                 (cond
+                   ((iolib.serial::termios-flag-p key)
+                    (iolib.serial::setup-termios-flag termios key value))
+                   ((iolib.serial::termios-control-character-p key)
+                    (iolib.serial::setup-termios-control-character termios key value))
+                   (t
+                    (error "Invalid option: ~S ~S" key value))))))
+        (iolib.serial::%tcsetattr fd :tcsanow termios)
+        (iolib.serial::%tcgetattr fd newterm)
+        (compare-termios termios newterm)))))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;
 
 (defclass unix-terminal (standard-terminal)
   ((input-file-descriptor  :initarg :input-fd
@@ -165,25 +463,29 @@ Valid only whe MODERN-MODE is false.
 
 
 (defmethod (setf terminal-modern-mode) (new-mode (terminal unix-terminal))
-  (with-slots (modern-mode input-file-descriptor) terminal
+  (with-slots (modern-mode
+               input-file-descriptor
+               vintr vquit vsusp vkill veof veol veol2
+               verase vwerase vreprint vstart vstop) terminal
     (if new-mode
         ;; Modern mode: get the characters from the termios.
-        (let ((ccs (terminal-control-characters input-file-descriptor)))
-          (setf vintr    (cdr (assoc :vintr    ccs))
-                vquit    (cdr (assoc :vquit    ccs))
-                vsusp    (cdr (assoc :vsusp    ccs))
-                vkill    (cdr (assoc :vkill    ccs))
-                veof     (cdr (assoc :veof     ccs))
-                veol     (let ((eol (cdr (assoc :veol     ccs))))
+        (let ((ccs (lispify-control-characters
+                    (termios-attributes input-file-descriptor))))
+          (setf vintr    (plist-get ccs :vintr)
+                vquit    (plist-get ccs :vquit)
+                vsusp    (plist-get ccs :vsusp)
+                vkill    (plist-get ccs :vkill)
+                veof     (plist-get ccs :veof)
+                veol     (let ((eol (plist-get ccs :veol)))
                            (if (zerop eol)
                                #x0d
                                eol))
-                veol2    (cdr (assoc :veol2    ccs))
-                verase   (cdr (assoc :verase   ccs))
-                vwerase  (cdr (assoc :vwerase  ccs))
-                vreprint (cdr (assoc :vreprint ccs))
-                vstart   (cdr (assoc :vstart   ccs))
-                vstop    (cdr (assoc :vstop    ccs))))
+                veol2    (plist-get ccs :veol2)
+                verase   (plist-get ccs :verase)
+                vwerase  (plist-get ccs :vwerase)
+                vreprint (plist-get ccs :vreprint)
+                vstart   (plist-get ccs :vstart)
+                vstop    (plist-get ccs :vstop)))
         ;;  Mitra-15 mode:
         (setf vintr    #x1b            ; ESC
               vquit    #x01            ; Ctrl-A
@@ -197,6 +499,22 @@ Valid only whe MODERN-MODE is false.
               vreprint 0
               vstart   0
               vstop    0))
+    ;; #+developing
+    ;; (progn
+    ;;   (format *trace-output* "~%TERMINAL MODE = ~:[OLD~;MODERN~]~%" new-mode)
+    ;;   (format *trace-output* "~@{~12A ~A~%~}"
+    ;;           :vintr    vintr    
+    ;;           :vquit    vquit    
+    ;;           :vsusp    vsusp    
+    ;;           :vkill    vkill    
+    ;;           :veof     veof     
+    ;;           :veol     veol     
+    ;;           :veol2    veol2    
+    ;;           :verase   verase   
+    ;;           :vwerase  vwerase  
+    ;;           :vreprint vreprint 
+    ;;           :vstart   vstart   
+    ;;           :vstop    vstop))
     (setf modern-mode new-mode)))
 
 
@@ -268,201 +586,73 @@ Valid only whe MODERN-MODE is false.
     (when saved-termios
       (error "Calling ~S on a ~S already initialized."
              'terminal-initialize (class-name (class-of terminal))))
-    (setf saved-termios (terminal-control-attributes input-file-descriptor))
-    (if modern-mode
-        (iolib.serial:stty
-         input-file-descriptor
-         :cooked  t
+    (setf saved-termios (termios-attributes input-file-descriptor))
+    (let ((common '(
+                    ;; Input control:
+                    :istrip  nil ; strip off eigth bit (should be nil for utf-8 input)
+                    :igncr   nil ; ignore CR  on input
+                    :ixon    nil ; XON/XOFF flow control on output.
+                    :ixoff   nil ; XON/XOFF flow control on input.
+                    :ixany   nil ; Typing any character to restart stopped output.
+                    :iutf8   nil ; UTF-8 input (for character erase in cooked mode).
+                    ;; We don't process utf-8 on unix-terminal (we would have to
+                    ;; decode utf-8 to implement erase ourselves in raw).
 
-         ;; Input control:
-         :istrip  nil ; strip off eigth bit (should be nil for utf-8 input)
-         :inlrc   nil ; translate NL to CR on input
-         :igncr   nil ; ignore CR  on input
-         :icrnl   t   ; translate CR to NL on input.
-         ;; :iuclc   nil ; map uppercase to lower (not POSIX).
-         :ixon    nil ; XON/XOFF flow control on output.
-         :ixoff   nil ; XON/XOFF flow control on input.
-         :ixany   nil ; Typing any character to restart stopped output.
-         :imaxbel nil ; Ring Bell when input queue is full.
-         :iutf8   nil ; UTF-8 input (for character erase in cooked mode).
-         ;; We don't process utf-8 on unix-terminal (we would have to decode utf-8 to implement erase ourselves in raw).
+                    ;; Output control:
+                    :opost   nil ; implementation defined output processing.
+                    :onlcr   nil ; map NL to CR-NL on output.
+                    :ocrnl   nil ; map CR to NL on output.
+                    :onocr   t   ; output CR at column 0.
+                    :onlret  nil ; don't output CR (ie. output CR).
+                    :ofill   nil ; send  fill characters for a delay (instead of timer).
 
-         ;; Output control:
-         :opost   nil     ; implementation defined output processing.
-         ;; :olcuc   nil     ; map lowercase touppercase (not POSIX).
-         :onlcr   nil     ; map NL to CR-NL on output.
-         :ocrnl   nil     ; map CR to NL on output.
-         :onocr   t       ; output CR at column 0.
-         :onlret  nil     ; don't output CR (ie. output CR).
-         :ofill   nil ; send  fill characters for a delay (instead of timer).
-         ;; :ofdel   nil ; (not POSIX, not linux) fill character is NUL; t =  fill character is DEL.
-         :nldly   :nl0   ; Newline delay mask (member :nl0 :nl1)
-         :crdly   :cr0   ; CR delay mask (member :cr0 :cr1 :cr2 :cr3)
-         :tabdly  :tab0 ; TAB delay mask  (member :tab0 :tab1 :tab2 :tab3)
-         :bsdly   :bs0  ; Backspace delay mask (member :bs0 :bs1)
-         :vtdly   :vt0  ; Vertical tab delay mask (member :vt0 :vt1)
-         :ffdly   :ff0  ; Form feed delay mask (member :ff0 :ff1)
+                    ;; Line control:
+                    :isig    nil ; when the character INTR, QUIT, SUSP, or DSUSP are received, generate the signal.
+                    :echonl  nil ;             (and :icanon :echonl) => echo the NL  even when :echo is nil.
+                    :echoke  nil ;             (and :icanon :echoke) => KILL is echoed by erasing each character on the line (as specified by :echoe and :echoprt).
+                    :echoprt nil ; (not POSIX) (and :icanon :iecho :echoprt) => characters are printed as they are erased. ( /a\  ??? )
+                    :echo    t   ; echo of input characters
+                    :echoctl nil ; (not POSIX) (:echo :echoctl) control codes (not TAB,  NL, START, STOP) are  echoed as ^X
+                    :noflsh  t   ; Disable flushing input and output when signaling INT, QUIT and SUSP.
+                    :tostop  nil ; sends SIGTTOU to processes who writes to this terminal.
+                    :iexten  nil ; implementation-defined input-processing. To enable EOL2, LNEXT, REPRINT, WERASE, and IUCLC.
 
-         ;; For modem control:
-         ;; ;; :cbaud    speed mask
-         ;; ;; :cbaudex  speed mask
-         ;; :csize    :cs8 ; (member :cs5 :cs6 :cs7 :cs8)
-         ;; :cstopb   nil  ; set two stop bits
-         ;; :cread    t    ; enable receiver
-         ;; :parenb   nil  ; parity generation on  output and parity checking on input.
-         ;; :parodd   nil  ;  if set then parity is odd otherwise parity is even.
-         ;; :hupcl    nil  ; lowoer modem conotrollines after last  process closes the device (hang-up).
-         ;; :clocal   t    ; ignoroe modem control lines.
-         ;; :loblk    nil  ; (not POSIX, not linux)
-         ;; ;; :cibaud   mask for input speed
-         ;; ;; :cmspar   use stick (mark/space) parity.
-         ;; :crtscts t    ; hardware flow control.
-
-
-         ;; Line control:
-
-         ;; We can deal with signals on linux, so go ahead (but not on
-         ;; MS-Windows, but there, we'd have to write a windows-terminal
-         ;; class…
-         
-         :isig    nil ; when the character INTR, QUIT, SUSP, or DSUSP are received, generate the signal.
-         :icanon  t   ; canonical mode.
-         ;; :xcase  nil ; (not POSIX) (and :icanon :xcase) => upper case terminal
-         :echoe   t   ;             (and :icanon :echoe) => ERASE and WERASE erase the previous character and word.
-         :echok   t   ;             (and :icanon :echok) => KILL  erase current line.
-         :echonl  nil ;             (and :icanon :echonl) => echo the NL  even when :echo is t.
-         :echoke  nil ;             (and :icanon :echoke) => KILL is echoed by erasing each character on the line (as specified by :echoe and :echoprt).
-         :echoprt nil ; (not POSIX) (and :icanon :iecho :echoprt) => characters are printed as they are erased. ( /a\  ??? )
-         :echo    t   ; echo of input characters
-         :echoctl nil ; (not POSIX) (:echo :echoctl) control codes (not TAB,  NL, START, STOP) are  echoed as ^X
-         ;; :defecho nil ; (not POSIX, not linux) Echo only when a process is reading.
-         ;; :flusho  nil ; (not POSIX, not linux) output is flushed.  Toggled by the DISCARD character.
-         :noflsh  t   ; Disable flushing input and output when signaling INT, QUIT and SUSP.
-         :tostop  nil ; sends SIGTTOU to processes who writes to this terminal.
-         ;; :pendin  nil ; (not POSIX, not linux) input queue is reprinted when next char is read.
-         :iexten  nil ; implementation-defined input-processing. To enable EOL2, LNEXT, REPRINT, WERASE, and IUCLC.
-
-         ;; Character control:
-         :vintr    0 ; SIGINT                                    needs :isig t
-         :vquit    0 ; SIGQUIT                                   needs :isig t
-         :vsusp    0 ; SIGSUSP                                   needs :isig t
-         ;; :vdsusp  0 ; (not POSIX, not LINUX) SIGSUSP when read  needs :isig t :iexten t
-
-         :vmin     1 ; minimum number of characters for noncanonical read       
-         :vtime    0 ; timeout in decisecond for noncanonical read
-
-         :verase   0 ; erase character                           needs :icanon t
-         :vkill    0 ; erase line                                needs :icanon t
-         :veof     0 ; send input buffer (= eof when empty)      needs :icanon t
-         :veol     0 ; additionnal end of line character         needs :icanon t
-         :veol2    0 ; yet additionnal end of line character     needs :icanon t (not POSIX)
-         :vwerase  0 ; (not POSIX) word erase                    needs :icanon t :iexten t
-         :vreprint 0 ; (not POSIX) reprint unread characters     needs :icanon t :iexten t
-
-         :vstart  0 ; The X-ON character                        needs :ixon
-         :vstop   0 ; The X-OFF character                       needs :ixon
-
-         ;; :vswtch   0             ; (not POSIX, not linux) switch character.
-         ;; :vlnext   0             ; (not POSIX, not LINUX) literal next       needs :iexten t
-         ;; :vdiscard 0             ; (not POSIX, not LINUX) toggle start/stop discarding output needs :iexten t
-         ;; :vstatus  0             ; (not POSIX, not LINUX) status request
-         )
-        (iolib.serial:stty
-         input-file-descriptor
-         :raw     t
-
-         ;; Input control:
-         :istrip  nil ; strip off eigth bit (should be nil for utf-8 input)
-         :inlrc   nil ; translate NL to CR on input
-         :igncr   nil ; ignore CR  on input
-         :icrnl   nil ; translate CR to NL on input.
-         ;; :iuclc   nil ; map uppercase to lower (not POSIX).
-         :ixon    nil ; XON/XOFF flow control on output. ???
-         :ixoff   nil ; XON/XOFF flow control on input.
-         :ixany   nil ; Typing any character to restart stopped output.
-         :imaxbel nil ; Ring Bell when input queue is full.
-         :iutf8   nil ; UTF-8 input (for character erase in cooked mode).
-         ;; We don't process utf-8 on unix-terminal (we would have to decode utf-8 to implement erase ourselves in raw).
-
-         ;; Output control:
-         :opost   nil     ; implementation defined output processing.
-         ;; :olcuc   nil     ; map lowercase touppercase (not POSIX).
-         :onlcr   nil     ; map NL to CR-NL on output.
-         :ocrnl   nil     ; map CR to NL on output.
-         :onocr   t       ; output CR at column 0.
-         :onlret  nil     ; don't output CR (ie. output CR).
-         :ofill   nil ; send  fill characters for a delay (instead of timer).
-         ;; :ofdel   nil ; (not POSIX, not linux) fill character is NUL; t =  fill character is DEL.
-         :nldly   :nl0   ; Newline delay mask (member :nl0 :nl1)
-         :crdly   :cr0   ; CR delay mask (member :cr0 :cr1 :cr2 :cr3)
-         :tabdly  :tab0 ; TAB delay mask  (member :tab0 :tab1 :tab2 :tab3)
-         :bsdly   :bs0  ; Backspace delay mask (member :bs0 :bs1)
-         :vtdly   :vt0  ; Vertical tab delay mask (member :vt0 :vt1)
-         :ffdly   :ff0  ; Form feed delay mask (member :ff0 :ff1)
-
-         ;; For modem control:
-         ;; ;; :cbaud    speed mask
-         ;; ;; :cbaudex  speed mask
-         ;; :csize    :cs8 ; (member :cs5 :cs6 :cs7 :cs8)
-         ;; :cstopb   nil  ; set two stop bits
-         ;; :cread    t    ; receiver
-         ;; :parenb   nil  ; parity generation on  output and parity checking on input.
-         ;; :parodd   nil  ; if set then parity is odd otherwise parity is even.
-         ;; :hupcl    nil  ; lower modem control lines after last  process closes the device (hang-up).
-         ;; :clocal   t    ; ignore modem control lines.
-         ;; :loblk    nil  ; (not POSIX, not linux)
-         ;; ;; :cibaud   mask for input speed
-         ;; ;; :cmspar   use stick (mark/space) parity.
-         ;; :crtscts t    ;  hardware flow control.
-
-
-         ;; Line control:
-
-         ;; Some implementations cannot really deal with signals, or
-         ;; at all eg. on MS-Windows, so we'll do without them.
-         
-         :isig     nil ;  when the character INTR, QUIT, SUSP, or DSUSP are received, generate the signal.
-         :icanon   nil ; canonical mode.
-         ;; :xcase    nil ; (not POSIX) (and :icanon :xcase) => upper case terminal
-         :echoe    nil ;             (and :icanon :echoe) => ERASE and WERASE erase the previous character and word.
-         :echok    nil ;             (and :icanon :echok) => KILL  erase current line.
-         :echonl   nil ;             (and :icanon :echonl) =>  echo the NL  even when :echo is t.
-         :echoke   nil ;             (and :icanon :echoke) => KILL is echoed by erasing each character on the line (as specified by :echoe and :echoprt).
-         :echoprt  nil ; (not POSIX) (and :icanon :iecho :echoprt) => characters are printed as they are erased. ( /a\  ??? )
-         :echo     t   ; echo of input characters
-         :echoctl  nil ; (not POSIX) (:echo :echoctl) control codes (not TAB,  NL, START, STOP) are  echoed as ^X
-         ;; :defecho  nil ; (not POSIX, not linux) Echo only when a process is reading.
-         ;; :flusho   nil ; (not POSIX, not linux) output is flushed.  Toggled by the DISCARD character.
-         :noflsh   t ; Disable flushing input and output when signaling INT, QUIT and SUSP.
-         :tostop   nil ; sends SIGTTOU to processes who writes to this terminal.
-         ;; :pendin   nil ; (not POSIX, not linux) input queue is reprinted when next char is read.
-         :iexten   nil ; implementation-defined input-processing. To enable EOL2, LNEXT, REPRINT, WERASE, and IUCLC.
-
-         ;; Character control:
-         :vintr    0 ; SIGINT                                    needs :isig t
-         :vquit    0 ; SIGQUIT                                   needs :isig t
-         :vsusp    0 ; SIGSUSP                                   needs :isig t
-         ;; :vdsusp  0 ; (not POSIX, not LINUX) SIGSUSP when read  needs :isig t :iexten t
-
-         :vmin     1 ; minimum number of characters for noncanonical read       
-         :vtime    0 ; timeout in decisecond for noncanonical read
-
-         :verase   0 ; erase character                           needs :icanon t
-         :vkill    0 ; erase line                                needs :icanon t
-         :veof     0 ; send input buffer (= eof when empty)      needs :icanon t
-         :veol     0 ; additionnal end of line character         needs :icanon t
-         :veol2    0 ; yet additionnal end of line character     needs :icanon t (not POSIX)
-         :vwerase  0 ; (not POSIX) word erase                    needs :icanon t :iexten t
-         :vreprint 0 ; (not POSIX) reprint unread characters     needs :icanon t :iexten t
-
-         :vstart  0 ; The X-ON character                        needs :ixon
-         :vstop   0 ; The X-OFF character                       needs :ixon
-
-         ;; :vswtch   0             ; (not POSIX, not linux) switch character.
-         ;; :vlnext   0             ; (not POSIX, not LINUX) literal next       needs :iexten t
-         ;; :vdiscard 0             ; (not POSIX, not LINUX) toggle start/stop discarding output needs :iexten t
-         ;; :vstatus  0             ; (not POSIX, not LINUX) status request
-         )))
+                    ))
+          (modern '(
+                    ;; Input control:
+                    :icrnl   t   ; translate CR to NL on input.
+                    ;; Line control:
+                    :icanon  t   ; canonical mode.
+                    :echoe   t   ;             (and :icanon :echoe) => ERASE and WERASE erase the previous character and word.
+                    :echok   t   ;             (and :icanon :echok) => KILL  erase current line.
+                    ))
+          (old    '(
+                    ;; Input control:
+                    :icrnl   nil ; translate CR to NL on input.
+                    ;; Line control:
+                    :icanon  nil ; canonical mode.
+                    :echoe   nil ;             (and :icanon :echoe) => ERASE and WERASE erase the previous character and word.
+                    :echok   nil ;             (and :icanon :echok) => KILL  erase current line.
+                    )))
+      (multiple-value-bind (diff same) 
+          (apply (function stty) input-file-descriptor
+                 ;; Character control:
+                 :vintr    vintr    
+                 :vquit    vquit    
+                 :vsusp    vsusp    
+                 :vkill    vkill    
+                 :veof     veof     
+                 :veol     veol     
+                 :verase   verase   
+                 :vreprint vreprint 
+                 :vstart   vstart   
+                 :vstop    vstop
+                 #+linux :veol2    #+linux veol2 ; yet additionnal end of line character     needs :icanon t (not POSIX)
+                 #+linux :vwerase  #+linux vwerase ; (not POSIX) word erase                    needs :icanon t :iexten t
+                 #+linux :vreprint #+linux vreprint ; (not POSIX) reprint unread characters     needs :icanon t :iexten t
+                 (append (if modern-mode modern old) common))
+        (declare (ignore same))
+        (when diff (warn "stty couldn't set those attributes: ~S" diff)))))
   terminal)
 
 
@@ -472,17 +662,20 @@ Valid only whe MODERN-MODE is false.
     (unless saved-termios
       (error "Calling ~S on a ~S not initialized."
              'terminal-finalize (class-name (class-of terminal))))
-    (setf (terminal-control-attributes input-file-descriptor :flush) saved-termios
+    (setf (termios-attributes input-file-descriptor :flush) saved-termios
           saved-termios nil))
   terminal)
 
 
 
 (defmethod terminal-columns ((terminal unix-terminal))
-  80)
+  (let ((terminfo:*terminfo* terminfo))
+    (or terminfo:columns 80)))
+
 
 (defmethod terminal-rows ((terminal unix-terminal))
-  25)
+  (let ((terminfo:*terminfo* terminfo))
+    (or terminfo:lines 25)))
 
 
 (defmethod terminal-ring-bell ((terminal unix-terminal))
@@ -658,14 +851,14 @@ Valid only whe MODERN-MODE is false.
                          (:escape    (function terminal-vintr))
                          (:attention (function terminal-vquit))
                          (:xoff      (function terminal-veol))
-                         (:delete    (function terminal-verase)))
+                         (:delete    (function terminal-verase))
+                         (:return    (function terminal-veol2)))
                        terminal)))
     (cond
       ((or (null code) (zerop code)) "(PAS DISPONIBLE)")
       ((= code  13) "[ENTRÉE]")
       ((= code  27) "[ÉCHAPEMENT]")
-      ((< code  32) (format nil "[CONTROL-~C]"
-                            (code-char (logand #x7f (+ 64 code)))))
+      ((< code  32) (format nil "[CONTRÔLE-~C]" (code-char (logand #x7f (+ 64 code)))))
       ((= code  32) "[ESPACE]")
       ((= code 127) "[EFFACEMENT]")
       (t (format nil "[~A]" (code-char code))))))
@@ -747,10 +940,14 @@ Valid only whe MODERN-MODE is false.
 (defun test/termios ()
   (let ((termios (terminal-control-attributes 0)))
     (mapcar (lambda (cc)
-              (let ((code  (terminal-control-character termios cc)))
+              (let ((code  (termios-control-character termios cc)))
                (list cc code (format nil "^~C" (code-char (logand #x7f (+ 64 code)))))))
             '(:vmin :vtime :vintr :vquit :vsusp #|:vdsusp|# :verase :vkill
-              :veof :veol :veol2 :vwerase :vreprint :vstart :vstop))))
+              :veof :veol
+              #-darwin :veol2
+              #-darwin :vwerase
+              #-darwin :vreprint
+              :vstart :vstop))))
 
 (defparameter *term* (make-instance 'unix-terminal))
 

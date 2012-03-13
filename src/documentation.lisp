@@ -133,7 +133,8 @@ RETURN: A string containing the character without accent
  '(("[ESC]"     . :escape)
    ("[CTRL-A]"  . :attention)
    ("[XOFF]"    . :xoff)
-   ("[DEL]"     . :delete)))
+   ("[DEL]"     . :delete)
+   ("[RETURN]"  . :return)))
 
 
 (defun process-doc (docstring)

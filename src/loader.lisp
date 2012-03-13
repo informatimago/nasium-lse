@@ -62,6 +62,9 @@
 (pushnew :lse-case-insensitive *features*)
 (pushnew :lse-unix             *features*)
 (pushnew :lse-extensions       *features*)
+#-(and) (pushnew :lse-mitra-15             *features*)
+#-(and) (pushnew :lse-t1600                *features*)
+
 
 (setf *print-right-margin* 200
       *print-pretty* t

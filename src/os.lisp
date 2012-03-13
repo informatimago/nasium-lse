@@ -232,4 +232,92 @@ PRE: (fd-stream-p stream)"
       #+sbcl  (sb-sys:fd-stream-fd stream)))
 
 
+
+;;;-----------------------------------------------------------
+;;; 
+
+(defun not-implemented-here (function-name)
+  (error "How to implement ~S in ~S"
+         function-name
+         (lisp-implementation-type)))
+
+
+(defun shell  (command &rest arguments)
+  #+clisp (ext:shell (format nil command arguments))
+  #-clisp (not-implemented-here 'shell))
+
+
+(defun run-program (program arguments &key (input :terminal) (output :terminal)
+                    (if-output-exists :error) (wait t))
+  "
+RETURN:     The status returned by the command.
+SEE ALSO:   SHELL
+"
+  #+clisp (ext:run-program program
+                           :arguments arguments
+                           :input input :output output
+                           :if-output-exists if-output-exists
+                           :wait wait)
+  #-clisp (not-implemented-here 'run-program))
+
+
+(defun quit (&optional (status 0))
+  #+ccl                  (ccl:quit status)
+  #+clisp                (ext:quit status)
+  #+(and cmu unix)       (UNIX:UNIX-EXIT status)
+  #+(and cmu (not unix)) (extensions:quit #|recklesslyp|# nil)
+  #+ecl                  (ext:quit status)
+  #+sbcl                 (sb-ext:quit status)
+  #-(or ccl clisp cmu ecl sbcl) (throw 'quit))
+
+
+(defun arguments ()
+  "Returns the command line arguments as a list of strings.
+This excludes the arguments processed by the lisp implementation."
+  #+ccl   (rest ccl:*command-line-argument-list*) ; ccl:*unprocessed-command-line-arguments*
+  #+clisp (rest ext:*args*)
+  #+cmu   extensions:*command-line-application-arguments*
+  #+ecl   (rest (member "--" ext:*command-args* :test (function string=)))
+  #+sbcl  (rest (member "--" sb-ext:*posix-argv* :test (function string=)))
+  #-(or ccl clisp cmu ecl sbcl) nil)
+
+
+(defun program-name ()
+  "Returns the actual program name used on the command line."
+  #+ccl   (first ccl:*command-line-argument-list*)
+  #+clisp (elt (ext:argv) 0)
+  #+cmu   extensions:*command-line-utility-name*
+  #+ecl   (first ext:*command-args*)
+  #+sbcl  (first sb-ext:*posix-argv*)
+  #-(or ccl clisp cmu ecl sbcl) nil)
+
+
+
+(defun prepare-options (options)
+  (mapcar (lambda (option)
+            (typecase option
+              (keyword (format nil "-~(~A~)" option))
+              (symbol  (string-downcase option))
+              (string  option)
+              (t       (prin1-to-string option))))
+          options))
+
+
+(defun uname (&rest options)
+  "Without OPTIONS, return a keyword naming the system (:LINUX, :DARWIN, etc).
+With options, returns the first line output by uname(1)."
+  (with-open-stream (uname (run-program "uname" (prepare-options options)
+                                        :input nil
+                                        :output :stream
+                                        :wait t))
+    (values (if options
+                (read-line uname)
+                (intern (string-upcase (read-line uname))
+                        "KEYWORD")))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;;
+
 ;;;; THE END ;;;;

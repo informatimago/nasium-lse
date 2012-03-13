@@ -190,7 +190,8 @@ When false, no automatic echo occurs.")
       (:escape    "[ESC]")
       (:attention "[CTRL-A]")
       (:xoff      "[CTRL-S]")
-      (:delete    "[\\]"))))
+      (:delete    "[\\]")
+      (:return    "[RETURN]"))))
 
 ;;----------------------------------------------------------------------
 ;; Standard I/O Terminal
@@ -292,7 +293,8 @@ and strings are read with read-line.")
     (:escape    "[CONTRÔLE-C]")
     (:attention "(PAS DISPONIBLE)")
     (:xoff      "[ENTRÉE]")
-    (:delete    "[EFFACEMENT]")))
+    (:delete    "[EFFACEMENT]")
+    (:return    "[ENTRÉE]")))
 
 
 ;;----------------------------------------------------------------------

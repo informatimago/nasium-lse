@@ -408,7 +408,8 @@ contents of the OUTPUT-BUFFER, moving the cursor to the CURRENT-COLUMN."
     (:escape    "[CONTRÔLE-C] [CONTRÔLE-C]")
     (:attention "(PAS DISPONIBLE)")
     (:xoff      "[ENTRÉE]")
-    (:delete    "[EFFACEMENT]")))
+    (:delete    "[EFFACEMENT]")
+    (:return    "[ENTRÉE]")))
 
 
 ;;;; THE END ;;;;

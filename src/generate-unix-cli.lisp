@@ -48,6 +48,9 @@
 (pushnew :developing           *features*)
 (pushnew :lse-case-insensitive *features*)
 (pushnew :lse-unix             *features*)
+(pushnew :lse-extensions       *features*)
+#-(and) (pushnew :lse-mitra-15             *features*)
+#-(and) (pushnew :lse-t1600                *features*)
 
 
 #+ (and ccl linux) (asdf:run-shell-command "rm -rf /home/pjb/.cache/common-lisp/kuiper.lan.informatimago.com/ccl-1.7-f94-linux-amd64/home/pjb/src/git/pjb/lse-cl/src/")
@@ -60,6 +63,30 @@
 
 (ql:quickload :com.informatimago.lse.unix-cli)
 
+
+;;;---------------------------------------------------------------------
+;;; Let's run some tests:
+
+(in-package "COM.INFORMATIMAGO.LSE")
+(format t "~2%Running a few tests.~%")
+(finish-output)
+
+(unless (fboundp 'etl)
+  (format t "ETL not bound~% *features* = ~S~%" *features*)
+  (finish-output)
+  #+ccl (ccl:quit))
+
+(setf  ccl:*backtrace-print-level* nil)
+(test/fonctions :silence t)
+
+(setf *debug-vm*   t
+      *debug-repl* t)
+
+
+;;;---------------------------------------------------------------------
+;;; Checking the licenses of the dependencies, and writing the manifest.
+
+(in-package "CL-USER")
 
 (defparameter *system-licenses*
   '(("cl-ppcre" . "BSD-2")
@@ -208,18 +235,20 @@ System and distrib are keywords, release is a string."
   (values))
 
 
-(write-manifest)
-
 
 
 (format t "~%Generating ~A~%" (executable-filename *program-name*))
+(finish-output)
+
+(write-manifest)
+
 
 #+ccl (progn (princ "ccl:save-application will exit.") (terpri) (finish-output))
 #+ccl (ccl:save-application
        (executable-filename *program-name*)
        :toplevel-function (function com.informatimago.lse.unix-cli:main)
        :init-file nil
-       :error-handler :quit-quitely
+       :error-handler :quit-quietly
        ;; :application-class ccl:lisp-development-system
        ;; :clear-clos-cache t
        :purify nil
@@ -256,4 +285,3 @@ System and distrib are keywords, release is a string."
     (load "generate-unix-cli.lisp")
 |#
 ;;;; THE END ;;;;
-

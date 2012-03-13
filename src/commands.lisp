@@ -1744,15 +1744,18 @@ Voir la commande TABLE DES FICHIERS."
                                    (let ((line (io-read-line task :beep (not (task-silence task)))))
                                      (if (task-interruption task)
                                          (progn
-                                          (io-standard-redirection task)
-                                          (echo)
-                                          (io-format *task* "~%PRET~%"))
+                                           (io-standard-redirection task)
+                                           (echo)
+                                           (io-format *task* "~%PRET~%"))
                                          (command-eval-line task line)))
                                  (end-of-file (err)
                                    (if (and (io-tape-input-p *task*)
                                             (eql (stream-error-stream err) (task-input *task*)))
                                        (io-stop-tape-reader *task*)
-                                       (error err))))))
+                                       (progn
+                                         ;; end-of-file on input, let's exit.
+                                         ;; (error err)
+                                         (signal 'au-revoir)))))))
                         (if *debug-repl*
                             (handler-bind ((lse-error     (function signal))
                                            (scanner-error (function signal))

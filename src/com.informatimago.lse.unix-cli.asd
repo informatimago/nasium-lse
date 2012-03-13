@@ -59,7 +59,7 @@
                  #+(and unix (not clisp)) :iolib.syscalls
                  #+(and unix (not clisp)) :iolib.termios
                  
-                 
+                 :com.informatimago.common-lisp.unix
                  :com.informatimago.lse
                  )
     :components (
@@ -67,10 +67,12 @@
                  (:file "patch-cffi-uffi")
                  
                  (:file "unix-cli-package")
+                 (:file "arguments"           :depends-on ("unix-cli-package"))
                  (:file "swank-terminal"      :depends-on ("unix-cli-package"))
                  (:file "unix-terminal"       :depends-on ("unix-cli-package"))
                  (:file "terminfo-terminal"   :depends-on ("unix-cli-package"))
                  (:file "unix-cli"            :depends-on ("unix-cli-package"
+                                                           "arguments"
                                                            "swank-terminal"
                                                            "terminfo-terminal"
                                                            "unix-terminal"))

@@ -40,7 +40,9 @@
   (:use "COMMON-LISP")
   (:export "GETENV" "GETUID"
            "RUN-SHELL-COMMAND"
-           "MAKE-FD-STREAM" "FD-STREAM-P" "FD-STREAM-FD")
+           "MAKE-FD-STREAM" "FD-STREAM-P" "FD-STREAM-FD"
+           "SHELL" "RUN-PROGRAM" "QUIT" "ARGUMENTS" "PROGRAM-NAME"
+           "UNAME" "STTY")
   (:documentation "A portability layer for a few OS operators."))
 
 

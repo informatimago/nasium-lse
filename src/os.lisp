@@ -34,6 +34,27 @@
 
 (in-package "COM.INFORMATIMAGO.LSE.OS")
 
+(defparameter *external-format/iso-8859-1*
+  #+clisp charset:iso-8859-1
+  #+ccl  (ccl:make-external-format :domain :file
+                                   :character-encoding :iso-8859-1
+                                   :line-termination :unix)
+  #+cmu  :iso-8859-1
+  #+ecl  :iso-8859-1
+  #+sbcl :iso-8859-1)
+
+
+(defparameter *external-format/utf-8*
+  #+clisp charset:utf-8
+  #+ccl  (ccl:make-external-format :domain :file
+                                   :character-encoding :utf-8
+                                   :line-termination :unix)
+  #+cmu  :utf-8
+  #+ecl  :utf-8
+  #+sbcl :utf-8)
+
+
+
 (defun getenv (var)
   #+ccl           (ccl::getenv var)
   #+clisp         (ext:getenv var)

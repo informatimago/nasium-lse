@@ -217,8 +217,8 @@ RETURN: A sublist of options that didn't change successfully;
     (loop
       :with different = '()
       :with same      = '()
-      :for (okey oval) :on old
-      :for (nkey nval) :on new
+      :for (okey oval) :on old :by (function cddr)
+      :for (nkey nval) :on new :by (function cddr)
       :do (progn
             (unless (eq okey nkey)
               (error "~S internal error ~S /= ~S"
@@ -518,14 +518,6 @@ Valid only whe MODERN-MODE is false.
     (setf modern-mode new-mode)))
 
 
-(defparameter *external-format/iso-8859-1*
-  #+clisp charset:iso-8859-1
-  #+ccl  (ccl:make-external-format :domain :file
-                                   :character-encoding :iso-8859-1
-                                   :line-termination :unix)
-  #+cmu  :iso-8859-1
-  #+ecl  :iso-8859-1
-  #+sbcl :iso-8859-1)
 
 
 (defmethod initialize-instance :after ((terminal unix-terminal) &rest args
@@ -651,7 +643,8 @@ Valid only whe MODERN-MODE is false.
                  #+linux :vwerase  #+linux vwerase ; (not POSIX) word erase                    needs :icanon t :iexten t
                  #+linux :vreprint #+linux vreprint ; (not POSIX) reprint unread characters     needs :icanon t :iexten t
                  (append (if modern-mode modern old) common))
-        (declare (ignore same))
+        (declare (ignorable same))
+        #+swank (print same *terminal-io*)
         (when diff (warn "stty couldn't set those attributes: ~S" diff)))))
   terminal)
 
@@ -669,13 +662,15 @@ Valid only whe MODERN-MODE is false.
 
 
 (defmethod terminal-columns ((terminal unix-terminal))
-  (let ((terminfo:*terminfo* terminfo))
-    (or terminfo:columns 80)))
+  (with-slots (terminfo) terminal
+   (let ((terminfo:*terminfo* terminfo))
+     (or terminfo:columns 80))))
 
 
 (defmethod terminal-rows ((terminal unix-terminal))
-  (let ((terminfo:*terminfo* terminfo))
-    (or terminfo:lines 25)))
+  (with-slots (terminfo) terminal
+   (let ((terminfo:*terminfo* terminfo))
+     (or terminfo:lines 25))))
 
 
 (defmethod terminal-ring-bell ((terminal unix-terminal))
@@ -810,6 +805,7 @@ Valid only whe MODERN-MODE is false.
         (if input-finished
             (finish)
             (loop
+              #+swank (print (list buffer input-finished input-read) *terminal-io*)
               (read-one-char terminal)
               (when input-finished
                 (return (finish)))))))))
@@ -840,6 +836,7 @@ Valid only whe MODERN-MODE is false.
         (if input-finished
             (finish)
             (loop
+              #+swank (print (list buffer input-finished input-read) *terminal-io*)
               (read-one-char terminal)
               (when input-finished
                 (return (finish)))))))))

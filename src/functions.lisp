@@ -334,7 +334,6 @@ Résultat: L'opposé de A."
   (let ((a (deref *vm* a))) (-        (un-nombre a))))
 
 
-
 (defunction (abso "ABS") (a)
   "Valeur absolue"
   "ABS(A)

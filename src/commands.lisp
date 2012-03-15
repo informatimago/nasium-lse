@@ -437,13 +437,22 @@
                            (pop body)
                            nil))
         (fname         (intern (substitute #\- #\space name)
-                               "COM.INFORMATIMAGO.LSE")))
+                               "COM.INFORMATIMAGO.LSE"))
+        (initials      (subseq name 0 2)))
     `(progn
        (defun ,fname ,arguments
          ,@body)
+       (add-chapter ',initials
+                    (defchapter (,name "COMMANDES" ,oneliner)
+                        , (with-output-to-string (out)
+                            (format out "~2%~A)~A ~@[~A~]~2%"
+                                    initials
+                                    (subseq name 2)
+                                    (syntax grammar))
+                            (write-documentation out (or documentation oneliner)))))
        (add-command-to-group
         (make-command
-         :initials      ,(subseq name 0 2)
+         :initials      ,initials
          :name          ,name
          :grammar       ',grammar ;; (when grammar (find-grammar (string grammar)))
          :parser        ,(when grammar
@@ -554,6 +563,9 @@ Bound by COMMAND-EVAL-LINE.")
 
 (defcommand "AIDER" common nil ()
   "Affiche la liste des commandes disponibles."
+  "Affiche la liste des commandes disponibles.
+
+Voir la commande: DOCUMENTATION."
   (io-format *task* "~%LES COMMANDES DISPONIBLES SONT:~2%")
   (let ((*print-right-margin* 80))
     (dolist (command (all-commands *command-group*))
@@ -569,9 +581,14 @@ Bound by COMMAND-EVAL-LINE.")
 
 (defcommand "DOCUMENTATION" common une-ligne (what)
   "Affiche la documentation d'une commande ou d'une instruction."
+  "Affiche la documentation d'une commande ou d'une instruction.
+
+Voir la commande: AIDER"
   (let ((width (terminal-columns (task-terminal *task*))))
     (cond
-      ((string-equal what "COMMANDES") (aider))
+      ((string-equal what "COMMANDES")
+       (aider))
+      #-(and)
       ((let ((command (or (find-command what *command-group* :in-extenso nil)
                           (find-command what *command-group* :in-extenso t))))
          (when command
@@ -581,11 +598,14 @@ Bound by COMMAND-EVAL-LINE.")
                       (syntax (command-grammar command)))
            (write-documentation *task* (command-documentation command))
            t)))
-      ((let ((chapter (find-chapter what)))
-         (when chapter
-           (io-format *task* "~2%~A~%~V,,,'-<~>~2%"
+      ((let ((chapters (find-chapter what)))
+         (dolist (chapter chapters)
+           (io-format *task* "~2%~A ~A~%~V,,,'-<~>~2%"
+                      (chapter-category chapter)
                       (chapter-title chapter)
-                      (length (chapter-title chapter)))
+                      (+ (length (chapter-title chapter))
+                         1
+                         (length (chapter-category chapter))))
            (if (stringp (chapter-text chapter))
                (write-documentation *task* (chapter-text chapter))
                (funcall (chapter-text chapter) chapter))
@@ -604,6 +624,8 @@ DO)CUMENTATION INSTRUCTIONS   donne la liste des instructions;
 DO)CUMENTATION FONCTIONS      donne la liste des fonctions;
 DO)CUMENTATION COMMANDES      donne la liste des commandes;
 AI)DE                         donne la liste des commandes.")))))))
+
+
 
 #-lse-unix
 (defcommand "IDENTIFICATION" common un-numero (identification)
@@ -851,11 +873,17 @@ commande BONJOUR)."
 
 (defcommand "ABREGER" awake     nil ()
   "Ne complète pas l'affichage des commandes."
+  "Ne complète pas l'affichage des commandes.
+
+Voir la commande IN EXTENSO."
   (io-new-line *task*)
   (setf (task-abreger   *task*) t))
 
 (defcommand "IN EXTENSO" awake  nil ()
   "Annule la commande ABREGER: complète l'affichage des commandes."
+  "Annule la commande ABREGER: complète l'affichage des commandes.
+
+Voir la commande ABREGER."
   (io-new-line *task*)
   (setf (task-abreger   *task*) nil))
 
@@ -867,7 +895,9 @@ commande BONJOUR)."
   "Fait afficher le programme courant de l'utilisateur, à partir de la
 ligne N1 jusqu'à la ligne N2, si N2 est présent, sinon jusqu'à la fin.
 En cours de listage, la touche d'interruption [ESC] peut être utilisée
-pour l'arrêter.  "
+pour l'arrêter.
+
+Voir les commandes NUMERO A PARTIR DE, EFFACER LIGNES, PERFORER A PARTIR DE."
   (io-new-line *task*)
   (io-format *task* "~{~A~%~}"
              (mapcar (function code-source)
@@ -876,7 +906,9 @@ pour l'arrêter.  "
 (defcommand "NUMERO A PARTIR DE" awake   deux-numeros-optionels (from to)
   "Affiche les numéros de lignes utilisés."
   "Fait afficher les numéros de lignes utilisés à partir du numéro N1
-jusqu'au numéro N2, si N2 est présent, sinon jusqu'à la fin"
+jusqu'au numéro N2, si N2 est présent, sinon jusqu'à la fin.
+
+Voir les commandes LISTER A PARTIR DE, EFFACER LIGNES, PERFORER A PARTIR DE."
   (io-new-line *task*)
   (io-format *task* "~{~A~%~}"
              (mapcar (function code-line)
@@ -888,7 +920,9 @@ jusqu'au numéro N2, si N2 est présent, sinon jusqu'à la fin"
   "Si * est donné, efface tout le programme courant de l'utilisateur.
 Sinon supprime les lignes dont les numéros sont indiqués par N1, N2,
 ... Nn, ou les lignes de numéro N1 à N2 inclus, dans le programme
-courant de l'utilisateur."
+courant de l'utilisateur.
+
+Voir les commandes LISTER A PARTIR DE, NUMERO A PARTIR DE, PERFORER A PARTIR DE."
   (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (if (eql :all liste-de-numeros)
@@ -949,7 +983,10 @@ courant de l'utilisateur."
 conservés sur des \"étagère\", c'est à dire, enregistrés dans des répertoires.
 
 Cette commande permet de sélectionner le répertoire où les rubans
-perforés sont enregistrés."
+perforés sont enregistrés.
+
+Voir les commandes SELECTIONNER RUBAN, RUBAN, PERFORER A PARTIR DE, ARCHIVER RUBAN.
+"
   (io-new-line *task*)
   (when (and (stringp chemin)
              (< 1 (length chemin))
@@ -965,6 +1002,9 @@ perforés sont enregistrés."
 
 (defcommand "SELECTIONNER RUBAN" awake un-fichier (ruban)
   "Selectionne un ruban de l'étagère et le place dans le lecteur de ruban."
+  "Selectionne un ruban de l'étagère et le place dans le lecteur de ruban.
+
+Voir les commandes ETAGERE DE RUBAN, RUBAN, PERFORER A PARTIR DE, ARCHIVER RUBAN."
   (io-new-line *task*)
   (let ((path (catalog-pathname ruban "R")))
     (when (task-tape-input *task*)
@@ -973,9 +1013,12 @@ perforés sont enregistrés."
     (io-format *task* "~&LE RUBAN ~:@(~A~) (~A) EST MIS EN PLACE.~%"
                ruban (read-line (task-tape-input *task*)))))
 
+
 (defcommand "RUBAN" awake nil ()
   "Active la lecture du ruban perforé."
-  "Cette commande déclenche le lecteur de ruban de la télétype."
+  "Cette commande déclenche le lecteur de ruban de la télétype.
+
+Voir les commandes ETAGERE DE RUBAN, SELECTIONNER RUBAN, PERFORER A PARTIR DE, ARCHIVER RUBAN."
   (io-new-line *task*)
   (silence)
   (io-start-tape-reader *task*))
@@ -1004,7 +1047,9 @@ temporaire.  Le ruban ainsi perforé peut alors être archivé sur une
 étagère avec la commande ARCHIVER RUBAN.
 
 Le programme est perforé à partir de la ligne N1 jusqu'à la ligne N2,
-si N2 est présent sinon jusqu'à la fin."
+si N2 est présent sinon jusqu'à la fin.
+
+Voir les commandes ETAGERE DE RUBAN, SELECTIONNER RUBAN, RUBAN, ARCHIVER RUBAN."
   #-(and) "Permet d'obtenir un ruban perforé comme support du programme
 L.S.E. rentré à la console.
 
@@ -1021,8 +1066,12 @@ si N2 est présent sinon jusqu'à la fin."
   (io-format *task* "~&PERFORATION EFFECTUEE.~%"))
 
 
+
 (defcommand "ARCHIVER RUBAN" awake un-fichier (ruban)
   "Nomme le ruban qui vient d'être perforé et l'archive sur l'étagère."
+  "Nomme le ruban qui vient d'être perforé et l'archive sur l'étagère.
+
+Voir les commandes ETAGERE DE RUBAN, SELECTIONNER RUBAN, RUBAN, PERFORER A PARTIR DE."
   (io-new-line *task*)
   (let ((dst-path (catalog-pathname ruban "R"))
         (src (task-tape-output *task*)))
@@ -1050,13 +1099,18 @@ si N2 est présent sinon jusqu'à la fin."
   "Supprime l'affichage de tout ce que l'utilisateur tape au clavier."
   "Supprime l'affichage de tout ce que l'utilisateur tape au clavier.
 L'effet de cette commande est annulé par la touche [ESC] ou par
-commande ECHO."
+commande ECHO.
+
+Voir les commandes ECHO, RUBAN."
   (io-new-line *task*)
   (setf (task-silence *task*) t))
 
 
 (defcommand "ECHO" awake  nil ()
   "Active l'affichage de tout ce que l'utilisateur tape au clavier."
+  "Active l'affichage de tout ce que l'utilisateur tape au clavier.
+
+Voir les commandes SILENCE, RUBAN."
   (io-new-line *task*)
   (setf (task-silence *task*) nil))
 
@@ -1076,14 +1130,18 @@ Pour faire continuer l'exécution il suffit de frapper RET mais on peut
 aussi utiliser toute autre commande ou le mode «machine de bureau»;
 pour revenir à l'exécution du programme, il faudra alors utiliser la
 commande CONTINUER.
-"
+
+Voir les commandes NORMAL, CONTINUER, REPRENDRE A PARTIR DE, POURSUIVRE JUSQU'EN."
   (io-new-line *task*)
   (setf (vm-pas-a-pas (task-vm *task*)) t))
 
 
 (defcommand "NORMAL" awake      nil ()
   "Annule la commande PAS A PAS."
-  (io-new-line *task*)
+  "Annule la commande PAS A PAS.
+
+Voir les commandes PAS A PAS, CONTINUER, REPRENDRE A PARTIR DE, POURSUIVRE JUSQU'EN."
+(io-new-line *task*)
   (setf (vm-pas-a-pas (task-vm *task*)) nil))
 
 
@@ -1107,7 +1165,9 @@ L'exécution se poursuivra jusqu'à ce qu'on arrive :
   le numéro de la ligne où l'on avait appelé cette procédure.
 
 - L'utilisation de la touche d'interruption [ESC] arrête également
-  l'exécution."
+  l'exécution.
+
+Voir les commandes PAS A PAS, NORMAL, CONTINUER, REPRENDRE A PARTIR DE, POURSUIVRE JUSQU'EN."
   (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (unless (or (null to) (vm-line-exist-p vm to))
@@ -1124,7 +1184,9 @@ L'exécution se poursuivra jusqu'à ce qu'on arrive :
   "Continue l'exécution du programme après une pause."
   "Permet de relancer l'exécution d'un programme momentanément
 interroompu par l'instruction PAUSE ou la touche d'interruption
-[ESC].  L'exécution reprend à l'endroit où elle fut arrêtée."
+[ESC].  L'exécution reprend à l'endroit où elle fut arrêtée.
+
+Voir les commandes PAS A PAS, NORMAL, EXECUTER A PARTIR DE, REPRENDRE A PARTIR DE, POURSUIVRE JUSQU'EN."
   (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (if (vm-pausedp vm)
@@ -1148,7 +1210,9 @@ où elle fut interrompue.
   à l'interruption sont conservées.
 
 L'exécution du programme est toujours reprise au niveau principal
-\(même si le programme avait été interrompu dans une procédure)."
+\(même si le programme avait été interrompu dans une procédure).
+
+Voir les commandes PAS A PAS, NORMAL, EXECUTER A PARTIR DE, CONTINUER, POURSUIVRE JUSQU'EN."
   (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (unless (or (null to) (vm-line-exist-p vm to))
@@ -1163,7 +1227,9 @@ L'exécution du programme est toujours reprise au niveau principal
 
 (defcommand "POURSUIVRE JUSQU'EN" awake   numero-de-ligne (linum)
   "Continue l'exécution du programme jusqu'à la ligne indiquée."
-  "Relance l'exécution comme CONTINUER, mais avec un arrêt en ligne N."
+  "Relance l'exécution comme CONTINUER, mais avec un arrêt en ligne N.
+
+Voir les commandes PAS A PAS, NORMAL, EXECUTER A PARTIR DE, CONTINUER, REPRENDRE A PARTIR DE."
   (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (unless (or (null linum) (vm-line-exist-p vm linum))
@@ -1385,7 +1451,7 @@ fichier données NOMF1 qui devient donc un fichier permanent.
 
 Les fichiers permanents sont garés dans le répertoire courant.
 
-Voir les commandes: AFFICHER REPERTOIRE, CHANGER REPERTOIRE, TABLE DES
+Voir les commandes AFFICHER REPERTOIRE, CHANGER REPERTOIRE, TABLE DES
 FICHIERS."
   (io-new-line *task*)
   (let ((src-path (catalog-pathname temporaire :t))
@@ -1436,22 +1502,28 @@ FICHIERS."
 SUPPRIMER * supprime tous les fichiers temporaires.
 
 SUPPRIMER NOMFI,P|D|T supprime le fichier Programme, Donnée permanent,
-ou Temporaire indiqué."
+ou Temporaire indiqué.
+
+Voir les commandes TABLE DES FICHIERS, UTILISATION DISQUE."
   (if (equal fichier '*)
       (supprimer-tous-les-fichiers-temporaires)
       (supprimer fichier fictype)))
 
 
 (defcommand "AFFICHER REPERTOIRE" awake nil ()
-  "Affiche le répertoire courant."
+  "Affiche le répertoire courant.
+
+Voir les commandes CHANGER REPERTOIRE, TABLE DES FICHIER, UTILISATION DISQUE."
   (io-new-line *task*)
   (io-format *task* "REPERTOIRE COURANT: ~A~%" *current-directory*))
 
 
 (defcommand "CHANGER REPERTOIRE" awake une-ligne (nouveau-repertoire)
   "Change le répertoire courant."
-  "Change le répertoire courant.  Le TEXTE donné désigne un chemin
-absolu ou relatif à l'ancien répertoire courant."
+  "Change le répertoire courant.  Le TEXTE donné désigne un chemin unix
+absolu, ou relatif à l'ancien répertoire courant.
+
+Voir les commandes AFFICHER REPERTOIRE, TABLE DES FICHIER, UTILISATION DISQUE."
   (io-new-line *task*)
   (when (and (stringp nouveau-repertoire)
              (< 1 (length nouveau-repertoire))
@@ -1469,7 +1541,7 @@ absolu ou relatif à l'ancien répertoire courant."
   "Cette comamnde liste tous les fichiers programmes et donnée du
 répertoire courant, et les fichiers temporaires.
 
-Voir la commande UTILISATION DISQUE."
+Voir les commandes UTILISATION DISQUE, SUPPRIMER."
   (io-format *task* "  ~A~%" (dat))
   (flet ((list-files (type directory control-string modulo)
            (let* ((files  (directory (make-pathname :name :wild
@@ -1535,7 +1607,7 @@ Voir la commande UTILISATION DISQUE."
     "Cette comamnde liste tous les fichiers programmes et donnée du
 répertoire courant, et les fichiers temporaires.
 
-Voir la commande TABLE DES FICHIERS."
+Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
   (table-des-fichiers)
   (io-format *task* "~%NOMBRE DE SECTEUR LIBRES:~D~
                      ~%*************************~

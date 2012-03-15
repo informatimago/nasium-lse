@@ -61,7 +61,7 @@ DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLv3.
 Ce programme est livré avec ABSOLUMENT AUCUNE GARANTIE; pour plus de
 détails utilisez la commande DO GARANTIE.  Ce logiciel est libre, et
 vous êtes les bienvenus pour redistribuer sous certaines conditions;
-utilisez la commande DO COPIE pour plus de détails.
+utilisez la commande DO LICENSE pour plus de détails.
 
 Tapez AI pour avoir de l'aide.
 
@@ -123,9 +123,10 @@ BONJOUR     ~8A
                              'unix-terminal
                              #+(and (not swank) (not unix))
                              'standard-terminal))
-           (terminal (make-instance terminal-class
+           #-(and) (terminal (make-instance terminal-class
                          :input-stream  (stream-input-stream  *terminal-io*)
                          :output-stream (stream-output-stream *terminal-io*)))
+           (terminal (make-instance 'unix-terminal))
            (task     (make-instance 'task
                          :state :active
                          :case-insensitive t
@@ -142,6 +143,7 @@ BONJOUR     ~8A
             (unwind-protect
                  (let ((*debugger-hook*
                         (lambda (condition debugger-hook)
+                          (declare (ignore condition))
                           ;; We shouldn't come here.
                           (when debugger-hook
                             (terminal-finalize terminal))

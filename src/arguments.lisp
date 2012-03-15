@@ -68,12 +68,77 @@ Voir 'EMULSE.TXT' et 'SYSTEMES.TXT'.
 ")
 
 
-;; (define-option ("aide" "--aide") ()
-;;   "Donne cette aide."
+(defchapter ("INTRODUCTION" "OPTIONS")
+    #.(format nil "
+
+~0@*~A est une commande unix interactive implémentant un système
+L.S.E. avec son interpréteur.
+
+~0@*~A accepte les options décrites dans ce chapitre.
+
+Selon le compilateur Common Lisp utilisé pour compiler cette commande,
+ces options peuvent devoir s'écrire après une option '--'.  (Les
+options précédant '--' étant interprétées par l'implémentation Common
+Lisp).
+
+[AFAIRE] Établir la liste exacte des implémentations nécessitant '--'.
+
+
+Ces options permettent de configurer le terminal, et les touches
+utilisées.  Sur le systèmes L.S.E. MITRA-15 et T1600 des années 1970,
+les terminaux était trés simples, et on tapait [CONTRÔLE-S] pour
+envoyer les données saisies à l'ordinateur, la touche [ÉCHAPPEMENT]
+pour interrompre un programme, la touche [\\] pour annuler le
+caractère précédent, et la touche [CONTRÔLE-A] pour envoyer un signal
+d'attention au programme.  La touche [ENTRÉE] pouvait être utilisée
+pour saisir une chaîne, mais alors le code CARRIAGE RETURN était
+ajouté en fin de chaîne.  Les consoles et télétypes n'étaient capable
+d'afficher et d'encoder seulement des caractères majuscules, et les
+accents étaient totalement inconnus.
+
+Sur un terminal unix, on utilise [ENTRÉE] pour la saisie des données,
+[EFFACEMENT] pour supprimer le caractère précédent, généralement,
+[CONTRÔLE-C] pour interrompre un programme, et d'autres touches
+configurées avec stty(1).  Les minuscules sont la norme.
+
+On peut donc configurer ~0@*~A avec des options sur la ligne de
+commande, ou interactivement, pour utiliser le mode ancien ou un mode
+moderne.
+
+[AFAIRE] établir un fichier de configuration pour éviter d'avoir à
+refaire ces configurations à chaque fois.
+
+~0@*~A tient compte des variables d'environnement suivantes:
+
+LC\\_ALL, ou sinon LC\\_CTYPE, ou sinon LANG donnent l'encodage du
+terminal.
+
+TERM indiquent le type de terminal. 
+"
+              "lse"))
+
+
+
+(defmacro defoption (names parameters &body body)
+  (let ((docstring (when (stringp (first body))
+                       (first body))))
+   `(progn
+      , (when docstring
+          (loop
+             :for sexp = `(defchapter (,(first names) "OPTIONS")
+                             ,docstring)
+             :for name :in (rest names)
+             :do (setf sexp `(add-chapter ,name ,sexp))
+             :finally (return sexp)))
+        (define-option ,names ,parameters ,@body))))
+
+
+;; (defoption ("aide" "--aide") ()
+;;   "Affiche la liste des options."
 ;;   (call-option-function "help" ()))
 
-(define-option ("aide" "--aide" "help" "-h" "--help") ()
-  "Donne cette aide."
+(defoption ("--aide" "aide" "-h" "--help" "help") ()
+  "Affiche la liste des options."
   (let ((options (option-list)))
     (format t "~2%Options de la commande ~A:~2%" (pname))
     (dolist (option (sort options (function string<)
@@ -89,7 +154,27 @@ Voir 'EMULSE.TXT' et 'SYSTEMES.TXT'.
     (parse-options-finish ex-ok)))
 
 
-(define-option ("--dectech-font") ()
+
+(defoption ("--version" "-V" "-v") ()
+  "Affiche la version."
+  (format t "
+L.S.E.
+VERSION ~A-UNIX
+COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
+
+DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLv3.
+
+Ce programme est livré avec ABSOLUMENT AUCUNE GARANTIE; pour plus de
+détails utilisez la commande DO GARANTIE.  Ce logiciel est libre, et
+vous êtes les bienvenus pour redistribuer sous certaines conditions;
+utilisez la commande DO COPIE pour plus de détails.
+
+"
+          *version*)
+  (parse-options-finish ex-ok))
+
+
+(defoption ("--dectech-font") ()
   "
 Le terminal est configuré avec une police de caractères DecTech.  Les
 caractères _ et ^ sont alors mappés sur flêche vers la gauche et
@@ -98,7 +183,7 @@ flêche vers le haut.
   (setf (options-output-dectech *options*) t))
 
 
-(define-option ("--rejeter-minuscules" "--reject-lowcase") ()
+(defoption ("--rejeter-minuscules" "--reject-lowcase") ()
   "
 Rejette tout caractère minuscule comme caractère invalide, ce qui
 force l'utilisateur à ne saisir que des caractères majuscules.
@@ -106,7 +191,7 @@ force l'utilisateur à ne saisir que des caractères majuscules.
   (setf (options-input-reject-lowcase *options*) t))
 
 
-(define-option ("--accepter-minuscules" "--accept-lowcase") ()
+(defoption ("--accepter-minuscules" "--accept-lowcase") ()
   "
 Accepte les caractères minuscules.  (Défaut).  Note: les mots clés et
 identificateurs sont toujours mis en majuscules, mais les chaînes
@@ -115,21 +200,21 @@ peuvent contenir des minuscules.
   (setf (options-input-reject-lowcase *options*) nil))
 
 
-(define-option ("--afficher-en-majuscules" "--upcase-output") ()
+(defoption ("--afficher-en-majuscules" "--upcase-output") ()
   "
 Fait afficher tout en majuscules, comme sur les anciens terminaux.
 "
   (setf (options-output-upcase *options*) t))
 
 
-(define-option ("--affichage-mixte" "--mixed-output") ()
+(defoption ("--affichage-mixte" "--mixed-output") ()
   "
 Affiche en majuscules et minisucules.  (Défaut).
 "
   (setf (options-output-upcase *options*) nil))
 
 
-(define-option ("--afficher-sans-accent" "--no-accent-output") ()
+(defoption ("--afficher-sans-accent" "--no-accent-output") ()
   "
 si le terminal n'est pas capable d'afficher les accents, cette option
 permet de convertir les lettres accentuees en lettres sans accent.
@@ -137,14 +222,14 @@ permet de convertir les lettres accentuees en lettres sans accent.
   (setf (options-output-accented *options*) nil))
 
 
-(define-option ("--afficher-avec-accent" "--accented-output") ()
+(defoption ("--afficher-avec-accent" "--accented-output") ()
   "
 Assume que le terminal est capable d'afficher les accents.  (Défaut).
 "
   (setf (options-output-accented *options*) t))
 
 
-(define-option ("--mode-moderne" "--modern-mode") ()
+(defoption ("--mode-moderne" "--modern-mode") ()
   "
 Dans le mode moderne, les caractères et codes de contrôle configurés
 par stty(1) sont utilisé (en général, [RETOUR] pour entrer une donnée,
@@ -154,7 +239,7 @@ etc).  (Défaut).
   (setf (options-modern-mode *options*) t))
 
 
-(define-option ("--mode-ancien" "--old-mode") ()
+(defoption ("--mode-ancien" "--old-mode") ()
   "
 Dans le mode ancien, on utilise [CONTRÔLE-S] (X-OFF) pour entrer une
 donnée,  [\\] pour effacer un caractère, et [ÉCHAPEMENT] pour
@@ -225,7 +310,7 @@ interrompre, entre autres.
   options)
 
 
-(define-option ("--configuration-interactive" "--interactive-configuration") ()
+(defoption ("--configuration-interactive" "--interactive-configuration") ()
   "
 Permet d'effectuer la saisie des options de ligne de commande de
 manière interactive.
@@ -233,7 +318,7 @@ manière interactive.
   (setf *options* (configuration-interactive *options*)))
 
 
-(define-option ("--montrer-touches" "--show-bindings") ()
+(defoption ("--montrer-touches" "--show-bindings") ()
   "
 Affiche les touches à utiliser.
 "

@@ -50,8 +50,13 @@ help:
 ChangeLog:
 	git log > ChangeLog
 
-unix-cli:
-	ccl --batch --load generate-unix-cli.lisp
+unix-cli:unix-cli/ccl unix-cli/clisp
+
+unix-cli/ccl:
+	ccl   --batch   --load generate-unix-cli.lisp
+
+unix-cli/clisp:
+	clisp -ansi -q         generate-unix-cli.lisp
 
 variables:
 	@echo pwd=$$(pwd)

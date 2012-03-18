@@ -32,7 +32,7 @@
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
 
-(in-package "CL-USER")
+(in-package "COMMON-LISP-USER")
 (setf *print-right-margin* 80
       *print-pretty* t
       *print-case* :downcase)
@@ -40,7 +40,6 @@
 #+windows-target (cd #P"/cygwin/home/pjb/src/pjb/lse-cl/src/")
 #-windows-target (cd #P"/home/pjb/src/pjb/lse-cl/src/")
 (pushnew (pwd) asdf:*central-registry* :test 'equal)
-
 
 
 (defparameter *program-name* "lse")
@@ -63,8 +62,8 @@
 
 (ql:quickload *program-system*)
 (ql:quickload :com.informatimago.manifest)
+(shadow 'date)
 (use-package "COM.INFORMATIMAGO.MANIFEST")
-
 
 ;;;---------------------------------------------------------------------
 ;;; Let's run some tests:
@@ -84,11 +83,14 @@
 (setf *debug-vm*   t
       *debug-repl* t)
 
+(setf *debug-vm*   nil
+      *debug-repl* nil)
+
 
 ;;;---------------------------------------------------------------------
 ;;; Let's generate the target.
 
-
+(in-package "COMMON-LISP-USER")
 (format t "~%Generating ~A~%" (executable-filename *program-name*))
 (finish-output)
 

@@ -33,16 +33,21 @@
 #*****************************************************************************
 
 BUILD_HOSTS = kuiper galatea lassell # triton
+LISP=ccl --load
+
+
 
 all:ChangeLog
 	@for host in $(BUILD_HOSTS) ; do \
 		echo "// Building on $$host" ;\
-		ssh $$host make -C $$(pwd) unix-cli ;\
+		ssh $$host $(MAKE) $(MFLAGS) -C $$(pwd) unix-cli ;\
 	 done
+	$(MAKE) $(MFLAGS) html-doc
 
 help:
 	@printf 'make all          # builds all executables on all hosts.\n'
 	@printf 'make unix-cli     # builds the unix cli executable on the local hosts.\n'
+	@printf 'make html-doc     # builds the html doc directory on the local hosts.\n'
 	@printf 'make ChangeLog    # Extracts the logs from git into the ChangeLog file.\n'
 	@printf 'make variables    # shows the variables.\n'
 
@@ -50,16 +55,21 @@ help:
 ChangeLog:
 	git log > ChangeLog
 
-unix-cli: # --batch
-	ccl --load generate-unix-cli.lisp | tee /tmp/unix-cli.log 
+html-doc:
+	$(LISP) generate-documentation.lisp
+
+unix-cli:
+	$(LISP) generate-unix-cli.lisp | tee /tmp/unix-cli.log 
 	awk '/Generating/{print $$2}' < /tmp/unix-cli.log | ( read executable ; rm -f lse ; ln -sf $$executable lse )
+
 symlink:
 	awk '/Generating/{print $$2}' < /tmp/unix-cli.log | ( read executable ; rm -f lse ; ln -sf $$executable lse )
 
 variables:
 	@echo pwd=$$(pwd)
 	@echo BUILD_HOSTS=$(BUILD_HOSTS)
+	@echo LISP=$(LISP)
 
-.PHONY: unix-cli
+.PHONY: unix-cli html-doc
 
 #### THE END ####

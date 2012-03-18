@@ -37,7 +37,7 @@
 (defstruct options
   (input-reject-lowcase nil)
   (output-upcase        nil)
-  (output-dectech       nil)
+  (output-arrows        nil :type (member nil :dectech :unicode :unicode-halfwidth))
   (output-accented      t)
   (modern-mode          t)
   (return-is-xoff       nil))
@@ -50,7 +50,7 @@
   (setf (task-case-insensitive task) (not (options-input-reject-lowcase options))
         (task-upcase-output    task) (options-output-upcase options)
         (task-accented-output  task) (options-output-accented options)
-        (task-dectech          task) (options-output-dectech options))
+        (task-arrows           task) (options-output-arrows options))
   (let ((terminal (task-terminal task)))
     (when (typep terminal 'unix-terminal)
       (setf (terminal-modern-mode terminal) (or (member (getenv "TERM") '("emacs" "dumb")
@@ -174,13 +174,43 @@ utilisez la commande DO COPIE pour plus de détails.
   (parse-options-finish ex-ok))
 
 
-(defoption ("--dectech-font") ()
+(defoption ("--fleches-ascii" "--ascii-arrows") ()
+  "
+Les caractères _ et ^ sont affichiés tels quels.
+"
+  (setf (options-output-arrows *options*) nil))
+
+(defoption ("--fleches-dectech" "--dectech-arrows") ()
   "
 Le terminal est configuré avec une police de caractères DecTech.  Les
 caractères _ et ^ sont alors mappés sur flêche vers la gauche et
 flêche vers le haut.
 "
-  (setf (options-output-dectech *options*) t))
+  (setf (options-output-arrows *options*) :dectech))
+
+(defoption ("--fleches-unicode" "--unicode-arrows") ()
+  "
+Le terminal est configuré avec une police de caractères Unicode
+incorporant les flêches LEFTWARD_ARROW and UPWARD_ARROW (codes 8592 et
+8593).  Les caractères _ et ^ sont alors mappés sur ces caractères.
+"
+  (setf (options-output-arrows *options*) :unicode))
+
+(defoption ("--fleches-unicode-halfwidth" "--unicode-halfwidth-arrows") ()
+  "
+Le terminal est configuré avec une police de caractères Unicode
+incorporant les flêches HALFWIDTH_LEFTWARD_ARROW and
+HALFWIDTH_UPWARD_ARROW (codes 65513 et 65514).  Les caractères _ et ^
+sont alors mappés sur ces caractères.
+"
+  (setf (options-output-arrows *options*) :unicode-halfwidth))
+
+
+(defoption ("--entree-comme-xoff" "--return-is-xoff") ()
+  "
+Dans le mode ancien, traite la touche ENTRÉE comme la touche X-OFF.
+"
+  (setf (options-return-is-xoff *options*) t))
 
 
 (defoption ("--rejeter-minuscules" "--reject-lowcase") ()
@@ -216,7 +246,7 @@ Affiche en majuscules et minisucules.  (Défaut).
 
 (defoption ("--afficher-sans-accent" "--no-accent-output") ()
   "
-si le terminal n'est pas capable d'afficher les accents, cette option
+Si le terminal n'est pas capable d'afficher les accents, cette option
 permet de convertir les lettres accentuees en lettres sans accent.
 "
   (setf (options-output-accented *options*) nil))
@@ -288,8 +318,22 @@ interrompre, entre autres.
             (o-ou-n-p "Est ce qu'il faut tout imprimer en majuscules"))
       (setf (options-output-accented options)
             (o-ou-n-p "Est ce que le terminal supporte les lettres accentuées"))
-      (setf (options-output-dectech options)
-            (o-ou-n-p "Est ce que le terminal utilise une police DecTech"))
+      (setf (options-output-arrows options)
+            (if (task-unicode task)
+                (cond
+                  ((o-ou-n-p "Est ce que le terminal affiche les flêches unicode demi-largeur ~A et ~A"
+                             *UNICODE-HALFWIDTH-LEFTWARDS-ARROW*
+                             *UNICODE-HALFWIDTH-UPWARDS-ARROW*)
+                   :unicode-halfwidth)
+                  ((o-ou-n-p "Est ce que le terminal affiche les flêches unicode ~A et ~A"
+                             *UNICODE-LEFTWARDS-ARROW*
+                             *UNICODE-UPWARDS-ARROW*)
+                   :unicode)
+                  (t
+                   nil))
+                (if (o-ou-n-p "Est ce que le terminal utilise une police DecTech")
+                    :dectech
+                    nil)))
       (when (and (typep terminal 'unix-terminal)
                  (not (member (getenv "TERM") '("emacs" "dumb")
                               :test (function string-equal))))

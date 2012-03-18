@@ -1,7 +1,7 @@
 1*auteur: Pascal Bourguignon
 2*description: Programme de test : fonction ATT
 10 AFFICHER[/,'Tapez Ctrl-A de temps en temps;']
-11 AFFICHER[/,'TapeZ ESC pour finir.']
+11 AFFICHER[/,'Tapez ESC pour finir.']
 12 AFFICHER[/]
 20 I_0
 21 I_I+1

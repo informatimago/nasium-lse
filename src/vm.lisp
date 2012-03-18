@@ -401,10 +401,6 @@ RETURN: vm
 
 
 
-
-
-
-
 (defun afficher-nl      (vm rep)
   (declare (ignore vm))
   (io-line-feed *task* rep))
@@ -700,15 +696,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
     (if var
         (case (variable-type var)
           ((nombre)
-           (let ((val (io-read-number *task*)))
-             (if (nombrep val)
-                 (setf (variable-value var) (un-nombre val))
-                 (lse-error "LA VARIABLE ~A N'EST PAS UNE CHAINE" ident))))
+           (setf (variable-value var) (un-nombre (io-read-number *task*))))
           ((chaine)
-           (let ((val (io-read-string *task*)))
-             (if (chainep val)
-                 (setf (variable-value var) val)
-                 (lse-error "LA VARIABLE ~A EST UNE CHAINE" ident))))
+           (setf (variable-value var) (io-read-string *task*)))
           (t
            (loop
              :for i :below (array-total-size (variable-value var))
@@ -971,7 +961,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
         ;; loop over:
         (setf (vm-pc.line vm) start-line-number
               (vm-pc.offset vm) start-offset
-              (vm-code vm) (second (gethash start-line-number (vm-code-vectors vm)))))))
+              (vm-code vm) (code-vector (gethash start-line-number (vm-code-vectors vm)))))))
 
 
 
@@ -1001,7 +991,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
     ;; Always loop over, there's a tant-que instruction at the start-offset.
     (setf (vm-pc.line vm) start-line-number
           (vm-pc.offset vm) start-offset
-          (vm-code vm) (second (gethash start-line-number (vm-code-vectors vm))))))
+          (vm-code vm) (code-vector (gethash start-line-number (vm-code-vectors vm))))))
 
 
 (defun following-line (vm lino)
@@ -1088,6 +1078,7 @@ Si N>1 alors on sort de N boucle imbriquées.
 Si N est supérieur au nombre de boucles imbriquées, on sort de toutes les boucles.
 
 Voir: FAIREJUSQUA, FAIRETANTQUE"
+  (declare (ignore ea))
   (error 'pas-implemente :what 'xit))
 
 
@@ -1545,7 +1536,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
         #+developing (progn (format *trace-output* "~%Condition: ~A~%" condition)
                             (force-output *trace-output*))
         (vm-pause vm) ; no message
-        (io-standard-redirection task)
+        (io-standard-redirection *task*)
         (setf (task-silence *task*) nil)
         (io-format *task* "~%PRET~%")
         (io-finish-output *task*)))

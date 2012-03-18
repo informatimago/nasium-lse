@@ -580,34 +580,39 @@ Valid only whe MODERN-MODE is false.
              'terminal-initialize (class-name (class-of terminal))))
     (setf saved-termios (termios-attributes input-file-descriptor))
     (let ((common '(
-                    ;; Input control:
-                    :istrip  nil ; strip off eigth bit (should be nil for utf-8 input)
-                    :igncr   nil ; ignore CR  on input
-                    :ixon    nil ; XON/XOFF flow control on output.
-                    :ixoff   nil ; XON/XOFF flow control on input.
-                    :ixany   nil ; Typing any character to restart stopped output.
-                    :iutf8   nil ; UTF-8 input (for character erase in cooked mode).
-                    ;; We don't process utf-8 on unix-terminal (we would have to
-                    ;; decode utf-8 to implement erase ourselves in raw).
-
-                    ;; Output control:
-                    :opost   nil ; implementation defined output processing.
-                    :onlcr   nil ; map NL to CR-NL on output.
-                    :ocrnl   nil ; map CR to NL on output.
-                    :onocr   t   ; output CR at column 0.
-                    :onlret  nil ; don't output CR (ie. output CR).
-                    :ofill   nil ; send  fill characters for a delay (instead of timer).
-
-                    ;; Line control:
-                    :isig    nil ; when the character INTR, QUIT, SUSP, or DSUSP are received, generate the signal.
-                    :echonl  nil ;             (and :icanon :echonl) => echo the NL  even when :echo is nil.
-                    :echoke  nil ;             (and :icanon :echoke) => KILL is echoed by erasing each character on the line (as specified by :echoe and :echoprt).
-                    :echoprt nil ; (not POSIX) (and :icanon :iecho :echoprt) => characters are printed as they are erased. ( /a\  ??? )
-                    :echo    t   ; echo of input characters
-                    :echoctl nil ; (not POSIX) (:echo :echoctl) control codes (not TAB,  NL, START, STOP) are  echoed as ^X
-                    :noflsh  t   ; Disable flushing input and output when signaling INT, QUIT and SUSP.
-                    :tostop  nil ; sends SIGTTOU to processes who writes to this terminal.
-                    :iexten  nil ; implementation-defined input-processing. To enable EOL2, LNEXT, REPRINT, WERASE, and IUCLC.
+                    :raw     t
+                    :echo    t
+                    :echoctl nil
+                    ;; :echonl  nil
+                    
+                    ;; ;; Input control:
+                    ;; :istrip  nil ; strip off eigth bit (should be nil for utf-8 input)
+                    ;; :igncr   nil ; ignore CR  on input
+                    ;; :ixon    nil ; XON/XOFF flow control on output.
+                    ;; :ixoff   nil ; XON/XOFF flow control on input.
+                    ;; :ixany   nil ; Typing any character to restart stopped output.
+                    ;; :iutf8   nil ; UTF-8 input (for character erase in cooked mode).
+                    ;; ;; We don't process utf-8 on unix-terminal (we would have to
+                    ;; ;; decode utf-8 to implement erase ourselves in raw).
+                    ;; 
+                    ;; ;; Output control:
+                    ;; :opost   nil ; implementation defined output processing.
+                    ;; :onlcr   nil ; map NL to CR-NL on output.
+                    ;; :ocrnl   nil ; map CR to NL on output.
+                    ;; :onocr   t   ; output CR at column 0.
+                    ;; :onlret  nil ; don't output CR.
+                    ;; :ofill   nil ; send  fill characters for a delay (instead of timer).
+                    ;; 
+                    ;; ;; Line control:
+                    ;; :isig    nil ; when the character INTR, QUIT, SUSP, or DSUSP are received, generate the signal.
+                    ;; :echonl  nil ;             (and :icanon :echonl) => echo the NL  even when :echo is nil.
+                    ;; :echoke  nil ;             (and :icanon :echoke) => KILL is echoed by erasing each character on the line (as specified by :echoe and :echoprt).
+                    ;; :echoprt nil ; (not POSIX) (and :icanon :iecho :echoprt) => characters are printed as they are erased. ( /a\  ??? )
+                    ;; :echo    t   ; echo of input characters
+                    ;; :echoctl nil ; (not POSIX) (:echo :echoctl) control codes (not TAB,  NL, START, STOP) are  echoed as ^X
+                    ;; :noflsh  t   ; Disable flushing input and output when signaling INT, QUIT and SUSP.
+                    ;; :tostop  nil ; sends SIGTTOU to processes who writes to this terminal.
+                    ;; :iexten  nil ; implementation-defined input-processing. To enable EOL2, LNEXT, REPRINT, WERASE, and IUCLC.
 
                     ))
           (modern '(
@@ -629,10 +634,10 @@ Valid only whe MODERN-MODE is false.
       (multiple-value-bind (diff same) 
           (apply (function stty) input-file-descriptor
                  ;; Character control:
-                 :vintr    vintr    
-                 :vquit    vquit    
-                 :vsusp    vsusp    
-                 :vkill    vkill    
+                 :vintr    0; vintr     ; it looks like codes configured as interrupts
+                 :vquit    0; vquit     ; are not transmitted even with :isig nil.
+                 :vsusp    0; vsusp    
+                 :vkill    0; vkill    
                  :veof     veof     
                  :veol     veol     
                  :verase   verase   
@@ -642,7 +647,10 @@ Valid only whe MODERN-MODE is false.
                  #+linux :veol2    #+linux veol2 ; yet additionnal end of line character     needs :icanon t (not POSIX)
                  #+linux :vwerase  #+linux vwerase ; (not POSIX) word erase                    needs :icanon t :iexten t
                  #+linux :vreprint #+linux vreprint ; (not POSIX) reprint unread characters     needs :icanon t :iexten t
-                 (append (if modern-mode modern old) common))
+                 :vmin  1
+                 :vtime 0
+                 (append ;; (if modern-mode modern old)
+                  common))
         (declare (ignorable same))
         #+swank (print same *terminal-io*)
         (when diff (warn "stty couldn't set those attributes: ~S" diff)))))
@@ -731,6 +739,7 @@ Valid only whe MODERN-MODE is false.
 (defun unix-signal (pid signum)
   (iolib.syscalls:kill pid signum))
 
+
 (defun read-one-char (terminal)
   ;; MITRA-15    UNIX          x
   ;; \           erase         to \"erase\" the previous character.
@@ -748,7 +757,7 @@ Valid only whe MODERN-MODE is false.
     (let ((ch (read-char stream)))
       (when ch
         (let ((code (char-code ch)))
-          ;; (print `(char read ,ch ,(char-code ch)))
+          ;; (print `(char read ,ch ,(char-code ch))) (finish-output)
           (cond
             ((zerop code)   #|ignore|#)
             ((= code vintr) (signal 'user-interrupt))
@@ -759,11 +768,10 @@ Valid only whe MODERN-MODE is false.
              (unless input-finished
                (cond
                  ((= code veof)   #|close the stream|#)
-                 ((= code veol)   (setf input-finished t) (terminal-write-string terminal " "))
-                 ((= code veol2)
+                 ((= code veol)   (setf input-finished t))
+                 ((= code veol2)  (setf input-finished t)
                   (unless (terminal-cr-as-xoff terminal)
-                    (vector-push-extend ch buffer 1))
-                  (setf input-finished t))
+                    (vector-push-extend ch buffer 1)))
                  ((= code verase)
                   (when (plusp (fill-pointer buffer))
                     ;; when modern-mode, erase the character on display
@@ -820,7 +828,7 @@ Valid only whe MODERN-MODE is false.
     (with-slots (buffer input-finished input-read) terminal
       (flet ((finish ()
                (handler-case
-                   (destructuring-bind (donnee position) (parse-donnee-lse buffer :start input-read)
+                   (destructuring-bind (donnee position) (parse-donnee-lse (subseq buffer input-read))
                      (if (< position (length buffer))
                          (setf input-read position)
                          (setf input-read 0
@@ -935,10 +943,10 @@ Valid only whe MODERN-MODE is false.
 
 
 (defun test/termios ()
-  (let ((termios (terminal-control-attributes 0)))
+  (let ((termios (termios-attributes 0)))
     (mapcar (lambda (cc)
               (let ((code  (termios-control-character termios cc)))
-               (list cc code (format nil "^~C" (code-char (logand #x7f (+ 64 code)))))))
+                (list cc code (format nil "^~C" (code-char (logand #x7f (+ 64 code)))))))
             '(:vmin :vtime :vintr :vquit :vsusp #|:vdsusp|# :verase :vkill
               :veof :veol
               #-darwin :veol2
@@ -946,7 +954,8 @@ Valid only whe MODERN-MODE is false.
               #-darwin :vreprint
               :vstart :vstop))))
 
-(defparameter *term* (make-instance 'unix-terminal))
+;; (defparameter *term* (make-instance 'unix-terminal))
+
 
 
 ;;;; THE END ;;;;

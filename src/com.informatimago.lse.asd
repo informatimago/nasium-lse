@@ -75,8 +75,9 @@
                                                            "configuration" "error"))
 
                  (:file "documentation"       :depends-on ("packages"))
+                 (:file "chapters"            :depends-on ("packages" "version" "documentation"))
                  
-                 (:file "catalog"             :depends-on ("packages"))
+                 (:file "catalog"             :depends-on ("packages" "configuration"))
                  (:file "variables"           :depends-on ("packages"))
                  (:file "functions"           :depends-on ("packages"
                                                            "error"

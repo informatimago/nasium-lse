@@ -300,16 +300,16 @@ and strings are read with read-line.")
 ;;----------------------------------------------------------------------
 
 (defun io-terminal-output-p (task)
-  (eql (task-output-stream task) (terminal-output-stream (task-terminal task))))
+  (eql (task-output task) (terminal-output-stream (task-terminal task))))
 
 (defun io-terminal-input-p  (task)
-  (eql (task-input-stream task) (terminal-input-stream (task-terminal task))))
+  (eql (task-input task) (terminal-input-stream (task-terminal task))))
 
 (defun io-tape-output-p (task)
-  (eql (task-output-stream task) (task-tape-output task)))
+  (eql (task-output task) (task-tape-output task)))
 
 (defun io-tape-input-p  (task)
-  (eql (task-input-stream task) (task-tape-input task)))
+  (eql (task-input task) (task-tape-input task)))
 
 
 
@@ -367,33 +367,188 @@ and strings are read with read-line.")
 
 (defparameter *dectech-leftwards-arrow* (or (ignore-errors (code-char #xfb)) #\_))
 (defparameter *dectech-upwards-arrow*   (or (ignore-errors (code-char #xfc)) #\^))
+
+;; (Some implementations have unicode but don't know #\upwards_arrow, etc.)
+
+;; LEFTWARDS_ARROW and UPWARDS_ARROW
 (defparameter *unicode-leftwards-arrow* (or (ignore-errors (code-char 8592)) #\_))
 (defparameter *unicode-upwards-arrow*   (or (ignore-errors (code-char 8593)) #\^))
-;; (Some implementations have unicode but don't know #\upwards_arrow, etc.)
+
+;; HALFWIDTH_LEFTWARDS_ARROW and HALFWIDTH_UPWARDS_ARROW
+(defparameter *unicode-halfwidth-leftwards-arrow* (or (ignore-errors (code-char 65513)) #\_))
+(defparameter *unicode-halfwidth-upwards-arrow*   (or (ignore-errors (code-char 65514)) #\^))
+
 
 
 (defun io-substitute (task string)
   (if (io-terminal-output-p task)
-      (with-output-to-string (out)
-        (loop
-          :with dectech = (task-dectech task)
-          :with unicode = (task-unicode task)
-          :for ch :across string
-          :do (case ch
-                ((#\_) (cond
-                         (dectech (princ *dectech-leftwards-arrow* out))
-                         (unicode (princ *unicode-leftwards-arrow* out))
-                         (t       (princ ch out))))
-                ((#\^) (cond
-                         (dectech (princ *dectech-upwards-arrow* out))
-                         (unicode (princ *unicode-upwards-arrow* out))
-                         (t       (princ ch out))))
-                (otherwise
-                 (if (task-upcase-output task)
-                     (if (lower-case-p ch)
-                         (princ (char-upcase ch) out)
-                         (princ ch out))
-                     (princ ch out))))))
+      (if (task-upcase-output task)
+          (if (task-accented-output task)
+              (case (task-arrows task)
+                (:dectech           (with-output-to-string (out)
+                                      (loop
+                                        :for ch :across string
+                                        :do (princ (case ch
+                                                     ((#\_) *dectech-leftwards-arrow*)
+                                                     ((#\^) *dectech-upwards-arrow*)
+                                                     (otherwise
+                                                      (if (lower-case-p ch)
+                                                          (char-upcase ch)
+                                                          ch)))
+                                                   out))))
+                (:unicode           (with-output-to-string (out)
+                                      (loop
+                                        :for ch :across string
+                                        :do (princ (case ch
+                                                     ((#\_) *unicode-leftwards-arrow*)
+                                                     ((#\^) *unicode-upwards-arrow*)
+                                                     (otherwise
+                                                      (if (lower-case-p ch)
+                                                          (char-upcase ch)
+                                                          ch)))
+                                                   out))))
+                (:unicode-halfwidth (with-output-to-string (out)
+                                      (loop
+                                        :for ch :across string
+                                        :do (princ (case ch
+                                                     ((#\_) *unicode-halfwidth-leftwards-arrow*)
+                                                     ((#\^) *unicode-halfwidth-upwards-arrow*)
+                                                     (otherwise
+                                                      (if (lower-case-p ch)
+                                                          (char-upcase ch)
+                                                          ch)))
+                                                   out))))
+                (otherwise          (with-output-to-string (out)
+                                      (loop
+                                        :for ch :across string
+                                        :do (princ (if (lower-case-p ch)
+                                                       (char-upcase ch)
+                                                       ch)
+                                                   out)))))
+              (case (task-arrows task)
+                (:dectech           (with-output-to-string (out)
+                                      (loop
+                                        :for ch :across string
+                                        :do (princ (case ch
+                                                     ((#\_) *dectech-leftwards-arrow*)
+                                                     ((#\^) *dectech-upwards-arrow*)
+                                                     (otherwise
+                                                      (character-fold (if (lower-case-p ch)
+                                                                          (char-upcase ch)
+                                                                          ch))))
+                                                   out))))
+                (:unicode           (with-output-to-string (out)
+                                      (loop
+                                        :for ch :across string
+                                        :do (princ (case ch
+                                                     ((#\_) *unicode-leftwards-arrow*)
+                                                     ((#\^) *unicode-upwards-arrow*)
+                                                     (otherwise
+                                                      (character-fold (if (lower-case-p ch)
+                                                                          (char-upcase ch)
+                                                                          ch))))
+                                                   out))))
+                (:unicode-halfwidth (with-output-to-string (out)
+                                      (loop
+                                        :for ch :across string
+                                        :do (princ (case ch
+                                                     ((#\_) *unicode-halfwidth-leftwards-arrow*)
+                                                     ((#\^) *unicode-halfwidth-upwards-arrow*)
+                                                     (otherwise
+                                                      (character-fold (if (lower-case-p ch)
+                                                                          (char-upcase ch)
+                                                                          ch))))
+                                                   out))))
+                (otherwise          (with-output-to-string (out)
+                                      (loop
+                                        :for ch :across string
+                                        :do (princ (character-fold (if (lower-case-p ch)
+                                                                       (char-upcase ch)
+                                                                       ch))
+                                                   out))))))
+          (if (task-accented-output task)
+              (case (task-arrows task)
+                (:dectech           (with-output-to-string (out)
+                                      (loop
+                                        :for ch :across string
+                                        :do (princ (case ch
+                                                     ((#\_) *dectech-leftwards-arrow*)
+                                                     ((#\^) *dectech-upwards-arrow*)
+                                                     (otherwise ch))
+                                                   out))))
+                (:unicode           (with-output-to-string (out)
+                                      (loop
+                                        :for ch :across string
+                                        :do (princ (case ch
+                                                     ((#\_) *unicode-leftwards-arrow*)
+                                                     ((#\^) *unicode-upwards-arrow*)
+                                                     (otherwise ch))
+                                                   out))))
+                (:unicode-halfwidth (with-output-to-string (out)
+                                      (loop
+                                        :for ch :across string
+                                        :do (princ (case ch
+                                                     ((#\_) *unicode-halfwidth-leftwards-arrow*)
+                                                     ((#\^) *unicode-halfwidth-upwards-arrow*)
+                                                     (otherwise ch))
+                                                   out))))
+                (otherwise           string))
+              (case (task-arrows task)
+                (:dectech           (with-output-to-string (out)
+                                      (loop
+                                        :for ch :across string
+                                        :do (princ (case ch
+                                                     ((#\_) *dectech-leftwards-arrow*)
+                                                     ((#\^) *dectech-upwards-arrow*)
+                                                     (otherwise (character-fold ch)))
+                                                   out))))
+                (:unicode           (with-output-to-string (out)
+                                      (loop
+                                        :for ch :across string
+                                        :do (princ (case ch
+                                                     ((#\_) *unicode-leftwards-arrow*)
+                                                     ((#\^) *unicode-upwards-arrow*)
+                                                     (otherwise (character-fold ch)))
+                                                   out))))
+                (:unicode-halfwidth (with-output-to-string (out)
+                                      (loop
+                                        :for ch :across string
+                                        :do (princ (case ch
+                                                     ((#\_) *unicode-halfwidth-leftwards-arrow*)
+                                                     ((#\^) *unicode-halfwidth-upwards-arrow*)
+                                                     (otherwise (character-fold ch)))
+                                                   out))))
+                (otherwise          (remove-accents string)))))
+      ;; (loop
+      ;;   :with arrows  = (task-arrows task)
+      ;;   :with accents = (task-accented-output task)
+      ;;   :with upcase  = (task-upcase-output task)
+      ;;   :for ch :across string
+      ;;   :do (princ (case ch
+      ;;                ((#\_) (case arrow
+      ;;                         (:dectech           *dectech-leftwards-arrow*)
+      ;;                         (:unicode           *unicode-leftwards-arrow*)
+      ;;                         (:unicode-halfwidth *unicode-halfwidth-leftwards-arrow*)
+      ;;                         (otherwise          ch)))
+      ;;                ((#\^) (case arrow
+      ;;                         (:dectech           *dectech-upwards-arrow*)
+      ;;                         (:unicode           *unicode-upwards-arrow*)
+      ;;                         (:unicode-halfwidth *unicode-halfwidth-upwards-arrow*)
+      ;;                         (otherwise          ch)))
+      ;;                (otherwise
+      ;;                 (if accents
+      ;;                     (if upcase
+      ;;                         (if (lower-case-p ch)
+      ;;                             (char-upcase ch)
+      ;;                             ch)
+      ;;                         ch)
+      ;;                     (character-fold (if upcase
+      ;;                                         (if (lower-case-p ch)
+      ;;                                             (char-upcase ch)
+      ;;                                             ch)
+      ;;                                         ch)))))
+      ;;              out))
+      
       string))
 
 

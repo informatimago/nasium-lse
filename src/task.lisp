@@ -104,21 +104,22 @@ Can be either (terminal-output-stream terminal) or tape-output.")
                          :documentation "stream? to a temporary tape")
   
 
-   (dectech              :initarg :dectech
-                         :accessor task-dectech
-                         :initform nil
-                         :type boolean
-                         :documentation "police DecTech pour _ et ^.") 
-   (unicode              :initarg :unicode
-                         :accessor task-unicode
-                         :initform nil
-                         :type boolean
-                         :documentation "whether we have a unicode terminal.")
    (case-insensitive     :initarg :case-insensitive
                          :accessor task-case-insensitive
                          :initform nil
                          :type boolean
-                         :documentation "whether the input should be case insensitive.")
+                         :documentation "whether the input should be case insensitive.") 
+
+   (arrows               :initarg :arrows
+                         :accessor task-arrows
+                         :initform nil
+                         :type (member nil :dectech :unicode :unicode-halfwidth)
+                         :documentation "How to output arrows _ et ^.")
+   (unicode              :initarg :unicode
+                         :accessor task-unicode
+                         :initform nil
+                         :type boolean
+                         :documentation "Whether the terminal encoding is utf-8.")
    (upcase-output        :initarg :upcase-output
                          :accessor task-upcase-output
                          :initform t

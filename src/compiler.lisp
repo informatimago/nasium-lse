@@ -926,7 +926,8 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
     (if (or (numberp item)
             (stringp item)
             (and (symbolp item)
-                 (or (eq (symbol-package item) (find-package "BC"))
+                 (or (null item)
+                     (eq (symbol-package item) (find-package "BC"))
                      (eq (symbol-package item) (find-package "ID")))))
         (vector-push-extend item
                             (code-vector code)
@@ -1166,10 +1167,10 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
           :do (progn 
                 (ecase (length item)
                   (2  (gen-code code !lire&store))
-                  (3  (generate-expression code (third  statement))
+                  (3  (generate-expression code (third  item))
                       (gen-code code !lire&astore1))
-                  (4  (generate-expression code (third  statement))
-                      (generate-expression code (fourth statement))
+                  (4  (generate-expression code (third  item))
+                      (generate-expression code (fourth item))
                       (gen-code code !lire&astore2)))
                 (gen-code code (identificateur-nom (second item))))))
 
@@ -1357,7 +1358,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
         ;;(:charger  var enr fic varstat) --> enr fic :charger var varstat
         (generate-expression code (third statement))
         (generate-expression code (fourth statement))
-        (if (cddddr statement)
+        (if (fifth statement)
             (gen-code code !charger
                       (identificateur-nom (second statement))
                       (identificateur-nom (fifth statement)))
@@ -1425,22 +1426,79 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
             :format-arguments (list parse-tree)))))
 
 
+
+(defmacro converting-parser-errors (&body body)
+  ;; We convert parser and scanner errors into lse-parser and
+  ;; lse-scanner errors, rewriting the error messages.
+  `(handler-bind ((scanner-error-invalid-character
+                   (lambda (err)
+                     (error 'lse-scanner-error-invalid-character
+                            :line              (scanner-error-line          err)
+                            :column            (scanner-error-column        err)
+                            :state             (scanner-error-state         err)
+                            :current-token     (scanner-error-current-token err)
+                            :scanner           (scanner-error-scanner       err)
+                            :invalid-character (scanner-error-invalid-character err)
+                            :format-control    "CARACTÈRE INVALIDE ~A~:[~*~; (~D)~]"
+                            :format-arguments   (let ((ch (scanner-error-invalid-character err)))
+                                                  (list
+                                                   (if (<= 32 (char-code ch))
+                                                       (format nil "'~A'" ch)
+                                                       (format nil ".~A." (char-code ch)))
+                                                   (<= 32 (char-code ch))
+                                                   (char-code ch))))))
+                  (parser-end-of-source-not-reached
+                   (lambda (err)
+                     (error 'lse-parser-error-end-of-source-not-reached
+                            :line    (parser-error-line err)
+                            :column  (parser-error-column err)
+                            :grammar (parser-error-grammar err)
+                            :scanner (parser-error-scanner err)
+                            :non-terminal-stack (parser-error-non-terminal-stack err)
+                            :format-control "SYMBOLE SURNUMÉRAIRE ~:[~A ~S~;~S~*~]; ATTENDU: FIN DE LA LIGNE."
+                            :format-arguments
+                            (let ((token (scanner-current-token
+                                          (parser-error-scanner err))))
+                              (list (string= (token-kind-label (token-kind token))
+                                             (token-text token))
+                                    (token-kind-label (token-kind token))
+                                    (token-text token))))))
+                  (parser-error-unexpected-token
+                   (lambda (err)
+                     (error 'lse-parser-error-unexpected-token
+                            :line    (parser-error-line err)
+                            :column  (parser-error-column err)
+                            :grammar (parser-error-grammar err)
+                            :scanner (parser-error-scanner err)
+                            :non-terminal-stack (parser-error-non-terminal-stack err)
+                            :expected-token (parser-error-expected-token err)
+                            :format-control "~:[FIN DE LIGNE INATTENDU~3*~;SYMBOLE INATTENDU ~:[~A ~S~;~*~S~]~]~@[; ATTENDU: ~A~]."
+                            :format-arguments
+                            (let ((token (scanner-current-token
+                                          (parser-error-scanner err))))
+                              (list (not (or (eolp token) (eofp token)))
+                                    (string= (token-kind-label (token-kind token))
+                                             (token-text token))
+                                    (token-kind-label (token-kind token))
+                                    (token-text token)
+                                    (token-kind-label (parser-error-expected-token err)))))))
+                  (parser-error
+                    (lambda (err)
+                     (error 'lse-parser-error
+                            :line    (parser-error-line err)
+                            :column  (parser-error-column err)
+                            :grammar (parser-error-grammar err)
+                            :scanner (parser-error-scanner err)
+                            :non-terminal-stack (parser-error-non-terminal-stack err)
+                            :format-control   (parser-error-format-control   err)
+                            :format-arguments (parser-error-format-arguments err)))))
+     ,@body))
+
+
 (defun lse-parser (*scanner*)
-  (handler-bind ((parser-error-unexpected-token
-                  (lambda (err)
-                    (error 'lse-parser-error-unexpected-token
-                           :line    (parser-error-line err)
-                           :column  (parser-error-column err)
-                           :grammar (parser-error-grammar err)
-                           :scanner (parser-error-scanner err)
-                           :non-terminal-stack (parser-error-non-terminal-stack err)
-                           :format-control "SYMBOLE INATTENDU ~A ~S"
-                           :format-arguments
-                           (let ((token (scanner-current-token
-                                         (parser-error-scanner err))))
-                             (list (token-kind-label (token-kind token))
-                                   (token-text token)))))))
-      (parse-lse *scanner*)))
+  (converting-parser-errors
+   (parse-lse *scanner*)))
+
 
 
 (defun compile-lse-line (source-line)
@@ -1449,6 +1507,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
          (code       (compile-lse-line-parse-tree parse-tree)))
     (setf (code-source code)  (unparse-slist parse-tree))
     code))
+
 
 
 (defun compile-lse-stream (stream)

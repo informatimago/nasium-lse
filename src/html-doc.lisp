@@ -276,14 +276,14 @@ NOTE: Unclassified chapters are in the category NIL."
         (html:doctype :strict
           (html:html -
             (html:head -
-              (html:title - (html:pcdata "~:(~A~) - Système L.S.E. sur unix" category))
+              (html:title - (html:pcdata "~:(~A~) - Système NASIUM L.S.E. sur unix" category))
               (html:link (:rel "shortcut icon" :href "../../favicon.ico" :type "image/x-icon"))
               (html:link (:rel "icon"          :href "../../favicon.ico" :type "image/x-icon"))
               (html:link (:rel "stylesheet"    :href "../../default.css" :type "text/css"))
               (html:meta (:name "author"       :content "Pascal J. Bourguignon"))
               (html:meta (:name "Reply-To"     :content "pjb@informatimago.com"))
               (html:meta (:name "Keywords"     :content
-                                (format nil "LSE, L.S.E, Langage Symbolique d'Enseignement, Langage de programmation, Français, ~(~A~)" category))))
+                                (format nil "NASIUM, LSE, L.S.E, Langage Symbolique d'Enseignement, Langage de programmation, Français, ~(~A~)" category))))
             (html:body -
               (html:div (:class "navigation")
                 (when prev
@@ -294,7 +294,7 @@ NOTE: Unclassified chapters are in the category NIL."
                   (html:pcdata "|")
                   (html:a (:href next) (html:pcdata "Page suivante"))))
               (html:hr)
-              (html:h1 - (html:pcdata "Système L.S.E. sur unix"))
+              (html:h1 - (html:pcdata "NASIUM L.S.E."))
               (html:h2 - (html:pcdata "~:(~A~)" category))
               ;; introduction:
               (let ((intro (find-chapter "INTRODUCTION" category)))
@@ -335,15 +335,17 @@ NOTE: Unclassified chapters are in the category NIL."
       (html:doctype :strict
         (html:html -
           (html:head -
-            (html:title - (html:pcdata "Documentation du système L.S.E. sur unix"))
+            (html:title - (html:pcdata "Documentation du système NASIUM L.S.E. sur unix"))
             (html:link (:rel "shortcut icon" :href "../../favicon.ico" :type "image/x-icon"))
             (html:link (:rel "icon"          :href "../../favicon.ico" :type "image/x-icon"))
             (html:link (:rel "stylesheet"    :href "../../default.css" :type "text/css"))
             (html:meta (:name "author"       :content "Pascal J. Bourguignon"))
             (html:meta (:name "Reply-To"     :content "pjb@informatimago.com"))
-            (html:meta (:name "Keywords"     :content "LSE, L.S.E, Langage Symbolique d'Enseignement, Langage de programmation, Français")))
+            (html:meta (:name "Keywords"     :content "NASIUM, LSE, L.S.E, Langage Symbolique d'Enseignement, Langage de programmation, Français")))
           (html:body -
-            (html:h1 - (html:pcdata "Système L.S.E. sur unix"))
+            (html:h1 - (html:pcdata "NASIUM L.S.E."))
+            (html:pre -
+              (html:pcdata *title-banner* (concatenate 'string *version* "-UNIX")))
             (html:ol -
               (let ((chapters (chapters-per-category)))
                 (dolist (category *indexed-categories*)
@@ -364,9 +366,5 @@ NOTE: Unclassified chapters are in the category NIL."
                              "index.html"
                              (when next (html-doc-category-file-name next))))))
 
-
-;; (split-text (chapter-text (find-chapter "2. B.A.BA" "GÉNÉRALITÉS")))
-;; (split-text (chapter-text (find-chapter "INTRODUCTION" "COMMANDES")))
-(generate-html-documentation "doc-unix-cli")
 
 ;;;; THE END ;;;;;

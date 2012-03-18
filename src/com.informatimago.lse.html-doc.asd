@@ -36,7 +36,7 @@
 (asdf:defsystem :com.informatimago.lse.html-doc
     :description  "Generates a HTML documentation of the LSE system."
     :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
-    :version "1.0.0"
+    :version "1.0.1"
     :licence "AGPL3"
     :properties ((#:author-email                   . "pjb@informatimago.com")
                  (#:date                           . "Winter 2012")
@@ -51,6 +51,7 @@
                  ;; :alexandria
                  ;; :babel
                  :com.informatimago.common-lisp
+                 :com.informatimago.lse
                  )
     :components ((:file "html-doc")))
 

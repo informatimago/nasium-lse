@@ -50,21 +50,14 @@
 ------------------------------------------------------------------------ 
 ")
 
+
 (defparameter *unix-banner* "
-
-L.S.E.
-VERSION ~A-UNIX
-COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
-
-DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLv3.
-
 Ce programme est livré avec ABSOLUMENT AUCUNE GARANTIE; pour plus de
 détails utilisez la commande DO GARANTIE.  Ce logiciel est libre, et
 vous êtes les bienvenus pour redistribuer sous certaines conditions;
 utilisez la commande DO LICENSE pour plus de détails.
 
 Tapez AI pour avoir de l'aide.
-
 
 BONJOUR     ~8A
 
@@ -123,16 +116,18 @@ BONJOUR     ~8A
                              'unix-terminal
                              #+(and (not swank) (not unix))
                              'standard-terminal))
-           #-(and) (terminal (make-instance terminal-class
+           (terminal (make-instance terminal-class
                          :input-stream  (stream-input-stream  *terminal-io*)
                          :output-stream (stream-output-stream *terminal-io*)))
-           (terminal (make-instance 'unix-terminal))
+           ;; (terminal (make-instance 'unix-terminal))
            (task     (make-instance 'task
                          :state :active
                          :case-insensitive t
                          :upcase-output nil
-                         :dectech nil
                          :unicode (eql encoding :utf-8)
+                         :arrows (if (eql encoding :utf-8)
+                                     :unicode-halfwidth
+                                     nil) 
                          :terminal terminal)))
       (setf *task* task) ; to help debugging, we keep the task in the global binding.
       (setf *program-name* (or (program-name) *default-program-name*))
@@ -141,15 +136,18 @@ BONJOUR     ~8A
             (apply-options *options* *task*)
             (terminal-initialize terminal)
             (unwind-protect
-                 (let ((*debugger-hook*
-                        (lambda (condition debugger-hook)
-                          (declare (ignore condition))
-                          ;; We shouldn't come here.
-                          (when debugger-hook
-                            (terminal-finalize terminal))
-                          (format *debug-io* "~%My advice: exit after debugging.~%"))))
+                 (let* ((old-debugger-hook *debugger-hook*)
+                        (*debugger-hook*
+                         (lambda (condition debugger-hook)
+                           ;; We shouldn't come here.
+                           (when debugger-hook
+                             (terminal-finalize terminal))
+                           (format *debug-io* "~%My advice: exit after debugging.~%")
+                           (when old-debugger-hook
+                             (funcall old-debugger-hook condition debugger-hook)))))
                    (io-format *task* "~A" *tape-banner*)
-                   (io-format *task* "~?" *unix-banner*  (list *version* (subseq (dat) 9)))
+                   (io-format *task* "~?" *title-banner* (list (format nil "~A~A" *version* "-UNIX")))
+                   (io-format *task* "~?" *unix-banner*  (list (subseq (dat) 9)))
                    (command-repl *task*))
               (task-close-all-files *task*)
               (terminal-finalize terminal))

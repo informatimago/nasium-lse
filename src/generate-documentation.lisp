@@ -32,16 +32,14 @@
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
 
-(in-package "CL-USER")
+(in-package "COMMON-LISP-USER")
 (setf *print-right-margin* 80
       *print-pretty* t
       *print-case* :downcase)
+
 #+windows-target (cd #P"/cygwin/home/pjb/src/pjb/lse-cl/src/")
 #-windows-target (cd #P"/home/pjb/src/pjb/lse-cl/src/")
 (pushnew (pwd) asdf:*central-registry* :test 'equal)
-
-(load "manifest.lisp")
-(use-package "COM.INFORMATIMAGO.MANIFEST")
 
 
 (defparameter *program-name* "lse")
@@ -58,19 +56,20 @@
 (ql:quickload *program-system*)
 (ql:quickload :com.informatimago.manifest)
 (ql:quickload :com.informatimago.lse.html-doc)
+(shadow 'date)
 (use-package "COM.INFORMATIMAGO.MANIFEST")
-
-
-
 
 ;;;---------------------------------------------------------------------
 ;;; Let's generate the target.
 
-(format t "~%Generating ~A~%" (executable-filename *program-name*))
+
+(defparameter *documentation-directory* "doc-unix-cli")
+(format t "~%Generating ~A~%" *documentation-directory*)
 (finish-output)
 
-(write-manifest *program-name* *program-system*)
+(com.informatimago.lse::generate-html-documentation *documentation-directory*)
 
+(com.informatimago.lse.os:quit)
 #|
     (cd "/home/pjb/src/pjb/lse-cl/src/")
     (load "generate-documentation.lisp")

@@ -36,7 +36,7 @@
 (asdf:defsystem :com.informatimago.lse.unix-cli
     :description  "This system defines the unix CLI L.S.E. interpreter"
     :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
-    :version "1.2.1"
+    :version "1.2.2"
     :licence "AGPL3"
     :properties ((#:author-email                   . "pjb@informatimago.com")
                  (#:date                           . "Winter 2012")
@@ -68,12 +68,13 @@
                  
                  (:file "unix-cli-package")
                  (:file "arguments"           :depends-on ("unix-cli-package"))
+                 #+swank
                  (:file "swank-terminal"      :depends-on ("unix-cli-package"))
                  (:file "unix-terminal"       :depends-on ("unix-cli-package"))
                  (:file "terminfo-terminal"   :depends-on ("unix-cli-package"))
                  (:file "unix-cli"            :depends-on ("unix-cli-package"
                                                            "arguments"
-                                                           "swank-terminal"
+                                                           #+swank "swank-terminal"
                                                            "terminfo-terminal"
                                                            "unix-terminal"))
                  ))

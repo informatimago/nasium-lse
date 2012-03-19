@@ -363,7 +363,10 @@ RETURN: vm
                 (fill-pointer (vm-stack vm)) (frame-stack-pointer frame))
           (when (or (vm-pas-a-pas vm)
                     (eql lino (vm-trap-line vm)))
-            ;; to get the PAUSE message
+            ;; TODO: Not a pause message, but an EXECUTION JUSQU'A message.
+            ;; Furthermore if we are in a procedure, we must print the
+            ;; line number of the procedure call.
+            ;; To get the PAUSE message
             (pause vm)))
         (error-bad-line lino)))
   vm)
@@ -393,10 +396,6 @@ RETURN: vm
     :while (eql (vm-state vm) :running)
     :do (run-step vm))
   vm)
-
-
-
-
 
 
 
@@ -697,15 +696,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
     (if var
         (case (variable-type var)
           ((nombre)
-           (let ((val (io-read-number *task*)))
-             (if (nombrep val)
-                 (setf (variable-value var) (un-nombre val))
-                 (lse-error "LA VARIABLE ~A N'EST PAS UNE CHAINE" ident))))
+           (setf (variable-value var) (un-nombre (io-read-number *task*))))
           ((chaine)
-           (let ((val (io-read-string *task*)))
-             (if (chainep val)
-                 (setf (variable-value var) val)
-                 (lse-error "LA VARIABLE ~A EST UNE CHAINE" ident))))
+           (setf (variable-value var) (io-read-string *task*)))
           (t
            (loop
              :for i :below (array-total-size (variable-value var))
@@ -968,7 +961,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
         ;; loop over:
         (setf (vm-pc.line vm) start-line-number
               (vm-pc.offset vm) start-offset
-              (vm-code vm) (second (gethash start-line-number (vm-code-vectors vm)))))))
+              (vm-code vm) (code-vector (gethash start-line-number (vm-code-vectors vm)))))))
 
 
 
@@ -998,7 +991,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
     ;; Always loop over, there's a tant-que instruction at the start-offset.
     (setf (vm-pc.line vm) start-line-number
           (vm-pc.offset vm) start-offset
-          (vm-code vm) (second (gethash start-line-number (vm-code-vectors vm))))))
+          (vm-code vm) (code-vector (gethash start-line-number (vm-code-vectors vm))))))
 
 
 (defun following-line (vm lino)
@@ -1069,6 +1062,27 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 
 
+#+lse-extensions
+(defunction xit (ea)
+  "Sortie de boucles"
+  "XIT(N)
+
+Cette procédure permet de sortir d'un ou de plusieurs niveaux de boucles.
+
+Si N=0 alors cet procédure ne fait rien.
+
+Si N=1 alors on sort de la boucle courante.
+
+Si N>1 alors on sort de N boucle imbriquées.
+
+Si N est supérieur au nombre de boucles imbriquées, on sort de toutes les boucles.
+
+Voir: FAIREJUSQUA, FAIRETANTQUE"
+  (declare (ignore ea))
+  (error 'pas-implemente :what 'xit))
+
+
+
 
 (defparameter *primitive-functions*
   (hashtable :elements '((id::ent (ent 1 1))
@@ -1082,11 +1096,12 @@ NOTE: on ne peut pas liberer un parametre par reference.
                          (id::lgn (lgn 1 1))
                          (id::ale (ale 1 1))
                          (id::tem (tem 0 0))
-                         (id::att (att 0 0))
-                         #-(and) (id::dis  (dis 1 1))
-                         (id::etl (etl 2 2))
-                         (id::oul (oul 2 2))
-                         (id::oxl (oxl 2 2))
+                         #+lse-extensions (id::xit (xit 1 1))
+                         #+lse-extensions (id::att (att 0 0))
+                         #+lse-extensions #-(and) (id::dis  (dis 1 1))
+                         #+lse-extensions (id::etl (etl 2 2))
+                         #+lse-extensions (id::oul (oul 2 2))
+                         #+lse-extensions (id::oxl (oxl 2 2))
                          (id::lgr (lgr 1 1))
                          (id::pos (pos 3 3))
                          (id::eqn (eqn 1 2))
@@ -1377,7 +1392,12 @@ NOTE: on ne peut pas liberer un parametre par reference.
                  (let ((stack (vm-stack vm))
                        (code  (vm-code  vm))
                        (*vm*  vm))
-                   (yield-signals '(#.+sigint+))
+                   (handler-case
+                       (terminal-yield (task-terminal *task*))
+                     (user-interrupt (condition)
+                       (if (eql +sigquit+ (user-interrupt-signal condition))
+                           (setf (task-signal *task*) t)
+                           (signal condition))))
                    (flet ((spush  (val) (vector-push-extend val stack))
                           (spop   ()    (vector-pop stack))
                           (pfetch ()    (prog1 (aref code (vm-pc.offset vm))
@@ -1502,7 +1522,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
           (if (member :error *debug-vm*)
               (handler-bind ((error #'invoke-debugger)) (run))
               (run)))
-      
+
+      ;; TODO: Why do we need error and interruption handling here if
+      ;;       it's provided in command.lisp?
       (error (err)
         (vm-pause vm) ; no message
         ;; (io-format *task* "~%ERREUR: ~A~%" err)
@@ -1514,6 +1536,8 @@ NOTE: on ne peut pas liberer un parametre par reference.
         #+developing (progn (format *trace-output* "~%Condition: ~A~%" condition)
                             (force-output *trace-output*))
         (vm-pause vm) ; no message
+        (io-standard-redirection *task*)
+        (setf (task-silence *task*) nil)
         (io-format *task* "~%PRET~%")
         (io-finish-output *task*)))
     t))

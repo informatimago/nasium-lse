@@ -59,8 +59,12 @@
 
 
 (pushnew :developing           *features*)
-(pushnew :LSE-CASE-INSENSITIVE *features*)
+(pushnew :lse-case-insensitive *features*)
 (pushnew :lse-unix             *features*)
+(pushnew :lse-extensions       *features*)
+#-(and) (pushnew :lse-mitra-15             *features*)
+#-(and) (pushnew :lse-t1600                *features*)
+
 
 (setf *print-right-margin* 200
       *print-pretty* t
@@ -68,6 +72,11 @@
 
 #-windows-target
 (asdf:run-shell-command "rm -rf /home/pjb/.cache/common-lisp/kuiper.lan.informatimago.com/ccl-1.7-f94-linux-amd64/home/pjb/src/git/pjb/lse-cl/src/")
+
+(when (and (find-package "COM.INFORMATIMAGO.RDP")
+           (find-symbol "*BOILERPLATE-GENERATED*" "COM.INFORMATIMAGO.RDP")
+           (boundp (find-symbol "*BOILERPLATE-GENERATED*" "COM.INFORMATIMAGO.RDP")))
+  (setf (symbol-value (find-symbol "*BOILERPLATE-GENERATED*" "COM.INFORMATIMAGO.RDP")) nil))
 
 (in-package :cl-user)
 (progn (ignore-errors (delete-package :com.informatimago.lse.server))

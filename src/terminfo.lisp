@@ -33,65 +33,6 @@
 ;;;;**************************************************************************
 
 
-;;;---------------------------------------------------------------------
-;;; A patch to CFFI
-;;;---------------------------------------------------------------------
-
-(in-package "CFFI")
-
-(defun load-foreign-library-if-gnu-ld-script (libname libpath error)
-  (let ((newpath
-         (with-open-file (stream libpath
-                                 :direction :input
-                                 :element-type 'character
-                                 :external-format :default
-                                 :if-does-not-exist nil)
-           (when stream
-             (let ((buffer (make-array 80
-                                       :element-type 'character
-                                       :fill-pointer 80)))
-               (setf (fill-pointer buffer) (read-sequence buffer stream))
-               (when (search "GNU ld script" buffer)
-                 (file-position stream 0)
-                 (loop
-                   (let ((line (read-line stream nil nil)))
-                     (cond
-                       ((null line) (return nil))
-                       ((and (< 5 (length line))
-                             (string= "GROUP" (subseq line 0 5)))
-                        (let* ((left  (position #\( line))
-                               (ppos  (and left (position #\space line
-                                                          :start (1+ left)
-                                                          :test (function char/=))))
-                               (right (and ppos (position #\space line :start ppos))))
-                          (return 
-                            (and right (subseq line ppos right))))))))))))))
-    (if newpath
-        (cffi::%load-foreign-library libname newpath)
-        (error error))))
-
-
-(defun load-foreign-library-path (name path &optional search-path)
-  "Tries to load PATH using %LOAD-FOREIGN-LIBRARY which should try and
-find it using the OS's usual methods. If that fails we try to find it
-ourselves."
-  (handler-case
-      (values (handler-case (%load-foreign-library name path)
-                (error (err)
-                  (LOAD-FOREIGN-LIBRARY-IF-GNU-LD-SCRIPT name path err)))
-              (pathname path))
-    (error (error)
-      (if-let (file (find-file path (append search-path
-                                            *foreign-library-directories*)))
-              (handler-case
-                  (values (handler-case (%load-foreign-library name (native-namestring file))
-                            (error (err)
-                              (LOAD-FOREIGN-LIBRARY-IF-GNU-LD-SCRIPT name (native-namestring file) err)))
-                           file)
-                (simple-error (error)
-                  (report-simple-error name error)))
-              (report-simple-error name error)))))
-
 
 ;;;---------------------------------------------------------------------
 ;; (in-package "COM.INFORMATIMAGO.LSE.UNIX-CLI")
@@ -105,6 +46,8 @@ ourselves."
 ;;        cffi::find-file)
 
 
+(pushnew #P"/usr/lib/" cffi:*foreign-library-directories*
+         :test  (function equalp))
 (cffi:define-foreign-library curses (:unix "libncurses.so"))
 (cffi:use-foreign-library curses)
 

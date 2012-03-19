@@ -74,7 +74,7 @@ CONFIGURER     Configure le server EMULSE.
 
 (defmethod client-send-initial-message ((client lse-console-client))
   (client-send-response client "~%~?~%" *limbo-banner*
-                        (list *version* (console-number (client-console client)))))
+                        (list (version) (console-number (client-console client)))))
 
 
 (defmethod client-send-prompt ((client lse-console-client))

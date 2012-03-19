@@ -1,5 +1,19 @@
 .. comment: -*- mode:rst; coding:utf-8 -*-
 
+
+--------------------------------------
+    EMULSE - NOTES D'IMPLEMENTATION   
+--------------------------------------
+
+
+
+TODO
+====
+
+- In unix-cli, allow CR to work just like C-s
+
+
+
 NOTES
 =====
 
@@ -64,6 +78,114 @@ Indeed, they work nicely together.  A simple example: ::
 
 IMHO lexing is one of the (maybe exceptional) cases where regular
 expressions are simply the Right Thing.
+
+
+LSE Grammar
+=============
+
+::
+
+    start ::= ligne_programme | instruction | '?' expression .
+
+
+
+    numero ::= chiffre {chiffre} .
+    nombre ::= chiffre {chiffre} [ . {chiffre} ] 
+                [ 'E' ['+'|'-'] chiffre {chiffre} ] .
+
+    chaine ::= "'" { caractere_sauf_quote | "''" } "'" .
+
+    identificateur ::= [ '&' ] lettre { lettre | chiffre } .
+
+
+    expression  ::= expression ['-'|'+'|'!'] terme_signe .
+    expression  ::= terme_signe .
+
+    terme_signe ::= '-' terme .
+    terme_signe ::= terme .
+
+    terme       ::= terme ['*'|'/'] facteur .
+    terme       ::= facteur .
+
+    facteur     ::= facteur '^' exposant .
+    facteur     ::= simple .
+
+    simple      ::= identificateur '(' [ expression  { ',' expression } ] ')' .
+    simple      ::= identificateur .
+    simple      ::= nombre .
+    simple      ::= chaine .
+    simple      ::= '(' expression ')' .
+
+
+
+    disjonction ::= conjonction { 'OU' conjonction } .
+    conjonction ::= condition   { 'ET' condition   } .
+    condition   ::= 'NON' condition .
+    condition   ::= '(' disjonction ')' .
+    condition   ::= comparaison .
+    comparaison ::= expression [ '<'|'<='|'#'|'='|'>='|'>' ] expression .
+
+
+    ligne_programme ::= numero ' ' liste_instruction 'X-OFF' .
+    ligne_programme ::= numero '*' commentaire 'X-OFF' .
+    ligne_programme ::= numero declaration_procedure { ';' instruction } .
+    commentaires    ::= { caractere } .
+
+    liste_instruction ::= instruction|declaration { ';' instruction|declaration } .
+
+    declaration     ::= declaration_chaine | declaration_tableau .
+    instruction     ::= liberation
+                    | lire | afficher | alleren | sialors | sialorssinon 
+                    | terminer | pause | debutfin | fairejusqua | fairetantque 
+                    | retour | resultat | appel 
+                    | garer | charger | supprimer | executer .
+
+
+
+    declaration_chaine ::= 'CHAINE' identificateur { ',' identificateur } .
+
+    declaration_tableau ::= 'TABLEAU' 
+                            identificateur '[' expression [ ',' expression ] ']' 
+                     { ','  identificateur '[' expression [ ',' expression ] ']' } .
+
+    liberation  ::= 'LIBERER' identificateur .
+
+    declaration_procedure ::= 'PROCEDURE' identificateur 
+                                '(' [ identificateur { ',' identificateur } ] ')'
+                                [ 'LOCAL' identificateur { ',' identificateur } ] .
+
+    affectation ::= identificateur [ '[' expression [ ',' expression ] ']' ]
+                        '_' expression .
+
+
+    lire            ::= 'LIRE' identificateur { ',' identificateur } .
+    afficher        ::= 'AFFICHER'          expression { ',' expression } .
+    afficher        ::= 'AFFICHER' format [ expression { ',' expression } ] .
+    format          ::= '[' specification { ',' specification } ']' 
+    specification   ::= [ numero | '*' ] '/' | 'X' | 'C' | 'L' | chaine .
+    specification   ::= [ numero ] 'F' numero '.' numero | 'E' numero '.' numero 
+                                   | 'U' .
+    alleren         ::= 'ALLER' 'EN' expression .
+    sialors         ::= 'SI' disjonction 'ALORS' instruction .
+    sialorssinon    ::= 'SI' disjonction 'ALORS' instruction 'SINON' instruction .
+    terminer        ::= 'TERMINER' .
+    pause           ::= 'PAUSE' .
+    debutfin        ::= 'DEBUT' instruction { ',' instruction } 'FIN' .
+    fairejusqua     ::= 'FAIRE' numero 'POUR' identificateur '_' expression 
+                            [ 'PAS' expression ] 'JUSQUA' expression .
+    fairetantque    ::= 'FAIRE' numero 'POUR' identificateur '_' expression 
+                            [ 'PAS' expression ] 'TANT' 'QUE' disjonction .
+    retour          ::= 'RETOUR' .
+    retour          ::= 'RETOUR' 'EN' expression .
+    resultat        ::= 'RESULTAT' expression .
+    appel           ::= identificateur '(' [ expression { ',' expression } ] ')' .
+
+    garer           ::= 'GARER'   identificateur ',' expression ',' expression .
+    charger         ::= 'CHARGER' identificateur ',' expression ',' expression 
+                            [ ',' identificateur ] .
+    supprimer       ::= 'SUPPRIMER' expression [ ',' expression ] .
+    executer        ::= 'EXECUTER' expression [ ',' expression ] .
+
 
 
 
@@ -225,6 +347,417 @@ commands: ::
 
     (configuration save)
     (configuration load)
+
+
+
+
+Gestion des consoles en Common Lisp
+===================================
+
+    Comme clisp ne fourni pas de threads, on a deux solutions pour
+    implémenter les consoles:
+    
+        - forked un processus par console, et implémenter un IPC entre
+          un processus maîtres et les processus consoles avec
+          transmission de l'état (commande PR), et des commandes (le
+          maître pouvant terminer une session des consoles
+          utilisateurs).
+
+        - implementer une machine virtuelle multi-threads dans un seul
+          processus clisp.  
+
+    Dans les deux cas la gestion des E/S est critique (utilisation de
+    SOCKET:SOCKET-STATUS, avec gestion des flots d'E/S dans tous les
+    sens).
+
+    Reportons le choix entre les deux après analyse de l'interpréteur
+    LSE.
+
+
+
+Gestion des consoles en C (OBSOLETE)
+====================================
+
+    On veut  gérer toutes  les consoles dans  un seul  processus unix,
+    chaque utilisateur  ayant son  propre thread.  (Afin  de "simuler"
+    (de  façon  lointaine)  le   fonctionnement  du  système  LSE  sur
+    Mitra-15,  et aussi  d'étudier l'implémentation  d'un  tel système
+    multi-utilisateur).
+
+    Ceci nous permet également  d'implémenter la commande PRENDRE ETAT
+    CONSOLE directement,  sans passer par un fichier  "SWAP" comme sur
+    Mitra-15, et sans avoir à utiliser un autre IPC.
+
+    En conséquence,  on ne  peut pas utiliser  les signaux  pour gérer
+    certains états du terminal  (ESC <-> SIGQUIT, CTRL-A <-> SIGINTR),
+    car on ne saurait pas de quelle console le signal proviendrait.
+
+    Le système comportera donc deux threads par console :
+
+       - un thread d'exécution du système LSE (commandes et interprétation),
+
+       - un  thread d'E/S  console  qui recevra  les caractères  tapés
+         (stty min  1), et  qui génèrera un  "signal" spécifique  à la
+         console pour ESC et pour CTRL-A.
+
+       - une synchronisation spéciale aura lieu entre ces deux threads
+         lors de la lecture d'une entrée de la console.
+
+
+    Une console peut être connectée soit directement sur un xterm (via
+    pty) pour la  console principale, soit via un  socket sur un xterm
+    ou un autre émulateur de terminal configuré spécialement pour LSE.
+
+    # We need a font with an up arrow instead of the caret (^), 
+    # and with a left arrow instead of the underline (_).
+    # This dec font has these arrow characters, but mapped on 0xfc and 0xfb.
+    font='-dec-terminal-bold-r-normal-*-14-*-*-*-*-*-dec-dectech' 
+
+
+    # We reset the terminal to function as a LSE console.
+    # The intr signal is sent upon CTRL-A  key (used by ATT() function).
+    # The quit signal is sent upon ESC key key.
+    # Start, stop and susp signals are not mapped.
+    stty raw  \
+        olcuc -ocrnl -onlcr \
+        -echo -echoe -echok -echonl -echoprt -echoke -echoctl \
+        intr   0x00 \
+        start  0x00 \
+        stop   0x00 \
+        susp   0x00 \
+        quit   0x00 \
+        erase  0x00 \
+        kill   0x00 \
+        eof    0x00 \
+        eol    0x00 \
+        eol2   0x00 \
+        rprnt  0x00 \
+        werase 0x00 \
+        lnext  0x00 
+
+
+Interpretation (Obsolete)
+=========================
+
+Conclusion :
+
+    
+    Implémenter une machine virtuelle et générer un bytecode est plus
+    simple que cette génération au vol du CPF avec la manipulation des
+    piles.
+
+
+SI EXPRESSION ! A_SI B>0 ALORS 1 SINON 2
+
+Objectifs :
+
+    - Interpréter "directement" l'arbre syntaxique, 
+      sans générer de code postfixé.
+
+    - Ne pas utiliser la  pile d'exécution du langage d'implémentation
+      (éviter des problèmes entre le  contrôle de flôt L.S.E. et celui
+      de l'interpréteur  (PROCEDURE ou fonctions L.S.E.,  ALLER EN, ou
+      RETOUR EN ; appels  récursifs des fonctions d'interprétation des
+      instructions et d'évaluation des expressions).
+
+Solution : 
+
+    - Si on  veut éviter une implémentation récursive,  le parcours de
+      l'arbre   syntaxique  (qui  se   fait  forcément   d'une  manière
+      préfixée),  et son  exécution nécessite  l'utilisation  de piles
+      pour obtenir  un effet postfixé. D'une certaine  manière, le CPF
+      est généré au vol dans  la pile d'instructions.  Ceci est mis en
+      évidence par  la présence de deux  parties pour l'interprétation
+      de quasiment chaque instruction, une empilant les expressions et
+      sous-instructions  (générant  la CPF),  et  l'autre dépilant  et
+      calculant les résultats (exécutant).
+
+::
+
+       pile_expression
+       pile_instruction
+
+    interpréteur(ligne_debut,ligne_arret)
+
+       ligne_suivante
+       instruction_suivante
+
+       ligne_courante=ligne_debut
+       si ligne_courante n'existe pas alors 
+          erreur 
+       fsi
+       instruction_courante=premiere instruction de la ligne_courante
+       arret=(ligne_courante==ligne_arret)
+
+       tant que ! arret faire
+
+          executer ligne_courante,instruction_courante resultat : ligne_suivante
+
+          cas ligne_suivante :
+
+          quand arreter alors 
+             arret=vrai
+
+          quand suivant alors
+             si sommet_pile_instruction est marqueur alors
+                ligne_suivante =  chercher la ligne suivante dans le programme
+                si pas de ligne suivante alors
+                   erreur
+                fsi
+                instruction_suivante=premiere instruction de la ligne_suivante
+                arret=pasapas
+             sinon
+                depiler_instruction instruction_suivante
+                ligne_suivante=ligne_courante
+             fsi
+
+          quand numero de ligne alors
+             si pas de ligne suivante alors
+                erreur
+             fsi
+             instruction_suivante=premiere instruction de la ligne_suivante
+             arret=pasapas
+          fcas
+
+          ligne_courante=ligne_suivante
+          instruction_courante=instruction_suivante
+          arret=arret ou (ligne_courante==ligne_arret) 
+       fait
+
+
+
+La  pile d'expression  peut ne  pas être  vide entre  sauts  de lignes
+(appels de procedure fonction).
+
+La pile d'instruction  peut être ligne par ligne,  auquel cas, il faut
+une pile de piles d'instructions pour gérer les appels de procédure et
+de fonction, ou il faut  empiler des marqueurs afin de pouvoir dépiler
+jusqu'au  marqueur en  cas de  déroutement (ALLER  EN), et  en  cas de
+retour  (RETOUR/RETOUR  EN/RESULTAT).  Un  RETOUR EN  dépilerait  deux
+marqueurs.  Un  RETOUR  EN  doit  aussi dépiler  l'expression  et  les
+instructions!  en cours d'évaluation qui avaient appelé la fonction.
+
+::
+
+    10 A_0-1
+    20 SI 2+&F(A)=0 ALORS AFFICHER 'OUI' SINON AFFICHER 'NON'
+    25 AFFICHER 'FINI';TERMINER
+    30 AFFICHER 'ANNULE';TERMINER
+    50 PROCEDURE &F(X) LOCAL X
+    55 SI 1+X=0 ALORS RETOUR EN 30;RESULTAT -2
+    
+Voici le travail, arrivé en 55: ::
+
+      ligne_courante       = 55
+      instruction_courante = evaluer_ident(X)
+
+      pile_i:
+        55,+2
+        55,nombre(0)
+        55,=2
+        55,si2(retouren(nombre(30)),nil)
+        55,resultat(-2)
+        50,marqueur
+        20,+2
+        20,nombre(0)
+        20,=2
+        20,si2(afficher('OUI'),afficher('NON'))
+        0,marqueur
+       -------------------------------------------        
+      pile_e:
+        1
+        50,marqueur
+        2
+        0,marqueur
+       -------------------------------------------        
+
+On ne peut exécuter qu'une seule  ligne à la fois par procédure alors,
+on n'a besoin que d'un type de marqueur, empilé en entrée de programme
+ou de procédure/fonction.
+
+
+
+TERMINER vide entièrement les piles.
+
+PAUSE en vide pas entièrement les piles.
+      (PAUSE dans  une fonction en  train dévaluer une  (ou plusieurs)
+      expression(s imbriqués).
+      PAUSE vide les piles jusqu'au marqueur de procedure.
+
+
+CONTINUER           continue si de rien n'était.
+
+POURSUIVRE JUSQU'EN continue comme si  de rien n'était en changeant le
+                    point d'arrêt.
+
+REPRENDRE EN N1,N2  fait comme si des RETOUR EN * / ALLER EN après la PAUSE,
+                    et en changeant le point d'arrêt.
+
+::
+
+   boucle:
+       si (l,i) == (nil,nil) alors
+          si pile_i est vide alors
+             ligne suivante
+          sinon
+             depiler_i (l,i)
+          fsi
+       sinon
+          (l,i)=executer (l,i);
+       fsi
+    fboucle
+   
+
+             alleren 
+             faire -
+             si - alors - sinon -
+             fonction - 
+             procedure -
+             - ; -
+
+
+
+     valeur2
+     valeur1
+    ---------
+
+     ligne2, instruction2
+     ligne1, instruction1
+    ----------------------
+
+     -> ligneN, instructionN
+
+
+
+    ligneN, si c_expr i_alors i_sinon :
+         empiler_i ligneN, si i_alors i_sinon 
+         --> ligneN, c_expr
+
+    ligneN, si i_alors i_sinon
+         depiler_e c
+         si c alors 
+             --> ligneN i_alors
+         sinon
+             --> ligneN i_sinon
+
+    ligneN, = a b
+         empiler_i ligneN, =
+         empiler_i ligneN, b
+         --> ligneN, a
+
+    ligneN, =
+         depiler_e b
+         depiler_e a
+         empiler_e a==b
+         --> nil
+
+    ligneN, nombre x
+         empiler_e x
+         --> nil
+
+    ligneN, i_a ; i_b
+         empiler_i i_b
+         --> ligne_N, i_a
+
+
+    ligne_N, alleren expr
+         empiler_i alleren
+         --> ligne_N, expr
+
+    ligne_N, alleren
+         depiler_e ligne_ou
+         vider_pile_i (LIGNE)
+         --> ligne_ou, nil
+
+    boucle:
+       si (l,i) == (nil,nil) alors
+          si pile_i est vide alors
+             ligne suivante
+          sinon
+             depiler_i (l,i)
+          fsi
+       sinon
+          (l,i)=executer (l,i);
+       fsi
+    fboucle
+ 
+
+::
+
+    10 A_CNB("12 13 14",3,N)
+
+    ----------------------------------------
+    pile_v:
+        ex_variable(type_ident A)
+
+    pile_i:
+        ex_affectation
+        (op_fonction
+                (type_ident CNB)
+                (op_liste_v
+                   (type_chaine "10 11 12")
+                   (op_liste_v
+                      (type_nombre 3)
+                      (type_ident N)
+                   )
+                )
+             )
+    ----------------------------------------
+    pile_v:
+        ex_variable(type_ident A)
+        ex_variable(type_ident N)
+
+    pile_i:
+        ex_affectation
+        (type_ident CNB)
+        (ex_fonction)
+        (type_chaine "10 11 12")
+        (type_nombre 3)
+
+    ----------------------------------------
+    pile_v:
+        ex_variable(type_ident A)
+        ex_variable(type_ident N)
+        (type_nombre 3)
+        (type_chaine "10 11 12")
+
+    pile_i:
+        ex_affectation
+        (type_ident CNB)
+        (ex_fonction)
+
+
+    (setq programme '(
+       (  10
+          (op_affectation
+             (type_ident A)
+             (op_fonction
+                (type_ident CNB)
+                (op_liste_v
+                   (type_chaine "10 11 12")
+                   (op_liste_v
+                      (type_nombre 3)
+                      (type_ident N)
+                   )
+                )
+             )
+          )
+       )
+       (  20
+          (op_afficher
+             nil
+             (op_liste_v
+                (type_ident A)
+                (type_ident N)
+             )
+          )
+       )
+       (  30
+          (op_terminer)
+       )
+    ))
+
+
 
 
 .. comment: ;;;; THE END ;;;;

@@ -33,16 +33,21 @@
 #*****************************************************************************
 
 BUILD_HOSTS = kuiper galatea lassell # triton
+LISP=ccl --load
+
+
 
 all:ChangeLog
 	@for host in $(BUILD_HOSTS) ; do \
 		echo "// Building on $$host" ;\
-		ssh $$host bash -c "git pull ; make -C $$(pwd) unix-cli" ;\
+		ssh $$host $(MAKE) $(MFLAGS) -C $$(pwd) unix-cli ;\
 	 done
+	$(MAKE) $(MFLAGS) html-doc
 
 help:
 	@printf 'make all          # builds all executables on all hosts.\n'
 	@printf 'make unix-cli     # builds the unix cli executable on the local hosts.\n'
+	@printf 'make html-doc     # builds the html doc directory on the local hosts.\n'
 	@printf 'make ChangeLog    # Extracts the logs from git into the ChangeLog file.\n'
 	@printf 'make variables    # shows the variables.\n'
 
@@ -50,18 +55,29 @@ help:
 ChangeLog:
 	git log > ChangeLog
 
-unix-cli:unix-cli/ccl unix-cli/clisp
+symlink:
+	awk '/Generating/{print $$2}' < /tmp/unix-cli.log | ( read executable ; rm -f lse ; ln -sf $$executable lse )
+
+unix-cli:unix-cli/ccl
 
 unix-cli/ccl:
-	ccl   --batch   --load generate-unix-cli.lisp
+	ccl --load      generate-unix-cli.lisp | tee /tmp/unix-cli.log 
+	awk '/Generating/{print $$2}' < /tmp/unix-cli.log | ( read executable ; rm -f lse ; ln -sf $$executable lse )
 
 unix-cli/clisp:
-	clisp -ansi -q         generate-unix-cli.lisp
+	clisp -ansi -q  generate-unix-cli.lisp | tee /tmp/unix-cli.log 
+	awk '/Generating/{print $$2}' < /tmp/unix-cli.log | ( read executable ; rm -f lse ; ln -sf $$executable lse )
+
+html-doc:
+	ccl --load      generate-documentation.lisp
+
+
 
 variables:
 	@echo pwd=$$(pwd)
 	@echo BUILD_HOSTS=$(BUILD_HOSTS)
+	@echo LISP=$(LISP)
 
-.PHONY: unix-cli
+.PHONY: unix-cli html-doc
 
 #### THE END ####

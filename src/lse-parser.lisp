@@ -535,7 +535,14 @@
                  :action $1)
 
             (--> identificateur
-                 (seq (alt tok-identificateur tok-at) :action  $1)
+                 (seq (alt
+                       (seq tok-identificateur :action $1)
+                       (seq tok-at :action (make-instance 'tok-identificateur
+                                               :kind 'tok-identificateur
+                                               :text "@"
+                                               :line (token-line $1)
+                                               :column  (token-column $1))))
+                      :action $1)
                  :action $1)
 
             (--> procident

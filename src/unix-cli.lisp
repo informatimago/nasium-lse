@@ -34,35 +34,30 @@
 
 (in-package "COM.INFORMATIMAGO.LSE.UNIX-CLI")
 
+(defvar *default-program-name* "lse")
+
 (defparameter *tape-banner* "
------------------------------------------------------------------------- 
-\\     ooo                oooooooooo       oooooooooo                    \\      
+------------------------------------------------------------------------
+\\     ooo                oooooooooo       oooooooooo                    \\
  \\    ooo               oooooooooooo      oooooooooo      ooooooooooo    \\
   \\   ooo               oooo     ooo      ooo                             \\
    \\  ooo                oooo             oooooo               o oo        \\
     > ooo                  oooo           oooooo          ooo o    o        >
-   /......................................................................./        
-  /   ooo              ooo     oooo       ooo             oooo oo oo      /         
- /    oooooooooo  ooo  oooooooooooo  ooo  oooooooooo  ooo oooo  oo oo    / 
-/     oooooooooo  ooo   oooooooooo   ooo  oooooooooo  ooo  o oooo oo    / 
------------------------------------------------------------------------- 
+   /......................................................................./
+  /   ooo              ooo     oooo       ooo             oooo oo oo      /
+ /    oooooooooo  ooo  oooooooooooo  ooo  oooooooooo  ooo oooo  oo oo    /
+/     oooooooooo  ooo   oooooooooo   ooo  oooooooooo  ooo  o oooo oo    /
+------------------------------------------------------------------------
 ")
 
-(defparameter *unix-banner* "
 
-L.S.E.
-VERSION ~A-UNIX
-COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
-
-DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLv3.
-
+(defparameter *cli-banner* "
 Ce programme est livré avec ABSOLUMENT AUCUNE GARANTIE; pour plus de
 détails utilisez la commande DO GARANTIE.  Ce logiciel est libre, et
 vous êtes les bienvenus pour redistribuer sous certaines conditions;
-utilisez la commande DO COPIE pour plus de détails.
+utilisez la commande DO LICENSE pour plus de détails.
 
 Tapez AI pour avoir de l'aide.
-
 
 BONJOUR     ~8A
 
@@ -74,12 +69,23 @@ BONJOUR     ~8A
 
 (defun locale-terminal-encoding ()
   "Returns the terminal encoding specified by the locale(7)."
-  (dolist (var '("LC_ALL" "LC_MESSAGES" "LC_CTYPE")
+  #+(and ccl windows-target)
+  :iso-8859-1
+  ;; ccl doesn't support :windows-1252.
+  ;; (intern (format nil "WINDOWS-~A" (#_GetACP)) "KEYWORD")
+  #-(and ccl windows-target)
+  (dolist (var '("LC_ALL" "LC_CTYPE" "LANG")
                :iso-8859-1) ; some random default…
     (let* ((val (getenv var))
-           (dot (position #\. val)))
+           (dot (position #\. val))
+           (at  (position #\@ val :start (or dot (length val)))))
       (when (and dot (< dot (1- (length val))))
-        (return (intern (string-upcase (subseq val (1+ dot))) "KEYWORD"))))))
+        (return (intern (let ((name (string-upcase (subseq val (1+ dot)
+                                                           (or at (length val))))))
+                          (if (and (prefixp "ISO" name) (not (prefixp "ISO-" name)))
+                              (concatenate 'string "ISO-" (subseq name 3))
+                              name))
+                        "KEYWORD"))))))
 
 
 (defun set-terminal-encoding (encoding)
@@ -89,77 +95,72 @@ BONJOUR     ~8A
           (setf (ccl::stream-external-format stream)
                 (ccl:make-external-format :domain nil
                                           :character-encoding encoding
-                                          ;; :line-termination line-termination
-                                          )))
+                                          :line-termination
+                                          #+unix :unix
+                                          #+windows :windows
+                                          #-(or unix windows) :unix)))
         (list (two-way-stream-input-stream  *terminal-io*)
               (two-way-stream-output-stream *terminal-io*)))
   (values))
 
 
-;; (setf ccl:*default-external-format*           :unix
-;;       ccl:*default-file-character-encoding*   :utf-8
-;;       ccl:*default-line-termination*          :unix
-;;       ccl:*default-socket-character-encoding* :utf-8)
-
-
-
-(defgeneric stream-input-stream (stream)
-  (:method ((stream stream))
-    stream)
-  (:method ((stream concatenated-stream))
-    (stream-input-stream (first (concatenated-stream-streams stream))))
-  (:method ((stream echo-stream))
-    (stream-input-stream (echo-stream-input-stream stream)))
-  (:method ((stream synonym-stream))
-    (stream-input-stream (symbol-value (synonym-stream-symbol stream))))
-  (:method ((stream two-way-stream))
-    (stream-input-stream (two-way-stream-input-stream stream))))
-
-(defgeneric stream-output-stream (stream)
-  (:method ((stream stream))
-    stream)
-  (:method ((stream broadcast-stream))
-    (stream-output-stream (first (broadcast-stream-streams stream))))
-  (:method ((stream echo-stream))
-    (stream-input-stream (echo-stream-output-stream stream)))
-  (:method ((stream synonym-stream))
-    (stream-input-stream (symbol-value (synonym-stream-symbol stream))))
-  (:method ((stream two-way-stream))
-    (stream-input-stream (two-way-stream-output-stream stream))))
-
-
-
 (defun main (&optional args)
-  (declare (ignore args))
   (let ((encoding (locale-terminal-encoding)))
     (set-terminal-encoding encoding)
-    (let* ((terminal (make-instance
-                         (progn
-                           #+swank (if (typep (stream-output-stream *terminal-io*)
-                                              'swank-backend::slime-output-stream)
-                                       'swank-terminal
-                                       'terminfo-terminal)
-                           #-swank 'terminfo-terminal)
-                         #-swank :terminfo #-swank (terminfo:set-terminal)
-                         :input  (stream-input-stream  *terminal-io*)
-                         :output (stream-output-stream *terminal-io*)))
+    (let* ((terminal-class (progn
+                             #+swank
+                             (cond
+                               ((typep (stream-output-stream *terminal-io*)
+                                       'swank-backend::slime-output-stream)
+                                'swank-terminal)
+                               ;; #+unix
+                               ;; ((member (getenv "TERM") '("emacs" "dumb")
+                               ;;          :test (function string=))
+                               ;;  'standard-terminal)
+                               (t
+                                #+unix 'unix-terminal
+                                #-unix 'standard-terminal))
+                             #+(and (not swank) unix)
+                             'unix-terminal
+                             #+(and (not swank) (not unix))
+                             'standard-terminal))
+           (terminal (make-instance terminal-class
+                         :input-stream  (stream-input-stream  *terminal-io*)
+                         :output-stream (stream-output-stream *terminal-io*)))
+           ;; (terminal (make-instance 'unix-terminal))
            (task     (make-instance 'task
                          :state :active
                          :case-insensitive t
                          :upcase-output nil
-                         :dectech nil
-                         :unicode #+swank (eql encoding :utf-8) #-swank nil
+                         :unicode (eql encoding :utf-8)
+                         :arrows (if (eql encoding :utf-8)
+                                     :unicode-halfwidth
+                                     nil) 
                          :terminal terminal)))
-      (setf *task* task)
-      (terminal-initialize terminal)
-      (unwind-protect
-           (progn
-             (io-format *task* "~A" *tape-banner*)
-             (io-format *task* "~?" *unix-banner*  (list *version* (subseq (dat) 9)))
-             (command-repl *task*))
-        (task-close-all-files *task*)
-        (terminal-finalize terminal))))
-  0)
+      (setf *task* task) ; to help debugging, we keep the task in the global binding.
+      (setf *program-name* (or (program-name) *default-program-name*))
+      (or (parse-options (or args (arguments)))
+          (progn
+            (apply-options *options* *task*)
+            (terminal-initialize terminal)
+            (unwind-protect
+                 (let* ((old-debugger-hook *debugger-hook*)
+                        (*debugger-hook*
+                         (lambda (condition debugger-hook)
+                           ;; We shouldn't come here.
+                           (when debugger-hook
+                             (terminal-finalize terminal))
+                           (format *debug-io* "~%My advice: exit after debugging.~%")
+                           (when old-debugger-hook
+                             (funcall old-debugger-hook condition debugger-hook)))))
+                   (io-format *task* "~A" *tape-banner*)
+                   (io-format *task* "~?" *title-banner* (list (version)))
+                   (io-format *task* "~?" *cli-banner*   (list (subseq (dat) 9)))
+                   (command-repl *task*))
+              (task-close-all-files *task*)
+              (terminal-finalize terminal))
+            ex-ok)))))
+
 
 
 ;;;; THE END ;;;;

@@ -1,7 +1,72 @@
+.. comment: -*- mode:rst; coding:utf-8 -*-
 
+LSE-CL: An Implementation of the L.S.E. programming language written in Common Lisp
+###################################################################################
+
+
+Compiling
+=========
+
+
+Development
+-----------
+
+A ``loader.lisp`` file is provided to easily load (and reload) the
+sources. ::
+
+    (cd #P "~/src/lse-cl/src/")
+    (load "loader.lisp")
+
+It should be edited, notably there are absolute pathnames to remove
+~/.cache/common-lisp subdirectories.
+
+Once loaded, the lse system can be run and debugged with: ::
+
+    (com.informatimago.lse.unix-cli:main)
+
+
+
+Deployment
+----------
+
+A Makefile and various generate scripts are provided to compile
+deployment targets.
+
+The available targets are:
+
+  - ``BUILD_HOSTS='host1 host2 … hostn' make all``:
+
+        Compiles the following targets on each of the hosts (thru
+        ssh).  The current directory should be shared or a copy
+        available at the same path.  The various hosts should be
+        different target plateforms.  (We don't do cross-compiling).
+
+
+  - ``make unix-cli`` to compile the unix command line.  This is done
+    thru a lisp script, ``generate-unix-clip.lisp``, which generates
+    an executable named:
+
+        lse-{lisp-implementation}-{system}-{distrib}-{release}-{machine-type}
+
+    and a corresponding manifest (text) file.
+
+    It also makes a symlink named ``lse``, so that you can easily run
+    the last compiled executable.
+
+  - ``make unix-server`` to compile the unix server.  [NOT YET]
+
+
+Once compiled, the executables can be run with: ::
+
+    $ ./lse --aide
+    $ ./lse --montrer-touches --configuration-interactive
+
+
+Features
+========
 
 Some variants between the T1600 and the Mitra-15 can be selected by
-pushing one or the other of those features:
+pushing one or the other of those features: ::
 
     (pushnew :LSE-T1600     *features*)  ; \
     (pushnew :LSE-MITRA-15  *features*)  ;  > mutually exclusive.
@@ -10,7 +75,7 @@ pushing one or the other of those features:
 They change some messages and some limits (string lengths, block size,
 line numbers, etc).
 
-
+::
 
     (pushnew :LSE-CASE-INSENSITIVE *features*)
 
@@ -19,6 +84,47 @@ converted to upper case.  For strings, they're kept as given (unicode
 characters are accepted in strings and are encoded in UTF-8).
 
 
+The scripts (``generate-unix-clip.lisp`` and ``loader.lisp``) must be
+edited to configure the features.
+
+
+Debugging
+=========
+
+There are a few ``*debug-…*`` flags:
+
+   - ``com.informatimago.lse::*debug-vm*``
+   - ``com.informatimago.lse::*debug-repl*``
+   - ``com.informatimago.lse.unix-cli::*debug-swank*``
+
+When set, errors at various points  break into the debugger instead of
+being handled.  Deployment targets are normally compiled with those
+variables reset.
+
+In the deployment targets, there's a ``*debugger-hook*`` that resets
+the terminal (calls terminal-finalize), so that one can do some
+debugging if a break occurs in the executables.  But nothing is
+prepared to resume working in this occurence (since handling the error
+would mean a non-local exit ``*debugger-hook*`` cannot do anything to
+resume the terminal after that.  (Actually, we would have to prepare
+handlers to be able to do non-locale exits from the debugger hook
+resuming work reinitializing the terminal)).
+
+Anyways, debugging is better done in the development environment
+emacs+slime.  Notice that one can launch a ccl from a terminal, load
+and start a swank server, and continue debugging from emacs+slime: ::
+
+    $ ccl 
+    $ (ql:quickload :swank)
+    $ (swank:create-server :port 4011)
+
+    (in emacs): M-x slime-connect RET localhost RET 4011 RET
+    and see above how to load "loader.lisp".
+
+
+    
+Files
+=====
 
 
 Utilities:
@@ -98,7 +204,11 @@ Development files:
 
     scratch.lisp            Scratch file.
     loader.lisp             Used during development to quickload the systems.
+    generate-unix-clip.lisp Deployment target generation script.
+    Makefile                Deployment makefile.
 
--- 
-__Pascal Bourguignon__
-Thu Feb 23 03:55:22 CET 2012
+
+.. comment: __Pascal Bourguignon__
+.. comment: Wed Mar 14 00:10:40 CET 2012
+
+

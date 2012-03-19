@@ -279,6 +279,91 @@ _______________________________________________________________________________
    (clear-input (terminal-input-stream terminal))))
 
 
+    (iolib.serial:stty
+     :raw     t
 
+     ;; :ignbrk  t   ; ignore break (only on serial lines).
+     ;; :brkint  nil ; useless when  :ignbrk t
+     ;; :ignpar  t   ; ignore parity errors
+     ;; :parmrk  nil ; read parity errors as \0
+     ;; :inpck   nil ; disable parity check
 
+     :istrip  t   ; enable  strip off eigth bit (should be nil for utf-8 input)
+     :inlrc   t   ; enable  translate NL to CR on input
+     :igncr   nil ; disable ignore CR  on input
+     :icrnl   nil ; disable translate CR to NL on input.
+     :iuclc   nil ; disable map uppercase to lower (not POSIX).
+     :ixon    nil ; disable XON/XOFF flow control on output. ???
+     :ixoff   nil ; disable XON/XOFF flow control on input.
+     :ixany   nil ; disable Typing any character to restart stopped output.
+     :imaxbel nil ; disable Ring Bell when input queue is full.
+     :iutf8   nil ; disable UTF-8 input (for character erase in cooked mode).
+
+     :opost   nil ; disable implementation defined output processing.
+     :olcuc   nil ; disable map lowercase touppercase (not POSIX).
+     :onlcr   nil ; disable map NL to CR-NL on output.
+     :ocrnl   nil ; disable map CR to NL on output.
+     :onocr   nil ; disable output CR at column 0.
+     :onlret  nil ; disable don't output CR (ie. output CR).
+     :ofill   nil ; disable send  fill characcters for a delay (instead of timer).
+     :ofdel   nil ; fill character is NUL; t =  fill character is DEL.
+     :nldly   :nl0  ; Newline delay mask (member :nl0 :nl1)
+     :crdly   :cr0  ; CR delay mask (member :cr0 :cr1 :cr2 :cr3)
+     :tabdly  :tab0 ; TAB delay mask  (member :tab0 :tab1 :tab2 :tab3)
+     :bsdly   :bs0  ; Backspace delay mask (member :bs0 :bs1)
+     :vtdly   :vt0  ; Vertical tab delay mask (member :vt0 :vt1)
+     :ffdly   :ff0  ; Form feed delay mask (member :ff0 :ff1)
+
+     ;; For modem control:
+     ;; ;; :cbaud    speed mask
+     ;; ;; :cbaudex  speed mask
+     ;; :csize    :cs8 ; (member :cs5 :cs6 :cs7 :cs8)
+     ;; :cstopb   nil  ; disable set two stop bits
+     ;; :cread    t    ; enable receiver
+     ;; :parenb   nil  ; disable parity generation on  output and parity checking on input.
+     ;; :parodd   nil  ;  if set then parity is odd otherwise parity is even.
+     ;; :hupcl    nil  ; lowoer modem conotrollines after last  process closes the device (hang-up).
+     ;; :clocal   t    ; ignoroe modem control lines.
+     ;; :loblk    nil  ; (not POSIX, not linux)
+     ;; ;; :cibaud   mask for input speed
+     ;; ;; :cmspar   use stick (mark/space) parity.
+     ;; :crtscts t    ;  enable  hardware flow control.
+
+     :isig    nil ; disable when the character INTR, QUIT, SUSP, or DSUSP are received, generate the signal.
+     :icanon  nil ; disable canonical mode.
+     :xcase   nil ; (not POSIX) (and :icanon :xcase) => upper case terminal
+     :echo    nil ; disable echo of input characters
+     :echoe   nil ; (and :icanon :echoe) => ERASE and WERASE erase the previous character and word.
+     :echok   nil ; (and :icanon :echok) => KILL  erase current line.
+     :echonl  nil ; (and :icanon :echonl) =>  echo the NL  even when :echo is t.
+     :echoprt nil ; (not POSIX) (and :icanon :iecho :echoprt) => characters are printed as they are erased. ( /a\  ??? )
+     :echoke  nil ; (and Icanon :echoke) => KILL is echoed by erasing each character on the line (as specified by :echoe and :echoprt).
+     :echoctl nil ; (not POSIX) (:echo :echoctl) control codes (not TAB,  NL, START, STOP) are  echoed as ^X
+     :defecho nil ; (not POSIX, not linux) Echo only when a process is reading.
+     :flusho  nil ; (not POSIX, not linux) output is flushed.  Toggled by the DISCARD character.
+     :noflsh  t   ; enable Disable flushing input and output when signaling INT, QUIT and SUSP.
+     :tostop  t   ; sends SIGTTOU to processes who writes to this terminal.
+     :pendin  nil ; (not POSIX, not linux) input queue is reprinted when next char is read.
+     :iexten  nil ; disable Enable implementation-defined input-processing. To enable EOL2, LNEXT, REPRINT, WERASE, and IUCLC.
+     
+     :vintr   #x01     ; C-a ; SIGINT                                    needs :isig t
+     :vquit   #x1b     ; ESC ; SIGQUIT                                   needs :isig t
+     :verase  0              ; erase character                           needs :icanon t
+     :vkill   0              ; erase line                                needs :icanon t
+     :veof    0              ; send input buffer (= eof when empty)      needs :icanon t
+     :vmin    0              ; minimum number of characters for noncanonical read       
+     :veol    #x13     ; C-s ; additionnal end of line character         needs :icanon t
+     :vtime   0              ; timeout in decisecond for noncanonical read
+     :veol2   0              ; yet additionnal end of line character     needs :icanon t (not POSIX)
+     :vswtch  0              ; (not POSIX, not linux) switch character.
+     :vstart  0              ; The X-ON character                        needs :ixon
+     :vstop   0              ; The X-OFF character                       needs :ixon
+     :vsusp   0              ; SIGSUSP                                   needs :isig t
+     :vdsusp  0              ; (not POSIX, not LINUX) SIGSUSP when read  needs :isig t :iexten t
+     :vlnext  0              ; (not POSIX, not LINUX) literal next       needs :iexten t
+     :werase  0              ; (not POSIX) word erase                    needs :icanon t :iexten t
+     :vreprnt 0              ; (not POSIX) reprint unread characters     needs :icanon t :iexten t
+     :vdiscard 0             ; (not POSIX, not LINUX) toggle start/stop discarding output needs :iexten t
+     :vstatus 0             ; (not POSIX, not LINUX) status request
+     )
 

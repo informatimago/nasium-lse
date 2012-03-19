@@ -1,6 +1,6 @@
 ;;;; -*- mode:lisp;coding:utf-8 -*-
 ;;;;**************************************************************************
-;;;;FILE:               com.informatimago.common-lisp.asd
+;;;;FILE:               com.informatimago.lse.asd
 ;;;;LANGUAGE:           Common-Lisp
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
@@ -36,8 +36,8 @@
 (asdf:defsystem :com.informatimago.lse
     :description  "This system implements a L.S.E. interpreter."
     :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
-    :version "1.1.1"
-    :licence "AGPLv3"
+    :version "1.2.0"
+    :licence "AGPL3"
     :properties ((#:author-email                   . "pjb@informatimago.com")
                  (#:date                           . "Winter 2012")
                  ((#:albert #:output-dir)          . "/tmp/documentation/com.informatimago.lse/")
@@ -73,10 +73,16 @@
 
                  (:file "file"                :depends-on ("packages"
                                                            "configuration" "error"))
+
+                 (:file "documentation"       :depends-on ("packages"))
+                 (:file "chapters"            :depends-on ("packages" "version" "documentation"))
                  
-                 (:file "catalog"             :depends-on ("packages"))
+                 (:file "catalog"             :depends-on ("packages" "configuration"))
                  (:file "variables"           :depends-on ("packages"))
-                 (:file "functions"           :depends-on ("packages" "error" "variables"))
+                 (:file "functions"           :depends-on ("packages"
+                                                           "error"
+                                                           "documentation"
+                                                           "variables"))
                  
                  (:file "lse-scanner"         :depends-on ("packages" "error"))
                  (:file "lse-parser"          :depends-on ("packages" "lse-scanner"))                 
@@ -92,6 +98,8 @@
                  (:file "io"                  :depends-on ("packages" "file" "task"))
                  (:file "commands"            :depends-on ("packages"
                                                            "error" "version"
+                                                           "documentation"
+                                                           "catalog" "functions"
                                                            "os" "io" "compiler" "task")) 
 
                  ))

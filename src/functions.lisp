@@ -119,6 +119,10 @@
      (null faux)
      (t    vrai)))
 
+(defmacro un-booleen (a)
+  `(etypecase ,a
+     (booleen ,a)))
+
 (defmacro le-nombre  (a)
   `(etypecase ,a
      (nombre  ,a)))
@@ -128,15 +132,15 @@
      (chaine  ,a)))
 
 
-(defun ou    (a b) (if (let ((a (eq vrai (le-booleen a)))
-                             (b (eq vrai (le-booleen b)))) (or a b))
+(defun ou    (a b) (if (let ((a (eq vrai (un-booleen a)))
+                             (b (eq vrai (un-booleen b)))) (or a b))
                        vrai faux))
 
-(defun et    (a b) (if (let ((a (eq vrai (le-booleen a)))
-                             (b (eq vrai (le-booleen b)))) (and a b))
+(defun et    (a b) (if (let ((a (eq vrai (un-booleen a)))
+                             (b (eq vrai (un-booleen b)))) (and a b))
                        vrai faux))
 
-(defun non   (a)   (if (eq (le-booleen a) vrai) faux vrai))
+(defun non   (a)   (if (eq (un-booleen a) vrai) faux vrai))
 
 ;; a b  =  /=   <  <=   >  >=
 ;; 1 1  1   0   0   1   0   1
@@ -149,7 +153,7 @@
 ;;              >  : (and (not b) a) : <====
 ;;              >= : (or  (not b) a) : ==/=>
 
-(defun <===> (a b) (if (eq (le-booleen a) (le-booleen b)) vrai faux))
+(defun <===> (a b) (if (eq (un-booleen a) (un-booleen b)) vrai faux))
 (defun <=/=> (a b) (non (<===> a b)))
 (defun ====> (a b) (et  (non a) b))
 (defun <==== (a b) (et  (non b) a))
@@ -180,12 +184,129 @@
 (defcompare booleen     <===>   <=/=>    ====>    <=/==   <====    ==/=>)
 
 
+(defchapter ("SITERNAIRE" "FONCTIONS")
+    "SI condition ALORS expr1 SINON expr2
 
-(defun add  (a b) (+        (un-nombre a) (un-nombre b)))
-(defun sub  (a b) (-        (un-nombre a) (un-nombre b)))
-(defun mul  (a b) (*        (un-nombre a) (un-nombre b)))
-(defun div  (a b) (/        (un-nombre a) (un-nombre b)))
-(defun pow  (a b)
+Résultat: si condition est vrai alors le résultat de l'expression
+expr1, sinon le résultat de l'expression expr2.")
+
+
+(defchapter ("COMPARAISON" "FONCTIONS")
+    "A<B, A<=B, A>B, A>=B, A=B, A#B
+
+A et B doivent être du même type, soit tous les deux nombres, soit
+tous les deux chaînes.
+
+Résultat: vrai ou faux, selon l'ordre de A et B.")
+
+
+(defchapter ("CONJONCTION" "FONCTIONS")
+    "comparaison1 ET comparaison2
+
+Résultat: conjonction des deux comparaisons.")
+
+
+(defchapter ("DISJONCTION" "FONCTIONS")
+    "conjonction1 OU conjonction2
+
+Résultat: disjonction des deux conjonctions.")
+
+
+(defchapter ("NEGATION" "FONCTIONS")
+    "NON condition
+
+Résultat: La négation logique de la condition.")
+
+
+(defchapter ("PRIORITE" "FONCTIONS")
+    "Priorité des opérateurs
+
+Hors présence de parenthèses, les opérations sont évaluées par ordre
+de priorité décroissante:
+
+-  SI ternaire, appel de fonction, référence à une variable ou un tableau.
+
+-  A^B Élévation à la puissance.
+
+-  A*B et A/B, multiplication et division.
+
+-  -A. opposé.
+
+-  A+B, A-B et C!D, addition et soustraction de nombres, et
+   concaténation de chaînes.
+
+-  A<B, A<=B, A>B, A>=B, A=B et A#B, comparaisons.
+
+-  NON EB, négation logique.
+
+-  A ET B, conjonction.
+
+-  A OU B, disjonction.")
+
+
+
+(defmacro defunction (name parameters one-liner docstring &body body)
+  (let ((lisp-name (if (atom name)
+                       name
+                       (first name)))
+        (title (if (atom name)
+                   (string name)
+                   (second name))))
+    `(progn
+       (defchapter (,title "FONCTIONS" ,one-liner) ,docstring)
+       (defun ,lisp-name ,parameters ,@body))))
+
+
+
+(defunction (add "PLUS") (a b)
+  "Somme de deux nombres"
+  "A+B
+
+Résultat: La somme des deux nombres."
+  (+        (un-nombre a) (un-nombre b)))
+
+
+
+(defunction (sub "MOINS")  (a b)
+  "Différence de deux nombres"
+  "A-B
+
+Résultat: La difference entre A et B."
+  (-        (un-nombre a) (un-nombre b)))
+
+
+
+(defunction (mul "FOIS")  (a b)
+  "Produit de deux nombres"
+  "A*B
+
+Résultat: Le produit de la multiplication entre A et B."
+  (*        (un-nombre a) (un-nombre b)))
+
+
+
+(defunction (div "DIVISE")  (a b)
+  "Quotient de deux nombres"
+  "A/B
+
+Résultat: Le produit de la multiplication entre A et B.
+
+B doit être non-nul, sinon un erreur est détectée."
+  (/        (un-nombre a) (un-nombre b)))
+
+
+
+(defunction (pow "PUISSANCE")  (a b)
+  "Élévation à la puissance"
+  "A^B
+
+Résultat: A à la puissance B.
+
+Si A est négatif, alors B doit être entier.
+
+Note sur un terminal Unicode, ^ s'affiche comme une flêche vers le
+haut.  Sur un terminal ASCII, c'est un chapeau, AltGr-9 ou chapeau
+espace sur un clavier AZERTY, Shift-6 sur un clavier QWERTY."
   (when (and (< (un-nombre a) 0.0) (/= (truncate (un-nombre b)) b))
     (error 'argument-invalide
            :op "POW"
@@ -194,15 +315,92 @@
            :reason "QUAND LE PREMIER ARGUMENT EST NEGATIF, LE SECOND DOIT ETRE ENTIER."))
   (un-nombre (expt a (if (< a 0.0) (truncate b) b))))
 
-(defun ent  (a)   (let ((a (deref *vm* a))) (un-nombre (floor (un-nombre a)))))
-(defun neg  (a)   (let ((a (deref *vm* a))) (-        (un-nombre a))))
-(defun abso (a)   (let ((a (deref *vm* a))) (abs      (un-nombre a))))
-(defun expo (a)   (let ((a (deref *vm* a))) (exp      (un-nombre a))))
-(defun sinu (a)   (let ((a (deref *vm* a))) (sin      (un-nombre a))))
-(defun cosi (a)   (let ((a (deref *vm* a))) (cos      (un-nombre a))))
-(defun atg  (a)   (let ((a (deref *vm* a))) (atan     (un-nombre a))))
-(defun rac  (a)   (let* ((a (deref *vm* a)) (result (sqrt (un-nombre a)))) (un-nombre result)))
-(defun lgn  (a)   (let* ((a (deref *vm* a)) (result (log  (un-nombre a)))) (un-nombre result)))
+
+
+(defunction (ent "ENT")  (a)
+  "Partie entière"
+  "ENT(A)
+
+Résultat: La partie entière de A."
+  (let ((a (deref *vm* a))) (un-nombre (floor (un-nombre a)))))
+
+
+
+(defunction (neg "OPPOSÉ")  (a)
+  "Changement de signe"
+  "-A
+
+Résultat: L'opposé de A."
+  (let ((a (deref *vm* a))) (-        (un-nombre a))))
+
+
+(defunction (abso "ABS") (a)
+  "Valeur absolue"
+  "ABS(A)
+
+Résultat: La valeur absolue de A."  
+  (let ((a (deref *vm* a))) (abs      (un-nombre a))))
+
+
+
+(defunction (expo "EXP") (a)
+  "exponentiation e^A"
+  "EXP(A)
+
+Résultat: e à la puissance A.
+
+e=2.7182817
+
+LGN est l'inverse de EXP."
+  (let ((a (deref *vm* a))) (exp      (un-nombre a))))
+
+
+
+(defunction (sinu "SIN") (a)
+  "Sinus"
+  "SIN(A)
+
+Résultat: Le Sinus de l'angle A exprimé en radian."
+  (let ((a (deref *vm* a))) (sin      (un-nombre a))))
+
+
+
+(defunction (cosi "COS") (a)
+  "Cosinus"
+  "COS(A)
+
+Résultat: Le Cosinus de l'angle A exprimé en radian."
+  (let ((a (deref *vm* a))) (cos      (un-nombre a))))
+
+
+
+(defunction atg  (a)
+  "Arc tangente"
+  "ATG(A)
+
+Résultat: L'arc tangente de A, exprimé en radian."
+  (let ((a (deref *vm* a))) (atan     (un-nombre a))))
+
+
+
+(defunction rac  (a)
+  "Racine carrée"
+  "RAC(A)
+
+Résultat: La racine carrée de A.
+
+L'argument A doit être un nombre positif ou nul, sinon une erreur est détectée."
+  (let* ((a (deref *vm* a)) (result (sqrt (un-nombre a)))) (un-nombre result)))
+
+
+(defun lgn  (a)
+  "Logarithme népérien"
+  "LGN(A)
+
+Résultat: Le logarithme népérien de A.
+
+L'argument A doit être un nombre strictement positif, sinon une erreur est détectée."
+  (let* ((a (deref *vm* a)) (result (log  (un-nombre a)))) (un-nombre result)))
 
 
 (defun lcg (x)
@@ -211,7 +409,16 @@
         (c 12345))
     (logand (+ (* a x) c) #xffffffff)))
 
-(defun ale  (a)
+(defunction ale  (a)
+  "Valeur pseudo-aléatoire"
+  "ALE(A)
+
+Résultat: Une valeur pseudo-aléatoire comprise entre 0 et 1 (bornes exclues).
+
+Si A=0 alors le résultat est vraiment aléatoire (différent à chaque appel).
+
+Si 0<A<1 alors le résultat dépent de A, ce qui permet de calculer des
+séries pseudo-aléatoire reproduisibles."
   ;; (ale 0) --> true random
   ;; (ale n) --> pseudo-random from n
   (let ((a (un-nombre (deref *vm* a))))
@@ -219,32 +426,113 @@
         (random 1.0)
         (coerce (/ (lcg (truncate (* #x100000000 a))) #x100000000) 'nombre))))
 
-(defun tem ()    (multiple-value-bind (s m h) (get-decoded-time)
-                   (+ (* (+ (* 60 h) m) 60) s)))
 
-(defun att ()    (error 'pas-implemente :what "ATT"))
-(defun dis (a) (declare (ignore a))  (error 'pas-implemente :what "DIS"))
-(defun etl (a b) (un-nombre (logand (truncate (un-nombre (deref *vm* a)))
-                                    (truncate (un-nombre (deref *vm* b))))))
-(defun oul (a b) (un-nombre (logior (truncate (un-nombre (deref *vm* a)))
-                                    (truncate (un-nombre (deref *vm* b))))))
-(defun oux (a b) (un-nombre (logxor (truncate (un-nombre (deref *vm* a)))
-                                    (truncate (un-nombre (deref *vm* b))))))
+
+(defunction tem ()
+  "Temps en seconde écoulé depuis minuit."
+  "TEM(A)
+
+Résultat: Le nombre de secondes écoulées depuis le début du jour (minuit)."
+  (multiple-value-bind (s m h) (get-decoded-time)
+    (+ (* (+ (* 60 h) m) 60) s)))
+
+
+#+lse-extensions
+(defunction att ()
+  "Signal d'attention utilisateur"
+  "ATT()
+
+Cette fonction retourne normalement 0.
+
+Lorsque l'utilisateur tape [CTRL-A], ATT() retourne transitoirement 1."
+  (if (task-signal *task*)
+      (progn
+        (setf (task-signal *task*) nil)
+        1)
+      0))
+
+
+
+#+(and lse-extensions (or))
+(defunction dis (a)
+  "DIS(A)
+
+Résultat: Une chaine contenant le contenu du secteur numéro A du disque."
+  (declare (ignore a))  (error 'pas-implemente :what "DIS"))
+
+
+
+
+#+lse-extensions
+(defunction etl (a b)
+   "ET logique bit-à-bit"
+   "ETL(A,B)
+
+Résultat: le ET logique bit-à-bit entre les bits de A et ceux de B."
+   (un-nombre (logand (truncate (un-nombre (deref *vm* a)))
+                      (truncate (un-nombre (deref *vm* b))))))
+
+;; (unless (fboundp 'etl)
+;;    (format t "ETL not bound~% *features* = ~S~%" *features*)
+;;    (format t "~S" #+lse-extensions 'lse-extensions #-lse-extensions '(not lse-extensions))
+;;    (format t "~S" (macroexpand '(defunction etl (a b)
+;;                                  "ET logique bit-à-bit"
+;;                                  "ETL(A,B)
+;; 
+;; Résultat: le ET logique bit-à-bit entre les bits de A et ceux de B."
+;;                                  (un-nombre (logand (truncate (un-nombre (deref *vm* a)))
+;;                                              (truncate (un-nombre (deref *vm* b))))))
+;;                                ))
+;;    (finish-output)
+;;    #+ccl (ccl:quit))
+
+
+
+#+lse-extensions
+(defunction oul (a b)
+  "OU logique bit-à-bit"
+  "OUL(A,B)
+
+Résultat le OU logique bit-à-bit entre les bits de A et ceux de B."
+  (un-nombre (logior (truncate (un-nombre (deref *vm* a)))
+                     (truncate (un-nombre (deref *vm* b))))))
+
+
+#+lse-extensions
+(defunction oux (a b)
+  "OU exclusif bit-à-bit"
+  "OUX(A,B)
+
+Résultat le OU exclusif bit-à-bit entre les bits de A et ceux de B."
+  (un-nombre (logxor (truncate (un-nombre (deref *vm* a)))
+                     (truncate (un-nombre (deref *vm* b))))))
 
 
 
 
 #+developing
-(defun lisp-eval (expr &optional (print 0) (noerr 0))
-  "
+(defunction (lisp-eval "LISP") (expr &optional (print 0) (noerr 0))
+  "Evaluation d'une expression LISP"
+  "LISP(EXPR,PRINT,NOERR)
+
+Cette fonction évalue l'expression Common Lisp EXPR.
+
 1* FONCTION LISP(EXPR,PRINT,NOERR)
+
 2* PRINT=0 => LISP() N'AFFICHE RIEN;
+
 3* PRINT=1 => LISP() AFFICHE LES RESULTATS DE L'EXPRESSION LISP.
+
 4 PRINT_1
+
 5* NOERR=0 => SI UNE ERREUR EST DETECTEE ELLE EST RAPPORTEE NORMALEMENT.
+
 6* NOERR=1 => SI UNE ERREUR EST DETECTEE, LISP() RETOURNE 0.0.
+
 7 NOERR_1
+
 8 A_LISP('(TRUNCATE 10 3)',PRINT,NOERR)
+
 9 TERMINER
 "
   (let ((expr  (deref *vm* expr))
@@ -265,12 +553,32 @@
             (error err))))))
 
 
-(defun concatenation (a b)
+
+(defunction (concatenation "!") (a b)
+  "Concaténation de deux chaînes"
+  "A!B
+
+Résultat: La concatenation des chaînes A et B."
   (la-chaine (concatenate 'string (la-chaine (deref *vm* a)) (la-chaine (deref *vm* b)))))
 
-(defun lgr (a) (un-nombre (length (la-chaine (deref *vm* a)))))
 
-(defun pos (ch de sc)
+(defunction lgr (a)
+  "Longueur d'une chaîne"
+  "LGR(A)
+
+Résultat: la longueur de la chaîne A."
+  (un-nombre (length (la-chaine (deref *vm* a)))))
+
+
+
+(defunction pos (ch de sc)
+  "Position d'une sous-chaîne"
+  "POS(CH,DE,SC)
+
+Résultat: la position de la première occurence de la sous-chaîne SC dans la
+chaîne CH, après la position DE, ou 0 si SC n'est pas une sous-chaîne de CH.
+
+DE doit être un nombre entier supérieur ou égal à 1."
   (let* ((ch (deref *vm* ch))
          (de (deref *vm* de))
          (sc (deref *vm* sc))
@@ -286,7 +594,13 @@
         (+ 1.0 (or (search sc ch :start2 debut) -1.0)))))
            
 
-(defun eqn (ch &optional po)
+(defunction eqn (ch &optional po)
+  "Équivalent numérique"
+  "EQN(CH) ou EQN(CH,PO)
+
+Résultat: l'équivalent numérique en code ASCII du caractère de la
+chaine CH qui se trouve en position PO, ou en première position si PO
+est omis."
   (let* ((ch (deref *vm* ch))
          (po (deref *vm* po)))
     (un-nombre (char-code (aref (la-chaine ch)
@@ -295,7 +609,12 @@
                                     0))))))
 
 
-(defun eqc (co)
+(defunction eqc (co)
+  "Équivalent caractère"
+  "EQC(CO)
+
+Résultat: une chaîne de 1 caractère dont l'équivalent numérique en
+code ASCII est CO."
   (let* ((co (truncate (un-nombre (deref *vm* co))))
          (limit #+lse-t1600     256
                 #+lse-mitra-15  128
@@ -310,7 +629,12 @@
                                (1- limit))))))
 
 
-(defun cca (ca)
+(defunction cca (ca)
+  "Conversion en caractère"
+  "CCA(A)
+
+Résultat: une chaîne de caractère contenant la représentation du
+nombre A au format U."
   (let* ((ca (deref *vm* ca))
          (ca (un-nombre ca))
          (value (abs ca)))
@@ -333,7 +657,16 @@
       (null value))))
 
 
-(defun cnb (ch de &optional va)
+(defunction cnb (ch de &optional va)
+  "Conversion en nombre"
+  "CNB(CH,DE) ou CNB(CH,DE,VA)
+
+Résultat: un nombre converti de la sous-chaîne de CH commençant à la
+position DE. (Les espaces initiaux sont ignorés).
+
+Si VA est présent, ce doit être une variable arithmétique à laquelle
+la fonction CNB affecte la position du premier caractère qui n'est pas
+utilisé dans la représentation."
   (let* ((ch (la-chaine (deref *vm* ch)))
          (de (deref *vm* de))
          (chlen (length ch))
@@ -353,7 +686,7 @@
                           (or (read-from-string ch nil nil :start debut
                                                 :end (min fin chlen))
                               0.0))
-                         (set-va va (1+ fin)))))
+                         (set-va va (1+ (min fin chlen))))))
              (eos? (pos) (when  (<= chlen fin) (eos! pos)))
              (match? (pos charseq) (position (aref ch pos) charseq))
              (digit? (pos) (digit-char-p (aref ch pos)))
@@ -384,13 +717,32 @@
         
 
 
-(defun sch (ch de lo-or-ch &optional va)
+(defunction sch (ch de lo-or-ch &optional va)
+  "Sous-chaîne"
+  "SCH(CH,DE,LO[,VA]) ou SCH(CH,DE,SC[,VA])
+
+CH est une chaîne d'où SCH va extraire une sous-chaîne.
+
+DE est la position de départ de la sous-chaîne.
+
+LO est la longueur de la sous-chaîne.
+
+SC est une chaîne contenant les caractères d'arrêt de la sous-chaîne.
+
+Résultat: une sous-chaîne de CH, commençant à la position DE, de
+longueur LO ou allant jusqu'à la première occurence d'un des
+caractères de SC.
+
+Si VA est présent, ce doit être une variable arithmétique à laquelle
+la fonction SCH affecte soit la position du premier caractère qui
+n'est pas utilisé dans la représentation, soit LGR(CH)+1 si le dernier
+caractère de la sous-chaîne est le dernier caractère de la chaîne."
   (let* ((ch       (deref *vm* ch))
          (de       (deref *vm* de))
          (lo-or-ch (deref *vm* lo-or-ch))
          (debut (1- (truncate (un-nombre de))))
          (chlen (length (la-chaine ch))))
-    (when (or (< debut 0) (/= (1+ debut) de))
+    (when (or (/= (1+ debut) de) (< debut 0))
       (error 'argument-invalide
              :op "SCH"
              :index 2
@@ -410,14 +762,22 @@
                    (or (position-if
                         (lambda (ch) (position ch lo-or-ch
                                                :test (function char=)))
-                        ch :start debut) (1+ chlen))))))
+                        ch :start debut)
+                       chlen)))))
       (setf fin   (min fin   chlen))
       (setf debut (min debut chlen))
       (values (subseq ch debut fin)
               (set-va va (1+ fin))))))
 
 
-(defun skp (ch de &optional ev)
+(defunction skp (ch de &optional ev)
+  "Saut"
+  "SKP(CH,DE) ou SKP(CH,DE,EV)
+
+Résultat: la position dans la chaîne CH, à partir de la position DE,
+de la première lettre si EV n'est pas donné, ou du premier caractère
+qui n'est pas dans la chaîne EV; ou bien LGR(CH)+1 si aucune lettre,
+ou si tous les caractères sont dans la chaine EV."
   (let* ((ch (deref *vm* ch))
          (de (deref *vm* de))
          (ev (deref *vm* ev))
@@ -435,7 +795,15 @@
                (length ch)))))
 
 
-(defun ptr (ch de &optional ev)
+(defunction ptr (ch de &optional ev)
+  "Pointeur"
+  "PTR(CH,DE) ou PTR(CH,DE,EV)
+
+Résultat: la position dans la chaîne CH, à partir de la position DE,
+soit du premier caractère qui n'est pas une lettre si EV n'est pas
+donné, soit du premier caractère qui est n'est pas dans la chaîne EV;
+ou bien LGR(CH)+1 si tous les caractères sont des lettres, ou si tous
+les caractères sont dans la chaine EV."
   (let* ((ch (deref *vm* ch))
          (de (deref *vm* de))
          (ev (deref *vm* ev))
@@ -453,7 +821,17 @@
                (length ch)))))
 
 
-(defun grl (ch de &optional va)
+(defunction grl (ch de &optional va)
+  "Groupe de lettres"
+  "GRL(CH,DE) ou GRL(CH,DE,VA)
+
+Résultat: la sous-chaîne composée de la première séquence continue de
+lettres à partir de la position DE.
+
+Si VA est présent, ce doit être une variable arithmétique à laquelle
+la fonction SCH affecte soit la position du premier caractère qui
+n'est pas une lettre, soit LGR(CH)+1 si le dernier caractère de la
+sous-chaîne est le dernier caractère de la chaîne."
   (let* ((ch (deref *vm* ch))
          (de (deref *vm* de))
          (debut (1- (truncate (un-nombre de))))
@@ -477,214 +855,281 @@
     (format nil "~2,'0D/~2,'0D/~2,'0D ~2,'0D:~2,'0D:~2,'0D"
             da mo (mod ye 100) ho mi se)))
 
-(defun dat ()
+(defunction dat ()
+  "Chaîne date"
+  "DAT()
+
+Résultat: une chaîne au format AA/MM/DD HH:MM:SS représentant la date
+et l'heure courante.
+
+Note: Cette fonction n'est pas conforme Y2K, elle retourne 00 pour 2000."
   (formate-date (get-universal-time)))
 
 
 
-(defun test-fonctions ()
-  (format t "DAT ~A~%" (dat))
-  ;; Numeric:
-  (princ (dat))(terpri)
-  (dotimes (a 21)
-    (format t "~3D: " a)
-    (dolist (op '((- neg) (truncate ent) (abs abso) (exp expo)
-                  (sin sinu) (cos cosi) (atan atg) (sqrt rac)
-                  (log lgn)))
-      (format t "~A " (second op))
-      (assert
-       (equal (ignore-errors (un-nombre (funcall (first op) (- a 10.0))))
-              (ignore-errors (funcall (second op) (- a 10.0))))))
-    (format t "~%")
-    (dotimes (b 21)
-      (format t "     ~3D: " b)
-      (dolist (op `((+ add) (- sub) (* mul) (/ div)
-                    (,(lambda (a b)
-                         (expt a (if (and (< a 0) (= b (truncate b)))
-                                     (truncate b) b)))
-                      pow)
-                    (,(lambda (a b) (logand (truncate a) (truncate b))) etl)
-                    (,(lambda (a b) (logior (truncate a) (truncate b))) oul)
-                    (,(lambda (a b) (logxor (truncate a) (truncate b))) oux)))
-        (format t "~A ~A ~A" (second op) a b)
-        (assert
-         (equal
-          (ignore-errors (un-nombre (funcall (first op) (- a 10.0) (- b 10.0))))
-          (ignore-errors (funcall (second op) (- a 10.0) (- b 10.0))))))
-      (format t "~%")))
-  ;; Boolean:
-  (format t "NON~%")
-  (dolist (b (list (list vrai faux) (list faux vrai) (list 42 nil)))
-    (assert (eql (second b) (ignore-errors (non (first b))))))
-  (format t "BOOLEEN ")
-  (dolist (op `((et ,(lambda (a b) (cond ((and (eq vrai a) (eq vrai b)) vrai)
-                                    ((or (and (eq vrai a) (eq faux b))
-                                         (and (eq faux a) (eq vrai b))
-                                         (and (eq faux a) (eq faux b))) faux)
-                                    (t nil))))
-                (ou ,(lambda (a b) (cond ((and (eq faux a) (eq faux b)) faux)
-                                    ((or (and (eq vrai a) (eq faux b))
-                                         (and (eq faux a) (eq vrai b))
-                                         (and (eq vrai a) (eq vrai b))) vrai)
-                                    (t nil))))
-                (eg ,(lambda (a b) (cond ((or (and (eq vrai a) (eq faux b))
-                                         (and (eq faux a) (eq vrai b))) faux)
-                                    ((or (and (eq faux a) (eq faux b))
-                                         (and (eq vrai a) (eq vrai b))) vrai)
-                                    (t nil))))
-                (ne ,(lambda (a b) (cond ((or (and (eq vrai a) (eq faux b))
-                                         (and (eq faux a) (eq vrai b))) vrai)
-                                    ((or (and (eq faux a) (eq faux b))
-                                         (and (eq vrai a) (eq vrai b))) faux)
-                                    (t nil))))
-                (lt ,(lambda (a b) (cond ((and (eq faux a) (eq vrai b)) vrai)
-                                    ((or (and (eq vrai a) (eq vrai b))
-                                         (and (eq vrai a) (eq faux b))
-                                         (and (eq faux a) (eq faux b))) faux)
-                                    (t nil))))
-                (gt ,(lambda (b a) (cond ((and (eq faux a) (eq vrai b)) vrai)
-                                    ((or (and (eq vrai a) (eq vrai b))
-                                         (and (eq vrai a) (eq faux b))
-                                         (and (eq faux a) (eq faux b))) faux)
-                                    (t nil))))
-                (ge ,(lambda (a b) (cond ((and (eq faux a) (eq vrai b)) faux)
-                                    ((or (and (eq vrai a) (eq vrai b))
-                                         (and (eq vrai a) (eq faux b))
-                                         (and (eq faux a) (eq faux b))) vrai)
-                                    (t nil))))
-                (le ,(lambda (b a) (cond ((and (eq faux a) (eq vrai b)) faux)
-                                    ((or (and (eq vrai a) (eq vrai b))
-                                         (and (eq vrai a) (eq faux b))
-                                         (and (eq faux a) (eq faux b))) vrai)
-                                    (t nil)))))
-           (format t "~%"))
-    (format t "~A " (first op))
-    (dolist (a (list vrai faux 42))
-      (dolist (b (list vrai faux "42"))
-        (assert (eq (ignore-errors (funcall (first op) a b))
-                    (funcall (second op) a b))))))
-  ;; String:
-  (format T "CONCATENATION~%")
-  (dolist (test '("" "a" "Fifty Yards"))
-    (dotimes (i (length test))
-      (let ((a (subseq test 0 i))
-            (b (subseq test i)))
-        (assert (string= test (concatenation a b))))))
-  (dolist (item '(42 42.0 '42 vrai nil))
-    (assert (and (null (ignore-errors (concatenate "Hello" item)))
-                 (null (ignore-errors (concatenate item "Hello")))
-                 (null (ignore-errors (lgr item)))
-                 (null (ignore-errors (lgr item)))
-                 (null (ignore-errors (pos item item "Word")))
-                 (null (ignore-errors (pos "Word" item item)))
-                 (or (stringp item) (null (ignore-errors (eqn item))))
-                 (or (numberp item) (null (ignore-errors (eqc item)))))))
-  (format t "LGR~%")
-  (dotimes (ln 10)
-    (let ((c (make-string ln :initial-element (character "a"))))
-      (assert (= ln (lgr c)))))
-  (format t "POS~%")
-  (mapcar (lambda (deb res)
-            (assert (eql res
+
+(defun test/fonctions (&key silence)
+  (flet ((test ()
+           (format t "DAT ~A~%" (dat))
+           ;; Numeric:
+           (princ (dat))(terpri)
+           (dotimes (a 21)
+             (format t "~3D: " a)
+             (dolist (op '((- neg) (truncate ent) (abs abso) (exp expo)
+                           (sin sinu) (cos cosi) (atan atg) (sqrt rac)
+                           (log lgn)))
+               (format t "~A " (second op))
+               (assert
+                (equal (ignore-errors (un-nombre (funcall (first op) (- a 10.0))))
+                       (ignore-errors (funcall (second op) (- a 10.0))))
+                () "~S : ~S = ~S /= ~S = ~S"
+                (second op)
+                '(ignore-errors (un-nombre (funcall (first op) (- a 10.0))))
+                 (ignore-errors (un-nombre (funcall (first op) (- a 10.0))))
+                 (ignore-errors (funcall (second op) (- a 10.0)))
+                 '(ignore-errors (funcall (second op) (- a 10.0)))))
+             (format t "~%")
+             (dotimes (b 21)
+               (format t "     ~3D: " b)
+               #+lse-extensions
+               (dolist (op `((+ add) (- sub) (* mul) (/ div)
+                             (,(lambda (a b)
+                                       (expt a (if (and (< a 0) (= b (truncate b)))
+                                                   (truncate b) b)))
+                               pow)
+                             (,(lambda (a b) (logand (truncate a) (truncate b))) etl)
+                             (,(lambda (a b) (logior (truncate a) (truncate b))) oul)
+                             (,(lambda (a b) (logxor (truncate a) (truncate b))) oux)))
+                 (format t "~A ~A ~A" (second op) a b)
+                 (assert
+                  (equal
+                   (ignore-errors (un-nombre (funcall (first op) (- a 10.0) (- b 10.0))))
+                   (ignore-errors (funcall (second op) (- a 10.0) (- b 10.0))))
+                  () "~S : ~S = ~S /= ~S = ~S"
+                  (second op)
+                  '(ignore-errors (un-nombre (funcall (first op) (- a 10.0) (- b 10.0))))
+                  (ignore-errors (un-nombre (funcall (first op) (- a 10.0) (- b 10.0))))
+                  (ignore-errors (funcall (second op) (- a 10.0) (- b 10.0)))
+                  '(ignore-errors (funcall (second op) (- a 10.0) (- b 10.0)))))
+               (format t "~%")))
+           ;; Boolean:
+           (format t "NON~%")
+           (dolist (b (list (list vrai faux) (list faux vrai) (list 42 nil)))
+             (assert (eq (second b) (ignore-errors (non (first b))))
+                     (b) "NON ~A = ~A instead of ~A"
+                     (first b) (ignore-errors (non (first b))) (second b)))
+           (format t "BOOLEEN ")
+           (dolist (op `((et ,(lambda (a b) (cond ((and (eq vrai a) (eq vrai b)) vrai)
+                                                  ((or (and (eq vrai a) (eq faux b))
+                                                       (and (eq faux a) (eq vrai b))
+                                                       (and (eq faux a) (eq faux b))) faux)
+                                                  (t nil))))
+                         (ou ,(lambda (a b) (cond ((and (eq faux a) (eq faux b)) faux)
+                                                  ((or (and (eq vrai a) (eq faux b))
+                                                       (and (eq faux a) (eq vrai b))
+                                                       (and (eq vrai a) (eq vrai b))) vrai)
+                                                  (t nil))))
+                         (eg ,(lambda (a b) (cond ((or (and (eq vrai a) (eq faux b))
+                                                       (and (eq faux a) (eq vrai b))) faux)
+                                                  ((or (and (eq faux a) (eq faux b))
+                                                       (and (eq vrai a) (eq vrai b))) vrai)
+                                                  (t nil))))
+                         (ne ,(lambda (a b) (cond ((or (and (eq vrai a) (eq faux b))
+                                                       (and (eq faux a) (eq vrai b))) vrai)
+                                                  ((or (and (eq faux a) (eq faux b))
+                                                       (and (eq vrai a) (eq vrai b))) faux)
+                                                  (t nil))))
+                         (lt ,(lambda (a b) (cond ((and (eq faux a) (eq vrai b)) vrai)
+                                                  ((or (and (eq vrai a) (eq vrai b))
+                                                       (and (eq vrai a) (eq faux b))
+                                                       (and (eq faux a) (eq faux b))) faux)
+                                                  (t nil))))
+                         (gt ,(lambda (b a) (cond ((and (eq faux a) (eq vrai b)) vrai)
+                                                  ((or (and (eq vrai a) (eq vrai b))
+                                                       (and (eq vrai a) (eq faux b))
+                                                       (and (eq faux a) (eq faux b))) faux)
+                                                  (t nil))))
+                         (ge ,(lambda (a b) (cond ((and (eq faux a) (eq vrai b)) faux)
+                                                  ((or (and (eq vrai a) (eq vrai b))
+                                                       (and (eq vrai a) (eq faux b))
+                                                       (and (eq faux a) (eq faux b))) vrai)
+                                                  (t nil))))
+                         (le ,(lambda (b a) (cond ((and (eq faux a) (eq vrai b)) faux)
+                                                  ((or (and (eq vrai a) (eq vrai b))
+                                                       (and (eq vrai a) (eq faux b))
+                                                       (and (eq faux a) (eq faux b))) vrai)
+                                                  (t nil)))))
+                    (format t "~%"))
+             (format t "~A " (first op))
+             (dolist (a (list vrai faux 42))
+               (dolist (b (list vrai faux "42"))
+                 (assert (eq (ignore-errors (funcall (first op) a b))
+                             (funcall (second op) a b))
+                         (op a b)
+                         "(~S ~S ~S) = ~S /= ~S = (~S ~S ~S)"
+                         (first op) a b (ignore-errors (funcall (first op) a b))
+                         (funcall (second op) a b) (second op) a b))))
+           ;; String:
+           (format T "CONCATENATION~%")
+           (dolist (test '("" "a" "Fifty Yards"))
+             (dotimes (i (length test))
+               (let ((a (subseq test 0 i))
+                     (b (subseq test i)))
+                 (assert (string= test (concatenation a b))))))
+           (dolist (item '(42 42.0 '42 vrai nil))
+             (assert (and (null (ignore-errors (concatenation "Hello" item)))
+                          (null (ignore-errors (concatenation item "Hello")))
+                          (null (ignore-errors (lgr item)))
+                          (null (ignore-errors (lgr item)))
+                          (null (ignore-errors (pos item item "Word")))
+                          (null (ignore-errors (pos "Word" item item)))
+                          (or (stringp item) (null (ignore-errors (eqn item))))
+                          (or (numberp item) (null (ignore-errors (eqc item)))))))
+           (format t "LGR~%")
+           (dotimes (ln 10)
+             (let ((c (make-string ln :initial-element (character "a"))))
+               (assert (= ln (lgr c)))))
+           (format t "POS~%")
+           (mapcar (lambda (deb res)
+                     (assert (eql res
+                                  (ignore-errors
+                                    (pos "Hello World" (un-nombre deb) "World"))))
+                     (assert (eql (and res 0.0)
+                                  (ignore-errors
+                                    (pos "Hello World" (un-nombre deb) "Planet")))))
+                   (iota 20 -4)
+                   '(nil nil nil nil nil 7.0 7.0 7.0 7.0 7.0 7.0 7.0
+                     0.0 0.0 0.0 0.0 0.0 0.0))
+           (format t "EQN EQC~%")
+           (dotimes (i 10)
+             (assert (= (+ i 32) (eqn (eqc (+ i 32.0)))))
+             (assert (let ((ch  (format nil "~C" (code-char (+ i 32)))))
+                       (= (+ i 32) (eqn ch))))
+             (assert (let ((ch  (format nil "~C" (code-char (+ i 32)))))
+                       (string= ch (eqc (eqn ch))))))
+           (format t "CNB~%")
+           (map nil (lambda (i res) 
+                      (assert (and (equal res (ignore-errors
+                                                (multiple-value-list
+                                                 (cnb "123456789" (un-nombre i)))))
+                                   (equal res (ignore-errors
+                                                (let* ((va  (make-instance 'lse-variable
+                                                                :name 'com.informatimago.lse.identifiers::va))
+                                                       (res (cnb "123456789" (un-nombre i) va)))
+                                                  (list res (variable-value va))))))))
+                (iota 11)
+                '(nil (#+ccl 1.2345679E8
+                       #-ccl 1.2345678E8
+                       10.0)
+                  (2.3456789E7 10.0) (3456789.0 10.0)
+                  (456789.0 10.0) (56789.0 10.0) (6789.0 10.0) (789.0 10.0) (89.0 10.0)
+                  (9.0 10.0) NIL))
+           (loop
+             :for res :in '(NIL (0.0 1.0) (0.0 2.0) (0.0 4.0) (0.0 4.0) (0.0 5.0)
+                            (0.0 6.0) (0.0 7.0) (0.0 8.0) (0.0 9.0) (421.0 14.0)
+                            (421.0 14.0) (21.0 14.0) (1.0 14.0) (0.0 14.0) nil NIL)
+             :for i :to 16 
+             :do (assert (equal res (ignore-errors
+                                      (multiple-value-list
+                                       (cnb "Le nombre 421%" (un-nombre i)))))
+                         () "~S /= ~S = ~S"
+                         res
                          (ignore-errors
-                           (pos "Hello World" (un-nombre deb) "World"))))
-            (assert (eql (and res 0.0)
-                         (ignore-errors
-                           (pos "Hello World" (un-nombre deb) "Planet")))))
-          (iota 20 -4)
-          '(nil nil nil nil nil 7.0 7.0 7.0 7.0 7.0 7.0 7.0
-            0.0 0.0 0.0 0.0 0.0 0.0))
-  (format t "EQN EQC~%")
-  (dotimes (i 10)
-    (assert (= (+ i 32) (eqn (eqc (+ i 32.0)))))
-    (assert (let ((ch  (format nil "~C" (code-char (+ i 32)))))
-              (= (+ i 32) (eqn ch))))
-    (assert (let ((ch  (format nil "~C" (code-char (+ i 32)))))
-              (string= ch (eqc (eqn ch))))))
-  (format t "CNB~%")
-  (map nil (lambda (i res)
-             (assert (equal res (ignore-errors
-                                  (multiple-value-list
-                                   (cnb "123456789" (un-nombre i)))))))
-       (iota 11)
-       '(nil (1.2345679E8 10.0) (2.3456788E7 10.0) (3456789.0 10.0)
-         (456789.0 10.0) (56789.0 10.0) (6789.0 10.0) (789.0 10.0) (89.0 10.0)
-         (9.0 10.0) NIL))
-  (assert (equal (loop for i to 16
-                    collect (ignore-errors
-                              (multiple-value-list
-                               (cnb "Le nombre 421%" (un-nombre i)))))
-                 '(NIL (0.0 1.0) (0.0 2.0) (0.0 4.0) (0.0 4.0) (0.0 5.0)
-                   (0.0 6.0) (0.0 7.0) (0.0 8.0) (0.0 9.0) (421.0 13.0)
-                   (421.0 13.0) (21.0 13.0) (1.0 13.0) (0.0 14.0) NIL NIL)))
-  (format t "SCH ~A~%" (dat))
-  (assert (equal
-           (let ((result '()))
-             (dolist (test '("" "a" "Jaberwocky") result)
+                           (multiple-value-list
+                            (cnb "Le nombre 421%" (un-nombre i))))
+                         '(ignore-errors
+                           (multiple-value-list
+                            (cnb "Le nombre 421%" (un-nombre i))))))
+           (format t "SCH ~A~%" (dat)) 
+           (let ((expected '(NIL  NIL  NIL ("" 1.0)  NIL  NIL  NIL  NIL  ("a" 2.0)
+                             ("a"  2.0)  NIL ("" 2.0)  ("" 2.0)  NIL  NIL  NIL  NIL  NIL  NIL
+                             NIL NIL  NIL  NIL NIL  NIL  NIL  ("J" 2.0)  ("Ja" 3.0)  ("Jab" 4.0)
+                             ("Jabe" 5.0) ("Jaber" 6.0)  ("Jaberw" 7.0)  ("Jaberwo" 8.0)
+                             ("Jaberwoc" 9.0) ("Jaberwock" 10.0)  ("Jaberwocky" 11.0)
+                             ("Jaberwocky" 11.0)  NIL  ("a" 3.0)  ("ab" 4.0)  ("abe" 5.0)
+                             ("aber" 6.0)  ("aberw" 7.0)  ("aberwo" 8.0)  ("aberwoc" 9.0)
+                             ("aberwock" 10.0)  ("aberwocky" 11.0) ("aberwocky" 11.0)
+                             ("aberwocky" 11.0)  NIL  ("b" 4.0)  ("be" 5.0) ("ber" 6.0)
+                             ("berw" 7.0)  ("berwo" 8.0)  ("berwoc" 9.0)  ("berwock" 10.0)
+                             ("berwocky" 11.0)  ("berwocky" 11.0)  ("berwocky" 11.0)
+                             ("berwocky" 11.0)  NIL  ("e" 5.0)  ("er" 6.0)  ("erw" 7.0)
+                             ("erwo" 8.0)  ("erwoc" 9.0)  ("erwock" 10.0)  ("erwocky" 11.0)
+                             ("erwocky" 11.0)  ("erwocky" 11.0)  ("erwocky" 11.0)
+                             ("erwocky"  11.0)  NIL  ("r" 6.0)  ("rw" 7.0)  ("rwo" 8.0)
+                             ("rwoc" 9.0)
+                             ("rwock" 10.0)  ("rwocky" 11.0)  ("rwocky" 11.0)  ("rwocky" 11.0)
+                             ("rwocky" 11.0)  ("rwocky" 11.0)  ("rwocky" 11.0)  NIL  ("w" 7.0)
+                             ("wo" 8.0)  ("woc" 9.0) ("wock" 10.0)  ("wocky" 11.0)
+                             ("wocky" 11.0)  ("wocky" 11.0)  ("wocky" 11.0)  ("wocky" 11.0)
+                             ("wocky"   11.0)  ("wocky" 11.0)  NIL  ("o" 8.0) ("oc" 9.0)
+                             ("ock" 10.0)
+                             ("ocky" 11.0)  ("ocky" 11.0)  ("ocky" 11.0) ("ocky" 11.0)
+                             ("ocky" 11.0)  ("ocky" 11.0)  ("ocky" 11.0)  ("ocky" 11.0)  NIL
+                             ("c" 9.0)  ("ck" 10.0)  ("cky" 11.0)  ("cky" 11.0)  ("cky" 11.0)
+                             ("cky" 11.0)  ("cky" 11.0)  ("cky" 11.0)  ("cky" 11.0)
+                             ("cky"  11.0)  ("cky" 11.0)  NIL  ("k" 10.0)  ("ky" 11.0)
+                             ("ky" 11.0)
+                             ("ky" 11.0)  ("ky" 11.0)  ("ky" 11.0)  ("ky" 11.0)  ("ky" 11.0)
+                             ("ky" 11.0) ("ky" 11.0)  ("ky" 11.0)  NIL  ("y" 11.0)  ("y" 11.0)
+                             ("y" 11.0) ("y" 11.0)  ("y" 11.0)  ("y" 11.0)  ("y" 11.0)
+                             ("y"  11.0)  ("y" 11.0) ("y" 11.0)  ("y" 11.0)  NIL  ("" 11.0)
+                             (""  11.0)  ("" 11.0)  ("" 11.0)  ("" 11.0)  ("" 11.0)  ("" 11.0)
+                             (""  11.0)  ("" 11.0)  ("" 11.0)  ("" 11.0)  NIL))
+                 (results '()))
+             (dolist (test '("" "a" "Jaberwocky"))
                (dotimes (de (+ 2 (length test)))
                  (dotimes (le (+ 2 (length test)))
-                   (push (ignore-errors
-                           (multiple-value-list
-                            (sch test (un-nombre de) (un-nombre le))))
-                         result)))))
-           '(NIL  NIL  NIL  ("" 0.0)  NIL  NIL  NIL  NIL  ("a" 1.0)
-             ("a"  1.0)  NIL ("" 1.0)  ("" 1.0)  NIL  NIL  NIL  NIL  NIL  NIL
-             NIL NIL  NIL  NIL NIL  NIL  NIL  ("J" 1.0)  ("Ja" 2.0)  ("Jab" 3.0)
-             ("Jabe" 4.0) ("Jaber" 5.0)  ("Jaberw" 6.0)  ("Jaberwo" 7.0)
-             ("Jaberwoc" 8.0) ("Jaberwock" 9.0)  ("Jaberwocky" 10.0)
-             ("Jaberwocky" 10.0)  NIL  ("a" 2.0)  ("ab" 3.0)  ("abe" 4.0)
-             ("aber" 5.0)  ("aberw" 6.0)  ("aberwo" 7.0)  ("aberwoc" 8.0)
-             ("aberwock" 9.0)  ("aberwocky" 10.0) ("aberwocky" 10.0)
-             ("aberwocky" 10.0)  NIL  ("b" 3.0)  ("be" 4.0) ("ber" 5.0)
-             ("berw" 6.0)  ("berwo" 7.0)  ("berwoc" 8.0)  ("berwock" 9.0)
-             ("berwocky" 10.0)  ("berwocky" 10.0)  ("berwocky" 10.0)
-             ("berwocky" 10.0)  NIL  ("e" 4.0)  ("er" 5.0)  ("erw" 6.0)
-             ("erwo" 7.0)  ("erwoc" 8.0)  ("erwock" 9.0)  ("erwocky" 10.0)
-             ("erwocky" 10.0)  ("erwocky" 10.0)  ("erwocky" 10.0)
-             ("erwocky"  10.0)  NIL  ("r" 5.0)  ("rw" 6.0)  ("rwo" 7.0)
-             ("rwoc" 8.0)
-             ("rwock" 9.0)  ("rwocky" 10.0)  ("rwocky" 10.0)  ("rwocky" 10.0)
-             ("rwocky" 10.0)  ("rwocky" 10.0)  ("rwocky" 10.0)  NIL  ("w" 6.0)
-             ("wo" 7.0)  ("woc" 8.0) ("wock" 9.0)  ("wocky" 10.0)
-             ("wocky" 10.0)  ("wocky" 10.0)  ("wocky" 10.0)  ("wocky" 10.0)
-             ("wocky"   10.0)  ("wocky" 10.0)  NIL  ("o" 7.0) ("oc" 8.0)
-             ("ock" 9.0)
-             ("ocky" 10.0)  ("ocky" 10.0)  ("ocky" 10.0) ("ocky" 10.0)
-             ("ocky" 10.0)  ("ocky" 10.0)  ("ocky" 10.0)  ("ocky" 10.0)  NIL
-             ("c" 8.0)  ("ck" 9.0)  ("cky" 10.0)  ("cky" 10.0)  ("cky" 10.0)
-             ("cky" 10.0)  ("cky" 10.0)  ("cky" 10.0)  ("cky" 10.0)
-             ("cky"  10.0)  ("cky" 10.0)  NIL  ("k" 9.0)  ("ky" 10.0)
-             ("ky" 10.0)
-             ("ky" 10.0)  ("ky" 10.0)  ("ky" 10.0)  ("ky" 10.0)  ("ky" 10.0)
-             ("ky" 10.0) ("ky" 10.0)  ("ky" 10.0)  NIL  ("y" 10.0)  ("y" 10.0)
-             ("y" 10.0) ("y" 10.0)  ("y" 10.0)  ("y" 10.0)  ("y" 10.0)
-             ("y"  10.0)  ("y" 10.0) ("y" 10.0)  ("y" 10.0)  NIL  ("" 10.0)
-             (""  10.0)  ("" 10.0)  ("" 10.0)  ("" 10.0)  ("" 10.0)  ("" 10.0)
-             (""  10.0)  ("" 10.0)  ("" 10.0)  ("" 10.0)  NIL)))
-  (assert (equal
-           (let ((result '()))
-             (dolist (test '("" "a" "Jaberwocky") result)
+                   (let ((res (ignore-errors
+                                (multiple-value-list
+                                 (sch test (un-nombre de) (un-nombre le)))))
+                         (exp (pop expected)))
+                     (push res results)
+                     (assert (equal exp res) () "~S /= ~S = ~S ; test = ~S ; de = ~S ; le = ~S"
+                             exp res '(ignore-errors
+                                       (multiple-value-list
+                                        (sch test (un-nombre de) (un-nombre le))))
+                             test (un-nombre de) (un-nombre le)))))))
+           (let ((expected '(NIL  NIL  NIL
+                             ("" 1.0)  ("" 1.0)  ("" 1.0)
+                             NIL  NIL  NIL                 ; "a" 0.0 
+                             ("a" 2.0)  ("a" 2.0) ("" 1.0) ; "a" 1.0
+                             (""  2.0)  ("" 2.0)  ("" 2.0) ; "a" 2.0
+                             NIL  NIL NIL                  ; "a" 3.0 
+                             ("Jaberwocky" 11.0)  ("Jaberwocky" 11.0)  ("J" 2.0) ; 1
+                             ("aberwocky" 11.0)   ("aberwocky" 11.0)   ("" 2.0)  ; 2
+                             ("berwocky" 11.0)    ("berwocky" 11.0)    ("" 3.0)  ; 3
+                             ("erwocky" 11.0)     ("erwocky" 11.0)     ("" 4.0)  ; 4
+                             ("rwocky" 11.0)      ("rwocky" 11.0)      ("rw" 7.0)
+                             ("wocky" 11.0)       ("wocky" 11.0)       ("w" 7.0)
+                             ("ocky" 11.0)        ("ocky" 11.0)        ("" 7.0)
+                             ("cky" 11.0)         ("cky" 11.0)         ("" 8.0)
+                             ("ky" 11.0)          ("ky" 11.0)          ("k" 10.0)
+                             ("y" 11.0)           ("y" 11.0)           ("" 10.0)
+                             ("" 11.0)            ("" 11.0)            ("" 11.0)))
+                 (results '()))
+             (dolist (test '("" "a" "Jaberwocky"))
                (dotimes (de (+ 2 (length test)))
                  (dolist (stop '("" "0123" "abcdeiouy"))
-                   (push (ignore-errors
-                           (multiple-value-list
-                            (sch test (un-nombre de) stop))) result)))))
-           '(NIL  NIL  NIL  ("" 0.0)  ("" 0.0)  ("" 0.0)  NIL  NIL  NIL
-             ("a" 1.0)  ("a" 1.0)  ("" 0.0)  ("" 1.0)  ("" 1.0)  ("" 1.0)
-             NIL  NIL NIL ("Jaberwocky" 10.0)  ("Jaberwocky" 10.0)  ("J" 1.0)
-             ("aberwocky" 10.0)  ("aberwocky" 10.0)  ("" 1.0)  ("berwocky" 10.0)
-             ("berwocky" 10.0)  ("" 2.0)  ("erwocky" 10.0)  ("erwocky" 10.0)
-             ("" 3.0) ("rwocky" 10.0)  ("rwocky" 10.0)  ("rw" 6.0)
-             ("wocky" 10.0) ("wocky" 10.0)  ("w" 6.0)  ("ocky" 10.0)
-             ("ocky" 10.0)  ("" 6.0)  ("cky" 10.0) ("cky" 10.0)  ("" 7.0)
-             ("ky" 10.0)  ("ky" 10.0) ("k" 9.0) ("y" 10.0)  ("y" 10.0)
-             ("" 9.0)  ("" 10.0)  ("" 10.0) ("" 10.0))))
-  (format t "DAT ~A~%" (dat))
-  (format t "TEM (Time dependant, might fail on heavily loaded systems)~%")
-  (assert (let ((times (loop repeat 10 do (sleep 1) collect (tem))))
-            (every (lambda (x) (= 1 x)) (mapcar (function -) (cdr times) times))))
-  (format t "DAT ~A~%" (dat)))
+                   (let ((res (ignore-errors
+                                (multiple-value-list
+                                 (sch test (un-nombre de) stop))))
+                         (exp (pop expected)))
+                     (push res results)
+                     (assert (equal exp res) () "~S /= ~S = ~S ; test = ~S ; de = ~S ; le = ~S"
+                             exp res '(ignore-errors
+                                       (multiple-value-list
+                                        (sch test (un-nombre de) stop)))
+                             test (un-nombre de) stop))))))
+           (format t "DAT ~A~%" (dat))
+           (format t "TEM (Time dependant, might fail on heavily loaded systems)~%")
+           (assert (let ((times (loop repeat 10 do (sleep 1) collect (tem))))
+                     (every (lambda (x) (= 1 x)) (mapcar (function -) (cdr times) times))))
+           (format t "DAT ~A~%" (dat))))
+    (let ((*vm* (make-instance 'lse-vm)))
+      (if silence
+          (let ((*standard-output* (make-broadcast-stream)))
+            (test))
+          (test)))))
 
 
 ;;;; THE END ;;;;
-

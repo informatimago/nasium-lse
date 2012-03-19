@@ -37,51 +37,60 @@
 
 (defclass terminfo-terminal (standard-terminal)
   ((terminfo :initarg :terminfo
+             :initform (terminfo:set-terminal (getenv "TERM"))
              :reader terminal-terminfo)))
+
+
+;; (ccl::stream-device *terminal-io*  :input)
+;; (ccl::stream-device *terminal-io*  :output)
+
+(defmethod terminal-initialize ((terminal terminfo-terminal))
+  terminal)
+
+(defmethod terminal-finalize ((terminal terminfo-terminal))
+  terminal)
 
 
 (defmethod terminal-ring-bell ((terminal terminfo-terminal))
   (let* ((output (terminal-output-stream terminal))
          (terminfo:*terminfo* (terminal-terminfo terminal))
          (bell terminfo:bell))
-    (when bell
-      (princ bell output))
+    (terminfo:tputs bell output)
     (terminal-finish-output terminal)))
 
 
-(defmethod terminal-move-up ((terminal terminfo-terminal))
-  (let ((output (terminal-output-stream terminal))
-        (terminfo:*terminfo* (terminal-terminfo terminal))
-        (up terminfo:cursor-up))
-    (when cup
-      (princ up output))
-    (terminal-finish-output terminal)))
+;; (defmethod terminal-move-up ((terminal terminfo-terminal))
+;;   (let ((output (terminal-output-stream terminal))
+;;         (terminfo:*terminfo* (terminal-terminfo terminal))
+;;         (cup terminfo:cursor-up))
+;;     (terminfo:tputs cup output)
+;;     (terminal-finish-output terminal)))
 
 
 (defmethod terminal-carriage-return ((terminal terminfo-terminal))
   (let ((output (terminal-output-stream terminal))
         (terminfo:*terminfo* (terminal-terminfo terminal))
         (carriage-return terminfo:carriage-return))
-    (when carriage-return
-      (princ carriage-return output))
+    (terminfo:tputs carriage-return output)
     (terminal-finish-output terminal)))
 
 
 (defmethod terminal-new-line ((terminal terminfo-terminal) &optional (count 1))
   (let ((output (terminal-output-stream terminal))
         (terminfo:*terminfo* (terminal-terminfo terminal))
-        (newline         terminfo:newline)
+        (new-line        terminfo:newline)
         (carriage-return terminfo:carriage-return)
         (line-feed       terminfo:cursor-down))
     (cond
-      (newline
+      (new-line
        (loop
-         :repeat count :do
-         (princ newline output)))
+         :repeat count
+         :do (terminfo:tputs new-line output)))
       ((and carriage-return line-feed)
        (loop
          :repeat count
-         :do (princ carriage-return output) (princ line-feed output)))
+         :do (progn (terminfo:tputs carriage-return output)
+                    (terminfo:tputs line-feed output))))
       (t
        (loop
          :repeat count

@@ -1,0 +1,13 @@
+1*Auteur: Pascal Bourguignon
+2*Description: Test des entrées/sorties.
+10 CHAINE LIGNE
+20 AFFICHER[/,'Entrée: '];LIRE LIGNE
+30 AFFICHER[/,'Lu:     ',U]LIGNE
+40 AFFICHER[/,'Entrée: '];LIRE LIGNE
+60 AFFICHER[C,'Lu:     ',U]LIGNE
+70 AFFICHER[/,'Entrée: '];LIRE LIGNE
+80 AFFICHER[L,'Lu:     ',U]LIGNE
+90 AFFICHER[/,'Entrée: '];LIRE LIGNE
+100 AFFICHER[C,'Lu:     ',U,' Entrée: ']LIGNE;LIRE LIGNE
+110 AFFICHER[/,'Lu:     ',U]LIGNE
+200 TERMINER

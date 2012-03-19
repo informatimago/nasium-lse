@@ -34,6 +34,7 @@
 
 (in-package "COM.INFORMATIMAGO.LSE.UNIX-CLI")
 
+
 (defstruct options
   (input-reject-lowcase nil)
   (output-upcase        nil)
@@ -159,7 +160,7 @@ TERM indiquent le type de terminal.
   "Affiche la version."
   (format t "
 L.S.E.
-VERSION ~A-UNIX
+VERSION ~A
 COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
 
 DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLv3.
@@ -170,7 +171,7 @@ vous êtes les bienvenus pour redistribuer sous certaines conditions;
 utilisez la commande DO COPIE pour plus de détails.
 
 "
-          *version*)
+          (version))
   (parse-options-finish ex-ok))
 
 

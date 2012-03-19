@@ -67,15 +67,23 @@
                  (:file "patch-cffi-uffi")
                  
                  (:file "unix-cli-package")
-                 (:file "arguments"           :depends-on ("unix-cli-package"))
+
                  #+swank
                  (:file "swank-terminal"      :depends-on ("unix-cli-package"))
+
+                 #+(and unix (not clisp))
                  (:file "unix-terminal"       :depends-on ("unix-cli-package"))
+                 #-(and unix (not clisp))
+                 (:file "unix-terminal-stub"  :depends-on ("unix-cli-package"))
+                 
                  (:file "terminfo-terminal"   :depends-on ("unix-cli-package"))
+
+                 (:file "arguments"           :depends-on ("unix-cli-package"))
                  (:file "unix-cli"            :depends-on ("unix-cli-package"
                                                            "arguments"
-                                                           #+swank "swank-terminal"
                                                            "terminfo-terminal"
+                                                           #+swank "swank-terminal"
+                                                           #+(and unix (not clisp))
                                                            "unix-terminal"))
                  ))
 

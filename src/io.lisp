@@ -259,6 +259,15 @@ When false, no automatic echo occurs.")
   (with-temporary-echo (terminal echo)
     (when beep
       (terminal-ring-bell terminal))
+    #-(and)
+    (let ((line  (read-line (terminal-input-stream terminal))))
+      (if (position (code-char 13) line)
+          (progn
+            (terminal-new-line terminal)
+            (terminal-write-string terminal "Got a CR!")
+            (terminal-new-line terminal)
+            (remove (code-char 13) line))
+          line))
     (read-line (terminal-input-stream terminal))))
 
 

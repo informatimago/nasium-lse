@@ -345,7 +345,7 @@ NOTE: Unclassified chapters are in the category NIL."
           (html:body -
             (html:h1 - (html:pcdata "NASIUM L.S.E."))
             (html:pre -
-              (html:pcdata *title-banner* (concatenate 'string *version* "-UNIX")))
+              (html:pcdata *title-banner* (version)))
             (html:ol -
               (let ((chapters (chapters-per-category)))
                 (dolist (category *indexed-categories*)

@@ -55,15 +55,23 @@ help:
 ChangeLog:
 	git log > ChangeLog
 
-html-doc:
-	$(LISP) generate-documentation.lisp
-
-unix-cli:
-	$(LISP) generate-unix-cli.lisp | tee /tmp/unix-cli.log 
-	awk '/Generating/{print $$2}' < /tmp/unix-cli.log | ( read executable ; rm -f lse ; ln -sf $$executable lse )
-
 symlink:
 	awk '/Generating/{print $$2}' < /tmp/unix-cli.log | ( read executable ; rm -f lse ; ln -sf $$executable lse )
+
+unix-cli:unix-cli/ccl
+
+unix-cli/ccl:
+	ccl --load      generate-unix-cli.lisp | tee /tmp/unix-cli.log 
+	awk '/Generating/{print $$2}' < /tmp/unix-cli.log | ( read executable ; rm -f lse ; ln -sf $$executable lse )
+
+unix-cli/clisp:
+	clisp -ansi -q  generate-unix-cli.lisp | tee /tmp/unix-cli.log 
+	awk '/Generating/{print $$2}' < /tmp/unix-cli.log | ( read executable ; rm -f lse ; ln -sf $$executable lse )
+
+html-doc:
+	ccl --load      generate-documentation.lisp
+
+
 
 variables:
 	@echo pwd=$$(pwd)

@@ -37,21 +37,21 @@
 (defvar *default-program-name* "lse")
 
 (defparameter *tape-banner* "
------------------------------------------------------------------------- 
-\\     ooo                oooooooooo       oooooooooo                    \\      
+------------------------------------------------------------------------
+\\     ooo                oooooooooo       oooooooooo                    \\
  \\    ooo               oooooooooooo      oooooooooo      ooooooooooo    \\
   \\   ooo               oooo     ooo      ooo                             \\
    \\  ooo                oooo             oooooo               o oo        \\
     > ooo                  oooo           oooooo          ooo o    o        >
-   /......................................................................./        
-  /   ooo              ooo     oooo       ooo             oooo oo oo      /         
- /    oooooooooo  ooo  oooooooooooo  ooo  oooooooooo  ooo oooo  oo oo    / 
-/     oooooooooo  ooo   oooooooooo   ooo  oooooooooo  ooo  o oooo oo    / 
------------------------------------------------------------------------- 
+   /......................................................................./
+  /   ooo              ooo     oooo       ooo             oooo oo oo      /
+ /    oooooooooo  ooo  oooooooooooo  ooo  oooooooooo  ooo oooo  oo oo    /
+/     oooooooooo  ooo   oooooooooo   ooo  oooooooooo  ooo  o oooo oo    /
+------------------------------------------------------------------------
 ")
 
 
-(defparameter *unix-banner* "
+(defparameter *cli-banner* "
 Ce programme est livré avec ABSOLUMENT AUCUNE GARANTIE; pour plus de
 détails utilisez la commande DO GARANTIE.  Ce logiciel est libre, et
 vous êtes les bienvenus pour redistribuer sous certaines conditions;
@@ -69,13 +69,19 @@ BONJOUR     ~8A
 
 (defun locale-terminal-encoding ()
   "Returns the terminal encoding specified by the locale(7)."
+  #+(and ccl windows-target)
+  :iso-8859-1
+  ;; ccl doesn't support :windows-1252.
+  ;; (intern (format nil "WINDOWS-~A" (#_GetACP)) "KEYWORD")
+  #-(and ccl windows-target)
   (dolist (var '("LC_ALL" "LC_CTYPE" "LANG")
                :iso-8859-1) ; some random default…
     (let* ((val (getenv var))
            (dot (position #\. val))
            (at  (position #\@ val :start (or dot (length val)))))
       (when (and dot (< dot (1- (length val))))
-        (return (intern (let ((name (string-upcase (subseq val (1+ dot) (or at (length val))))))
+        (return (intern (let ((name (string-upcase (subseq val (1+ dot)
+                                                           (or at (length val))))))
                           (if (and (prefixp "ISO" name) (not (prefixp "ISO-" name)))
                               (concatenate 'string "ISO-" (subseq name 3))
                               name))
@@ -89,8 +95,10 @@ BONJOUR     ~8A
           (setf (ccl::stream-external-format stream)
                 (ccl:make-external-format :domain nil
                                           :character-encoding encoding
-                                          ;; :line-termination line-termination
-                                          )))
+                                          :line-termination
+                                          #+unix :unix
+                                          #+windows :windows
+                                          #-(or unix windows) :unix)))
         (list (two-way-stream-input-stream  *terminal-io*)
               (two-way-stream-output-stream *terminal-io*)))
   (values))
@@ -143,8 +151,8 @@ BONJOUR     ~8A
                            (when old-debugger-hook
                              (funcall old-debugger-hook condition debugger-hook)))))
                    (io-format *task* "~A" *tape-banner*)
-                   (io-format *task* "~?" *title-banner* (list (format nil "~A~A" *version* "-UNIX")))
-                   (io-format *task* "~?" *unix-banner*  (list (subseq (dat) 9)))
+                   (io-format *task* "~?" *title-banner* (list (version)))
+                   (io-format *task* "~?" *cli-banner*   (list (subseq (dat) 9)))
                    (command-repl *task*))
               (task-close-all-files *task*)
               (terminal-finalize terminal))

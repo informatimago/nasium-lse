@@ -118,10 +118,12 @@ System and distrib are keywords, release is a string."
   (format nil "~A-~A-~A-~A"
           base
           (or (cdr (assoc (lisp-implementation-type)
-                          '(("Clozure Common Lisp" . "ccl")
-                            ("CLISP"               . "clisp")
-                            ("CMU Common Lisp"     . "cmucl")
-                            ("SBCL"                . "sbcl"))
+                          '(("Armed Bear Common Lisp" . "abcl")
+                            ("Clozure Common Lisp"    . "ccl")
+                            ("CLISP"                  . "clisp")
+                            ("CMU Common Lisp"        . "cmucl")
+                            ("ECL"                    . "ecl")
+                            ("SBCL"                   . "sbcl"))
                           :test (function string-equal)))
               "unknown")
           (format nil "~(~{~A-~A-~A~}~)" (distribution))
@@ -129,8 +131,9 @@ System and distrib are keywords, release is a string."
           (progn
             #+darwin (concatenate 'string "darwin" (system-release))
             #+linux  "linux"
-            #+win32  "win32"
-            #-(or darwin linux win32) "unknown")
+            #+bsd    "bsd"
+            #+(or win32 windows)  "win32"
+            #-(or bsd darwin linux win32 windows) "unknown")
           (or (cdr (assoc (machine-type)
                           '(("Power Macintosh" . "ppc")
                             ("x86_64"          . "x86_64")

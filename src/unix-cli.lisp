@@ -109,25 +109,22 @@ BONJOUR     ~8A
                                ;; ((member (getenv "TERM") '("emacs" "dumb")
                                ;;          :test (function string=))
                                ;;  'standard-terminal)
-                               (t
-                                #+unix 'unix-terminal
-                                #-unix 'standard-terminal))
-                             #+(and (not swank) unix)
-                             'unix-terminal
-                             #+(and (not swank) (not unix))
-                             'standard-terminal))
+                               (t #+unix 'unix-terminal
+                                  #-unix 'standard-terminal))
+                             #-swank
+                             (progn #+unix 'unix-terminal
+                                    #-unix 'standard-terminal)))
            (terminal (make-instance terminal-class
                          :input-stream  (stream-input-stream  *terminal-io*)
                          :output-stream (stream-output-stream *terminal-io*)))
-           ;; (terminal (make-instance 'unix-terminal))
            (task     (make-instance 'task
                          :state :active
                          :case-insensitive t
                          :upcase-output nil
                          :unicode (eql encoding :utf-8)
-                         :arrows (if (eql encoding :utf-8)
-                                     :unicode-halfwidth
-                                     nil) 
+                         :arrows  (if (eql encoding :utf-8)
+                                      :unicode-halfwidth
+                                      nil) 
                          :terminal terminal)))
       (setf *task* task) ; to help debugging, we keep the task in the global binding.
       (setf *program-name* (or (program-name) *default-program-name*))
@@ -156,3 +153,4 @@ BONJOUR     ~8A
 
 
 ;;;; THE END ;;;;
+(ccl:getenv)

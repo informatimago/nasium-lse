@@ -33,8 +33,19 @@
 ;;;;****************************************************************************
 
 (in-package :cl-user)
-#+windows-target (cd #P"/cygwin/home/pjb/src/pjb/lse-cl/src/")
-#-windows-target (cd #P"/home/pjb/src/pjb/lse-cl/src/")
+(defun dirpath  (path) (make-pathname :name nil   :type nil   :version nil :defaults path))
+(defun wildpath (path) (make-pathname :name :wild :type :wild :version nil :defaults path))
+(defun fasldir  (system component)
+  (first (asdf:output-files
+          (make-instance 'asdf:compile-op)
+          (asdf:find-component (asdf:find-system system) component))))
+
+;; #+windows-target (cd #P"/cygwin/home/pjb/src/pjb/lse-cl/src/")
+;; #-windows-target (cd #P"/home/pjb/src/pjb/lse-cl/src/")
+(cd (dirpath *load-truename*))
+(pushnew (pwd) asdf:*central-registry* :test 'equal)
+
+
 
 ;; (defun delete-package-and-users (package)
 ;;   (mapc 'delete-package-and-users  (package-used-by-list package))
@@ -70,8 +81,13 @@
       *print-pretty* t
       *print-case* :downcase)
 
-#-windows-target
-(asdf:run-shell-command "rm -rf /home/pjb/.cache/common-lisp/kuiper.lan.informatimago.com/ccl-1.7-f94-linux-amd64/home/pjb/src/git/pjb/lse-cl/src/")
+
+(let ((dir (funcall (function #+windows wildpath #-windows dirpath)
+                    (fasldir :com.informatimago.manifest "manifest"))))
+  (format t "~%~A~%" dir) (finish-output)
+  #+windows (mapc 'delete-file (directory dir))
+  #-windows (asdf:run-shell-command "rm -rf ~S" (namestring dir)))
+
 
 (when (and (find-package "COM.INFORMATIMAGO.RDP")
            (find-symbol "*BOILERPLATE-GENERATED*" "COM.INFORMATIMAGO.RDP")

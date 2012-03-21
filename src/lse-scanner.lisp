@@ -380,6 +380,10 @@
                         (cons 'seq
                               (mapcar (function clean-up-rhs)
                                       (second rhs)))))
+                   ((rep)
+                    (cons 'rep
+                          (mapcar (function clean-up-rhs)
+                                  (second rhs))))
                    ((opt)
                     (cons 'opt
                           (mapcar (function clean-up-rhs)

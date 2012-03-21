@@ -61,6 +61,13 @@
 #-(and) (pushnew :lse-t1600                *features*)
 
 
+(let ((dir (funcall (function #+windows wildpath #-windows dirpath)
+                    (fasldir :com.informatimago.manifest "manifest"))))
+  (format t "~%~A~%" dir) (finish-output)
+  #+windows (mapc 'delete-file (directory dir))
+  #-windows (asdf:run-shell-command "rm -rf ~S" (namestring dir)))
+
+
 (ql:quickload *program-system*)
 (ql:quickload :com.informatimago.manifest)
 (ql:quickload :com.informatimago.lse.html-doc)
@@ -71,7 +78,11 @@
 ;;; Let's generate the target.
 
 
-(defparameter *documentation-directory* "doc-unix-cli")
+;; (defparameter *documentation-directory* "doc-unix-cli")
+
+(defparameter *documentation-directory*
+  #P"/home/pjb/public_html/sites/com.ogamita.www/nasium-lse/doc-unix-cli/")
+
 (format t "~%Generating ~A~%" *documentation-directory*)
 (finish-output)
 

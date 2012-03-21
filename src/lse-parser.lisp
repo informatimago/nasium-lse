@@ -156,7 +156,7 @@
                 (tok-nombre         "[-+]?[0-9]+\\.[0-9]+[Ee][-+]?[0-9]+?")
                 (tok-numero         "[0-9]+") 
                 ;; "[0-9]+\\(\\.[0-9]*\\)?\\(E[-+]?[0-9]+\\)?")
-                (tok-chaine         "'(('')?[^']*)*'")
+                (tok-litchaine      "'(('')?[^']*)*'")
                 ;; "\\('[^']*'\\)\\('[^']*'\\)*")
                 ;; "\\'[^']*\\'\\(\\'[^']*\\'\\)*")
                 ;; "\\'\\([^']*\\|\\(\\'\\'\\)\\)*\\'")
@@ -170,10 +170,10 @@
     ;; Program files (tapes) can contain both lines and commands.
     ;; The LSE compiler worked on punch cards, line by line too.
  
-    :start start
+    :start debut
     :rules (
 
-            (--> start
+            (--> debut
                  (alt
                   (seq ligne-programme    :action $1)
                   (seq liste-inst-ou-decl :action (cons :liste-instructions $1))
@@ -227,7 +227,7 @@
 
             (--> decl-tabl
                  (seq identificateur tok-crogauche expression (opt (seq tok-virgule expression :action expression)) tok-crodroite
-                      :action (list* :adecl identificateur expression $4))
+                      :action (list* :adecl $1 expression $4))
                  :action $1)
 
             
@@ -297,7 +297,7 @@
                   ;; Afin d'éviter une ambiguité sur first(spec-rep-num) inter first(spec-rep),
                   ;; on distingue les deux cas:
                   ;; 1) sans facteur de répétition:
-                  (seq tok-chaine    :action (list :spec-chaine '(:rep-1) $1))
+                  (seq tok-litchaine :action (list :spec-chaine '(:rep-1) $1))
                   (seq tok-divise    :action (list :spec-slash  '(:rep-1)))
                   (seq tok-X         :action (list :spec-space  '(:rep-1)))
                   (seq tok-C         :action (list :spec-cr     '(:rep-1)))
@@ -307,7 +307,7 @@
                   (seq tok-E tok-numero tok-point tok-numero :action (list :spec-e '(:rep-1) $2 $4))
                   ;; 2) avec facteur de répétition:
                   (seq spec-rep-fois (alt
-                                      (seq tok-chaine    :action (list :spec-chaine tok-chaine))
+                                      (seq tok-litchaine :action (list :spec-chaine $1))
                                       (seq tok-divise    :action :spec-slash)
                                       (seq tok-X         :action :spec-space)
                                       (seq tok-C         :action :spec-cr)
@@ -316,7 +316,7 @@
                                     (list* (first $2) spec-rep-fois (rest $2))
                                     (list $2 spec-rep-fois)))
                   (seq spec-rep-num  (alt
-                                      (seq tok-chaine    :action (list :spec-chaine tok-chaine))
+                                      (seq tok-litchaine :action (list :spec-chaine $1))
                                       (seq tok-divise    :action :spec-slash)
                                       (seq tok-X         :action :spec-space)
                                       (seq tok-C         :action :spec-cr)
@@ -465,7 +465,8 @@
                   ;; condition when we need it.
                   (seq tok-pargauche disjonction tok-pardroite :action $2)
                   reference
-                  tok-chaine
+                  at
+                  tok-litchaine
                   tok-nombre
                   tok-numero)
                  :action $1)
@@ -481,7 +482,8 @@
                  :action $1)
 
             (--> liste-identificateur
-                 (seq identificateur (rep tok-virgule identificateur :action identificateur) :action (cons identificateur $2))
+                 (seq identificateur (rep tok-virgule identificateur :action $2)
+                      :action (cons $1 $2))
                  :action $1)
 
             (--> disjonction
@@ -526,8 +528,8 @@
                                                     :action (list* :fonction $2)))
                                           :action $1)
                       :action (if $2
-                                  (list* (first $2) identificateur (rest $2))
-                                  (list :vref identificateur)))
+                                  (list* (first $2) $1 (rest $2))
+                                  (list :vref $1)))
                  :action $1)
 
             (--> liste-reference
@@ -535,15 +537,16 @@
                  :action $1)
 
             (--> identificateur
-                 (seq (alt
-                       (seq tok-identificateur :action $1)
-                       (seq tok-at :action (make-instance 'tok-identificateur
-                                               :kind 'tok-identificateur
-                                               :text "@"
-                                               :line (token-line $1)
-                                               :column  (token-column $1))))
-                      :action $1)
+                 tok-identificateur
                  :action $1)
+
+            (--> at
+                 tok-at
+                 :action (make-instance 'tok-identificateur
+                             :kind 'tok-identificateur
+                             :text "@"
+                             :line (token-line $1)
+                             :column  (token-column $1)))
 
             (--> procident
                  (seq tok-procident :action  $1)

@@ -44,6 +44,90 @@
           (remove-accents category)))
 
 
+
+
+
+
+;;; Generate the grammar rules.
+
+(defun noregexp (str)
+  (flet ((noreg (str)
+           (if (and (< 1 (length str))
+                     (find-if (lambda (ch) (find ch "[]?+*$."))
+                              str))
+               nil
+               str)))
+   (if (prefixp "\\" str)
+       (noreg (subseq str 1))
+       (noreg str))))
+
+(defun optpar (rhs formated-rhs)
+  (if (and (listp rhs)
+           (eql 'alt (first rhs))
+           (rest (rest rhs)))
+      (format nil "(~A)" formated-rhs)
+      formated-rhs))
+
+
+(defun format-rule (rule terminals &optional (ntwidth 20))
+  (labels ((format-rhs (rhs)
+             (if (atom rhs)
+                 (cond
+                   ((stringp rhs)
+                    (format nil "'~A'"
+                                          (if (find #\' rhs)
+                                              (with-output-to-string (out)
+                                                (loop :for ch :across rhs
+                                                  :do (if (char= #\' ch)
+                                                          (princ "''" out)
+                                                          (princ ch out))))
+                                              rhs)))
+                   ((let ((entry (assoc rhs terminals)))
+                      (when entry
+                        (let ((str (noregexp (second entry))))
+                          (if str
+                              (format nil "'~A'" str)
+                              (subseq (symbol-name rhs) 4))))))
+                   (t
+                    (format nil "~A" rhs)))
+                 (ecase (first rhs)
+                   ((seq)
+                    (format nil "~{~A~^ ~}"
+                            (mapcar (lambda (item) (optpar item (format-rhs item)))
+                                    (rest rhs))))
+                   ((rep)
+                    (format nil "{~{~A~^ ~}}"
+                            (mapcar (lambda (item) (optpar item (format-rhs item)))
+                                    (rest rhs))))
+                   ((opt)
+                    (format nil "[~{~A~^ ~}]"
+                                (mapcar (lambda (item) (optpar item (format-rhs item)))
+                                        (rest rhs))))
+                   ((alt)
+                    (format nil "~{~A~^ | ~}"
+                            (mapcar (function format-rhs)
+                                    (rest rhs))))))))
+    (format nil "~VA ::= ~A." ntwidth (first rule) (format-rhs (second rule)))))
+
+
+(defun generate-lse-grammar ()
+  (with-output-to-string (*standard-output*)
+    (let* ((lse (grammar-named 'lse))
+           (terminals (grammar-terminals lse)))
+      (format t "~%Symboles terminaux : ~2%")
+      (dolist (terminal (remove-if (function noregexp) terminals :key (function second)))
+        (format t "    ~:@(~VA~) = /~A/.~2%"
+                20 (subseq (string (first terminal)) 4) (second terminal)))
+      (format t "~%Règles de grammaire : ~2%")
+      (dolist (rule (grammar-rules (grammar-named 'lse)))
+        (princ "    ")
+        (write-line (format-rule (clean-up-rule rule) terminals))
+        (terpri)))))
+
+
+
+;;; Categories:
+
 (defun categories ()
   "Returns a list of documentation categories.
 NOTE: Unclassified chapters are in the category NIL."
@@ -273,6 +357,8 @@ NOTE: Unclassified chapters are in the category NIL."
                      :if-exists :supersede
                      :if-does-not-exist :create
                      :external-format *external-format/utf-8*)
+      (format *trace-output* "~&Generating ~A~%" (pathname html:*html-output-stream*))
+      (force-output *trace-output*)
       (html:with-html-output (html:*html-output-stream*
                               :kind :html
                               :encoding :utf-8)
@@ -288,41 +374,53 @@ NOTE: Unclassified chapters are in the category NIL."
               (html:meta (:name "Keywords"     :content
                                 (format nil "NASIUM, LSE, L.S.E, Langage Symbolique d'Enseignement, Langage de programmation, Français, ~(~A~)" category))))
             (html:body -
+              (html:img (:src "../nasium-lse-2.png" :alt "NASIUM L.S.E."))
+              ;; (html:h1 - (html:pcdata "NASIUM L.S.E."))
+              (html:hr)
               (html:div (:class "navigation")
+                (html:a (:href "../")   (html:pcdata "Maison"))
+                (html:pcdata " | ")
                 (when prev
                   (html:a (:href prev) (html:pcdata "Page précédente"))
-                  (html:pcdata "|"))
+                  (html:pcdata " | "))
                 (html:a (:href up)   (html:pcdata "Index"))
                 (when next
-                  (html:pcdata "|")
+                  (html:pcdata " | ")
                   (html:a (:href next) (html:pcdata "Page suivante"))))
               (html:hr)
-              (html:h1 - (html:pcdata "NASIUM L.S.E."))
               (html:h2 - (html:pcdata "~:(~A~)" category))
               ;; introduction:
               (let ((intro (find-chapter "INTRODUCTION" category)))
                 (when intro
                   (generate-html-text (chapter-text intro))))
-              ;; table of contents:
-              (html:div (:class "toc")
-                (html:p - (html:pcdata "Table des ~(~A~) :" category))
-                (html:ul -
-                  (dolist (chapter (cdr (assoc category (chapters-per-category)
-                                               :test (function string-equal))))
+              (let ((chapters (cdr (assoc category (chapters-per-category)
+                                          :test (function string-equal)))))
+                (when chapters
+                  (when (rest chapters)
+                    ;; table of contents:
+                    (html:div (:class "toc")
+                      (html:p - (html:pcdata "Table des ~(~A~) :" category))
+                      (html:ul -
+                        (dolist (chapter chapters)
+                          (unless (string-equal "INTRODUCTION" chapter)
+                            (html:li -
+                              (html:a (:href (format nil "#~A" chapter))
+                                (html:pcdata chapter))))))))
+                  ;; sections:
+                  (dolist (chapter chapters)
                     (unless (string-equal "INTRODUCTION" chapter)
-                      (html:li -
-                        (html:a (:href (format nil "#~A" chapter))
-                          (html:pcdata chapter)))))))
-              ;; sections:
-              (dolist (chapter (cdr (assoc category (chapters-per-category)
-                                           :test (function string-equal))))
-                (unless (string-equal "INTRODUCTION" chapter)
-                  (generate-chapter (find-chapter chapter category) cat))))))))))
+                      (generate-chapter (find-chapter chapter category) cat))))
+                (when (string= "GRAMMAIRE" category)
+                  (html:pre (:class "grammar")
+                    (html:pcdata (generate-lse-grammar))))))))))))
 
+
+
+;;; Generate the documentation and index:
 
 (defparameter *indexed-categories*
   '("GÉNÉRALITÉS" #+lse-unix "OPTIONS"
-    "COMMANDES" "INSTRUCTIONS" "FONCTIONS" "LÉGAL"))
+    "COMMANDES" "INSTRUCTIONS" "FONCTIONS" "GRAMMAIRE" "LÉGAL"))
 
 (defun generate-index ()
   "Generate an index file for the catgory html files."
@@ -332,6 +430,8 @@ NOTE: Unclassified chapters are in the category NIL."
                    :if-exists :supersede
                    :if-does-not-exist :create
                    :external-format *external-format/utf-8*)
+    (format *trace-output* "~&Generating ~A~%" (pathname html:*html-output-stream*))
+    (force-output *trace-output*)
     (html:with-html-output (html:*html-output-stream*
                             :kind :html
                             :encoding :utf-8)
@@ -346,7 +446,12 @@ NOTE: Unclassified chapters are in the category NIL."
             (html:meta (:name "Reply-To"     :content "pjb@informatimago.com"))
             (html:meta (:name "Keywords"     :content "NASIUM, LSE, L.S.E, Langage Symbolique d'Enseignement, Langage de programmation, Français")))
           (html:body -
-            (html:h1 - (html:pcdata "NASIUM L.S.E."))
+            (html:img (:src "../nasium-lse-2.png" :alt "NASIUM L.S.E."))
+            ;; (html:h1 - (html:pcdata "NASIUM L.S.E."))
+            (html:hr)
+            (html:div (:class "navigation")
+              (html:a (:href "../")   (html:pcdata "Maison")))
+            (html:hr)
             (html:pre -
               (html:pcdata *title-banner* (version)))
             (html:ol -
@@ -358,7 +463,10 @@ NOTE: Unclassified chapters are in the category NIL."
 
 
 (defun generate-html-documentation (subdir)
-  (let ((*default-pathname-defaults* (make-pathname :directory (list :relative subdir))))
+  (let ((*default-pathname-defaults*
+         (etypecase subdir
+           (pathname subdir)
+           (string   (make-pathname :directory (list :relative subdir))))))
     (ensure-directories-exist "file.test")
     (generate-index)
     (loop
@@ -370,4 +478,5 @@ NOTE: Unclassified chapters are in the category NIL."
                              (when next (html-doc-category-file-name next))))))
 
 
-;;;; THE END ;;;;;
+
+;;;; THE END ;;;;

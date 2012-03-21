@@ -1306,6 +1306,51 @@ Celà permet donc d'enchaîner des programmes automatiquement.
 Voir: AP, EX")
 
 
+
+(defchapter ("INTRODUCTION" "GRAMMAIRE")
+    "
+
+Les symboles terminaux peuvent être nommés ou anonymes.  Les symboles
+terminaux nommés sont écrits en majuscules, et sont décrits par une
+expression régulière écrite entre cotices.  Les symboles terminaux
+anonymes sont écrits dans les règles de grammaire entre apostrophes.
+
+Exemple: un symbole terminal nommé:
+
+|    IDENTIFICATEUR       = /[A-Z][0-9A-Z]*/.
+
+
+Exemple: un symbole terminal anonyme:
+
+|    'AFFICHER'
+
+
+Les symboles non-terminaux sont écrits en minuscules.
+
+Les règles de grammaire ont la forme :
+
+|    symbole-non-terminal ::= partie-droite .
+
+La partie droite peut être (a et b sont des parties droites) :
+
+- une séquence : a b 
+
+- une alternative (éventuellement entre parenthèse pour éviter les ambiguités) : a | b 
+
+- une optionelle (0 ou 1) : [ a ] 
+
+- une répetitive (0 ou plus) : { a } 
+
+- un symbole non-terminal ;
+
+- un symbole terminal.
+
+Le symbole initial de la grammaire est debut.
+
+nil représente le vide.
+
+")
+
 ;;;---------------------------------------------------------------------
 ;;; Root chapters
 ;;;

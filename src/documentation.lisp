@@ -165,8 +165,9 @@ RETURN: A string containing the character without accent
         (loop
           :for ch :across string
           :do (let ((conv (character-folding ch)))
-                (princ (or conv ch) out))))
+                (princ (or (car conv) ch) out))))
       string))
+
 
 
 (defparameter *key-labels*

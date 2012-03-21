@@ -73,11 +73,11 @@ unix-cli/clisp:
 html-doc:
 	ccl --load      generate-documentation.lisp
 
-doc-unix-cli:*.lisp
-	$(MAKE) $(MFLAGS) html-doc
-
-install-doc:doc-unix-cli
-	$(RSYNCH) doc-unix-cli ~/public_html/sites/com.ogamita.www/nasium-lse/doc-unix-cli
+# doc-unix-cli:*.lisp
+# 	$(MAKE) $(MFLAGS) html-doc
+# 
+# install-doc:doc-unix-cli
+# 	$(RSYNCH) doc-unix-cli/ ~/public_html/sites/com.ogamita.www/nasium-lse/doc-unix-cli
 
 variables:
 	@echo pwd=$$(pwd)

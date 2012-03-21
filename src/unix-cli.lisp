@@ -161,4 +161,3 @@ BONJOUR     ~8A
 
 
 ;;;; THE END ;;;;
-(ccl:getenv)

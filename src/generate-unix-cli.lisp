@@ -18,7 +18,7 @@
 ;;;;    
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
 ;;;;    
-;;;;    This program is free software: you can redistribute it and/or modify
+;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
@@ -37,8 +37,16 @@
       *print-pretty* t
       *print-case* :downcase)
 
-#+windows-target (cd #P"/cygwin/home/pjb/src/pjb/lse-cl/src/")
-#-windows-target (cd #P"/home/pjb/src/pjb/lse-cl/src/")
+(defun dirpath  (path) (make-pathname :name nil   :type nil   :version nil :defaults path))
+(defun wildpath (path) (make-pathname :name :wild :type :wild :version nil :defaults path))
+(defun fasldir  (system component)
+  (first (asdf:output-files
+          (make-instance 'asdf:compile-op)
+          (asdf:find-component (asdf:find-system system) component))))
+
+;; #+windows-target (cd #P"/cygwin/home/pjb/src/pjb/lse-cl/src/")
+;; #-windows-target (cd #P"/home/pjb/src/pjb/lse-cl/src/")
+(cd (dirpath *load-truename*))
 (pushnew (pwd) asdf:*central-registry* :test 'equal)
 
 
@@ -53,12 +61,13 @@
 #-(and) (pushnew :lse-t1600                *features*)
 
 
-#+ (and ccl linux) (asdf:run-shell-command "rm -rf /home/pjb/.cache/common-lisp/kuiper.lan.informatimago.com/ccl-1.7-f94-linux-amd64/home/pjb/src/git/pjb/lse-cl/src/")
-#+ (and ccl darwin) (asdf:run-shell-command "rm -rf /Users/pjb/.cache/common-lisp/triton.lan.informatimago.com/ccl-1.7-f94-macosx-ppc32/home/pjb/src/git/pjb/lse-cl/src/")
-#+(and ccl windows)
-(mapc 'delete-file (directory "C:/cygwin/home/pjb/.cache/common-lisp/lassell/ccl-1.7-f95-win-amd64/C/cygwin/home/pjb/src/pjb/lse-cl/src/*.*"))
-#+ (and clisp linux) (asdf:run-shell-command "rm -rf /home/pjb/.cache/common-lisp/kuiper.lan.informatimago.com/clisp-2.49-unix/home/pjb/src/git/pjb/lse-cl/src/")
-#+ (and clisp darwin) (asdf:run-shell-command "rm -rf /Users/pjb/.cache/common-lisp/triton.lan.informatimago.com/clisp-2.49-unix/home/pjb/src/git/pjb/lse-cl/src/")
+(let ((dir (funcall (function #+windows wildpath #-windows dirpath)
+                    (fasldir :com.informatimago.manifest "manifest"))))
+  (format t "~%~A~%" dir) (finish-output)
+  #+windows (mapc 'delete-file (directory dir))
+  #-windows (asdf:run-shell-command "rm -rf ~S" (namestring dir)))
+
+
 
 (ql:quickload *program-system*)
 (ql:quickload :com.informatimago.manifest)

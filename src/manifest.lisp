@@ -92,7 +92,7 @@
   "RETURN: (system distrib release)
 System and distrib are keywords, release is a string."
   (values
-   (let ((path (format nil "distribution-~8,36r.txt" (random (expt 2 32)))))
+   (let ((path (format nil "distribution-~36,8,'0R.txt" (random (expt 2 32)))))
      (unwind-protect
           (if (zerop (asdf:run-shell-command (format nil "distribution > ~S" path)))
               (with-open-file (file path)
@@ -108,7 +108,7 @@ System and distrib are keywords, release is a string."
 
 (defun system-release ()
   (values
-   (let ((path (format nil "/tmp/uname-~8,36r.txt" (random (expt 2 32)))))
+   (let ((path (format nil "/tmp/uname-~36,8,'0R.txt" (random (expt 2 32)))))
      (if (zerop (asdf:run-shell-command (format nil "uname -r > ~S" path)))
          (with-open-file (file path) (read-line file))
          "unknown"))))

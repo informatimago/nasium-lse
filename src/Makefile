@@ -34,6 +34,8 @@
 
 BUILD_HOSTS = kuiper galatea lassell # triton
 LISP=ccl --load
+RMERGE=rsync -HSWacvxz --progress -e ssh
+RSYNCH=rsync -HSWacvxz --progress -e ssh --force --delete --delete-after
 
 
 
@@ -71,7 +73,11 @@ unix-cli/clisp:
 html-doc:
 	ccl --load      generate-documentation.lisp
 
+doc-unix-cli:*.lisp
+	$(MAKE) $(MFLAGS) html-doc
 
+install-doc:doc-unix-cli
+	$(RSYNCH) doc-unix-cli ~/public_html/sites/com.ogamita.www/nasium-lse/doc-unix-cli
 
 variables:
 	@echo pwd=$$(pwd)

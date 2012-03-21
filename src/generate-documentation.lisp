@@ -37,8 +37,16 @@
       *print-pretty* t
       *print-case* :downcase)
 
-#+windows-target (cd #P"/cygwin/home/pjb/src/pjb/lse-cl/src/")
-#-windows-target (cd #P"/home/pjb/src/pjb/lse-cl/src/")
+(defun dirpath  (path) (make-pathname :name nil   :type nil   :version nil :defaults path))
+(defun wildpath (path) (make-pathname :name :wild :type :wild :version nil :defaults path))
+(defun fasldir  (system component)
+  (first (asdf:output-files
+          (make-instance 'asdf:compile-op)
+          (asdf:find-component (asdf:find-system system) component))))
+
+;; #+windows-target (cd #P"/cygwin/home/pjb/src/pjb/lse-cl/src/")
+;; #-windows-target (cd #P"/home/pjb/src/pjb/lse-cl/src/")
+(cd (dirpath *load-truename*))
 (pushnew (pwd) asdf:*central-registry* :test 'equal)
 
 

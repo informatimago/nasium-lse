@@ -202,13 +202,15 @@ NOTE: Unclassified chapters are in the category NIL."
                         (if (= 2 (length ref))
                             (let ((command (find-chapter ref "COMMANDES")))
                               (if command
-                               (html:a (:href (format nil "~A#~A"
-                                                      (html-doc-category-file-name "COMMANDES")
-                                                      (chapter-title command)))
-                                 (html:pcdata "~A" (chapter-title command)))
+                                  (html:code -
+                                   (html:a (:href (format nil "~A#~A"
+                                                          (html-doc-category-file-name "COMMANDES")
+                                                          (chapter-title command)))
+                                     (html:pcdata "~A" (chapter-title command))))
                                (html:pcdata "~A" ref)))
-                            (html:a (:href (format nil "#~A" ref))
-                              (html:pcdata "~A" ref))))
+                            (html:code -
+                             (html:a (:href (format nil "#~A" ref))
+                               (html:pcdata "~A" ref)))))
                       (html:pcdata "~A" item))
                   (when dot (html:pcdata "."))))))
 
@@ -241,15 +243,16 @@ NOTE: Unclassified chapters are in the category NIL."
 
 
 (defmethod generate-chapter ((chapter chapter) (category (eql :commandes)))
-  (html:a (:name (chapter-title chapter)))
-  (html:h3 - (html:pcdata "~A" (chapter-title chapter)))
   (let* ((text (string-trim #(#\Space #\Newline) (chapter-text chapter)))
          (synopsis (first-line text))
          (text (string-left-trim #(#\Space #\Newline) (subseq text (length synopsis)))))
+    (html:a (:name (chapter-title chapter)))
+    ;; (html:h3 - (html:pcdata "~A" (chapter-title chapter)))
     (html:code -
       (html:b - (html:pcdata "~A" (subseq synopsis 0 2)))
       (html:pcdata "~A" (subseq synopsis 2)))
-    (generate-html-text text)))
+    (html:blockquote -
+      (generate-html-text text))))
 
 
 (defmethod generate-chapter ((chapter chapter) (category (eql :instructions)))

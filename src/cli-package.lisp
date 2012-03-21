@@ -1,12 +1,12 @@
 ;;;; -*- mode:lisp;coding:utf-8 -*-
 ;;;;**************************************************************************
-;;;;FILE:               unix-cli-package.lisp
+;;;;FILE:               cli-package.lisp
 ;;;;LANGUAGE:           Common-Lisp
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
 ;;;;    
-;;;;    This defines the unix-cli package.
+;;;;    This defines the cli package.
 ;;;;    
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
@@ -56,7 +56,7 @@
            ))
 
 
-(defpackage "COM.INFORMATIMAGO.LSE.UNIX-CLI"
+(defpackage "COM.INFORMATIMAGO.LSE.CLI"
   (:nicknames "LSE-CLI")
   (:use "COMMON-LISP"
         "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.STRING"

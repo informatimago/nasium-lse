@@ -309,7 +309,7 @@ INSTALLATION A PARTIR DES SOURCES
 =================================
 
 0- lire entierement ce document.
-1- make unix-cli
+1- make cli
 2- su root
 3- groupadd lse
 4- adduser lse

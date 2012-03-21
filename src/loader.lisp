@@ -40,8 +40,6 @@
           (make-instance 'asdf:compile-op)
           (asdf:find-component (asdf:find-system system) component))))
 
-;; #+windows-target (cd #P"/cygwin/home/pjb/src/pjb/lse-cl/src/")
-;; #-windows-target (cd #P"/home/pjb/src/pjb/lse-cl/src/")
 (cd (dirpath *load-truename*))
 (pushnew (pwd) asdf:*central-registry* :test 'equal)
 
@@ -100,11 +98,15 @@
        (ignore-errors (delete-package :com.informatimago.lse.byte-code))
        (ignore-errors (delete-package :com.informatimago.lse.identifiers)))
 (pushnew (pwd)  asdf:*central-registry*)
-(quick-reload :com.informatimago.lse.unix-cli)
-(com.informatimago.common-lisp.cesarum.package:add-nickname :COM.INFORMATIMAGO.LSE.IDENTIFIERS :id)
+(quick-reload :com.informatimago.lse.cli)
+(quick-reload :com.informatimago.lse.server)
+
+(com.informatimago.common-lisp.cesarum.package:add-nickname
+ :COM.INFORMATIMAGO.LSE.IDENTIFIERS :id)
 (in-package   :com.informatimago.lse)
 (print '(in-package   :com.informatimago.lse)) 
-(print '(com.informatimago.lse.unix-cli:main))
+(print '(com.informatimago.lse.cli:main))
+(print '(com.informatimago.lse.server:main))
 (terpri) (finish-output)
 
 
@@ -112,7 +114,7 @@
 
 
 #|
-    (cd #P "/home/pjb/src/pjb/lse-cl/src/")
+    (cd #P "/home/pjb/src/pjb/nasium-lse/src/")
     (load "loader.lisp")
 |#
 

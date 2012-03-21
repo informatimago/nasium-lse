@@ -1804,8 +1804,8 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
   (values))
 
 
-;; (test/parse-file #P"~/src/pjb/lse-cl/SYNTERR.LSE")
-;; (test/parse-file #P"~/src/pjb/lse/BOURG/BOUR.LSE")
+;; (test/parse-file #P"SYNTERR.LSE")
+;; (test/parse-file #P"../BOURG/BOUR.LSE")
 ;; (test/parse-string "18*")
 ;; (let ((*print-escape* nil) (*print-pretty* t) (*print-right-margin* 80)) (write (test/parse-file "tpars.lse")))
 
@@ -1826,10 +1826,10 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 
 
 
-;; (compile-lse-file #P "~/src/pjb/lse/BOURG/BOUR.LSE")
-;; (compile-lse-file #P "~/src/pjb/lse-cl/TESTCOMP.LSE")
+;; (compile-lse-file #P "../BOURG/BOUR.LSE")
+;; (compile-lse-file #P "TESTCOMP.LSE")
 
-;; (test/compile-lse-file #P "~/src/pjb/lse-cl/TESTCOMP.LSE")
+;; (test/compile-lse-file #P "TESTCOMP.LSE")
 ;; (test/compile-lse-file "tpars.lse")
 
 

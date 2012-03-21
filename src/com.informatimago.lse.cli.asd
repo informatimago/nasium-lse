@@ -1,6 +1,6 @@
 ;;;; -*- mode:lisp;coding:utf-8 -*-
 ;;;;**************************************************************************
-;;;;FILE:               com.informatimago.lse.unix-cli.asd
+;;;;FILE:               com.informatimago.lse.cli.asd
 ;;;;LANGUAGE:           Common-Lisp
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
@@ -33,14 +33,14 @@
 ;;;;**************************************************************************
 
 
-(asdf:defsystem :com.informatimago.lse.unix-cli
-    :description  "This system defines the unix CLI L.S.E. interpreter"
+(asdf:defsystem :com.informatimago.lse.cli
+    :description  "This system defines the Command Line Interface L.S.E. interpreter."
     :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
     :version "1.2.2"
     :licence "AGPL3"
     :properties ((#:author-email                   . "pjb@informatimago.com")
                  (#:date                           . "Winter 2012")
-                 ((#:albert #:output-dir)          . "/tmp/documentation/com.informatimago.lse.unix-cli/")
+                 ((#:albert #:output-dir)          . "/tmp/documentation/com.informatimago.lse.cli/")
                  ((#:albert #:formats)             . ("docbook"))
                  ((#:albert #:docbook #:template)  . "book")
                  ((#:albert #:docbook #:bgcolor)   . "white")
@@ -66,25 +66,26 @@
 
                  (:file "patch-cffi-uffi")
                  
-                 (:file "unix-cli-package")
+                 (:file "cli-package")
 
                  #+swank
-                 (:file "swank-terminal"      :depends-on ("unix-cli-package"))
+                 (:file "swank-terminal"      :depends-on ("cli-package"))
 
                  #+(and unix (not clisp))
-                 (:file "unix-terminal"       :depends-on ("unix-cli-package"))
+                 (:file "unix-terminal"       :depends-on ("cli-package"))
                  #-(and unix (not clisp))
-                 (:file "unix-terminal-stub"  :depends-on ("unix-cli-package"))
+                 (:file "unix-terminal-stub"  :depends-on ("cli-package"))
                  
-                 (:file "terminfo-terminal"   :depends-on ("unix-cli-package"))
+                 (:file "terminfo-terminal"   :depends-on ("cli-package"))
 
-                 (:file "arguments"           :depends-on ("unix-cli-package"))
-                 (:file "unix-cli"            :depends-on ("unix-cli-package"
-                                                           "arguments"
-                                                           "terminfo-terminal"
-                                                           #+swank "swank-terminal"
-                                                           #+(and unix (not clisp))
-                                                           "unix-terminal"))
+                 (:file "cli-arguments"       :depends-on ("cli-package"))
+                 (:file "cli"
+                        :depends-on ("cli-package"
+                                     "cli-arguments"
+                                     "terminfo-terminal"
+                                     #+swank "swank-terminal"
+                                     #-(and unix (not clisp)) "unix-terminal-stub"
+                                     #+(and unix (not clisp)) "unix-terminal"))
                  ))
 
 

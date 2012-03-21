@@ -46,7 +46,7 @@
                                                          :defaults *load-truename*)
                                           :if-does-not-exist :create)
                                          0.001)))
-    "The version of the EMULSE system.")
+    "The version of the NASIUM LSE system.")
 
 
   (defparameter  *license*

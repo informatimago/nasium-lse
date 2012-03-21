@@ -957,8 +957,8 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
     (test/scan-stream src)))
 
 
-;; (test/scan-file #P"~/src/pjb/lse-cl/SYNTERR.LSE")
-;; (test/scan-file #P"~/src/pjb/lse-cl/TESTCOMP.LSE")
+;; (test/scan-file #P"~/src/pjb/nasium-lse/SYNTERR.LSE")
+;; (test/scan-file #P"~/src/pjb/nasium-lse/TESTCOMP.LSE")
 ;; (test/scan-string "18*")
 ;;;; THE END ;;;;
 

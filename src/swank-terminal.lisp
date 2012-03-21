@@ -46,7 +46,7 @@
     (invoke-slime-debugger (coerce-to-condition datum args))))
 
 
-(in-package "COM.INFORMATIMAGO.LSE.UNIX-CLI")
+(in-package "COM.INFORMATIMAGO.LSE.CLI")
 
 
 ;;; In Common Lisp, we can execute emacs lisp expressions:
@@ -86,7 +86,7 @@
       (let  ((*print-case* :downcase)
              (*print-escape* nil)
              (*print-right-margin* 100)
-             (*package* (find-package "COM.INFORMATIMAGO.LSE.UNIX-CLI")))
+             (*package* (find-package "COM.INFORMATIMAGO.LSE.CLI")))
         (pprint form *trace-output*))
       (terpri *trace-output*))
     (let ((result (swank::eval-in-emacs emacs-form nowait))

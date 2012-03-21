@@ -287,13 +287,13 @@ SENDER:             (function  client client-socket disconnector)
   (lambda (client client-socket disconnector)
     (lambda (fd event exception)
       (declare (ignorable fd event exception))
-      (logger :com.informatimago.iolib.util.handler :debug "Write handler ~S ~S ~S~%"
-              fd event exception)
+      ;; (logger :com.informatimago.iolib.util.handler :debug "Write handler ~S ~S ~S~%"
+      ;;         fd event exception)
       (handler-case
           (funcall sender client client-socket disconnector)
 
         (socket-connection-reset-error ()
-          ;; If for some reaon the client reset the network connection,
+          ;; If for some reaon the client resets the network connection,
           ;; we'll get this signal.
           (logger :com.informatimago.iolib.util :warn "Client ~A: connection reset by peer.~%"
                   (socket-remote-end-point client-socket))

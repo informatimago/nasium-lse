@@ -69,7 +69,8 @@ CONFIGURER     Configure le server EMULSE.
 
 
 (defclass lse-console-client (client)
-  ((console :initarg :console :accessor client-console)))
+  ((console :initarg :console :initform nil :accessor client-console)
+   (task    :initarg :task    :initform nil :accessor client-task)))
 
 
 (defmethod client-send-initial-message ((client lse-console-client))
@@ -83,62 +84,76 @@ CONFIGURER     Configure le server EMULSE.
 
 
 
-;; (defmethod client-receive-message ((client lse-console-client) message)
-;;   (let ((text (message-text message))
-;;         (*client* client))
-;;     (format t "LSE received ~S~%" text)
-;;     (ecase (console-state (client-console client))
-;;       (:limbo
-;;        (cond
-;;          ((string-equal text "deconnecter")
-;;           (server-remove-client (client-server client) client)
-;;           (return-from client-receive-message))
-;;          ((string-equal text "lse")
-;;           (setf (console-state (client-console client)) :sleeping))
-;;          ((string-equal text "configurer")
-;;           (setf (console-state (client-console client)) :configuration))
-;;          (t
-;;           (client-send-response client "~%~A~%" *limbo-help*))))
-;;       (:configuration
-;;        (client-send-response client "~A"
-;;                              (with-output-to-string (*standard-output*)
-;;                                (let ((*error-output* *standard-output*)
-;;                                      (*standard-input* (make-string-input-stream ""))
-;;                                      (*terminal-io*    (make-two-way-stream *standard-input*
-;;                                                                             *standard-output*))
-;;                                      (*query-io*       *query-io*))
-;;                                  (configuration-repl-input text)))))
-;;       ((:sleeping :awake)
-;;        (client-send-response client "~A"
-;;                              (with-output-to-string (*standard-output*)
-;;                                (let ((*error-output* *standard-output*)
-;;                                      (*standard-input* (make-string-input-stream ""))
-;;                                      (*terminal-io*    (make-two-way-stream *standard-input*
-;;                                                                             *standard-output*))
-;;                                      (*query-io*       *query-io*))
-;;                                  (lse-repl text)))))))
-;;   (client-send-prompt client))
+(defmethod client-receive-message ((client lse-console-client) message)
+  (let ((text (message-text message))
+        (*client* client))
+    (format t "LSE received ~S~%" text)
+    (ecase (console-state (client-console client))
+      (:limbo
+       (cond
+         ((string-equal text "deconnecter")
+          (server-remove-client (client-server client) client)
+          (return-from client-receive-message))
+         ((string-equal text "lse")
+          (setf (console-state (client-console client)) :sleeping))
+         ((string-equal text "configurer")
+          (setf (console-state (client-console client)) :configuration))
+         (t
+          (client-send-response client "~%~A~%" *limbo-help*))))
+      (:configuration
+       (client-send-response client "~A"
+                             (with-output-to-string (*standard-output*)
+                               (let ((*error-output* *standard-output*)
+                                     (*standard-input* (make-string-input-stream ""))
+                                     (*terminal-io*    (make-two-way-stream *standard-input*
+                                                                            *standard-output*))
+                                     (*query-io*       *query-io*))
+                                 (configuration-repl-input text)))))
+      ((:sleeping :awake)
+       (client-send-response client "~A"
+                             (with-output-to-string (*standard-output*)
+                               (let ((*error-output* *standard-output*)
+                                     (*standard-input* (make-string-input-stream ""))
+                                     (*terminal-io*    (make-two-way-stream *standard-input*
+                                                                            *standard-output*))
+                                     (*query-io*       *query-io*))
+                                 (command-eval-line (client-task client) text)))))))
+  (client-send-prompt client))
 
 
 
 
 (defun main (&key (port *server-port*))
   (let* ((*event-base* (make-instance 'event-base)))
-    (setf *server* (start-server (make-instance 'tcp-ipv4-end-point :interface #(127 0 0 1) :port port)
-                                 :name "test"
-                                 ;; :data-received-callback (lambda (data server client) 
-                                 ;;                           (logger :data-received-callback :debug
-                                 ;;                                   "Received data ~S from ~A~%" data client))
-                                 :client-class 'lse-console-client
-                                 :client-connected (lambda (server client client-socket)
-                                                     (declare (ignore client-socket))
-                                                     (logger :client-connected :info "Client connected ~A~%" client)
-                                                     (setf (client-console client)
-                                                           (make-console :class 'socket
-                                                                         :number 0
-                                                                         :date (current-date)))
-                                                     (client-send-initial-message client)
-                                                     (client-send-prompt client))))
+    (setf *server* (start-server
+                    (make-instance 'tcp-ipv4-end-point :interface #(127 0 0 1) :port port)
+                    :name "test"
+                    ;; :data-received-callback (lambda (data server client) 
+                    ;;                           (logger :data-received-callback :debug
+                    ;;                                   "Received data ~S from ~A~%" data client))
+                    :client-class 'lse-console-client
+                    :client-connected
+                    (lambda (server client client-socket)
+                      (declare (ignore client-socket))
+                      (logger :client-connected :info "Client connected ~A~%" client)
+                      (setf (client-console client)
+                            (make-console :class 'socket
+                                          :number 0
+                                          :date (current-date))
+                            (client-task client)
+                            (make-instance 'task
+                                :state :sleeping
+                                :case-insensitive t
+                                :upcase-output nil
+                                :unicode nil ; (eql encoding :utf-8)
+                                :arrows  nil #-(and) (if (eql encoding :utf-8)
+                                                         :unicode-halfwidth
+                                                         nil) 
+                                :terminal (make-instance 'standard-terminal
+                                              :input-stream (make-synonym-stream '*standard-input*)
+                                              :output-stream (make-synonym-stream '*standard-output*))))
+                      (client-send-initial-message client)
+                      (client-send-prompt client))))
     (unwind-protect
          (event-loop)
       (close-server *server*)

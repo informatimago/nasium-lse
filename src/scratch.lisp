@@ -32,9 +32,9 @@
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
 
-(cd #P "/home/pjb/src/pjb/lse-cl/src/")
-(push #P"/home/pjb/src/pjb/lse-cl/dependencies/zebu-3.5.5-pjb/" asdf:*central-registry*)
-(push #P "/home/pjb/src/pjb/lse-cl/src/"                        asdf:*central-registry*)
+(cd #P "/home/pjb/src/pjb/nasium-lse/src/")
+(push #P"/home/pjb/src/pjb/nasium-lse/dependencies/zebu-3.5.5-pjb/" asdf:*central-registry*)
+(push #P "/home/pjb/src/pjb/nasium-lse/src/"                        asdf:*central-registry*)
 (in-package :cl-user)
 (asdf-load :com.informatimago.lse)
 
@@ -80,21 +80,21 @@
 (asdf-load :com.informatimago.common-lisp.cesarum)
 
 (in-package :cl-user)
-(cd #P "/home/pjb/src/pjb/lse-cl/src/")
-(pushnew #P"/home/pjb/src/pjb/lse-cl/dependencies/zebu-3.5.5-pjb/" asdf:*central-registry*)
-(pushnew #P "/home/pjb/src/pjb/lse-cl/src/"                        asdf:*central-registry*)
+(cd #P "/home/pjb/src/pjb/nasium-lse/src/")
+(pushnew #P"/home/pjb/src/pjb/nasium-lse/dependencies/zebu-3.5.5-pjb/" asdf:*central-registry*)
+(pushnew #P "/home/pjb/src/pjb/nasium-lse/src/"                        asdf:*central-registry*)
 (pushnew :developing *features*)
 
 ;;----------------------------------------------------------------------
 (in-package :cl-user)
-(cd      #P "/home/pjb/src/pjb/lse-cl/src/")
-(pushnew #P "/home/pjb/src/pjb/lse-cl/src/"  asdf:*central-registry*)
+(cd      #P "/home/pjb/src/pjb/nasium-lse/src/")
+(pushnew #P "/home/pjb/src/pjb/nasium-lse/src/"  asdf:*central-registry*)
 (pushnew #P "/home/pjb/src/public/rdp/"      asdf:*central-registry*)
 (pushnew :developing *features*)
 (setf *print-right-margin* 200
       *print-pretty* t
       *print-case* :downcase)
-(asdf:run-shell-command "rm -rf /home/pjb/.cache/common-lisp/kuiper.lan.informatimago.com/ccl-1.7-f94-linux-amd64/home/pjb/src/git/pjb/lse-cl/src/")
+(asdf:run-shell-command "rm -rf /home/pjb/.cache/common-lisp/kuiper.lan.informatimago.com/ccl-1.7-f94-linux-amd64/home/pjb/src/git/pjb/nasium-lse/src/")
 (in-package :cl-user)
 (progn (ignore-errors (delete-package :com.informatimago.lse.server))
        (ignore-errors (delete-package :com.informatimago.lse))
@@ -108,8 +108,8 @@
 
 
 (in-package :cl-user)
-(cd      #P "/home/pjb/src/pjb/lse-cl/src/")
-(pushnew #P "/home/pjb/src/pjb/lse-cl/src/" asdf:*central-registry*)
+(cd      #P "/home/pjb/src/pjb/nasium-lse/src/")
+(pushnew #P "/home/pjb/src/pjb/nasium-lse/src/" asdf:*central-registry*)
 (pushnew :developing *features*)
 (ql:quickload :com.informatimago.lse :verbose t :explain t)
 (in-package :com.informatimago.lse)
@@ -161,7 +161,7 @@ _______________________________________________________________________________
        (print (setf (scanner-current-token scanner) (scan-lse-token scanner)))
        (print (list 'column= (scanner-column scanner) 'state= (scanner-state scanner))))
 
-(with-open-file (src  #P"/home/pjb/src/pjb/lse-cl/TESTCOMP.LSE")
+(with-open-file (src  #P"/home/pjb/src/pjb/nasium-lse/TESTCOMP.LSE")
   (let ((scanner (make-instance 'lse-scanner :source src)))
    (loop
      :for line = (readline (slot-value scanner 'stream))
@@ -169,7 +169,7 @@ _______________________________________________________________________________
      :while line)))
 
 (in-package :com.informatimago.lse)
-(with-open-file (src  #P"/home/pjb/src/pjb/lse-cl/TESTCOMP.LSE")
+(with-open-file (src  #P"/home/pjb/src/pjb/nasium-lse/TESTCOMP.LSE")
   (let ((scanner (make-instance 'lse-scanner :source src)))
     (advance-line scanner)
     (scan-next-token scanner)))
@@ -193,15 +193,15 @@ _______________________________________________________________________________
             items)))
 
 (in-package :COM.INFORMATIMAGO.LSE)
-(test/lse-scanner  #P"/home/pjb/src/pjb/lse-cl/SYNTERR.LSE")
-(test/lse-scanner  #P"/home/pjb/src/pjb/lse-cl/TESTCOMP.LSE")
+(test/lse-scanner  #P"/home/pjb/src/pjb/nasium-lse/SYNTERR.LSE")
+(test/lse-scanner  #P"/home/pjb/src/pjb/nasium-lse/TESTCOMP.LSE")
 
-(test-parse-file   #P "/home/pjb/src/pjb/lse-cl/SYNTERR.LSE")
+(test-parse-file   #P "/home/pjb/src/pjb/nasium-lse/SYNTERR.LSE")
 (test-parse-file   #P "/home/pjb/src/pjb/lse/BOURG/BOUR.LSE")
-(test-parse-file   #P"/home/pjb/src/pjb/lse-cl/TESTCOMP.LSE")
+(test-parse-file   #P"/home/pjb/src/pjb/nasium-lse/TESTCOMP.LSE")
 
 (test-compile-file #P "/home/pjb/src/pjb/lse/BOURG/BOUR.LSE")
-(test-compile-file #P "/home/pjb/src/pjb/lse-cl/TESTCOMP.LSE")
+(test-compile-file #P "/home/pjb/src/pjb/nasium-lse/TESTCOMP.LSE")
 
 
 
@@ -242,16 +242,16 @@ _______________________________________________________________________________
   (terminal-new-line terminal 2)
   (terminal-write-string terminal "Hello")
   (terminal-line-feed (task-terminal *task*))
-  ;; (with-slots (COM.INFORMATIMAGO.LSE.UNIX-CLI::current-column
-  ;;              COM.INFORMATIMAGO.LSE.UNIX-CLI::buffer) terminal
-  ;;   (COM.INFORMATIMAGO.LSE.UNIX-CLI::flush terminal)
+  ;; (with-slots (COM.INFORMATIMAGO.LSE.CLI::current-column
+  ;;              COM.INFORMATIMAGO.LSE.CLI::buffer) terminal
+  ;;   (COM.INFORMATIMAGO.LSE.CLI::flush terminal)
   ;;   (let ((output (terminal-output-stream terminal)))
   ;;     (loop :repeat count :do (terpri output))
   ;;     (terminal-finish-output terminal)
-  ;;     (fill COM.INFORMATIMAGO.LSE.UNIX-CLI::buffer #\space)
-  ;;     (COM.INFORMATIMAGO.LSE.UNIX-CLI::show-buffer terminal)
-  ;;     (list COM.INFORMATIMAGO.LSE.UNIX-CLI::current-column
-  ;;           COM.INFORMATIMAGO.LSE.UNIX-CLI::buffer
+  ;;     (fill COM.INFORMATIMAGO.LSE.CLI::buffer #\space)
+  ;;     (COM.INFORMATIMAGO.LSE.CLI::show-buffer terminal)
+  ;;     (list COM.INFORMATIMAGO.LSE.CLI::current-column
+  ;;           COM.INFORMATIMAGO.LSE.CLI::buffer
   ;;           )))
   (list
    (terminal-write-string terminal "world")

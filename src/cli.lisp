@@ -1,12 +1,12 @@
 ;;;; -*- mode:lisp;coding:utf-8 -*-
 ;;;;**************************************************************************
-;;;;FILE:               unix-cli.lisp
+;;;;FILE:               cli.lisp
 ;;;;LANGUAGE:           Common-Lisp
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
 ;;;;    
-;;;;    Unix Command Line Interface.
+;;;;    Command Line Interface.
 ;;;;    
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
@@ -32,7 +32,7 @@
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
 
-(in-package "COM.INFORMATIMAGO.LSE.UNIX-CLI")
+(in-package "COM.INFORMATIMAGO.LSE.CLI")
 
 (defvar *default-program-name* "lse")
 

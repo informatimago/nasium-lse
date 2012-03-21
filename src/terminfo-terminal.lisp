@@ -32,7 +32,7 @@
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
 
-(in-package "COM.INFORMATIMAGO.LSE.UNIX-CLI")
+(in-package "COM.INFORMATIMAGO.LSE.CLI")
 
 
 (defclass terminfo-terminal (standard-terminal)

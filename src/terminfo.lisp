@@ -35,7 +35,7 @@
 
 
 ;;;---------------------------------------------------------------------
-;; (in-package "COM.INFORMATIMAGO.LSE.UNIX-CLI")
+;; (in-package "COM.INFORMATIMAGO.LSE.CLI")
 (in-package "COMMON-LISP-USER")
 
 

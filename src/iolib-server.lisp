@@ -250,11 +250,12 @@
 
 (defmethod client-close ((client client))
   (setf (slot-value client 'state) :closed)
-  (ignore-errors (remove-fd-handlers *event-base*
-                                     (socket-os-fd (client-socket client))
-                                     :read t :write t :error t))
-  (shutdown (client-socket client) :read t :write t)
-  (close (client-socket client))
+  (when (socket-os-fd (client-socket client))
+   (ignore-errors (remove-fd-handlers *event-base*
+                                      (socket-os-fd (client-socket client))
+                                      :read t :write t :error t))
+   (shutdown (client-socket client) :read t :write t)
+   (close (client-socket client)))
   (values))
 
 

@@ -44,14 +44,12 @@
           (make-instance 'asdf:compile-op)
           (asdf:find-component (asdf:find-system system) component))))
 
-;; #+windows-target (cd #P"/cygwin/home/pjb/src/pjb/lse-cl/src/")
-;; #-windows-target (cd #P"/home/pjb/src/pjb/lse-cl/src/")
 (cd (dirpath *load-truename*))
 (pushnew (pwd) asdf:*central-registry* :test 'equal)
 
 
 (defparameter *program-name* "lse")
-(defparameter *program-system*  :com.informatimago.lse.unix-cli)
+(defparameter *program-system*  :com.informatimago.lse.cli)
 
 (pushnew :developing           *features*)
 (pushnew :lse-case-insensitive *features*)
@@ -78,10 +76,10 @@
 ;;; Let's generate the target.
 
 
-;; (defparameter *documentation-directory* "doc-unix-cli")
+;; (defparameter *documentation-directory* "doc-cli")
 
 (defparameter *documentation-directory*
-  #P"/home/pjb/public_html/sites/com.ogamita.www/nasium-lse/doc-unix-cli/")
+  #P"/home/pjb/public_html/sites/com.ogamita.www/nasium-lse/doc-cli/")
 
 (format t "~%Generating ~A~%" *documentation-directory*)
 (finish-output)
@@ -90,7 +88,7 @@
 
 (com.informatimago.lse.os:quit)
 #|
-    (cd "/home/pjb/src/pjb/lse-cl/src/")
+    (cd "/home/pjb/src/pjb/nasium-lse/src/")
     (load "generate-documentation.lisp")
 |#
 ;;;; THE END ;;;;

@@ -1,7 +1,7 @@
 .. comment: -*- mode:rst; coding:utf-8 -*-
 
-LSE-CL: An Implementation of the L.S.E. programming language written in Common Lisp
-###################################################################################
+NASIUM-LSE: An Implementation of the L.S.E. programming language written in Common Lisp
+#######################################################################################
 
 
 Compiling
@@ -14,7 +14,7 @@ Development
 A ``loader.lisp`` file is provided to easily load (and reload) the
 sources. ::
 
-    (cd #P "~/src/lse-cl/src/")
+    (cd #P "~/src/nasium-lse/src/")
     (load "loader.lisp")
 
 It should be edited, notably there are absolute pathnames to remove

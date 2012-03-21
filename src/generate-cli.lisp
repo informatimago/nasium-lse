@@ -1,6 +1,6 @@
 ;;;; -*- mode:lisp;coding:utf-8 -*-
 ;;;;**************************************************************************
-;;;;FILE:               generate-unix-cli.lisp
+;;;;FILE:               generate-cli.lisp
 ;;;;LANGUAGE:           Common-Lisp
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
@@ -44,14 +44,12 @@
           (make-instance 'asdf:compile-op)
           (asdf:find-component (asdf:find-system system) component))))
 
-;; #+windows-target (cd #P"/cygwin/home/pjb/src/pjb/lse-cl/src/")
-;; #-windows-target (cd #P"/home/pjb/src/pjb/lse-cl/src/")
 (cd (dirpath *load-truename*))
 (pushnew (pwd) asdf:*central-registry* :test 'equal)
 
 
 (defparameter *program-name* "lse")
-(defparameter *program-system*  :com.informatimago.lse.unix-cli)
+(defparameter *program-system*  :com.informatimago.lse.cli)
 
 (pushnew :developing           *features*)
 (pushnew :lse-case-insensitive *features*)
@@ -109,7 +107,7 @@
 #+ccl (progn (princ "ccl:save-application will exit.") (terpri) (finish-output))
 #+ccl (ccl:save-application
        (executable-filename *program-name*)
-       :toplevel-function (function com.informatimago.lse.unix-cli:main)
+       :toplevel-function (function com.informatimago.lse.cli:main)
        :init-file nil
        :error-handler :quit-quietly
        ;; :application-class ccl:lisp-development-system
@@ -128,7 +126,7 @@
          :norc t
          :init-function (lambda ()
                           (ext:exit (handler-case
-                                        (com.informatimago.lse.unix-cli:main)
+                                        (com.informatimago.lse.cli:main)
                                       (error ()
                                         1))))
          :script t
@@ -144,7 +142,7 @@
 ;; (finish-output)
 
 #|
-    (cd "/home/pjb/src/pjb/lse-cl/src/")
-    (load "generate-unix-cli.lisp")
+    (cd "/home/pjb/src/pjb/nasium-lse/src/")
+    (load "generate-cli.lisp")
 |#
 ;;;; THE END ;;;;

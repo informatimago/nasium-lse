@@ -11,7 +11,7 @@
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
-;;;;    2012-03-14 <PJB> Extracted from generate-unix-cli.lisp
+;;;;    2012-03-14 <PJB> Extracted from generate-cli.lisp
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3

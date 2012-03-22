@@ -1,7 +1,18 @@
 .. comment: -*- mode:rst; coding:utf-8 -*-
 
+0- Install required tools: wget, fossil, git.  They should be
+   available as packages from your system distribution.  If not, you
+   can get them from their respective home sites:
 
-1- Install a Common Lisp implementation:
+    http://www.gnu.org/software/wget/
+    http://fossil-scm.org/
+    http://git-scm.com/
+
+
+1- Install a Common Lisp implementation.  One or more CL
+   implementatations may also be available thru your system
+   distribution.  If not, you may also install one yourself.  Check
+   http://cliki.net/ for a list of CL implementations and other hints.
 
    Development has been done with Clozure CL, so let's install CLozure CL.
    See: http://ccl.clozure.com/download.html 

@@ -88,30 +88,130 @@
 ;; galatea         Darwin galatea.lan.informatimago.com 11.3.0 Darwin Kernel Version 11.3.0: Thu Jan 12 18:48:32 PST 2012; root:xnu-1699.24.23~1/RELEASE_I386 i386
 ;; neuron          Darwin neuron.intergruas.com 9.8.0 Darwin Kernel Version 9.8.0: Wed Jul 15 16:55:01 PDT 2009; root:xnu-1228.15.4~1/RELEASE_I386 i386
 
-(defun distribution ()
+
+
+;; (defun distribution ()
+;;   "RETURN: (system distrib release)
+;; System and distrib are keywords, release is a string."
+;;   (values
+;;    (let ((path (format nil "distribution-~36,8,'0R.txt" (random (expt 2 32)))))
+;;      (unwind-protect
+;;           (if (zerop (asdf:run-shell-command (format nil "distribution > ~S" path)))
+;;               (with-open-file (file path)
+;;                 (let ((*package* (find-package "KEYWORD")))
+;;                   (list (read file) (read file) (read-line file))))
+;;               #+(and ccl windows-target)
+;;               '(:cygwin :unknown "1.7.11,0.260,5,3")
+;;               #-(and ccl windows-target)
+;;               (list :unknown :unknown :unknown))
+;;        (ignore-errors (delete-file path))))))
+
+
+
+(defun distribtion ()
   "RETURN: (system distrib release)
 System and distrib are keywords, release is a string."
-  (values
-   (let ((path (format nil "distribution-~36,8,'0R.txt" (random (expt 2 32)))))
-     (unwind-protect
-          (if (zerop (asdf:run-shell-command (format nil "distribution > ~S" path)))
-              (with-open-file (file path)
-                (let ((*package* (find-package "KEYWORD")))
-                  (list (read file) (read file) (read-line file))))
-              #+(and ccl windows-target)
-              '(:cygwin :unknown "1.7.11,0.260,5,3")
-              #-(and ccl windows-target)
-              (list :unknown :unknown :unknown))
-       (ignore-errors (delete-file path))))))
+  (flet ((shell-command-to-string (command)
+           (let ((path (format nil "out-~36,8,'0R.txt" (random (expt 2 32)))))
+             (unwind-protect
+                  (when (zerop (asdf:run-shell-command (format nil "~A > ~S" command path)))
+                    (with-output-to-string (out)
+                      (with-open-file (file path)
+                        (loop
+                          :for line = (read-line file nil nil)
+                          :while line :do (write-line line out)))))
+               (ignore-errors (delete-file path)))))
+         (trim (string) (string-trim #(#\space #\newline) string))
+         (words (string) (split-sequence #\space string)))
+   (let ((system #+windows :windows
+                 ;; #+(and ccl windows-target)
+                 ;; '(:cygwin :unknown "1.7.11,0.260,5,3")
+                 #+linux   :linux
+                 #+darwin  :darwin
+                 #+(and unix (not (or linux darwin)))
+                 (let ((uname (shell-command-to-string "uname")))
+                   (if (and uname (plusp (length (trim uname)))
+                       (with-input-from-string (inp uname)
+                         (let ((*package* (find-package "KEYWORD"))
+                               (*read-eval* nil))
+                           (read file inp)))
+                       :unknown))             
+                 #-(or windows linux darwin unix)
+                 :unknown))
+         
+         (distrib :unknown)
+         (release :unknown))
+     (case system
+       (:linux
+        (cond
+          ((probe-file "/etc/mandrake-release")
+           ;; Checked with Linux Mandrake 6.1
+           (setf distrib :mandrake)
+           (setf release (fourth (words (with-open-file (inp "/etc/mandrake-release")
+                                          (read-line inp))))))
+          ((probe-file "/etc/redhat-release")
+           ;; Checked with Linux RedHat 6.1, 6.2, 7.0
+           ;; Checked with Linux Immunix 6.2.
+           ;; There seems to be no way to differenciate 
+           ;; a RedHat 6.2 from an Immunix 6.2.
+           (setf distrib :redhat)
+           (setf release (fourth (words (with-open-file (inp "/etc/redhat-release")
+                                          (read-line inp))))))
+          ((probe-file "/etc/conectiva-release")
+           ;; Checked with Linux Conectiva 6.5
+           (setf distrib :conectiva)
+           (setf release (third (words (with-open-file (inp "/etc/conectiva-release")
+                                         (read-line inp))))))
+          ((probe-file "/etc/SuSE-release")
+           ;; Checked with Linux SuSE 7.0, 7.1
+           (setf distrib :suse)
+           (setf release (with-open-file (inp "/etc/SuSE-release")
+                           (loop
+                             :for line = (read-line inp nil nil)
+                             :while line
+                             :when (search "VERSION" line)
+                             :return (subseq line (let ((p (position #\= line)))
+                                                    (if p (1+ p) 0)))
+                             :finally (return :unknown)))))
+          ((probe-file "/etc/debian_version")
+           ;; Checked with Linux DebIan 5.0.4
+           (setf distrib :debian)
+           (setf release (with-open-file (inp "/etc/debian_version")
+                           (read-line inp))))
+          ((probe-file "/etc/gentoo-release")
+           ;; Checked with Linux gentoo 1.12.9, 1.12.13, 2.0.3
+           (setf distrib :gentoo)
+           (setf release (first (last (words (with-open-file (inp "/etc/gentoo-release")
+                                               (read-line inp)))))))))
+       (:nextstep
+        (setf distrib :next)
+        (setf release (trim (shell-command-to-string "uname -r")))
+        (setf release (or release :unknown)))
+       (:darwin
+        (when (probe-file "/System/Library/Frameworks/AppKit.framework/AppKit")
+          (setf distrib :apple))
+        (setf release (with-input-from-string (inp (shell-command-to-string "hostinfo"))
+                        (loop
+                          :for line = (read-line inp nil nil)
+                          :while line
+                          :when (search "Darwin Kernel Version" line)
+                          :return (let ((release (fourth (words line))))
+                                    (subseq release 0 (position #\: release)))
+                          :finally (return :unknown)))))
+       (:unknown
+        (let ((host (trim (shell-command-to-string "hostinfo"))))
+          (cond
+            ((prefixp "Mach" host)
+             (let ((words (words host)))
+               (setf distrib (fourth words)
+                     release (sixth words)))))))))
+   (list system distrib release)))
 
 
 
 (defun system-release ()
-  (values
-   (let ((path (format nil "/tmp/uname-~36,8,'0R.txt" (random (expt 2 32)))))
-     (if (zerop (asdf:run-shell-command (format nil "uname -r > ~S" path)))
-         (with-open-file (file path) (read-line file))
-         "unknown"))))
+  (third (distribution)))
+
 
 
 (defun executable-name (base)
@@ -174,8 +274,7 @@ System and distrib are keywords, release is a string."
                         machine-type
                         machine-version
                         machine-instance
-                        distribution
-                        system-release))
+                        distribution))
              (width (reduce 'max entries :key (lambda (x) (length (string x))))))
         (dolist (fun entries)
           (format t "~(~VA~) : ~A~%" width fun (funcall fun))))

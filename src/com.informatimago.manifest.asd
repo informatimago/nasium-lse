@@ -47,7 +47,7 @@
                  ((#:albert #:docbook #:textcolor) . "black"))
 
     :depends-on (
-                 ;; :split-sequence
+                 :split-sequence
                  ;; :alexandria
                  ;; :babel
                  :com.informatimago.common-lisp.cesarum

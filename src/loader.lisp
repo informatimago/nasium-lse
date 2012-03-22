@@ -33,6 +33,12 @@
 ;;;;****************************************************************************
 
 (in-package :cl-user)
+(defun quick-reload (&rest systems)
+  "Delete and reload the ASDF systems."
+  (map 'list (lambda (system)
+               (asdf:clear-system system)
+               (ql:quickload system))
+       systems))
 (defun dirpath  (path) (make-pathname :name nil   :type nil   :version nil :defaults path))
 (defun wildpath (path) (make-pathname :name :wild :type :wild :version nil :defaults path))
 (defun fasldir  (system component)
@@ -40,8 +46,8 @@
           (make-instance 'asdf:compile-op)
           (asdf:find-component (asdf:find-system system) component))))
 
-(cd (dirpath *load-truename*))
-(pushnew (pwd) asdf:*central-registry* :test 'equal)
+(setf *default-pathname-defaults* (dirpath *load-truename*))
+(pushnew *default-pathname-defaults* asdf:*central-registry* :test 'equal)
 
 
 
@@ -97,9 +103,10 @@
        (ignore-errors (delete-package :com.informatimago.lse))
        (ignore-errors (delete-package :com.informatimago.lse.byte-code))
        (ignore-errors (delete-package :com.informatimago.lse.identifiers)))
-(pushnew (pwd)  asdf:*central-registry*)
+
 (quick-reload :com.informatimago.lse.cli)
 (quick-reload :com.informatimago.lse.server)
+(quick-reload :com.informatimago.manifest)
 
 (com.informatimago.common-lisp.cesarum.package:add-nickname
  :COM.INFORMATIMAGO.LSE.IDENTIFIERS :id)

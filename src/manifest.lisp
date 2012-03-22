@@ -34,13 +34,14 @@
 
 (defpackage "COM.INFORMATIMAGO.MANIFEST"
   (:use "COMMON-LISP"
-        "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.UTILITY")
+        "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.STRING"
+        "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.UTILITY"
+        "SPLIT-SEQUENCE")
   (:export "ASDF-SYSTEM-NAME"
            "ASDF-SYSTEM-LICENSE"
            "SYSTEM-DEPENDS-ON"
            "SYSTEM-DEPENDS-ON/RECURSIVE"
            "DISTRIBUTION"
-           "SYSTEM-RELEASE"
            "EXECUTABLE-NAME"
            "EXECUTABLE-FILENAME"
            "DATE"
@@ -108,7 +109,7 @@
 
 
 
-(defun distribtion ()
+(defun distribution ()
   "RETURN: (system distrib release)
 System and distrib are keywords, release is a string."
   (flet ((shell-command-to-string (command)
@@ -204,13 +205,8 @@ System and distrib are keywords, release is a string."
             ((prefixp "Mach" host)
              (let ((words (words host)))
                (setf distrib (fourth words)
-                     release (sixth words)))))))))
-   (list system distrib release)))
-
-
-
-(defun system-release ()
-  (third (distribution)))
+                     release (sixth words))))))))
+     (list system distrib release))))
 
 
 

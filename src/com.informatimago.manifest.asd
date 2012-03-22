@@ -36,7 +36,7 @@
 (asdf:defsystem :com.informatimago.manifest
     :description  "Generates a manifest for ASDF systems."
     :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
-    :version "1.0.0"
+    :version "1.0.1"
     :licence "AGPL3"
     :properties ((#:author-email                   . "pjb@informatimago.com")
                  (#:date                           . "Winter 2012")

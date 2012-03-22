@@ -36,14 +36,16 @@
 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
- (let ((dir ;; /home/pjb/src/lse-repository
-         '(:absolute "home" "pjb" "src" "lse-repository" :wild-inferiors)))
+ (let ((dir '(:relative "lse-repository" :wild-inferiors)))
    ;;   '(:absolute "usr" "local" "share" "lse" :wild-inferiors)))
    (setf (logical-pathname-translations "LSE") nil)
    (setf (logical-pathname-translations "LSE")
-         `(("LSE:**;*"     ,(make-pathname :directory dir :name :wild))
-           ("LSE:**;*.*"   ,(make-pathname :directory dir :name :wild :type :wild))
-           ("LSE:**;*.*.*" ,(make-pathname :directory dir :name :wild :type :wild 
+         `(("LSE:**;*"     ,(make-pathname :defaults (user-homedir-pathname)
+                                           :directory dir :name :wild))
+           ("LSE:**;*.*"   ,(make-pathname :defaults (user-homedir-pathname)
+                                           :directory dir :name :wild :type :wild))
+           ("LSE:**;*.*.*" ,(make-pathname :defaults (user-homedir-pathname)
+                                           :directory dir :name :wild :type :wild 
                                            :version :wild))))))
 
 (defparameter *lse-rep-admin*    #p"LSE:ADMIN;")
@@ -65,11 +67,9 @@
 (defparameter *copyright*   "COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON")
 
 
-(map nil (function ensure-directories-exist)
-     (list *lse-rep-admin*  *lse-rep-progr*  *lse-rep-perma* 
-           *lse-rep-tempo*  *lse-rep-ruban*))
-
-
+;; (map nil (function ensure-directories-exist)
+;;      (list *lse-rep-admin*  *lse-rep-progr*  *lse-rep-perma* 
+;;            *lse-rep-tempo*  *lse-rep-ruban*))
 
 
 

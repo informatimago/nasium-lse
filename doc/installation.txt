@@ -1,7 +1,7 @@
 .. comment: -*- mode:rst; coding:utf-8 -*-
 
 
-1- install a Common Lisp implementation:
+1- Install a Common Lisp implementation:
 
    Development has been done with Clozure CL, so let's install CLozure CL.
    See: http://ccl.clozure.com/download.html 
@@ -16,7 +16,7 @@
        chmod 755 /usr/local/bin/ccl
 
 
-2- install quicklisp:
+2- Install quicklisp:
 
    Dependencies and nasium-lse is loaded and compiled with quicklisp and asdf.
    See: http://www.quicklisp.org/
@@ -33,7 +33,7 @@
        (quit)
 
 
-3- get the sources of nasium: ::
+3- Get the sources of nasium: ::
 
        cd ~/src/
        fossil clone http://fossil.nasium-lse.ogamita.com/nasium-lse nasium-lse.fossil
@@ -44,7 +44,21 @@
        fossil open ../nasium-lse.fossil
 
 
-4- Normally, the dependencies in quicklisp are up-to-date (quicklisp
+4- Get required dependencies that are not in quicklisp.  We install
+   them in ~/quicklisp/local-projects/ to integrate with quicklisp
+   thought. ::
+
+       cd ~/quicklisp/local-projects/
+       git clone https://github.com/marsijanin/iolib.termios.git
+
+   There's a bug in the current quicklisp, so we need to remove
+   system-index.txt and rebuild it from $HOME. ::
+
+       cd ~/
+       rm ~/quicklisp/local-projects/system-index.txt
+       ccl --eval '(ql:quickload :alexandria)' --eval '(ccl:quit)'
+
+5- Normally, the dependencies in quicklisp are up-to-date (quicklisp
    updates monthly).  However, sometimes we need more recent versions
    are necessary.  In that case, they may be installed in
    ~/quicklisp/local-projects/.
@@ -54,26 +68,34 @@
        git clone https://git.gitorious.org/com-informatimago/com-informatimago.git
        git clone https://git.gitorious.org/com-informatimago/com-informatimago-rdp.git
 
+   There's a bug in the current quicklisp, so we need to remove
+   system-index.txt and rebuild it from $HOME. ::
+
+       cd ~/
+       rm ~/quicklisp/local-projects/system-index.txt
+       ccl --eval '(ql:quickload :alexandria)' --eval '(ccl:quit)'
+
 
    Next month, just update quicklisp and remove the old copies in
    ~/quicklisp/local-projects/:
 
-   In lisp: ::
+   Next month in lisp: ::
 
        (ql:update-client)
        (ql:update-all-dists)
 
-   In shell: ::
+   Next month in shell: ::
 
-       rm -rf ~/quicklisp/local-projects/*
+       rm -rf ~/quicklisp/local-projects/com-informatimago
+       rm -rf ~/quicklisp/local-projects/com-informatimago-rdp
 
 
-5- compile the executables: ::
+6- Compile the executables: ::
 
     cd ~/src/nasium-lse/src/
     make UPLOAD=0 cli server html-doc
 
 
-6- further questions may be addressed at mailto:pjb@ogamita.com
+7- Further questions may be addressed at mailto:pjb@ogamita.com
    or bug reports may be posted at http://fossil.nasium-lse.ogamita.com/nasium-lse/reportlist
 

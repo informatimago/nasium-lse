@@ -44,8 +44,8 @@
           (make-instance 'asdf:compile-op)
           (asdf:find-component (asdf:find-system system) component))))
 
-(cd (dirpath *load-truename*))
-(pushnew (pwd) asdf:*central-registry* :test 'equal)
+(setf *default-pathname-defaults* (dirpath *load-truename*))
+(pushnew *default-pathname-defaults* asdf:*central-registry* :test 'equal)
 
 
 (defparameter *program-name* "lse")

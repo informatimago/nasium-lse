@@ -44,9 +44,8 @@
           (make-instance 'asdf:compile-op)
           (asdf:find-component (asdf:find-system system) component))))
 
-(cd (dirpath *load-truename*))
-(pushnew (pwd) asdf:*central-registry* :test 'equal)
-
+(setf *default-pathname-defaults* (dirpath *load-truename*))
+(pushnew *default-pathname-defaults* asdf:*central-registry* :test 'equal)
 
 (defparameter *program-name* "lse")
 (defparameter *program-system*  :com.informatimago.lse.cli)
@@ -76,10 +75,8 @@
 ;;; Let's generate the target.
 
 
-;; (defparameter *documentation-directory* "doc-cli")
-
-(defparameter *documentation-directory*
-  #P"/home/pjb/public_html/sites/com.ogamita.www/nasium-lse/doc-cli/")
+(defvar *doc-dir* *default-pathname-defaults*)
+(defparameter *documentation-directory* (merge-pathnames "doc-cli/" *doc-dir*))
 
 (format t "~%Generating ~A~%" *documentation-directory*)
 (finish-output)

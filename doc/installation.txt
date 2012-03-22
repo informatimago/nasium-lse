@@ -1,0 +1,79 @@
+.. comment: -*- mode:rst; coding:utf-8 -*-
+
+
+1- install a Common Lisp implementation:
+
+   Development has been done with Clozure CL, so let's install CLozure CL.
+   See: http://ccl.clozure.com/download.html 
+   ::
+
+       # set TARGET to one of darwinx86, linuxx86, freebsdx86,
+       # solarisx86, windows, linuxppc, or linuxarm. 
+       TARGET=linuxx86
+       cd /usr/local/src
+       svn co http://svn.clozure.com/publicsvn/openmcl/release/1.7/$TARGET/ccl
+       cp ccl/scripts/ccl /usr/local/bin/
+       chmod 755 /usr/local/bin/ccl
+
+
+2- install quicklisp:
+
+   Dependencies and nasium-lse is loaded and compiled with quicklisp and asdf.
+   See: http://www.quicklisp.org/
+   ::
+
+       cd 
+       wget http://beta.quicklisp.org/quicklisp.lisp
+       ccl -load quicklisp.lisp
+
+   Then in lisp: ::
+
+       (quicklisp-quickstart:install)
+       (ql:add-to-init-file)
+       (quit)
+
+
+3- get the sources of nasium: ::
+
+       cd ~/src/
+       fossil clone http://fossil.nasium-lse.ogamita.com/nasium-lse nasium-lse.fossil
+       # take note of the login and password of the admin-user!
+
+       mkdir nasium-lse
+       cd nasium-lse
+       fossil open ../nasium-lse.fossil
+
+
+4- Normally, the dependencies in quicklisp are up-to-date (quicklisp
+   updates monthly).  However, sometimes we need more recent versions
+   are necessary.  In that case, they may be installed in
+   ~/quicklisp/local-projects/.
+   :: 
+
+       cd ~/quicklisp/local-projects/
+       git clone https://git.gitorious.org/com-informatimago/com-informatimago.git
+       git clone https://git.gitorious.org/com-informatimago/com-informatimago-rdp.git
+
+
+   Next month, just update quicklisp and remove the old copies in
+   ~/quicklisp/local-projects/:
+
+   In lisp: ::
+
+       (ql:update-client)
+       (ql:update-all-dists)
+
+   In shell: ::
+
+       rm -rf ~/quicklisp/local-projects/*
+
+
+5- compile the executables: ::
+
+    cd ~/src/nasium-lse/src/
+    make UPLOAD=0 cli server html-doc
+
+
+6- further questions may be addressed at mailto:pjb@ogamita.com
+   or bug reports may be posted at http://fossil.nasium-lse.ogamita.com/nasium-lse/reportlist
+

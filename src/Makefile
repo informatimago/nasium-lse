@@ -32,8 +32,16 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #*****************************************************************************
 
+# If UPLOAD is 1, then documentation is generated in $(UPLOAD_DOC_DIR)
+# and uploaded by make upload in $(UPLOAD_DIR).
+# otherwise, the documentation is generated in $(DOC_DIR).
 UPLOAD         = 1
+UPLOAD_DIR     = /home/pjb/public_html/sites/com.ogamita.www
+UPLOAD_DOC_DIR = $(UPLOAD_DIR)/nasium-lse/
+DOC_DIR        = ../doc/
+
 BUILD_HOSTS    = kuiper galatea lassell # triton
+
 RMERGE         = rsync -HSWacvxz --progress -e ssh
 RSYNCH         = rsync -HSWacvxz --progress -e ssh --force --delete --delete-after
 
@@ -41,9 +49,18 @@ LOGFILE        = /tmp/lse-build.log
 SYMLINK_CLI    = awk '/Generating/{print $$2}' < $(LOGFILE) | ( read executable ; rm -f lse ; ln -sf $$executable lse )
 SYMLINK_SERVER = awk '/Generating/{print $$2}' < $(LOGFILE) | ( read executable ; rm -f lse-server ; ln -sf $$executable lse-server )
 
-CCL            = ccl --load      
+
+CCL            = ccl
+CCL_EVAL       =  --eval
+CCL_LOAD       =  --load 
+
 CLISP          = clisp -ansi -q  
+CLISP_LOAD     = 
+CLISP_EVAL     = -repl -x
+
 LISP           = $(CCL)
+LOAD           = $(CCL_LOAD)
+EVAL           = $(CCL_EVAL)
 
 
 help::
@@ -61,19 +78,9 @@ all:ChangeLog
 
 help::
 	@printf 'make cli          # builds the unix cli executable on the local hosts.\n'
-
-cli:cli/ccl
-
-cli/ccl:
-	$(CCL)   generate-cli.lisp | tee $(LOGFILE)
+cli:
+	$(LISP) $(LOAD) generate-cli.lisp | tee $(LOGFILE)
 	$(SYMLINK_CLI)
-
-cli/clisp:
-	$(CLISP) generate-cli.lisp | tee $(LOGFILE)
-	$(SYMLINK_CLI)
-
-unix-cli:cli
-
 
 
 help::
@@ -85,30 +92,23 @@ ChangeLog:../_FOSSIL_
 
 help::
 	@printf 'make server       # builds the server executable on the local hosts.\n'
-server:server/ccl
-
-server/ccl:
-	$(CCL)   generate-server.lisp | tee $(LOGFILE)
+server:
+	$(LISP) $(LOAD) generate-server.lisp | tee $(LOGFILE)
 	$(SYMLINK_SERVER)
-
-server/clisp:
-	$(CLISP) generate-server.lisp | tee $(LOGFILE)
-	$(SYMLINK_SERVER)
-
 
 
 
 help::
 	@printf 'make html-doc     # builds the html doc directory on the local hosts.\n'
 html-doc:
-	$(CCL)  generate-documentation.lisp
-	if [ $(UPLOAD) -ne 0 ] ; then $(MAKE) $(MFLAGS) -C /home/pjb/public_html/sites/com.ogamita.www upload ; fi
-
-# doc-unix-cli:*.lisp
-# 	$(MAKE) $(MFLAGS) html-doc
-# 
-# install-doc:doc-unix-cli
-# 	$(RSYNCH) doc-unix-cli/ ~/public_html/sites/com.ogamita.www/nasium-lse/doc-unix-cli
+	if [ $(UPLOAD) -ne 0 ] ; then \
+		 $(LISP) $(EVAL) "(defparameter *doc-dir* \"$(UPLOAD_DOC_DIR)\")" \
+				 $(LOAD) generate-documentation.lisp ;\
+	else \
+		 $(LISP) $(EVAL) "(defparameter *doc-dir* \"$(DOC_DIR)\")" \
+				 $(LOAD) generate-documentation.lisp ;\
+	fi
+	if [ $(UPLOAD) -ne 0 ] ; then $(MAKE) $(MFLAGS) -C $(UPLOAD_DIR) upload ; fi
 
 
 

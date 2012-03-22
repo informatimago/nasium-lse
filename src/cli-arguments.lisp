@@ -177,14 +177,14 @@ utilisez la commande DO COPIE pour plus de détails.
 
 (defoption ("--fleches-ascii" "--ascii-arrows") ()
   "
-Les caractères _ et ^ sont affichiés tels quels.
+Les caractères \\_ et \\^ sont affichiés tels quels.
 "
   (setf (options-output-arrows *options*) nil))
 
 (defoption ("--fleches-dectech" "--dectech-arrows") ()
   "
 Le terminal est configuré avec une police de caractères DecTech.  Les
-caractères _ et ^ sont alors mappés sur flêche vers la gauche et
+caractères \\_ et \\^ sont alors mappés sur flêche vers la gauche et
 flêche vers le haut.
 "
   (setf (options-output-arrows *options*) :dectech))
@@ -192,16 +192,16 @@ flêche vers le haut.
 (defoption ("--fleches-unicode" "--unicode-arrows") ()
   "
 Le terminal est configuré avec une police de caractères Unicode
-incorporant les flêches LEFTWARD_ARROW and UPWARD_ARROW (codes 8592 et
-8593).  Les caractères _ et ^ sont alors mappés sur ces caractères.
+incorporant les flêches LEFTWARD\\_ARROW and UPWARD\\_ARROW (codes 8592
+et 8593).  Les caractères \\_ et \\^ sont alors mappés sur ces caractères.
 "
   (setf (options-output-arrows *options*) :unicode))
 
 (defoption ("--fleches-unicode-halfwidth" "--unicode-halfwidth-arrows") ()
   "
 Le terminal est configuré avec une police de caractères Unicode
-incorporant les flêches HALFWIDTH_LEFTWARD_ARROW and
-HALFWIDTH_UPWARD_ARROW (codes 65513 et 65514).  Les caractères _ et ^
+incorporant les flêches HALFWIDTH\\_LEFTWARD\\_ARROW and
+HALFWIDTH\\_UPWARD\\_ARROW (codes 65513 et 65514).  Les caractères \\_ et \\^
 sont alors mappés sur ces caractères.
 "
   (setf (options-output-arrows *options*) :unicode-halfwidth))

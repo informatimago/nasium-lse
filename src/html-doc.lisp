@@ -180,19 +180,19 @@ NOTE: Unclassified chapters are in the category NIL."
             :with len = (length word)
             :with i = 0
             :while (< i len)
+            ;; We escape only ^ and _ with \.  Other occurences of \ are literal.
             :do (let ((ch (aref word i)))
-                  (if (and (char= #\\ ch)
-                           (< (1+ i) len)
-                           (or (char= #\_ (aref word (1+ i)))
-                               (char= #\^ (aref word (1+ i)))))
-                      (progn
-                        (if (char= #\_ (aref word (1+ i)))
-                            (princ *unicode-leftwards-arrow* out)
-                            (princ *unicode-upwards-arrow*   out))
-                        (incf i 2))
-                      (progn
-                        (princ ch out)
-                        (incf i))))))
+                  (case ch
+                    ((#\\) (if (< (1+ i) len)
+                               (let ((nextch (aref word (1+ i))))
+                                 (case nextch
+                                   ((#\^ #\_) (princ nextch out) (incf i))
+                                   (otherwise (princ ch out))))
+                               (princ ch out)))
+                    ((#\^)     (princ *unicode-upwards-arrow*   out))
+                    ((#\_)     (princ *unicode-leftwards-arrow* out))
+                    (otherwise (princ ch out)))
+                  (incf i))))
         word)))
 
 

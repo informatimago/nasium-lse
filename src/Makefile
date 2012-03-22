@@ -32,6 +32,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #*****************************************************************************
 
+UPLOAD         = 1
 BUILD_HOSTS    = kuiper galatea lassell # triton
 RMERGE         = rsync -HSWacvxz --progress -e ssh
 RSYNCH         = rsync -HSWacvxz --progress -e ssh --force --delete --delete-after
@@ -77,8 +78,9 @@ unix-cli:cli
 
 help::
 	@printf 'make ChangeLog    # Extracts the logs from git into the ChangeLog file.\n'
-ChangeLog:
-	git log > ChangeLog
+ChangeLog:../_FOSSIL_
+	fossil timeline -n 2000 > ChangeLog
+#	git log > ChangeLog
 
 
 help::
@@ -100,6 +102,7 @@ help::
 	@printf 'make html-doc     # builds the html doc directory on the local hosts.\n'
 html-doc:
 	$(CCL)  generate-documentation.lisp
+	if [ $(UPLOAD) -ne 0 ] ; then $(MAKE) $(MFLAGS) -C /home/pjb/public_html/sites/com.ogamita.www upload ; fi
 
 # doc-unix-cli:*.lisp
 # 	$(MAKE) $(MFLAGS) html-doc

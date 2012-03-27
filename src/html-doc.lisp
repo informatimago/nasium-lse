@@ -369,9 +369,10 @@ NOTE: Unclassified chapters are in the category NIL."
               (html:link (:rel "shortcut icon" :href "../../favicon.ico" :type "image/x-icon"))
               (html:link (:rel "icon"          :href "../../favicon.ico" :type "image/x-icon"))
               (html:link (:rel "stylesheet"    :href "../../default.css" :type "text/css"))
-              (html:meta (:name "author"       :content "Pascal J. Bourguignon"))
-              (html:meta (:name "Reply-To"     :content "pjb@informatimago.com"))
-              (html:meta (:name "Keywords"     :content
+              (html:meta (:http-equiv "Content-Type"   :content "text/html; charset=utf-8"))
+              (html:meta (:name "author"               :content "Pascal J. Bourguignon"))
+              (html:meta (:name "Reply-To"             :content "pjb@informatimago.com"))
+              (html:meta (:name "Keywords"             :content
                                 (format nil "NASIUM, LSE, L.S.E, Langage Symbolique d'Enseignement, Langage de programmation, Français, ~(~A~)" category))))
             (html:body -
               (html:img (:src "../nasium-lse-2.png" :alt "NASIUM L.S.E."))
@@ -442,9 +443,10 @@ NOTE: Unclassified chapters are in the category NIL."
             (html:link (:rel "shortcut icon" :href "../../favicon.ico" :type "image/x-icon"))
             (html:link (:rel "icon"          :href "../../favicon.ico" :type "image/x-icon"))
             (html:link (:rel "stylesheet"    :href "../../default.css" :type "text/css"))
-            (html:meta (:name "author"       :content "Pascal J. Bourguignon"))
-            (html:meta (:name "Reply-To"     :content "pjb@informatimago.com"))
-            (html:meta (:name "Keywords"     :content "NASIUM, LSE, L.S.E, Langage Symbolique d'Enseignement, Langage de programmation, Français")))
+            (html:meta (:http-equiv "Content-Type"   :content "text/html; charset=utf-8"))
+            (html:meta (:name "author"               :content "Pascal J. Bourguignon"))
+            (html:meta (:name "Reply-To"             :content "pjb@informatimago.com"))
+            (html:meta (:name "Keywords"             :content "NASIUM, LSE, L.S.E, Langage Symbolique d'Enseignement, Langage de programmation, Français")))
           (html:body -
             (html:img (:src "../nasium-lse-2.png" :alt "NASIUM L.S.E."))
             ;; (html:h1 - (html:pcdata "NASIUM L.S.E."))

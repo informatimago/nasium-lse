@@ -365,7 +365,7 @@ NOTE: Unclassified chapters are in the category NIL."
         (html:doctype :strict
           (html:html -
             (html:head -
-              (html:title - (html:pcdata "~:(~A~) - Système NASIUM L.S.E. sur unix" category))
+              (html:title - (html:pcdata "NASIUM L.S.E. - ~:(~A~)" category))
               (html:link (:rel "shortcut icon" :href "../../favicon.ico" :type "image/x-icon"))
               (html:link (:rel "icon"          :href "../../favicon.ico" :type "image/x-icon"))
               (html:link (:rel "stylesheet"    :href "../../default.css" :type "text/css"))
@@ -439,7 +439,7 @@ NOTE: Unclassified chapters are in the category NIL."
       (html:doctype :strict
         (html:html -
           (html:head -
-            (html:title - (html:pcdata "Documentation du système NASIUM L.S.E. sur unix"))
+            (html:title - (html:pcdata "NASIUM L.S.E. - Langage Symbolique d'Enseignement"))
             (html:link (:rel "shortcut icon" :href "../../favicon.ico" :type "image/x-icon"))
             (html:link (:rel "icon"          :href "../../favicon.ico" :type "image/x-icon"))
             (html:link (:rel "stylesheet"    :href "../../default.css" :type "text/css"))

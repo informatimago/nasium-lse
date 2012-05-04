@@ -63,8 +63,10 @@ LOAD           = $(CCL_LOAD)
 EVAL           = $(CCL_EVAL)
 
 
+HELPFORMAT="$(MAKE) %-20s \# %s\n"
+
 help::
-	@printf 'make all          # builds all executables on all hosts.\n'
+	@printf $(HELPFORMAT) all 'builds all executables on all hosts.'
 all:ChangeLog
 	@for host in $(BUILD_HOSTS) ; do \
 		echo "// Building on $$host" ;\
@@ -74,24 +76,23 @@ all:ChangeLog
 
 
 
+help::
+	@printf $(HELPFORMAT) ChangeLog 'Extracts the logs from git into the ChangeLog file.'
+ChangeLog:../_FOSSIL_
+	fossil timeline -n 2000 > ChangeLog
+#	git log > ChangeLog
+
 
 
 help::
-	@printf 'make cli          # builds the unix cli executable on the local hosts.\n'
+	@printf $(HELPFORMAT) cli 'builds the unix cli executable on the local hosts.'
 cli:
 	$(LISP) $(LOAD) generate-cli.lisp | tee $(LOGFILE)
 	$(SYMLINK_CLI)
 
 
 help::
-	@printf 'make ChangeLog    # Extracts the logs from git into the ChangeLog file.\n'
-ChangeLog:../_FOSSIL_
-	fossil timeline -n 2000 > ChangeLog
-#	git log > ChangeLog
-
-
-help::
-	@printf 'make server       # builds the server executable on the local hosts.\n'
+	@printf $(HELPFORMAT) server 'builds the server executable on the local hosts.'
 server:
 	$(LISP) $(LOAD) generate-server.lisp | tee $(LOGFILE)
 	$(SYMLINK_SERVER)
@@ -99,7 +100,7 @@ server:
 
 
 help::
-	@printf 'make html-doc     # builds the html doc directory on the local hosts.\n'
+	@printf $(HELPFORMAT) html-doc 'builds the html doc directory on the local hosts.'
 html-doc:
 	if [ $(UPLOAD) -ne 0 ] ; then \
 		 $(LISP) $(EVAL) "(defparameter *doc-dir* \"$(UPLOAD_DOC_DIR)\")" \
@@ -113,7 +114,7 @@ html-doc:
 
 
 help::
-	@printf 'make variables    # shows the variables.\n'
+	@printf $(HELPFORMAT) variables 'shows the variables.'
 variables:
 	@printf '%-20s = %s\n' pwd            "$$(pwd)"
 	@printf '%-20s = %s\n' BUILD_HOSTS    "$(BUILD_HOSTS)"
@@ -123,8 +124,11 @@ variables:
 
 
 
+#cp lse /usr/local/bin/nasium-lse-inetd
+help::
+	@printf $(HELPFORMAT) install 'installs the inetd executable.'
 install:
-	cp lse /usr/local/bin/nasium-lse-inetd
+	cp lse ~/bin/lse
 
 .PHONY: unix-cli html-doc
 

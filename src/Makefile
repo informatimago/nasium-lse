@@ -29,7 +29,7 @@
 #    GNU Affero General Public License for more details.
 #    
 #    You should have received a copy of the GNU Affero General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#    along with this program.  If not, see http://www.gnu.org/licenses/
 #*****************************************************************************
 
 # If UPLOAD is 1, then documentation is generated in $(UPLOAD_DOC_DIR)
@@ -50,11 +50,11 @@ SYMLINK_CLI    = awk '/Generating/{print $$2}' < $(LOGFILE) | ( read executable 
 SYMLINK_SERVER = awk '/Generating/{print $$2}' < $(LOGFILE) | ( read executable ; rm -f lse-server ; ln -sf $$executable lse-server )
 
 
-CCL            = ccl
+CCL            = ccl --no-init
 CCL_EVAL       =  --eval
 CCL_LOAD       =  --load 
 
-CLISP          = clisp -ansi -q  
+CLISP          = clisp -ansi -q -norc
 CLISP_LOAD     = 
 CLISP_EVAL     = -repl -x
 
@@ -122,6 +122,9 @@ variables:
 	@printf '%-20s = %s\n' SYMLINK_CLI    "$(SYMLINK_CLI)"
 
 
+
+install:
+	cp lse /usr/local/bin/nasium-lse-inetd
 
 .PHONY: unix-cli html-doc
 

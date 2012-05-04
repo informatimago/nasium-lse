@@ -32,7 +32,7 @@
 ;;;;    GNU Affero General Public License for more details.
 ;;;;    
 ;;;;    You should have received a copy of the GNU Affero General Public License
-;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
 
 
@@ -202,7 +202,7 @@
       (ecase (token-kind expr)
         (tok-identificateur (princ (identificateur-nom expr)))
         (tok-procident      (princ (identificateur-nom expr)))
-        (tok-chaine         (princ (token-text expr)))
+        (tok-litchaine      (princ (token-text expr)))
         (tok-nombre         (princ (nombre-valeur expr)))
         (tok-numero         (princ (numero-valeur expr)))))
      (cons
@@ -300,7 +300,7 @@
        (princ expr))
       (token
        (ecase (token-kind expr)
-         (tok-chaine         (princ (token-text expr)))
+         (tok-litchaine      (princ (token-text expr)))
          (tok-identificateur (princ (identificateur-nom expr)))
          (tok-nombre         (princ (nombre-valeur expr)))
          (tok-numero         (princ (numero-valeur expr)))
@@ -494,7 +494,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;      (cons stat next))
 ;;     (token
 ;;      (ecase (token-kind stat)
-;;        (tok-chaine         (gen !pushi (chaine-valeur stat) next))
+;;        (tok-litchaine      (gen !pushi (chaine-valeur stat) next))
 ;;        (tok-nombre         (gen !pushi (nombre-valeur stat) next))
 ;;        (tok-numero         (gen !pushi (numero-valeur stat) next))
 ;;        (tok-identificateur (gen (identificateur-nom stat) next))
@@ -943,7 +943,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
      (gen-code code expression))
     (token
      (ecase (token-kind expression)
-       (tok-chaine         (gen-code code !pushi (chaine-valeur expression)))
+       (tok-litchaine      (gen-code code !pushi (chaine-valeur expression)))
        (tok-nombre         (gen-code code !pushi (nombre-valeur expression)))
        (tok-numero         (gen-code code !pushi (numero-valeur expression)))
        (tok-identificateur (gen-code code (identificateur-nom expression)))
@@ -1835,7 +1835,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 
 
 ;; Local Variables:
-;; (cl-indent 'dolist/separator 1)
+;; eval: (cl-indent 'dolist/separator 1)
 ;; End:
 
 ;;;; THE END ;;;;

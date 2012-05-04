@@ -29,7 +29,7 @@
 ;;;;    GNU Affero General Public License for more details.
 ;;;;    
 ;;;;    You should have received a copy of the GNU Affero General Public License
-;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
 
 (in-package "COM.INFORMATIMAGO.LSE")
@@ -157,7 +157,9 @@
 RETURN: A string containing the character without accent 
         (for accented characters), or a pure ASCII form of the character.
 "
-  (car (character-folding character)))
+  (or (car (character-folding character))
+      character))
+
 
 (defun remove-accents (string)
   (if (find-if (function accented-letter-p) string)

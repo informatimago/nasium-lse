@@ -34,7 +34,7 @@
 ;;;;    GNU Affero General Public License for more details.
 ;;;;    
 ;;;;    You should have received a copy of the GNU Affero General Public License
-;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
 
 (in-package "COM.INFORMATIMAGO.LSE")
@@ -65,7 +65,7 @@
 
 (defun token-kind-label (kind)
   (case kind
-    (tok-chaine         "CHAINE")
+    (tok-litchaine      "LITERAL CHAINE")
     (tok-commentaire    "COMMENTAIRE")
     (tok-identificateur "IDENTIFICATEUR")
     (tok-procident      "IDENTIFICATEUR DE PROCEDURE")
@@ -161,13 +161,13 @@
 
 
 
-(defclass tok-chaine (lse-token)
+(defclass tok-litchaine (lse-token)
   ((valeur     :accessor chaine-valeur
                :initarg :value
                :initform ""
                :type     string)))
 
-(defmethod initialize-instance :after ((self tok-chaine) &rest args)
+(defmethod initialize-instance :after ((self tok-litchaine) &rest args)
   (declare (ignore args))
   (setf (chaine-valeur self)
         (loop
@@ -671,7 +671,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                        :line (scanner-line scanner)
                        :column (scanner-column scanner)))))
              (token (tok)
-               #+lse-scanner-debug (print `(tok ,tok ,(if (member tok '(tok-chaine tok-commentaire)) 
+               #+lse-scanner-debug (print `(tok ,tok ,(if (member tok '(tok-litchaine tok-commentaire)) 
                                                           (subseq buffer start index)
                                                           (if (task-case-insensitive *task*)
                                                               (string-upcase (subseq buffer start index))
@@ -679,7 +679,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                #+lse-scanner-debug (finish-output)
                (make-instance tok
                    :kind tok
-                   :text (if (member tok '(tok-chaine tok-commentaire)) 
+                   :text (if (member tok '(tok-litchaine tok-commentaire)) 
                              (subseq buffer start index)
                              (if (task-case-insensitive *task*)
                                  (string-upcase (subseq buffer start index))
@@ -834,7 +834,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                            (produce (token 'tok-procident))))
 
 
-        ;;    (tok-chaine      "\\('[^']*'\\)\\('[^']*'\\)*")
+        ;;    (tok-litchaine      "\\('[^']*'\\)\\('[^']*'\\)*")
         (litchaine                      ; 12
          (apostrophe
           (if (and (< (1+ index) buflen)
@@ -843,7 +843,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                      (advance :error-on-eof "CHAINE NON-TERMINEE"))
               (progn (incf index)
                      (shift not-commentaire)
-                     (produce (token 'tok-chaine)))))
+                     (produce (token 'tok-litchaine)))))
          (others 
           (advance :error-on-eof "CHAINE NON-TERMINEE")))
 
@@ -855,7 +855,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                      (advance :error-on-eof "CHAINE NON-TERMINEE"))
               (progn (incf index)
                      (shift in-format)
-                     (produce (token 'tok-chaine)))))
+                     (produce (token 'tok-litchaine)))))
          (others                        ; 14
           (advance :error-on-eof "CHAINE NON-TERMINEE")))
 

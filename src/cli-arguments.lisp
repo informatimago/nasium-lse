@@ -29,7 +29,7 @@
 ;;;;    GNU Affero General Public License for more details.
 ;;;;    
 ;;;;    You should have received a copy of the GNU Affero General Public License
-;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
 
 (in-package "COM.INFORMATIMAGO.LSE.CLI")
@@ -38,13 +38,61 @@
 (defstruct options
   (input-reject-lowcase nil)
   (output-upcase        nil)
-  (output-arrows        nil :type (member nil :dectech :unicode :unicode-halfwidth))
+  (output-arrows        :ascii :type (member :ascii :dectech :unicode :unicode-halfwidth))
   (output-accented      t)
   (modern-mode          t)
   (return-is-xoff       nil))
 
 
-(defvar *options* (make-options))
+
+(defun boolean-enval (var default)
+  (let ((val (getenv var)))
+    (if val
+        (not (not (find val '("T" "Y" "TRUE" "YES" "1") :test (function string-equal))))
+        default)))
+
+
+(defun choice-enval (var default choices)
+  (let ((val (getenv var)))
+    (if val
+        (let ((k (intern (string-upcase (string-trim ":" val)) "KEYWORD")))
+          (if (member k choices)
+              k
+              default))
+        default)))
+
+
+(defun make-default-options ()
+  "
+DO:     Initialize a new OPTIONS structure instance with the values
+        configured in environment variables.
+RETURN: A new OPTIONS structure instance.
+"
+  (make-options
+   :input-reject-lowcase (boolean-enval "LSE_REJECT_LOWCASE_INPUT" nil)
+   :output-upcase        (boolean-enval "LSE_UPCASE_OUTPUT"        nil)
+   :output-arrows        (choice-enval  "LSE_OUTPUT_ARROWS"        :ascii
+                                        '(:ascii :dectech :unicode :unicode-halfwidth))
+   :output-accented      (boolean-enval "LSE_ACCENTED_OUTPUT"      t)
+   :modern-mode          (boolean-enval "LSE_MODERN_MODE"          t)
+   :return-is-xoff       (boolean-enval "LSE_RETURN_IS_XOFF"       nil)))
+
+
+(defvar *options* (make-default-options))
+
+
+(defun opt-format (destination control &rest arguments)
+  (if (null destination)
+      (apply (function format) destination control arguments)
+      (progn
+        (princ (output-substitute (options-output-upcase *options*)
+                                  (options-output-accented *options*)
+                                  (options-output-arrows *options*)
+                                  (format nil "~?" control arguments))
+               (if (eq t destination)
+                   *standard-output*
+                   destination))
+        nil)))
 
 
 (defun apply-options (options task)
@@ -114,13 +162,51 @@ refaire ces configurations à chaque fois.
 LC\\_ALL, ou sinon LC\\_CTYPE, ou sinon LANG donnent l'encodage du
 terminal.
 
-TERM indiquent le type de terminal. 
+TERM indiquent le type de terminal.
+
+LSE_REJECT_LOWCASE_INPUT (NIL ou T, défaut: NIL)
+Indique s'il faut accepter ou rejeter les caractères minuscules saisis.
+Correspond aux options --rejeter-minuscules --reject-lowcase
+--accepter-minuscules --accept-lowcase.
+
+LSE_UPCASE_OUTPUT        (NIL ou T, défaut: NIL)
+Indique s'il faut imprimer tous les messages seulement en majuscules,
+ou s'il est possible d'imprimer des minuscules.  Correspond aux
+options --afficher-en-majuscules --upcase-output --affichage-mixte
+--mixed-output.
+
+LSE_OUTPUT_ARROWS        (ASCII, DECTECH, UNICODE ou UNICODE-HALFWIDTH, défaut: ASCII)
+Indique comment afficher les caractères flêche vers la gauche et
+flêche vers le haut.  Correspond aux options --fleches-ascii
+--ascii-arrows --fleches-dectech --dectech-arrows --fleches-unicode
+--unicode-arrows --fleches-unicode-halfwidth
+--unicode-halfwidth-arrows.
+
+LSE_ACCENTED_OUTPUT      (NIL ou T, défaut: T)
+Indique s'il est possible d'afficher des lettres accentuées.
+Correspond aux options --afficher-avec-accent --accented-output
+--afficher-sans-accent --no-accent-output.
+
+LSE_MODERN_MODE          (NIL ou T, défaut: T)
+Indique s'il faut utiliser le mode moderne de saisi, ou le mode ancien
+\([ENTRÉE] ou [X-OFF]).  Correspond aux options --mode-moderne
+--modern-mode --mode-ancien --old-mode.
+
+LSE_RETURN_IS_XOFF       (NIL ou T, défaut: NIL)
+Indique comment traiter la touche [ENTRÉE] dans le mode ancien.
+Correspond aux options --entree-comme-xoff --return-is-xoff.
 "
               "lse"))
 
 
 
 (defmacro defoption (names parameters &body body)
+  "
+DO:             Defines an option.
+NAMES:          A designator for a list of options names (strings).
+PARAMETERS:     An option lambda list.
+BODY:           The body of the option processing function.
+"
   (let ((docstring (when (stringp (first body))
                        (first body))))
    `(progn
@@ -138,27 +224,29 @@ TERM indiquent le type de terminal.
 ;;   "Affiche la liste des options."
 ;;   (call-option-function "help" ()))
 
+
+
 (defoption ("--aide" "aide" "-h" "--help" "help") ()
   "Affiche la liste des options."
   (let ((options (option-list)))
-    (format t "~2%Options de la commande ~A:~2%" (pname))
+    (opt-format t "~2%Options de la commande ~A:~2%" (pname))
     (dolist (option (sort options (function string<)
                           :key (lambda (option) (first (option-keys option)))))
-      (format t "    ~{~A~^ | ~}  ~:@(~{~A ~}~)~%~@[~{~%        ~A~}~]~2%"
+      (opt-format t "    ~{~A~^ | ~}  ~:@(~{~A ~}~)~%~@[~{~%        ~A~}~]~2%"
               (option-keys option)
               (option-arguments option)
               (let ((lines (option-documentation option)))
                 (when (zerop (length (first lines)))
                   (pop lines))
                 lines)))
-    (format t "~A~%" *documentation-text*)
+    (opt-format t "~A~%" *documentation-text*)
     (parse-options-finish ex-ok)))
 
 
 
 (defoption ("--version" "-V" "-v") ()
   "Affiche la version."
-  (format t "
+  (opt-format t "
 L.S.E.
 VERSION ~A
 COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
@@ -177,15 +265,20 @@ utilisez la commande DO COPIE pour plus de détails.
 
 (defoption ("--fleches-ascii" "--ascii-arrows") ()
   "
-Les caractères \\_ et \\^ sont affichiés tels quels.
+Les caractères \\_ et \\^ sont affichés tels quels.
+
+Variable d'environnement: LSE_OUTPUT_ARROWS=ASCII
+C'est l'option par défaut.
 "
-  (setf (options-output-arrows *options*) nil))
+  (setf (options-output-arrows *options*) :ascii))
 
 (defoption ("--fleches-dectech" "--dectech-arrows") ()
   "
 Le terminal est configuré avec une police de caractères DecTech.  Les
 caractères \\_ et \\^ sont alors mappés sur flêche vers la gauche et
 flêche vers le haut.
+
+Variable d'environnement: LSE_OUTPUT_ARROWS=DECTECH
 "
   (setf (options-output-arrows *options*) :dectech))
 
@@ -194,6 +287,8 @@ flêche vers le haut.
 Le terminal est configuré avec une police de caractères Unicode
 incorporant les flêches LEFTWARD\\_ARROW and UPWARD\\_ARROW (codes 8592
 et 8593).  Les caractères \\_ et \\^ sont alors mappés sur ces caractères.
+
+Variable d'environnement: LSE_OUTPUT_ARROWS=UNICODE
 "
   (setf (options-output-arrows *options*) :unicode))
 
@@ -203,6 +298,8 @@ Le terminal est configuré avec une police de caractères Unicode
 incorporant les flêches HALFWIDTH\\_LEFTWARD\\_ARROW and
 HALFWIDTH\\_UPWARD\\_ARROW (codes 65513 et 65514).  Les caractères \\_ et \\^
 sont alors mappés sur ces caractères.
+
+Variable d'environnement: LSE_OUTPUT_ARROWS=UNICODE-HAFLWIDTH
 "
   (setf (options-output-arrows *options*) :unicode-halfwidth))
 
@@ -210,6 +307,14 @@ sont alors mappés sur ces caractères.
 (defoption ("--entree-comme-xoff" "--return-is-xoff") ()
   "
 Dans le mode ancien, traite la touche ENTRÉE comme la touche X-OFF.
+
+Variable d'environnement: LSE_RETURN_IS_XOFF=T
+
+Par défaut le mode ancien traite la touche ENTRÉE différement de la
+touche X-OFF: les données sont validées, mais un code RETOUR est
+inclus en fin de chaîne lue.
+
+Variable d'environnement: LSE_RETURN_IS_XOFF=NIL
 "
   (setf (options-return-is-xoff *options*) t))
 
@@ -218,6 +323,8 @@ Dans le mode ancien, traite la touche ENTRÉE comme la touche X-OFF.
   "
 Rejette tout caractère minuscule comme caractère invalide, ce qui
 force l'utilisateur à ne saisir que des caractères majuscules.
+
+Variable d'environnement: LSE_REJECT_LOWCASE_INPUT=T
 "
   (setf (options-input-reject-lowcase *options*) t))
 
@@ -227,6 +334,9 @@ force l'utilisateur à ne saisir que des caractères majuscules.
 Accepte les caractères minuscules.  (Défaut).  Note: les mots clés et
 identificateurs sont toujours mis en majuscules, mais les chaînes
 peuvent contenir des minuscules.
+
+Variable d'environnement: LSE_REJECT_LOWCASE_INPUT=NIL
+C'est l'option par défaut.
 "
   (setf (options-input-reject-lowcase *options*) nil))
 
@@ -234,13 +344,18 @@ peuvent contenir des minuscules.
 (defoption ("--afficher-en-majuscules" "--upcase-output") ()
   "
 Fait afficher tout en majuscules, comme sur les anciens terminaux.
+
+Variable d'environnement: LSE_UPCASE_OUTPUT=T
 "
   (setf (options-output-upcase *options*) t))
 
 
 (defoption ("--affichage-mixte" "--mixed-output") ()
   "
-Affiche en majuscules et minisucules.  (Défaut).
+Affiche en majuscules et minisucules. 
+
+Variable d'environnement: LSE_UPCASE_OUTPUT=NIL
+C'est l'option par défaut.
 "
   (setf (options-output-upcase *options*) nil))
 
@@ -249,13 +364,18 @@ Affiche en majuscules et minisucules.  (Défaut).
   "
 Si le terminal n'est pas capable d'afficher les accents, cette option
 permet de convertir les lettres accentuees en lettres sans accent.
+
+Variable d'environnement: LSE_ACCENTED_OUTPUT=NIL
 "
   (setf (options-output-accented *options*) nil))
 
 
 (defoption ("--afficher-avec-accent" "--accented-output") ()
   "
-Assume que le terminal est capable d'afficher les accents.  (Défaut).
+Assume que le terminal est capable d'afficher les accents. 
+
+Variable d'environnement: LSE_ACCENTED_OUTPUT=T
+C'est l'option par défaut.
 "
   (setf (options-output-accented *options*) t))
 
@@ -265,7 +385,10 @@ Assume que le terminal est capable d'afficher les accents.  (Défaut).
 Dans le mode moderne, les caractères et codes de contrôle configurés
 par stty(1) sont utilisé (en général, [RETOUR] pour entrer une donnée,
 [EFFACEMENT] pour effacer un caractère, [CONTRÔLE-C] pour interrompre,
-etc).  (Défaut).
+etc). 
+
+Variable d'environnement: LSE_MODERN_MODE=T
+C'est l'option par défaut.
 "
   (setf (options-modern-mode *options*) t))
 
@@ -275,6 +398,8 @@ etc).  (Défaut).
 Dans le mode ancien, on utilise [CONTRÔLE-S] (X-OFF) pour entrer une
 donnée,  [\\] pour effacer un caractère, et [ÉCHAPEMENT] pour
 interrompre, entre autres.
+
+Variable d'environnement: LSE_MODERN_MODE=NIL
 "
   (setf (options-modern-mode *options*) nil))
 
@@ -283,18 +408,18 @@ interrompre, entre autres.
 (defun o-ou-n-p (&optional control &rest arguments)
   (loop
     (when control
-      (format *query-io* "~? (O/N) ? " control arguments))
+      (opt-format *query-io* "~? (O/N) ? " control arguments))
     (finish-output *query-io*)
     (let* ((input (string-left-trim " " (read-line *query-io*)))
            (rep   (subseq input 0 (min 1 (length input)))))
       (cond
         ((string-equal rep "O") (return t))
         ((string-equal rep "N") (return nil))
-        (t (format *query-io* "REPONSE INVALIDE: ~S; TAPEZ 'O' OU 'N'.~%" rep))))))
+        (t (opt-format *query-io* "REPONSE INVALIDE: ~S; TAPEZ 'O' OU 'N'.~%" rep))))))
 
 
 (defun show-key-bindings (stream terminal)
-  (format stream "
+  (opt-format stream "
 ~@[~16A pour entrer les données.~%~]~
 ~@[~16A pour effacer le caractère précédent.~%~]~
 ~@[~16A pour interrompre.~%~]~
@@ -338,13 +463,13 @@ interrompre, entre autres.
       (when (and (typep terminal 'unix-terminal)
                  (not (member (getenv "TERM") '("emacs" "dumb")
                               :test (function string-equal))))
-        (format *query-io* "~%Choix du mode de saisie~%")
+        (opt-format *query-io* "~%Choix du mode de saisie~%")
         (loop
           :for modern-mode :in '(nil t)
           :for title :in '("MITRA-15/T1600" "Moderne")
           :do (progn
                (setf (terminal-modern-mode terminal) modern-mode)
-               (format *query-io* "~%Mode ~A:" title)
+               (opt-format *query-io* "~%Mode ~A:" title)
                (show-key-bindings *query-io* (task-terminal *task*))))
         (terpri *query-io*)
         (unless (setf (options-modern-mode options)

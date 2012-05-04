@@ -29,9 +29,12 @@
 ;;;;    GNU Affero General Public License for more details.
 ;;;;    
 ;;;;    You should have received a copy of the GNU Affero General Public License
-;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
 
+(in-package "COMMON-LISP-USER")
+(declaim (declaration also-use-packages))
+(declaim (also-use-packages "ASDF"))
 (defpackage "COM.INFORMATIMAGO.MANIFEST"
   (:use "COMMON-LISP"
         "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.STRING"
@@ -41,7 +44,9 @@
            "ASDF-SYSTEM-LICENSE"
            "SYSTEM-DEPENDS-ON"
            "SYSTEM-DEPENDS-ON/RECURSIVE"
-           "DISTRIBUTION"
+           "LISP-IMPLEMENTATION-TYPE-KEYWORD"
+           "MACHINE-TYPE-KEYWORD"
+           "DISTRIBUTION" 
            "EXECUTABLE-NAME"
            "EXECUTABLE-FILENAME"
            "DATE"
@@ -50,9 +55,9 @@
 
 
 (defparameter *system-licenses*
-  '(("cl-ppcre" . "BSD-2")
+  '(("cl-ppcre"       . "BSD-2")
     ("split-sequence" . :unknown)
-    ("terminfo" . "MIT")))
+    ("terminfo"       . "MIT")))
 
 (defun asdf-system-name (system)
   (slot-value system 'asdf::name))
@@ -90,27 +95,9 @@
 ;; neuron          Darwin neuron.intergruas.com 9.8.0 Darwin Kernel Version 9.8.0: Wed Jul 15 16:55:01 PDT 2009; root:xnu-1228.15.4~1/RELEASE_I386 i386
 
 
-
-;; (defun distribution ()
-;;   "RETURN: (system distrib release)
-;; System and distrib are keywords, release is a string."
-;;   (values
-;;    (let ((path (format nil "distribution-~36,8,'0R.txt" (random (expt 2 32)))))
-;;      (unwind-protect
-;;           (if (zerop (asdf:run-shell-command (format nil "distribution > ~S" path)))
-;;               (with-open-file (file path)
-;;                 (let ((*package* (find-package "KEYWORD")))
-;;                   (list (read file) (read file) (read-line file))))
-;;               #+(and ccl windows-target)
-;;               '(:cygwin :unknown "1.7.11,0.260,5,3")
-;;               #-(and ccl windows-target)
-;;               (list :unknown :unknown :unknown))
-;;        (ignore-errors (delete-file path))))))
-
-
-
 (defun distribution ()
-  "RETURN: (system distrib release)
+  "Return a list identifying the system, distribution and release.
+RETURN: (system distrib release)
 System and distrib are keywords, release is a string."
   (flet ((shell-command-to-string (command)
            (let ((path (format nil "out-~36,8,'0R.txt" (random (expt 2 32)))))
@@ -139,7 +126,6 @@ System and distrib are keywords, release is a string."
                        :unknown))             
                  #-(or windows linux darwin unix)
                  :unknown))
-         
          (distrib :unknown)
          (release :unknown))
      (case system
@@ -210,40 +196,54 @@ System and distrib are keywords, release is a string."
 
 
 
+
+(defun lisp-implementation-type-keyword ()
+  "Return the keyword specific to each implementation (as found in *features*),
+or else interns the (lisp-implementation-type), with space substituted by dashes
+into the keyword package."
+  (or (cdr (assoc (lisp-implementation-type)
+                  '(("Armed Bear Common Lisp"                        . :abcl)
+                    ("International Allegro CL Free Express Edition" . :allegro-cl-express)
+                    ("Clozure Common Lisp"                           . :ccl)
+                    ("CLISP"                                         . :clisp)
+                    ("CMU Common Lisp"                               . :cmu)
+                    ("ECL"                                           . :ecl)
+                    ("SBCL"                                          . :sbcl))
+                  :test (function string-equal)))
+      (intern (substitute #\- #\space (lisp-implementation-type)) "KEYWORD")))
+
+
+(defun machine-type-keyword ()
+  "Return the keyword specific to machine type (as found in *features*),
+or else interns the (machine-type), with space substituted by dashes
+into the keyword package."
+  (or (cdr (assoc (machine-type)
+                 '(("Power Macintosh" . :ppc)
+                   ("x86-64"          . :x86-64)
+                   ("x86_64"          . :x86-64)
+                   ("x64"             . :x86-64)
+                   ("x86"             . :x86)
+                   ("i686"            . :i686)
+                   ("i386"            . :i386))
+                 :test (function string-equal)))
+      (intern (substitute #\- #\space (machine-type)) "KEYWORD")))
+
+
+
+
 (defun executable-name (base)
-  (format nil "~A-~A-~A-~A"
+  (format nil "~(~A-~A-~{~A-~A-~A~}-~A~)"
           base
-          (or (cdr (assoc (lisp-implementation-type)
-                          '(("Armed Bear Common Lisp" . "abcl")
-                            ("Clozure Common Lisp"    . "ccl")
-                            ("CLISP"                  . "clisp")
-                            ("CMU Common Lisp"        . "cmucl")
-                            ("ECL"                    . "ecl")
-                            ("SBCL"                   . "sbcl"))
-                          :test (function string-equal)))
-              "unknown")
-          (format nil "~(~{~A-~A-~A~}~)" (distribution))
-          #-(and)
-          (progn
-            #+darwin (concatenate 'string "darwin" (system-release))
-            #+linux  "linux"
-            #+bsd    "bsd"
-            #+(or win32 windows)  "win32"
-            #-(or bsd darwin linux win32 windows) "unknown")
-          (or (cdr (assoc (machine-type)
-                          '(("Power Macintosh" . "ppc")
-                            ("x86_64"          . "x86_64")
-                            ("x64"             . "x86_64")
-                            ("x86"             . "x86")
-                            ("i686"            . "i686")
-                            ("i386"            . "i686"))
-                          :test (function string-equal))))))
+          (or (lisp-implementation-type-keyword) "unknown")
+          (distribution)
+          (or (machine-type-keyword) "unknown")))
+
+
 
 (defun executable-filename (base)
   (format nil "~A~A" (executable-name base)
           #+(or windows win32) ".exe"
           #-(or windows win32) ""))
-
 
 
 

@@ -29,10 +29,18 @@
 ;;;;    GNU Affero General Public License for more details.
 ;;;;    
 ;;;;    You should have received a copy of the GNU Affero General Public License
-;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
 
 (in-package "COMMON-LISP-USER")
+
+#+ccl (setf ccl:*default-external-format*           :unix
+            ccl:*default-file-character-encoding*   :utf-8
+            ccl:*default-line-termination*          :unix
+            ccl:*default-socket-character-encoding* :utf-8)
+
+(load #P"~/quicklisp/setup.lisp")
+
 (setf *print-right-margin* 80
       *print-pretty* t
       *print-case* :downcase)
@@ -126,7 +134,7 @@
          :norc t
          :init-function (lambda ()
                           (ext:exit (handler-case
-                                        (com.informatimago.lse.cli:main)
+                                        (com.informatimago.lse.cli:main ext:*args*)
                                       (error ()
                                         1))))
          :script t

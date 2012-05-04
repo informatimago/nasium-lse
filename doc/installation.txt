@@ -1,112 +1,134 @@
 .. comment: -*- mode:rst; coding:utf-8 -*-
 
-0- Install required tools: wget, fossil, git.  They should be
-   available as packages from your system distribution.  If not, you
-   can get them from their respective home sites:
-
-    http://www.gnu.org/software/wget/
-    http://fossil-scm.org/
-    http://git-scm.com/
+1- Installation from the binaries.
+-------------------------------------------------
 
 
-1- Install a Common Lisp implementation.  One or more CL
-   implementatations may also be available thru your system
-   distribution.  If not, you may also install one yourself.  Check
-   http://cliki.net/ for a list of CL implementations and other hints.
 
-   Development has been done with Clozure CL, so let's install CLozure CL.
-   See: http://ccl.clozure.com/download.html 
-   ::
+2- Compilation and Installation from the sources.
+-------------------------------------------------
 
-       # set TARGET to one of darwinx86, linuxx86, freebsdx86,
-       # solarisx86, windows, linuxppc, or linuxarm. 
-       TARGET=linuxx86
-       cd /usr/local/src
-       svn co http://svn.clozure.com/publicsvn/openmcl/release/1.7/$TARGET/ccl
-       cp ccl/scripts/ccl /usr/local/bin/
-       chmod 755 /usr/local/bin/ccl
+    0- Install required tools: wget, fossil, git.  They should be
+       available as packages from your system distribution.  If not, you
+       can get them from their respective home sites:
+
+        http://www.gnu.org/software/wget/
+        http://fossil-scm.org/
+        http://git-scm.com/
 
 
-2- Install quicklisp:
+    1- Install a Common Lisp implementation.  One or more CL
+       implementatations may also be available thru your system
+       distribution.  If not, you may also install one yourself.  Check
+       http://cliki.net/ for a list of CL implementations and other hints.
 
-   Dependencies and nasium-lse is loaded and compiled with quicklisp and asdf.
-   See: http://www.quicklisp.org/
-   ::
+       Development has been done with Clozure CL, so let's install CLozure CL.
+       See: http://ccl.clozure.com/download.html 
+       ::
 
-       cd 
-       wget http://beta.quicklisp.org/quicklisp.lisp
-       ccl -load quicklisp.lisp
-
-   Then in lisp: ::
-
-       (quicklisp-quickstart:install)
-       (ql:add-to-init-file)
-       (quit)
-
-
-3- Get the sources of nasium: ::
-
-       cd ~/src/
-       fossil clone http://fossil.nasium-lse.ogamita.com/nasium-lse nasium-lse.fossil
-       # take note of the login and password of the admin-user!
-
-       mkdir nasium-lse
-       cd nasium-lse
-       fossil open ../nasium-lse.fossil
+           # set TARGET to one of darwinx86, linuxx86, freebsdx86,
+           # solarisx86, windows, linuxppc, or linuxarm. 
+           TARGET=linuxx86
+           cd /usr/local/src
+           svn co http://svn.clozure.com/publicsvn/openmcl/release/1.7/$TARGET/ccl
+           cp ccl/scripts/ccl /usr/local/bin/
+           chmod 755 /usr/local/bin/ccl
 
 
-4- Get required dependencies that are not in quicklisp.  We install
-   them in ~/quicklisp/local-projects/ to integrate with quicklisp
-   thought. ::
+    2- Install quicklisp:
 
-       cd ~/quicklisp/local-projects/
-       git clone https://github.com/marsijanin/iolib.termios.git
+       Dependencies and nasium-lse is loaded and compiled with quicklisp and asdf.
+       See: http://www.quicklisp.org/
+       ::
 
-   There's a bug in the current quicklisp, so we need to remove
-   system-index.txt and rebuild it from $HOME. ::
+           cd 
+           wget http://beta.quicklisp.org/quicklisp.lisp
+           ccl -load quicklisp.lisp
 
-       cd ~/
-       rm ~/quicklisp/local-projects/system-index.txt
-       ccl --eval '(ql:quickload :alexandria)' --eval '(ccl:quit)'
+       Then in lisp: ::
 
-5- Normally, the dependencies in quicklisp are up-to-date (quicklisp
-   updates monthly).  However, sometimes we need more recent versions
-   are necessary.  In that case, they may be installed in
-   ~/quicklisp/local-projects/.
-   :: 
-
-       cd ~/quicklisp/local-projects/
-       git clone https://git.gitorious.org/com-informatimago/com-informatimago.git
-       git clone https://git.gitorious.org/com-informatimago/com-informatimago-rdp.git
-
-   There's a bug in the current quicklisp, so we need to remove
-   system-index.txt and rebuild it from $HOME. ::
-
-       cd ~/
-       rm ~/quicklisp/local-projects/system-index.txt
-       ccl --eval '(ql:quickload :alexandria)' --eval '(ccl:quit)'
+           (quicklisp-quickstart:install)
+           (ql:add-to-init-file)
+           (quit)
 
 
-   Next month, just update quicklisp and remove the old copies in
-   ~/quicklisp/local-projects/:
+    3- Get the sources of nasium: ::
 
-   Next month in lisp: ::
+           cd ~/src/
+           fossil clone http://fossil.nasium-lse.ogamita.com/nasium-lse nasium-lse.fossil
+           # take note of the login and password of the admin-user!
 
-       (ql:update-client)
-       (ql:update-all-dists)
-
-   Next month in shell: ::
-
-       rm -rf ~/quicklisp/local-projects/com-informatimago
-       rm -rf ~/quicklisp/local-projects/com-informatimago-rdp
+           mkdir nasium-lse
+           cd nasium-lse
+           fossil open ../nasium-lse.fossil
 
 
-6- Compile the executables: ::
+    4- Get required dependencies that are not in quicklisp.  We install
+       them in ~/quicklisp/local-projects/ to integrate with quicklisp
+       thought. ::
 
-    cd ~/src/nasium-lse/src/
-    make UPLOAD=0 cli server html-doc
+           cd ~/quicklisp/local-projects/
+           git clone https://github.com/marsijanin/iolib.termios.git
+
+       There's a bug in the current quicklisp, so we need to remove
+       system-index.txt and rebuild it from $HOME. ::
+
+           cd ~/
+           rm ~/quicklisp/local-projects/system-index.txt
+           ccl --eval '(ql:quickload :alexandria)' --eval '(ccl:quit)'
+
+    5- Normally, the dependencies in quicklisp are up-to-date (quicklisp
+       updates monthly).  However, sometimes we need more recent versions
+       are necessary.  In that case, they may be installed in
+       ~/quicklisp/local-projects/.
+       :: 
+
+           cd ~/quicklisp/local-projects/
+           git clone https://git.gitorious.org/com-informatimago/com-informatimago.git
+           git clone https://git.gitorious.org/com-informatimago/com-informatimago-rdp.git
+
+       There's a bug in the current quicklisp, so we need to remove
+       system-index.txt and rebuild it from $HOME. ::
+
+           cd ~/
+           rm ~/quicklisp/local-projects/system-index.txt
+           ccl --eval '(ql:quickload :alexandria)' --eval '(ccl:quit)'
 
 
-7- Further questions may be addressed at mailto:pjb@ogamita.com
-   or bug reports may be posted at http://fossil.nasium-lse.ogamita.com/nasium-lse/reportlist
+       Next month, just update quicklisp and remove the old copies in
+       ~/quicklisp/local-projects/:
 
+       Next month in lisp: ::
+
+           (ql:update-client)
+           (ql:update-all-dists)
+
+       Next month in shell: ::
+
+           rm -rf ~/quicklisp/local-projects/com-informatimago
+           rm -rf ~/quicklisp/local-projects/com-informatimago-rdp
+
+
+    6- Compile the executables: ::
+
+        cd ~/src/nasium-lse/src/
+        make UPLOAD=0 cli server html-doc
+
+    7- Check the executables: ::
+
+        $ ls -l lse*
+        lrwxrwxrwx 1 lse lse       31 Mar 22 13:43 lse -> lse-ccl-linux-debian-6.0.4-i686
+        -rwxr-xr-x 1 lse lse 58187792 Mar 22 13:43 lse-ccl-linux-debian-6.0.4-i686
+        -rw-r--r-- 1 lse lse     3117 Mar 22 13:43 lse-ccl-linux-debian-6.0.4-i686.manifest
+        lrwxrwxrwx 1 lse lse       38 Mar 22 13:44 lse-server -> lse-server-ccl-linux-debian-6.0.4-i686
+        -rwxr-xr-x 1 lse lse 59400208 Mar 22 13:44 lse-server-ccl-linux-debian-6.0.4-i686
+        -rw-r--r-- 1 lse lse     3034 Mar 22 13:44 lse-server-ccl-linux-debian-6.0.4-i686.manifest
+        $ ./lse --help
+        
+        
+    8- Further questions may be addressed at mailto:pjb@ogamita.com
+       or bug reports may be posted at http://fossil.nasium-lse.ogamita.com/nasium-lse/reportlist
+
+    9- Go to section '1- Installation from the binaries'.
+
+.. comment: the end

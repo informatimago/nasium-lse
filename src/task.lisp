@@ -112,8 +112,8 @@ Can be either (terminal-output-stream terminal) or tape-output.")
 
    (arrows               :initarg :arrows
                          :accessor task-arrows
-                         :initform nil
-                         :type (member nil :dectech :unicode :unicode-halfwidth)
+                         :initform :ascii
+                         :type (member :ascii :dectech :unicode :unicode-halfwidth)
                          :documentation "How to output arrows _ et ^.")
    (unicode              :initarg :unicode
                          :accessor task-unicode

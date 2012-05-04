@@ -29,7 +29,7 @@
 ;;;;    GNU Affero General Public License for more details.
 ;;;;    
 ;;;;    You should have received a copy of the GNU Affero General Public License
-;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
 
 (in-package "COM.INFORMATIMAGO.LSE")
@@ -366,9 +366,10 @@ NOTE: Unclassified chapters are in the category NIL."
           (html:html -
             (html:head -
               (html:title - (html:pcdata "NASIUM L.S.E. - ~:(~A~)" category))
-              (html:link (:rel "shortcut icon" :href "../../favicon.ico" :type "image/x-icon"))
-              (html:link (:rel "icon"          :href "../../favicon.ico" :type "image/x-icon"))
-              (html:link (:rel "stylesheet"    :href "../../default.css" :type "text/css"))
+              (html:link (:rel "shortcut icon" :href "http://www.ogamita.com/favicon.ico"))
+              (html:link (:rel "icon"          :href "http://www.ogamita.com/favicon.ico" :type "image/vnd.microsoft.icon"))
+              (html:link (:rel "icon"          :href "http://www.ogamita.com/favicon.png" :type "image/png"))
+              (html:link (:rel "stylesheet"    :href "http://www.ogamita.com/default.css" :type "text/css"))
               (html:meta (:http-equiv "Content-Type"   :content "text/html; charset=utf-8"))
               (html:meta (:name "author"               :content "Pascal J. Bourguignon"))
               (html:meta (:name "Reply-To"             :content "pjb@informatimago.com"))
@@ -440,9 +441,11 @@ NOTE: Unclassified chapters are in the category NIL."
         (html:html -
           (html:head -
             (html:title - (html:pcdata "NASIUM L.S.E. - Langage Symbolique d'Enseignement"))
-            (html:link (:rel "shortcut icon" :href "../../favicon.ico" :type "image/x-icon"))
-            (html:link (:rel "icon"          :href "../../favicon.ico" :type "image/x-icon"))
-            (html:link (:rel "stylesheet"    :href "../../default.css" :type "text/css"))
+            (html:link (:rel "shortcut icon" :href "http://www.ogamita.com/favicon.ico"))
+            (html:link (:rel "icon"          :href "http://www.ogamita.com/favicon.ico" :type "image/vnd.microsoft.icon"))
+            (html:link (:rel "icon"          :href "http://www.ogamita.com/favicon.png" :type "image/png"))
+            (html:link (:rel "stylesheet"    :href "http://www.ogamita.com/default.css" :type "text/css"))
+            
             (html:meta (:http-equiv "Content-Type"   :content "text/html; charset=utf-8"))
             (html:meta (:name "author"               :content "Pascal J. Bourguignon"))
             (html:meta (:name "Reply-To"             :content "pjb@informatimago.com"))

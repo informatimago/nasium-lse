@@ -29,7 +29,7 @@
 ;;;;    GNU Affero General Public License for more details.
 ;;;;    
 ;;;;    You should have received a copy of the GNU Affero General Public License
-;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
 
 (in-package "COM.INFORMATIMAGO.LSE.CLI")
@@ -54,7 +54,7 @@
 (defparameter *cli-banner* "
 Ce programme est livré avec ABSOLUMENT AUCUNE GARANTIE; pour plus de
 détails utilisez la commande DO GARANTIE.  Ce logiciel est libre, et
-vous êtes les bienvenus pour redistribuer sous certaines conditions;
+vous avez le droit de le redistribuer sous certaines conditions;
 utilisez la commande DO LICENSE pour plus de détails.
 
 Tapez AI pour avoir de l'aide.
@@ -105,58 +105,62 @@ BONJOUR     ~8A
 
 
 (defun main (&optional args)
+  (push #P "/usr/local/lib/" cffi:*foreign-library-directories*)
+  (setf *program-name* (or (program-name) *default-program-name*))
+  (setf *options* (make-default-options))
   (let ((encoding (locale-terminal-encoding)))
     (set-terminal-encoding encoding)
-    (let* ((terminal-class (progn
-                             #+swank
-                             (cond
-                               ((typep (stream-output-stream *terminal-io*)
-                                       'swank-backend::slime-output-stream)
-                                'swank-terminal)
-                               ;; #+unix
-                               ;; ((member (getenv "TERM") '("emacs" "dumb")
-                               ;;          :test (function string=))
-                               ;;  'standard-terminal)
-                               (t #+unix 'unix-terminal
-                                  #-unix 'standard-terminal))
-                             #-swank
-                             (progn #+unix 'unix-terminal
-                                    #-unix 'standard-terminal)))
-           (terminal (make-instance terminal-class
-                         :input-stream  (stream-input-stream  *terminal-io*)
-                         :output-stream (stream-output-stream *terminal-io*)))
-           (task     (make-instance 'task
-                         :state :active
-                         :case-insensitive t
-                         :upcase-output nil
-                         :unicode (eql encoding :utf-8)
-                         :arrows  (if (eql encoding :utf-8)
-                                      :unicode-halfwidth
-                                      nil) 
-                         :terminal terminal)))
-      (setf *task* task) ; to help debugging, we keep the task in the global binding.
-      (setf *program-name* (or (program-name) *default-program-name*))
-      (or (parse-options (or args (arguments)))
-          (progn
-            (apply-options *options* *task*)
-            (terminal-initialize terminal)
-            (unwind-protect
-                 (let* ((old-debugger-hook *debugger-hook*)
-                        (*debugger-hook*
-                         (lambda (condition debugger-hook)
-                           ;; We shouldn't come here.
-                           (when debugger-hook
-                             (terminal-finalize terminal))
-                           (format *debug-io* "~%My advice: exit after debugging.~%")
-                           (when old-debugger-hook
-                             (funcall old-debugger-hook condition debugger-hook)))))
-                   (io-format *task* "~A" *tape-banner*)
-                   (io-format *task* "~?" *title-banner* (list (version)))
-                   (io-format *task* "~?" *cli-banner*   (list (subseq (dat) 9)))
-                   (command-repl *task*))
-              (task-close-all-files *task*)
-              (terminal-finalize terminal))
-            ex-ok)))))
+    (or (parse-options (or args (arguments)))
+        (let* ((terminal-class (progn
+                                 #+swank
+                                 (cond
+                                   ((typep (stream-output-stream *terminal-io*)
+                                           'swank-backend::slime-output-stream)
+                                    'swank-terminal)
+                                   ((member (getenv "TERM") '("emacs" "dumb")
+                                            :test (function string=))
+                                    'standard-terminal)
+                                   (t #+unix 'unix-terminal
+                                      #-unix 'standard-terminal))
+                                 #-swank
+                                 (cond
+                                   ((member (getenv "TERM") '("emacs" "dumb")
+                                            :test (function string=))
+                                    'standard-terminal)
+                                   (t #+unix 'unix-terminal
+                                      #-unix 'standard-terminal))))
+               (terminal (make-instance terminal-class
+                             :input-stream  (stream-input-stream  *terminal-io*)
+                             :output-stream (stream-output-stream *terminal-io*)))
+               (task     (make-instance 'task
+                             :state :active
+                             :case-insensitive t
+                             :upcase-output nil
+                             :unicode (eql encoding :utf-8)
+                             :arrows  (if (eql encoding :utf-8)
+                                          :unicode-halfwidth
+                                          nil) 
+                             :terminal terminal)))
+          (setf *task* task) ; to help debugging, we keep the task in the global binding.
+          (apply-options *options* *task*)
+          (terminal-initialize terminal)
+          (unwind-protect
+               (let* ((old-debugger-hook *debugger-hook*)
+                      (*debugger-hook*
+                       (lambda (condition debugger-hook)
+                         ;; We shouldn't come here.
+                         (when debugger-hook
+                           (terminal-finalize terminal))
+                         (opt-format *debug-io* "~%My advice: exit after debugging.~%")
+                         (when old-debugger-hook
+                           (funcall old-debugger-hook condition debugger-hook)))))
+                 (io-format *task* "~A" *tape-banner*)
+                 (io-format *task* "~?" *title-banner* (list (version)))
+                 (io-format *task* "~?" *cli-banner*   (list (subseq (dat) 9)))
+                 (command-repl *task*))
+            (task-close-all-files *task*)
+            (terminal-finalize terminal))
+          ex-ok))))
 
 
 

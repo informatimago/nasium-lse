@@ -96,9 +96,12 @@ BONJOUR     ~8A
                 (ccl:make-external-format :domain nil
                                           :character-encoding encoding
                                           :line-termination
-                                          #+unix :unix
-                                          #+windows :windows
-                                          #-(or unix windows) :unix)))
+                                          (if (boolean-envar "LSE_TELNET" nil)
+                                              :windows
+                                              (or
+                                               #+unix :unix
+                                               #+windows :windows
+                                               #-(or unix windows) :unix)))))
         (list (two-way-stream-input-stream  *terminal-io*)
               (two-way-stream-output-stream *terminal-io*)))
   (values))

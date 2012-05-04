@@ -96,7 +96,7 @@ BONJOUR     ~8A
                 (ccl:make-external-format :domain nil
                                           :character-encoding encoding
                                           :line-termination
-                                          (if (boolean-envar "LSE_TELNET" nil)
+                                          (if (boolean-enval "LSE_TELNET" nil)
                                               :windows
                                               (or
                                                #+unix :unix

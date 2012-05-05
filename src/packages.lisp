@@ -138,6 +138,9 @@
    "VERSION" "*VERSION*" "*TITLE-BANNER*"
 
    "DAT"
+
+
+   "*CURRENT-DIRECTORY*" "*CURRENT-SHELF*" "*LSE-ROOT*"
    )
   (:documentation "The LSE language and system implementation."))
 

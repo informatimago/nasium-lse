@@ -107,10 +107,19 @@ BONJOUR     ~8A
   (values))
 
 
+(defun set-lse-root (&optional (root (getenv "LSE_ROOT")))
+  (when root
+    (setf *lse-root* (truename (pathname root))
+          *current-directory* *lse-root*
+          *current-shelf*     *lse-root*
+          *default-pathname-defaults* *lse-root*)))
+
+
 (defun main (&optional args)
   (push #P "/usr/local/lib/" cffi:*foreign-library-directories*)
   (setf *program-name* (or (program-name) *default-program-name*))
   (setf *options* (make-default-options))
+  (set-lse-root)
   (let ((encoding (locale-terminal-encoding)))
     (set-terminal-encoding encoding)
     (let* ((terminal-class (progn

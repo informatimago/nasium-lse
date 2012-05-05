@@ -809,7 +809,7 @@ AI)DE                         donne la liste des commandes."))))))
     (:tape           . "rub")
     (:temporary-tape . "rub")))
 
-
+(defvar       *lse-root*          (truename #P"/"))
 (defparameter *current-directory* (truename #P"./"))
 (defparameter *current-shelf*     (truename #P"./"))
 
@@ -992,14 +992,19 @@ Voir les commandes SELECTIONNER RUBAN, RUBAN, PERFORER A PARTIR DE, ARCHIVER RUB
 "
   (io-new-line *task*)
   (when (and (stringp chemin)
-             (< 1 (length chemin))
-             (char/= #\/ (aref chemin (1- (length chemin)))))
-    (setf chemin (concatenate 'string chemin "/")))
-  (setf *current-shelf*
-        (truename (make-pathname
-                   :name nil :type nil :version nil
-                   :defaults (merge-pathnames chemin *current-directory*))))
-  (io-format *task* "~&L'ETAGERE DE RUBAN COURANTE EST: ~A~%" *current-shelf*)
+             (< 1 (length chemin)))
+    (unless (char= #\/ (aref chemin (1- (length chemin))))
+      (setf chemin (concatenate 'string chemin "/")))
+    (setf *current-shelf*
+          (truename (make-pathname
+                     :name nil :type nil :version nil
+                     :defaults (if (char= #\/ (aref chemin 0))
+                                   (merge-pathnames (concatenate 'string "." chemin) *lse-root*)
+                                   (merge-pathnames chemin *current-directory*))))))
+  (let ((relpath (enough-namestring *current-shelf* *lse-root*)))
+   (io-format *task* "~&L'ETAGERE DE RUBAN COURANTE EST: ~:[/~;~]~A~%"
+              (and (<= 1 (length relpath)) (char= #\/ (aref relpath 0)))
+              relpath))
   (lister-rubans))
 
 
@@ -1517,7 +1522,10 @@ Voir les commandes TABLE DES FICHIERS, UTILISATION DISQUE."
 
 Voir les commandes CHANGER REPERTOIRE, TABLE DES FICHIER, UTILISATION DISQUE."
   (io-new-line *task*)
-  (io-format *task* "REPERTOIRE COURANT: ~A~%" *current-directory*))
+  (let ((relpath (enough-namestring *current-directory* *lse-root*)))
+   (io-format *task* "REPERTOIRE COURANT: ~:[/~;~]~A~%"
+              (and (<= 1 (length relpath)) (char= #\/ (aref relpath 0)))
+              relpath)))
 
 
 (defcommand "CHANGER REPERTOIRE" awake une-ligne (nouveau-repertoire)
@@ -1528,13 +1536,15 @@ absolu, ou relatif à l'ancien répertoire courant.
 Voir les commandes AFFICHER REPERTOIRE, TABLE DES FICHIER, UTILISATION DISQUE."
   (io-new-line *task*)
   (when (and (stringp nouveau-repertoire)
-             (< 1 (length nouveau-repertoire))
-             (char/= #\/ (aref nouveau-repertoire (1- (length nouveau-repertoire)))))
-    (setf nouveau-repertoire (concatenate 'string nouveau-repertoire "/")))
-  (setf *current-directory*
-        (truename (make-pathname
-                   :name nil :type nil :version nil
-                   :defaults (merge-pathnames nouveau-repertoire *current-directory*))))
+             (< 1 (length nouveau-repertoire)))
+    (unless (char= #\/ (aref nouveau-repertoire (1- (length nouveau-repertoire))))
+      (setf nouveau-repertoire (concatenate 'string nouveau-repertoire "/")))
+    (setf *current-directory*
+          (truename (make-pathname
+                     :name nil :type nil :version nil
+                     :defaults (if (char= #\/ (aref nouveau-repertoire 0))
+                                   (merge-pathnames (concatenate 'string "." nouveau-repertoire) *lse-root*)
+                                   (merge-pathnames nouveau-repertoire *current-directory*))))))
   (task-close-all-files *task*))
 
 

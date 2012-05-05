@@ -609,10 +609,12 @@ Voir la commande: AIDER"
                     (write-documentation *task* (chapter-text chapter))
                     (funcall (chapter-text chapter) chapter))
                 t))
-         (if (listp chapters)
-             (dolist (chapter chapters t)
-               (print-chapter chapter))
-             (print-chapter chapters)))))
+         (cond
+           ((null chapters) nil)
+           ((listp chapters)
+            (dolist (chapter chapters t)
+              (print-chapter chapter)))
+           (t (print-chapter chapters) t)))))
     (t
      (io-format *task*
                 "~A"

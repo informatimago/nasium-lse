@@ -814,6 +814,35 @@ AI)DE                         donne la liste des commandes."))))))
 (defparameter *current-shelf*     (truename #P"./"))
 
 
+(defun change-directory (root old new)
+  ;; 1- merge with old or root depending on whether new is relative or absolute.
+  (let ((new (truename (if (eq (first (pathname-directory new)) :relative)
+                            (merge-pathnames new old nil)
+                            (merge-pathnames (make-pathname :directory (cons :relative (rest (pathname-directory new)))
+                                                            :defaults new)
+                                             root nil)))))
+    ;; 2- check that new doesn't go above root (this can occur with :up or :back, or with symlinks.
+    (let ((rd (pathname-directory root))
+          (nd (pathname-directory new)))
+      (if (= (length rd) (mismatch rd nd :test (function equal)))
+          new
+          root))))
+
+
+;; (change-directory #P"/home/pjb/src/git/pjb/nasium-lse/"
+;;                   #P"/home/pjb/src/git/pjb/nasium-lse/tests/"
+;;                   "../..")
+;; #P"/home/pjb/src/git/pjb/nasium-lse/"
+;; (change-directory #P"/home/pjb/src/git/pjb/nasium-lse/"
+;;                   #P"/home/pjb/src/git/pjb/nasium-lse/"
+;;                   "tests/")
+;; #P"/home/pjb/src/git/pjb/nasium-lse/tests/"
+
+
+(defun clip-directory (root directory)
+  (concatenate 'string "/" (enough-namestring directory root)))
+
+
 (defun make-temporaries-directory ()
   (let ((dir (pathname (format nil "/tmp/lse~D/" (getuid)))))
     (ensure-directories-exist (make-pathname :name "test" :type "test" :defaults dir))
@@ -981,8 +1010,8 @@ Voir les commandes LISTER A PARTIR DE, NUMERO A PARTIR DE, PERFORER A PARTIR DE.
 
 
 (defcommand "ETAGERE DE RUBANS" awake  une-ligne (chemin) 
-  "Selectionne une étagère de rubans perforés."
-  "Les rubans perforés sont simulés par des fichiers.  Ils sont
+            "Selectionne une étagère de rubans perforés."
+            "Les rubans perforés sont simulés par des fichiers.  Ils sont
 conservés sur des \"étagère\", c'est à dire, enregistrés dans des répertoires.
 
 Cette commande permet de sélectionner le répertoire où les rubans
@@ -995,17 +1024,11 @@ Voir les commandes SELECTIONNER RUBAN, RUBAN, PERFORER A PARTIR DE, ARCHIVER RUB
              (< 1 (length chemin)))
     (unless (char= #\/ (aref chemin (1- (length chemin))))
       (setf chemin (concatenate 'string chemin "/")))
-    (setf *current-shelf*
-          (truename (make-pathname
-                     :name nil :type nil :version nil
-                     :defaults (if (char= #\/ (aref chemin 0))
-                                   (merge-pathnames (concatenate 'string "." chemin) *lse-root*)
-                                   (merge-pathnames chemin *current-directory*))))))
-  (let ((relpath (enough-namestring *current-shelf* *lse-root*)))
-   (io-format *task* "~&L'ETAGERE DE RUBAN COURANTE EST: ~:[/~;~]~A~%"
-              (and (<= 1 (length relpath)) (char= #\/ (aref relpath 0)))
-              relpath))
+    (setf *current-shelf* (change-directory *lse-root* *current-shelf* chemin)))
+  (io-format *task* "~&L'ETAGERE DE RUBAN COURANTE EST: ~A~%"
+             (clip-directory *lse-root* *current-shelf*))
   (lister-rubans))
+
 
 
 (defcommand "SELECTIONNER RUBAN" awake un-fichier (ruban)
@@ -1522,10 +1545,8 @@ Voir les commandes TABLE DES FICHIERS, UTILISATION DISQUE."
 
 Voir les commandes CHANGER REPERTOIRE, TABLE DES FICHIER, UTILISATION DISQUE."
   (io-new-line *task*)
-  (let ((relpath (enough-namestring *current-directory* *lse-root*)))
-   (io-format *task* "REPERTOIRE COURANT: ~:[/~;~]~A~%"
-              (and (<= 1 (length relpath)) (char= #\/ (aref relpath 0)))
-              relpath)))
+  (io-format *task* "REPERTOIRE COURANT: ~A~%"
+             (clip-directory *lse-root* *current-directory*)))
 
 
 (defcommand "CHANGER REPERTOIRE" awake une-ligne (nouveau-repertoire)
@@ -1539,12 +1560,7 @@ Voir les commandes AFFICHER REPERTOIRE, TABLE DES FICHIER, UTILISATION DISQUE."
              (< 1 (length nouveau-repertoire)))
     (unless (char= #\/ (aref nouveau-repertoire (1- (length nouveau-repertoire))))
       (setf nouveau-repertoire (concatenate 'string nouveau-repertoire "/")))
-    (setf *current-directory*
-          (truename (make-pathname
-                     :name nil :type nil :version nil
-                     :defaults (if (char= #\/ (aref nouveau-repertoire 0))
-                                   (merge-pathnames (concatenate 'string "." nouveau-repertoire) *lse-root*)
-                                   (merge-pathnames nouveau-repertoire *current-directory*))))))
+    (setf *current-directory* (change-directory *lse-root*  *current-directory*  nouveau-repertoire)))
   (task-close-all-files *task*))
 
 

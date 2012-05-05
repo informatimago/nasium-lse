@@ -623,7 +623,7 @@ Voir la commande: AIDER"
                          what
                          "Essayez les commandes suivantes:
 DO)CUMENTATION GARANTIE       indique qu'aucune garantie n'est assurée;
-DO)CUMENTATION COPIE          donne la license et votre liberté de copier;
+DO)CUMENTATION LICENSE        donne la license et votre liberté de copier;
 DO)CUMENTATION SOURCES        où trouver les sources de ce programme;
 DO)CUMENTATION INSTRUCTIONS   donne la liste des instructions;
 DO)CUMENTATION FONCTIONS      donne la liste des fonctions;

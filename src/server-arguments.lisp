@@ -168,7 +168,7 @@ DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLv3.
 Ce programme est livré avec ABSOLUMENT AUCUNE GARANTIE; pour plus de
 détails utilisez la commande DO GARANTIE.  Ce logiciel est libre, et
 vous êtes les bienvenus pour redistribuer sous certaines conditions;
-utilisez la commande DO COPIE pour plus de détails.
+utilisez la commande DO LICENSE pour plus de détails.
 
 "
           (version))

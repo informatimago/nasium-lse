@@ -1,0 +1,13 @@
+1*auteur: Pascal Bourguignon
+2*resolution d'une equation du 2e degre
+10 AFFICHER[/,'resolution d''ene equation du second degre',/]
+12 AFFICHER[/,'A*X^2+B*X+C=0',/]
+20 AFFICHER[/,'A='];LIRE A
+22 AFFICHER[/,'B='];LIRE B
+24 AFFICHER[/,'C='];LIRE C
+30 DELTA_B^2-4*A*C
+32 SI DELTA<0 ALORS DEBUT AFFICHER 'pas de solution';TERMINER FIN
+34 SI DELTA=0 ALORS DEBUT AFFICHER[/,'solution: x=',U,/]-B/2*A;TERMINER FIN
+36 X1_(-B-RAC(DELTA))/2*A;X2_(-B+RAC(DELTA))/2*A
+38 AFFICHER[/,'deux solutions: x1=',U,' et x2=',U,/]X1,X2
+40 TERMINER

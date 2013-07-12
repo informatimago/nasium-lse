@@ -46,22 +46,25 @@
                  ((#:albert #:docbook #:bgcolor)   . "white")
                  ((#:albert #:docbook #:textcolor) . "black"))
 
-    :depends-on (
-                 :terminfo
-                 
-                 :cffi
-                 :uffi
+    #+asdf-unicode :encoding #+asdf-unicode :utf-8
 
-                 :trivial-gray-streams
+    :depends-on (
+                 "terminfo"
                  
-                 #+(and unix (not clisp)) :iolib.base
-                 #+(and unix (not clisp)) :iolib.os
-                 #+(and unix (not clisp)) :iolib.syscalls
-                 #+(and unix (not clisp)) :iolib.termios
+                 "cffi"
+                 ;; "uffi
+
+                 "trivial-gray-streams"
                  
-                 :com.informatimago.common-lisp.unix
-                 :com.informatimago.lse
+                 #+(and unix (not clisp)) "iolib.base"
+                 #+(and unix (not clisp)) "iolib.os"
+                 #+(and unix (not clisp)) "iolib.syscalls"
+                 #+(and unix (not clisp)) "iolib.termios"
+                 
+                 "com.informatimago.common-lisp.unix"
+                 "com.informatimago.lse"
                  )
+    
     :components (
 
                  (:file "patch-cffi-uffi")

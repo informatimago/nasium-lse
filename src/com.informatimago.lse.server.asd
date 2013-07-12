@@ -46,22 +46,25 @@
                  ((#:albert #:docbook #:bgcolor)   . "white")
                  ((#:albert #:docbook #:textcolor) . "black"))
 
-    :depends-on (:split-sequence
-                 :alexandria
-                 :babel
+    #+asdf-unicode :encoding #+asdf-unicode :utf-8
 
-                 :iolib.base
-                 :iolib.os
-                 :iolib.syscalls
-                 :iolib
+    :depends-on ("split-sequence"
+                 "alexandria"
+                 "babel"
 
-                 #+clisp :com.informatimago.clisp
-                 #+clisp :com.informatimago.susv3
+                 "iolib.base"
+                 "iolib.os"
+                 "iolib.syscalls"
+                 "iolib"
 
-                 :com.informatimago.common-lisp
-                 :com.informatimago.common-lisp.unix
-                 :com.informatimago.lse
+                 #+clisp "com.informatimago.clisp"
+                 #+clisp "com.informatimago.susv3"
+
+                 "com.informatimago.common-lisp"
+                 "com.informatimago.common-lisp.unix"
+                 "com.informatimago.lse"
                  )
+    
     :components (
 
                  (:file "iolib-message"       :depends-on ())

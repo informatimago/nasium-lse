@@ -46,7 +46,8 @@
           (make-instance 'asdf:compile-op)
           (asdf:find-component (asdf:find-system system) component))))
 
-(setf *default-pathname-defaults* (dirpath *load-truename*))
+(setf *default-pathname-defaults* (dirpath (or *load-truename*
+                                               *compile-file-truename*)))
 (pushnew *default-pathname-defaults* asdf:*central-registry* :test 'equal)
 
 

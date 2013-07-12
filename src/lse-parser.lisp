@@ -413,14 +413,13 @@
             ;; we must keep references, and also for other expressions.
             
             (--> expression
-                 (alt
-                  (seq terme-signe (rep (alt (seq tok-moins  terme :action (list :moins  terme))
-                                             (seq tok-plus   terme :action (list :plus   terme))
-                                             (seq tok-concat terme :action (list :concat terme)))
-                                        :action $1)
-                       :action (if $2
-                                   (uncomb (cons terme-signe $2))
-                                   terme-signe)))
+                 (seq terme-signe (rep (alt (seq tok-moins  terme :action (list :moins  terme))
+                                            (seq tok-plus   terme :action (list :plus   terme))
+                                            (seq tok-concat terme :action (list :concat terme)))
+                                       :action $1)
+                      :action (if $2
+                                  (uncomb (cons terme-signe $2))
+                                  terme-signe))
                  :action $1)
 
             ;; Two signs cannot be adjacent: a*-b must be written a*(-b)

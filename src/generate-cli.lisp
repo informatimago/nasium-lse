@@ -52,7 +52,8 @@
           (make-instance 'asdf:compile-op)
           (asdf:find-component (asdf:find-system system) component))))
 
-(setf *default-pathname-defaults* (dirpath *load-truename*))
+(setf *default-pathname-defaults* (dirpath (or *load-truename*
+                                               *compile-file-truename*)))
 (pushnew *default-pathname-defaults* asdf:*central-registry* :test 'equal)
 
 
@@ -76,6 +77,13 @@
 
 
 (ql:quickload *program-system*)
+
+(defparameter *versions* (com.informatimago.lse:versions))
+(loop
+  :for version :in *versions*
+  :for file :in '("macosx/VERSION" "macosx/VERSION_SHORT" "macosx/VERSION_LONG")
+  :do (setf (com.informatimago.common-lisp.cesarum.file:text-file-contents file) version))
+
 (ql:quickload :com.informatimago.manifest)
 (shadow 'date)
 (use-package "COM.INFORMATIMAGO.MANIFEST")
@@ -95,11 +103,11 @@
 (setf  ccl:*backtrace-print-level* nil)
 (test/fonctions :silence t)
 
-(setf *debug-vm*   t
+(setf *debug-vm*   '(:error)
       *debug-repl* t)
-
-(setf *debug-vm*   nil
+(setf *debug-vm*   '()
       *debug-repl* nil)
+
 
 
 ;;;---------------------------------------------------------------------
@@ -110,8 +118,24 @@
 (finish-output)
 
 (write-manifest *program-name* *program-system*)
+;; (in-package :ccl)
+;; (defun reopen-user-libraries ()
+;;   (dolist (lib *shared-libraries*)
+;;     (setf (shlib.handle lib) nil
+;;           (shlib.base lib) nil))
+;;   (dolist (lib *shared-libraries*)
+;;     (when  (shlib.soname lib)
+;;       (with-cstrs ((cname (shlib.soname lib)))
+;;         (let* ((handle (ff-call *dlopen-entry*
+;;                                 :address cname
+;;                                 :int (logior #$RTLD_GLOBAL #$RTLD_NOW)
+;;                                 :address)))
+;;           (unless (%null-ptr-p handle)
+;;             (setf (shlib.handle lib) handle)))))))
+;; (in-package "COMMON-LISP-USER")
 
-
+#+ccl (dolist (lib ccl::*shared-libraries* (terpri))
+        (print lib))
 #+ccl (progn (princ "ccl:save-application will exit.") (terpri) (finish-output))
 #+ccl (ccl:save-application
        (executable-filename *program-name*)

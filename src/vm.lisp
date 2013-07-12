@@ -1417,7 +1417,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                                 (op-0/2 (op) `(,op vm (pfetch) (pfetch)))
                                 (op-2/2 (op) `(let ((b (spop))) (,op vm (spop) b (pfetch) (pfetch)))))
                        #+developing
-                       (when (member :cop *debug-vm*)
+                       (when (and (listp *debug-vm*) (member :cop *debug-vm*))
                          (let ((*standard-output* *trace-output*))
                            (disassemble-lse (vm-code vm)
                                             :start (vm-pc.offset vm)
@@ -1519,7 +1519,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
           #-developing
           (run)
           #+developing
-          (if (member :error *debug-vm*)
+          (if (or (eq t *debug-vm*) (member :error *debug-vm*))
               (handler-bind ((error #'invoke-debugger)) (run))
               (run)))
 

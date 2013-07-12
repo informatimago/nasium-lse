@@ -43,14 +43,24 @@
     #. (progn
          (format nil "1.0.0-~5,3F" (decf (SEXP-FILE-CONTENTS
                                           (make-pathname :name "VERSION" :type nil :version nil
-                                                         :defaults *load-truename*)
+                                                         :defaults (or *load-truename*
+                                                                       *compile-file-truename*))
                                           :if-does-not-exist :create)
                                          0.001)))
     "The version of the NASIUM LSE system.")
 
 
   (defparameter  *license*
-    #. (TEXT-FILE-CONTENTS "../COPYING")))
+    #. (TEXT-FILE-CONTENTS
+        (merge-pathnames
+         (make-pathname :directory '(:relative :up)
+                        :name nil :type nil :version nil
+                        :defaults (or *load-truename*
+                                      *compile-file-truename*))
+         (make-pathname :name "COPYING" :type nil :version nil
+                        :defaults (or *load-truename*
+                                      *compile-file-truename*))
+         nil))))
 
 
 (defvar *title-banner* "
@@ -83,11 +93,22 @@ DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLv3.
                                            ("SBCL"                   . "sbcl"))
                                          :test (function string-equal)))
                              "cl")
-                         #+bsd     "bsd"
-                         #+darwin  "darwin" ;; (system-release)
-                         #+linux   "linux"
-                         #+(or win32 windows) "windows"
-                         #+(and (not (or bsd darwin linux win32 windows)) unix) "unix"
-                         #+(not (or bsd darwin linux unix win32 windows)) ""))))
+                         (or
+                          #+darwin                  "darwin" ;; (system-release)
+                          #+(and bsd (not darwin))  "bsd"
+                          #+linux                   "linux"
+                          #+(or win32 windows)      "windows"
+                          #+(and (not (or bsd darwin linux win32 windows)) unix) "unix"
+                          #+(not (or bsd darwin linux unix win32 windows)) "generic")))))
+
+(defun versions ()
+  "
+RETURN: A list of three strings, the version, the short version and the long version.
+"
+  (list (version) *version*
+        (multiple-value-bind (se mi ho da mo ye) (decode-universal-time (get-universal-time))
+         (format nil "~A, compiled ~4,'0D-~2,'0D-~2,'0D ~2,'0D:~2,'0D:~2,'0D on ~A"
+                 (version) ye mo da ho mi se (machine-instance)))))
+
 
 ;;;; THE END ;;;;

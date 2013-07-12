@@ -599,11 +599,11 @@ Voir la commande: AIDER"
          t)))
     ((let ((chapters (find-chapter what)))
        (flet ((print-chapter (chapter)
-                (io-format *task* "~2%~A ~A~%~V,,,'-<~>~2%"
+                (io-format *task* "~2%~A / ~A~%~V,,,'-<~>~2%"
                            (chapter-category chapter)
                            (chapter-title chapter)
                            (+ (length (chapter-title chapter))
-                              1
+                              3
                               (length (chapter-category chapter))))
                 (if (stringp (chapter-text chapter))
                     (write-documentation *task* (chapter-text chapter))
@@ -1558,11 +1558,14 @@ absolu, ou relatif à l'ancien répertoire courant.
 
 Voir les commandes AFFICHER REPERTOIRE, TABLE DES FICHIER, UTILISATION DISQUE."
   (io-new-line *task*)
-  (when (and (stringp nouveau-repertoire)
-             (< 1 (length nouveau-repertoire)))
-    (unless (char= #\/ (aref nouveau-repertoire (1- (length nouveau-repertoire))))
-      (setf nouveau-repertoire (concatenate 'string nouveau-repertoire "/")))
-    (setf *current-directory* (change-directory *lse-root*  *current-directory*  nouveau-repertoire)))
+  ;; Note: When we drag a directory to a terminal window on MacOSX, it
+  ;; adds a space at the end automatically…
+  (let ((nouveau-repertoire (string-trim " " nouveau-repertoire)))
+    (when (and (stringp nouveau-repertoire)
+               (< 1 (length nouveau-repertoire)))
+      (unless (char= #\/ (aref nouveau-repertoire (1- (length nouveau-repertoire))))
+        (setf nouveau-repertoire (concatenate 'string nouveau-repertoire "/")))
+      (setf *current-directory* (change-directory *lse-root*  *current-directory*  nouveau-repertoire))))
   (task-close-all-files *task*))
 
 

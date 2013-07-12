@@ -50,7 +50,7 @@ SYMLINK_CLI    = awk '/Generating/{print $$2}' < $(LOGFILE) | ( read executable 
 SYMLINK_SERVER = awk '/Generating/{print $$2}' < $(LOGFILE) | ( read executable ; rm -f lse-server ; ln -sf $$executable lse-server )
 
 
-CCL            = ccl --no-init
+CCL            = /data/languages/ccl/bin/ccl --no-init
 CCL_EVAL       =  --eval
 CCL_LOAD       =  --load 
 
@@ -85,14 +85,19 @@ ChangeLog:../_FOSSIL_
 
 
 help::
-	@printf $(HELPFORMAT) cli 'builds the unix cli executable on the local hosts.'
+	@printf $(HELPFORMAT) cli 'builds the unix cli executable.'
 cli:
 	$(LISP) $(LOAD) generate-cli.lisp | tee $(LOGFILE)
 	$(SYMLINK_CLI)
 
+help::
+	@printf $(HELPFORMAT) macosx 'builds the unix cli  executable and the MacOSX application bundle.'
+macosx:cli
+	$(MAKE) -C macosx
+
 
 help::
-	@printf $(HELPFORMAT) server 'builds the server executable on the local hosts.'
+	@printf $(HELPFORMAT) server 'builds the server executable.'
 server:
 	$(LISP) $(LOAD) generate-server.lisp | tee $(LOGFILE)
 	$(SYMLINK_SERVER)
@@ -100,7 +105,7 @@ server:
 
 
 help::
-	@printf $(HELPFORMAT) html-doc 'builds the html doc directory on the local hosts.'
+	@printf $(HELPFORMAT) html-doc 'builds the html doc directory.'
 html-doc:
 	if [ $(UPLOAD) -ne 0 ] ; then \
 		 $(LISP) $(EVAL) "(defparameter *doc-dir* \"$(UPLOAD_DOC_DIR)\")" \

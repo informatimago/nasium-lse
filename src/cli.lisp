@@ -150,7 +150,7 @@ BONJOUR     ~8A
                          :unicode (eql encoding :utf-8)
                          :arrows  (if (eql encoding :utf-8)
                                       :unicode-halfwidth
-                                      nil) 
+                                      :ascii) 
                          :terminal terminal)))
       (setf *task* task) ; to help debugging, we keep the task in the global binding.
       (or (parse-options (or args (arguments)))

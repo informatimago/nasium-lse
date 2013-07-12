@@ -9,10 +9,14 @@ DONE
 ====
 
 - In cli, allow CR to work just like C-s
-
+  --> option: --entree-comme-xoff | --return-is-xoff  
 
 TODO
 ====
+
+
+- formating documentation: dash lists items 2-n are indented and
+  should not.
 
 
 - Make a #+clisp clisp-terminal using EXT:WITH-KEYBOARD-INPUT (and
@@ -32,6 +36,8 @@ TODO
   we have something to write, and it should be deactivated when we're
   done writing, otherwise it goes CPU bound (polling).
   make-writer-maker
+#+(or lse-unix lse-t1600)
+
 
 
 NOTES

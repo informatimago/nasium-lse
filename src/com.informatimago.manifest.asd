@@ -46,12 +46,15 @@
                  ((#:albert #:docbook #:bgcolor)   . "white")
                  ((#:albert #:docbook #:textcolor) . "black"))
 
+    #+asdf-unicode :encoding #+asdf-unicode :utf-8
+
     :depends-on (
-                 :split-sequence
-                 ;; :alexandria
-                 ;; :babel
-                 :com.informatimago.common-lisp.cesarum
+                 "split-sequence"
+                 ;; "alexandria
+                 ;; "babel
+                 "com.informatimago.common-lisp.cesarum"
                  )
+    
     :components ((:file "manifest")))
 
 

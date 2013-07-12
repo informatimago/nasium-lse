@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>NASIUM-LSE</string>
+    <key>CFBundleExecutable</key>
+    <string>nasium-lse.sh</string>
+    <key>CFBundleIconFile</key>
+    <string>nasium-lse-application</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.ogamita.nasium-lse</string>
+    <key>CFBundleVersion</key>
+    <string>1.0.0-0.074-CCL-DARWIN</string>
+    <key>CFBundleGetInfoString</key>
+    <string>1.0.0-0.074-CCL-DARWIN, compiled 2012-05-06 20:45:28 on galatea.lan.informatimago.com</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0-0.074</string>
+
+    <key>CFBundleDocumentTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleTypeIconFile</key><string>nasium-lse-programme</string>
+        <key>CFBundleTypeName</key><string>Programme L.S.E.</string>
+        <key>CFBundleTypeExtensions</key><array><string>lse</string></array>
+      </dict>
+      <dict>
+        <key>CFBundleTypeIconFile</key><string>nasium-lse-ruban</string>
+        <key>CFBundleTypeName</key><string>Ruban perforé L.S.E.</string>
+        <key>CFBundleTypeExtensions</key><array><string>rub</string></array>
+      </dict>
+    </array>
+
+  </dict>
+</plist>

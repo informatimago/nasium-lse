@@ -46,15 +46,18 @@
                  ((#:albert #:docbook #:bgcolor)   . "white")
                  ((#:albert #:docbook #:textcolor) . "black"))
 
+    #+asdf-unicode :encoding #+asdf-unicode :utf-8
+    
     :depends-on (
-                 :split-sequence
-                 :alexandria
-                 :babel
+                 "split-sequence"
+                 "alexandria"
+                 "babel"
                  
-                 :com.informatimago.common-lisp
-                 :com.informatimago.rdp
+                 "com.informatimago.common-lisp"
+                 "com.informatimago.rdp"
                  
                  )
+    
     :components (
                  ;; Some generic utility
                  (:file "logger")
@@ -72,7 +75,8 @@
                  (:file "error"               :depends-on ("packages"))                               
 
                  (:file "file"                :depends-on ("packages"
-                                                           "configuration" "error"))
+                                                           "configuration" "error"
+                                                           "functions"))
 
                  (:file "documentation"       :depends-on ("packages"))
                  (:file "chapters"            :depends-on ("packages" "version" "documentation"))

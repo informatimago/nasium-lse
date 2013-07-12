@@ -130,7 +130,7 @@ termios with TERMIOS-FREE."
             ;; lflags
             :isig
             :icanon
-            #-linux xcase
+            #-linux :xcase
             :echo
             :echoe
             :echok
@@ -356,6 +356,8 @@ EXAMPLES:
 RETURN: A sublist of options that didn't change successfully;
         A sublist of options successfully changed.
 "
+
+  ;; (progn (print (cons 'stty options)) (terpri) (finish-output))
   (let ((fd (etypecase serial
               (integer serial)
               (stream  (iolib.serial::fd-of serial)))))
@@ -364,7 +366,6 @@ RETURN: A sublist of options that didn't change successfully;
       (cffi:with-foreign-objects ((termios 'iolib.serial:termios)
                                   (newterm 'iolib.serial:termios))
         (iolib.serial::%tcgetattr fd termios)
-        
         (loop
           :for (key value) :on options :by (function cddr)
           :do (case key
@@ -471,21 +472,21 @@ Valid only whe MODERN-MODE is false.
         ;; Modern mode: get the characters from the termios.
         (let ((ccs (lispify-control-characters
                     (termios-attributes input-file-descriptor))))
-          (setf vintr    (plist-get ccs :vintr)
-                vquit    (plist-get ccs :vquit)
-                vsusp    (plist-get ccs :vsusp)
-                vkill    (plist-get ccs :vkill)
-                veof     (plist-get ccs :veof)
+          (setf vintr    (or (plist-get ccs :vintr) 0)
+                vquit    (or (plist-get ccs :vquit) 0)
+                vsusp    (or (plist-get ccs :vsusp) 0)
+                vkill    (or (plist-get ccs :vkill) 0)
+                veof     (or (plist-get ccs :veof)  0)
                 veol     (let ((eol (plist-get ccs :veol)))
-                           (if (zerop eol)
-                               #x0d
-                               eol))
-                veol2    (plist-get ccs :veol2)
-                verase   (plist-get ccs :verase)
-                vwerase  (plist-get ccs :vwerase)
-                vreprint (plist-get ccs :vreprint)
-                vstart   (plist-get ccs :vstart)
-                vstop    (plist-get ccs :vstop)))
+                           (if (and eol (< 0 eol 32))
+                               eol
+                               #x0d))
+                veol2    (or (plist-get ccs :veol2)    0)
+                verase   (or (plist-get ccs :verase)   0)
+                vwerase  (or (plist-get ccs :vwerase)  0)
+                vreprint (or (plist-get ccs :vreprint) 0)
+                vstart   (or (plist-get ccs :vstart)   0)
+                vstop    (or (plist-get ccs :vstop)    0)))
         ;;  Mitra-15 mode:
         (setf vintr    #x1b            ; ESC
               vquit    #x01            ; Ctrl-A
@@ -515,12 +516,13 @@ Valid only whe MODERN-MODE is false.
     ;;           :vreprint vreprint 
     ;;           :vstart   vstart   
     ;;           :vstop    vstop))
+    ;; (progn (print (list :vintr vintr :vquit vquit :vsusp vsusp  :vkill vkill :veof  veof :veol veol :veol2 veol2 :verase verase :vwerase vwerase :vreprint vreprint)) (terpri) (finish-output))
     (setf modern-mode new-mode)))
 
 
 
 
-(defmethod initialize-instance :after ((terminal unix-terminal) &rest args
+ (defmethod initialize-instance :after ((terminal unix-terminal) &rest args
                                        &key modern-mode
                                        input-stream output-stream input-fd output-fd)
   (declare (ignorable args))
@@ -641,7 +643,6 @@ Valid only whe MODERN-MODE is false.
                  :veof     veof     
                  :veol     veol     
                  :verase   verase   
-                 :vreprint vreprint 
                  :vstart   vstart   
                  :vstop    vstop
                  #+linux :veol2    #+linux veol2 ; yet additionnal end of line character     needs :icanon t (not POSIX)
@@ -715,12 +716,23 @@ Valid only whe MODERN-MODE is false.
   (terminal-finish-output terminal))
 
 
+
+;; For terminal-new-line we cannot clr-eol, since after a CR, we may
+;; not be at the end of the line. Notably, when input is valided with
+;; an echoed CR, we're at the beginning of the line. Furthermore, when
+;; input is valided with CR, we must output a LF, since the CR has
+;; been echoed by the terminal, and that would mess things if we had
+;; other input as in LIRE A,B,C. (X-OFF would not print a space, but
+;; the user may type SPC instead of X-OFF or CR to validate a
+;; numerical input to LIRE).
+
 (defmethod terminal-new-line ((terminal unix-terminal) &optional (count 1))
   (with-slots (output-stream terminfo) terminal
     (let* ((terminfo:*terminfo* terminfo)
            (carriage-return     terminfo:carriage-return)
-           (clr-eol             terminfo:clr-eol))
-      (terminfo:tputs clr-eol         output-stream)
+           ;;(clr-eol             terminfo:clr-eol)
+           )
+      ;; (terminfo:tputs clr-eol         output-stream)
       (terminfo:tputs carriage-return output-stream)))
   (terminal-line-feed terminal count))
 
@@ -734,6 +746,20 @@ Valid only whe MODERN-MODE is false.
     echo))
 
 
+(defmethod terminal-erase-character ((terminal unix-terminal) &optional (count 1))
+  (with-slots (output-stream terminfo) terminal
+    (let* ((terminfo:*terminfo* terminfo)
+           (cub                 terminfo:parm-left-cursor)
+           (ech                 terminfo:erase-chars))
+      (if cub
+          (terminfo:tputs cub output-stream count)
+          (let ((cub1 terminfo:cursor-left))
+            (when cub1
+              (loop :repeat count :do (terminfo:tputs cub1 output-stream)))))
+      (if ech
+          (terminfo:tputs ech output-stream count)
+          (terminal-write-string terminal (make-string count :initial-element #\space))))
+    (terminal-finish-output terminal)))
 
 
 (defun unix-signal (pid signum)
@@ -753,7 +779,8 @@ Valid only whe MODERN-MODE is false.
   (with-slots ((stream input-stream)
                buffer input-finished
                vintr vquit vsusp vkill veof veol veol2
-               verase vwerase vreprint) terminal
+               verase vwerase vreprint
+               modern-mode) terminal
     (let ((ch (read-char stream)))
       (when ch
         (let ((code (char-code ch)))
@@ -767,25 +794,30 @@ Valid only whe MODERN-MODE is false.
             (t
              (unless input-finished
                (cond
-                 ((= code veof)   #|close the stream|#)
-                 ((= code veol)   (setf input-finished t))
-                 ((= code veol2)  (setf input-finished t)
+                 ((and veof  (= code veof))   (setf input-finished t) #|close the stream|#)
+                 ((and veol  (= code veol))   (setf input-finished t))
+                 ((and veol2 (= code veol2))  (setf input-finished t)
                   (unless (terminal-cr-as-xoff terminal)
                     (vector-push-extend ch buffer 1)))
-                 ((= code verase)
+                 ((and verase (= code verase))
                   (when (plusp (fill-pointer buffer))
-                    ;; when modern-mode, erase the character on display
+                    (when modern-mode
+                      ;; when modern-mode, erase the character on display
+                      (terminal-erase-character terminal))
                     (decf (fill-pointer buffer))))
-                 ((= code vwerase)
-                  ;; when modern-mode, erase the word on display
-                  (setf (fill-pointer buffer)
-                        (or (position-if-not (function alphanumericp) buffer
-                                             :from-end t
-                                             :end (or (position-if (function alphanumericp) buffer
-                                                                   :from-end t)
-                                                      0))
-                            0)))
-                 ((= code vreprint)
+                 ((and vwerase (= code vwerase))
+                  (let ((wsize (fill-pointer buffer)))
+                    (setf (fill-pointer buffer)
+                          (or (position-if-not (function alphanumericp) buffer
+                                               :from-end t
+                                               :end (or (position-if (function alphanumericp) buffer
+                                                                     :from-end t)
+                                                        0))
+                              0))
+                    (when modern-mode
+                      ;; when modern-mode, erase the word on display
+                      (terminal-erase-character terminal (- wsize (fill-pointer buffer))))))
+                 ((and vreprint (= code vreprint))
                   ;; We need to keep the line on display (output) to reprint it.
                   )
                  (t

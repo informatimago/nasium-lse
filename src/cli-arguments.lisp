@@ -488,6 +488,67 @@ manière interactive.
   (setf *options* (configuration-interactive *options*)))
 
 
+
+(defun configuration-interactive-macosx-terminal (options)
+  "
+Configuration interactive when running in Terminal.app on MacOSX.
+We have utf-8 and nasium-lse.terminal setup.
+- we output and accept on input lower case letters,
+- we output accented letters.
+
+- TERM=xterm (so that we have UTF-8; with vt100, it seems to be only ASCII).
+
+"
+  (let* ((task *task*)
+         (terminal (task-terminal task)))
+    (terpri *query-io*)
+    (setf (options-input-reject-lowcase options) nil)
+    (setf (options-output-upcase options)        nil)
+    (setf (options-output-accented options)      t)
+    (setf (options-output-arrows options)
+          (if (task-unicode task)
+              (cond
+                ((o-ou-n-p "Est ce que le terminal affiche les flêches unicode demi-largeur ~A et ~A"
+                           *UNICODE-HALFWIDTH-LEFTWARDS-ARROW*
+                           *UNICODE-HALFWIDTH-UPWARDS-ARROW*)
+                 :unicode-halfwidth)
+                ((o-ou-n-p "Est ce que le terminal affiche les flêches unicode ~A et ~A"
+                           *UNICODE-LEFTWARDS-ARROW*
+                           *UNICODE-UPWARDS-ARROW*)
+                 :unicode)
+                (t
+                 :ascii))
+              :ascii))
+    (when (and (typep terminal 'unix-terminal)
+               (not (member (getenv "TERM") '("emacs" "dumb")
+                            :test (function string-equal))))
+      (opt-format *query-io* "~%Choix du mode de saisie~%")
+      (loop
+        :for modern-mode :in '(nil t)
+        :for title :in '("MITRA-15/T1600" "Moderne")
+        :do (progn
+              (setf (terminal-modern-mode terminal) modern-mode)
+              (opt-format *query-io* "~%Mode ~A:" title)
+              (show-key-bindings *query-io* (task-terminal *task*))))
+      (terpri *query-io*)
+      (unless (setf (options-modern-mode options)
+                    (o-ou-n-p "Faut-il utiliser le mode moderne"))
+        (setf (options-return-is-xoff options)
+              (o-ou-n-p "Faut-il traiter RETOUR comme X-OFF"))))
+    (terpri *query-io*))
+  options)
+
+
+(defoption ("--configuration-macosx-terminal" "--macosx-terminal-configuration") ()
+  "
+Permet d'effectuer la saisie des options de ligne de commande de
+manière interactive, en pré-supposant l'usage avec Terminal.app et la
+configuration nasium-lse.temrinal.
+"
+  (setf *options* (configuration-interactive-macosx-terminal *options*)))
+
+
+
 (defoption ("--montrer-touches" "--show-bindings") ()
   "
 Affiche les touches à utiliser.

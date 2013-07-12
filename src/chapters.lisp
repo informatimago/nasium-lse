@@ -656,13 +656,14 @@ it under the terms of the GNU Affero General Public License as
 published by the Free Software Foundation, either version 3 of the
 License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Affero General Public License for more details.
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Affero General Public License for more details.
 
-You should have received a copy of the GNU Affero General Public License
-along with this program.  If not, see http://www.gnu.org/licenses/
+You should have received a copy of the GNU Affero General Public
+License along with this program.  If not, see
+http://www.gnu.org/licenses/
 ")
 
 
@@ -768,11 +769,8 @@ Description de la syntaxe des arguments:
 
 (defchapter ("INTRODUCTION" "FONCTIONS")
     "
-
 Ce chapitre présente une description succinte des fonctions du
 système L.S.E.  Pour plus de détails, voir les références.
-
-
 
 On inclu également les opérateurs.  Les expressions peuvent combiner
 plusieurs opérations et appels de fonctions.  Voir la section
@@ -783,7 +781,6 @@ Les appels peuvent se faire aux fonctions primitives décrite dans ce
 chapitre, ou à des procédure fonctions déclarée dans le programme
 (voir instructions PROCEDURE et RESULTAT).  Les procédure fonctions
 ont un identificateur començant par un caractère '&'.
-
 
 
 Chacune des sections suivantes décrivent une commande, selon le
@@ -1281,15 +1278,16 @@ Voir: TERMINER, CO, RE, PO")
 
 
 (definstruction ("TERMINER" "INSTRUCTIONS" "TERMINER")
-    "
+    #.(format nil "
 L'instruction TERMINER arrête l'exécution du programme, et fait
-afficher sur l'écran un message indiquant TERMINE "
- #+(or lse-unix lse-t1600) "EN LIGNE nnn" "
+afficher sur l'écran un message indiquant TERMINE ~A
 
 Cette instruction est la dernière exécutée (ce n'est pas forcément la
 dernière dans le programme).
 
-Voir: PAUSE, CO, PO, RE, EX")
+Voir: PAUSE, CO, PO, RE, EX"
+            #+(or lse-unix lse-t1600) "EN LIGNE nnn"
+            #-(or lse-unix lse-t1600) ""))
 
 
 

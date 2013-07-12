@@ -393,7 +393,7 @@ L'argument A doit être un nombre positif ou nul, sinon une erreur est détecté
   (let* ((a (deref *vm* a)) (result (sqrt (un-nombre a)))) (un-nombre result)))
 
 
-(defun lgn  (a)
+(defunction lgn  (a)
   "Logarithme népérien"
   "LGN(A)
 

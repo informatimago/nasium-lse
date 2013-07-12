@@ -148,7 +148,8 @@
 (format nil  "~%~V,,,'_A~C~A" 79 "" #\Return
                    (console-prompt (client-console   (first (server-clients *server*)))))
 "
-_______________________________________________________________________________EMULSE LIMBO> "
+_______________________________________________________________________________
+EMULSE LIMBO> "
 
 (console-state (client-console (first (server-clients *server*))))
 

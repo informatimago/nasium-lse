@@ -95,22 +95,27 @@
 ;; neuron          Darwin neuron.intergruas.com 9.8.0 Darwin Kernel Version 9.8.0: Wed Jul 15 16:55:01 PDT 2009; root:xnu-1228.15.4~1/RELEASE_I386 i386
 
 
+(defun shell-command-to-string (command)
+  "Execute the COMMAND with asdf:run-shell-command and returns its
+stdout in a string (going thru a file)."
+  (let ((path (format nil "out-~36,8,'0R.txt" (random (expt 2 32)))))
+    (unwind-protect
+         (when (zerop (asdf:run-shell-command (format nil "~A > ~S" command path)))
+           (with-output-to-string (out)
+             (with-open-file (file path)
+               (loop
+                 :for line = (read-line file nil nil)
+                 :while line :do (write-line line out)))))
+      (ignore-errors (delete-file path)))))
+
+
 (defun distribution ()
   "Return a list identifying the system, distribution and release.
 RETURN: (system distrib release)
 System and distrib are keywords, release is a string."
-  (flet ((shell-command-to-string (command)
-           (let ((path (format nil "out-~36,8,'0R.txt" (random (expt 2 32)))))
-             (unwind-protect
-                  (when (zerop (asdf:run-shell-command (format nil "~A > ~S" command path)))
-                    (with-output-to-string (out)
-                      (with-open-file (file path)
-                        (loop
-                          :for line = (read-line file nil nil)
-                          :while line :do (write-line line out)))))
-               (ignore-errors (delete-file path)))))
-         (trim (string) (string-trim #(#\space #\newline) string))
-         (words (string) (split-sequence #\space string)))
+  (flet ((trim  (string) (string-trim #(#\space #\tab #\newline) string))
+         (words (string) (split-sequence-if (lambda (ch) (find ch #(#\space #\tab)))
+                                            string :remove-empty-subseqs t)))
    (let ((system #+windows :windows
                  ;; #+(and ccl windows-target)
                  ;; '(:cygwin :unknown "1.7.11,0.260,5,3")

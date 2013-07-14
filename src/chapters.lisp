@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -649,7 +649,7 @@ http://fr.wikipedia.org/wiki/LSE_(langage_de_programmation)
     "
 Système L.S.E
 
-Copyright (C) 2012 Pascal Bourguignon
+Copyright (C) 2013 Pascal Bourguignon
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as

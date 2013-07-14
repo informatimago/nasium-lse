@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -102,35 +102,67 @@
   (configuration-add-statement *configuration* *command*))
 
 
+(defstruct command
+  pattern
+  function)
 
 (defparameter *commands* '()
+  "A list of commands.")
+
+(defparameter *commands-match-patterns* '()
   "A list of couples (pattern command-function).")
 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
+
+  (defun substitute-match-bindings (pattern bindings)
+    (mapcar (lambda (item)
+                (if (atom item)
+                  item
+                  (ecase (first item)
+                    ((??) (let ((result (substitute-match-bindings (rest item) bindings)))
+                            (if (tree-find '?x result)
+                              nil
+                              result)))
+                    ((?x) (aget bindings (second item) item)))))
+            pattern))
+  
   (defun make-command-function (pattern body)
-    `(lambda (bindings)
-       (let ((*command* ',pattern)
-             ,@(mapcar (lambda (var) `(,var (cdr (assoc ',var bindings))))
-                       (collect-variables pattern)))
-         ,@body))))
+    (let ((vbindings (gensym)))
+      `(lambda (,vbindings)
+           (let ((*command* (substitute-match-bindings ',pattern ,vbindings))
+                 ,@(mapcar (lambda (var) `(,var (cdr (assoc ',var ,vbindings))))
+                           (collect-variables pattern)))
+             ,@body))))
+  
+  );;eval-when
 
 
 
 (defmacro defcommand (pattern &body body)
   ;; Note: we keep the *commands* in the order of defcommands.
   `(let ((command (find ',pattern *commands* 
-                        :key (function car)
-                        :test (function equal))))
+                        :key (function command-pattern)
+                        :test (function equal)))
+         (cfunction ,(make-command-function pattern body)))
+     
      (if command
-         (setf (cdr command)   ,(make-command-function pattern body))
-         (setf *commands* (nconc *commands* (list (list ',pattern
-                                                        ,(make-command-function pattern body))))))))
+       (setf (command-function command) cfunction)
+       (setf *commands* (nconc *commands* (list (make-command :pattern ',pattern
+                                                              :function cfunction)))))
+     (setf *commands-match-patterns*
+           (nconc
+            (mapcar (lambda (command)
+                        (list (command-pattern command) (command-function command)))
+                    *commands*)
+            '((otherwise
+               (error "Invalid configuration command: ~S" *command*)))))
+     ',pattern))
 
 
 (defun parse-command (command)
   "Parse the COMMAND expressions and calls the corresponding command function."
-  (match-case* command *commands*))
+  (match-case* command *commands-match-patterns*))
 
 
 
@@ -161,14 +193,21 @@
 (defparameter +eof+ (gensym))
 
 (defun configuration-repl-input (line)
-  (let ((sexp (read-from-string line nil +eof+)))
+  (let* ((line (string-trim " " line))
+         (sexp (let ((*package* (load-time-value (find-package #.(package-name *package*)))))
+                 (read-from-string (cond
+                                     ((zerop (length line))
+                                      (return-from configuration-repl-input))
+                                     ((char/= #\( (aref line 0))
+                                      (concatenate 'string "(" line ")"))
+                                     (t
+                                      line))
+                                   nil +eof+))))
     (unless (eq +eof+ sexp)
       (catch :configuration-repl-exit
         (handler-case (parse-command sexp)
           (error (err)
-            (princ err *error-output*)))))))
-
-
+                 (princ err *error-output*)))))))
 
 
 ;;----------------------------------------------------------------------
@@ -177,13 +216,13 @@
 
 
 (defcommand (connections max-number (?x n))
-    (unless (and (integerp n) (<= 0 n 89))
-      (error "Invalid maximum number of connection: ~S" n))
+  (unless (and (integerp n) (<= 0 n 89))
+    (error "Invalid maximum number of connection: ~S" n))
   (setf (configuration-max-number *configuration*) n)
   (store))
 
 
-    
+
 (defcommand (connections enable)
   (unless (configuration-connection-enabled *configuration*)
     (server-start-listening))
@@ -198,19 +237,19 @@
   (store))
 
 
-(defcommand (connection log none)
+(defcommand (connections log none)
   (server-stop-log)
   (store))
 
 
-(defcommand (connection log (?? (?x file)))
+(defcommand (connections log (?? (?x file)))
   (if file
     (let (stream)
       (unless (and (stringp file)
                    (ensure-directories-exist file)
                    (setf stream (open file :direction :output
-                                    :if-does-not-exist :create
-                                    :if-exists :append)))
+                                      :if-does-not-exist :create
+                                      :if-exists :append)))
         (error "Cannot open the log file ~S" file))
       (server-start-log stream)
       (store))
@@ -326,40 +365,41 @@
       (store))))
 
 
-(defcommand (configuration save (?? (?x file)))
-  (setf file (or file (configuration-file *configuration*)))
-  (print `(saving  to ,file))
-  (if file
-      (progn
-        (ensure-directories-exist file)
-        (with-open-stream (stream (open file :direction :output 
-                                        :if-does-not-exist :create
-                                        :if-exists :supersede))
-          
-          (dolist (statement (configuration-statements *configuration*))
-            (print statement stream)))
-        (setf (configuration-file *configuration*) file))
-      (dolist (statement (configuration-statements *configuration*))
-        (print statement))))
-
-
 (defcommand (configuration load (?? (?x file)))
   (setf file (or file (configuration-file *configuration*)))
-  (print `(loading from ,file))
-;;  (server-repl)
-  (unless file
-    (error "Please specify a configuration file."))
-  (setf *configuration*
-        (let ((*configuration* (make-configuration))
-              (*read-eval* nil)
-              (+eof+ (gensym)))
-          (declare (special *configuration*))
-          (with-open-file (stream file :direction :input
-                                  :if-does-not-exist :error)
-            (loop for sexp = (read stream nil +eof+ )
-                  until (eq sexp +eof+)
-                  do (parse-command sexp)))
-          *configuration*)))
+  (let ((*package* (load-time-value (find-package #.(package-name *package*)))))
+    (print `(loading from ,file))
+    ;;  (server-repl)
+    (unless file
+      (error "Please specify a configuration file."))
+    (setf *configuration*
+          (let ((*configuration* (make-configuration))
+                (*read-eval* nil)
+                (+eof+ (gensym)))
+            (declare (special *configuration*))
+            (with-open-file (stream file :direction :input
+                                    :if-does-not-exist :error)
+              (loop for sexp = (read stream nil +eof+ )
+                 until (eq sexp +eof+)
+                 do (parse-command sexp)))
+            *configuration*))))
+
+
+(defcommand (configuration save (?? (?x file)))
+  (setf file (or file (configuration-file *configuration*)))
+  (let ((*package* (load-time-value (find-package #.(package-name *package*)))))
+   (print `(saving  to ,file))
+   (if file
+     (progn
+       (ensure-directories-exist file)
+       (with-open-stream (stream (open file :direction :output 
+                                       :if-does-not-exist :create
+                                       :if-exists :supersede))
+         (dolist (statement (configuration-statements *configuration*))
+           (print statement stream)))
+       (setf (configuration-file *configuration*) file))
+     (dolist (statement (configuration-statements *configuration*))
+       (print statement)))))
 
 
 (defcommand (configuration print)
@@ -392,16 +432,19 @@
 (defcommand (repl)
   (server-repl))
 
+(defcommand (eval (?x expression))
+  (let ((*package* (load-time-value (find-package #.(package-name *package*)))))
+    (print (eval expression))))
 
 (defcommand (help)
-    (format t "~(~:{~A~%~}~)" *commands*))
+  (format t "~(~{~A~%~}~)" (mapcar (function command-pattern) *commands*)))
 
 
 
 (defcommand (quit)
-    (setf (console-state (client-console *client*)) :limbo)
+  (setf (console-state (client-console *client*)) :limbo)
   (throw :configuration-repl-exit nil))
-  
+
 
 
 ;;;; THE END ;;;;

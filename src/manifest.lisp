@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -73,8 +73,15 @@
   (delete (string-downcase system)
           (let ((system (asdf:find-system system)))
            (delete-duplicates
-            (mapcar 'string-downcase
-                    (mapcan (lambda (x) (copy-seq (rest x)))
+            (mapcar (lambda (system)
+                      (etypecase system
+                        (asdf:system (asdf:component-name system))
+                        (string  system)
+                        (symbol  (string-downcase system))))
+                    (mapcan (lambda (x)
+                              (delete-if-not (lambda (component)
+                                               (typep component 'asdf:system))
+                                             (copy-seq (rest x))))
                             (asdf:component-depends-on 'asdf:load-op system)))
             :test 'string=))
           :test 'string=))

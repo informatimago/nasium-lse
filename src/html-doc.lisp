@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -458,7 +458,7 @@ NOTE: Unclassified chapters are in the category NIL."
               (html:a (:href "../")   (html:pcdata "Maison")))
             (html:hr)
             (html:pre -
-              (html:pcdata *title-banner* (version)))
+              (html:pcdata *title-banner* (version) *copyright*))
             (html:ol -
               (let ((chapters (chapters-per-category)))
                 (dolist (category *indexed-categories*)

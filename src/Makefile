@@ -50,7 +50,7 @@ SYMLINK_CLI    = awk '/Generating/{print $$2}' < $(LOGFILE) | ( read executable 
 SYMLINK_SERVER = awk '/Generating/{print $$2}' < $(LOGFILE) | ( read executable ; rm -f lse-server ; ln -sf $$executable lse-server )
 
 
-CCL            = /data/languages/ccl/bin/ccl --no-init
+CCL            = ccl --no-init
 CCL_EVAL       =  --eval
 CCL_LOAD       =  --load 
 

@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal Bourguignon 2005 - 2005
+;;;;    Copyright Pascal Bourguignon 2005 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -42,7 +42,7 @@
 (defvar *limbo-banner* "
 EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]
 VERSION : ~A
-COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
+~A
 
 CONSOLE NO. ~2,'0D
 "
@@ -75,7 +75,7 @@ CONFIGURER     Configure le server EMULSE.
 
 (defmethod client-send-initial-message ((client lse-console-client))
   (client-send-response client "~%~?~%" *limbo-banner*
-                        (list (version) (console-number (client-console client)))))
+                        (list (version) *copyright* (console-number (client-console client)))))
 
 
 (defmethod client-send-prompt ((client lse-console-client))
@@ -87,17 +87,18 @@ CONFIGURER     Configure le server EMULSE.
 (defmethod client-receive-message ((client lse-console-client) message)
   (let ((text (message-text message))
         (*client* client))
-    (format t "LSE received ~S~%" text)
+    (format t "LSE received ~S (state ~s) ~%" text (console-state (client-console client)))
     (ecase (console-state (client-console client))
       (:limbo
        (cond
-         ((string-equal text "deconnecter")
+         ((or (string-equal text "de") (string-equal text "deconnecter"))
           (server-remove-client (client-server client) client)
           (return-from client-receive-message))
-         ((string-equal text "lse")
+         ((or (string-equal text "ls") (string-equal text "lse"))
           (setf (console-state (client-console client)) :sleeping))
-         ((string-equal text "configurer")
-          (setf (console-state (client-console client)) :configuration))
+         ((or (string-equal text "co") (string-equal text "configurer"))
+          (setf (console-state (client-console client)) :configuration)
+          (client-send-response client "~&Tapez: help~%pour obtenir la liste des commandes de configuration.~%"))
          (t
           (client-send-response client "~%~A~%" *limbo-help*))))
       (:configuration
@@ -107,7 +108,7 @@ CONFIGURER     Configure le server EMULSE.
                                      (*standard-input* (make-string-input-stream ""))
                                      (*terminal-io*    (make-two-way-stream *standard-input*
                                                                             *standard-output*))
-                                     (*query-io*       *query-io*))
+                                     (*query-io*       *terminal-io*))
                                  (configuration-repl-input text)))))
       ((:sleeping :awake)
        (client-send-response client "~A"
@@ -116,7 +117,7 @@ CONFIGURER     Configure le server EMULSE.
                                      (*standard-input* (make-string-input-stream ""))
                                      (*terminal-io*    (make-two-way-stream *standard-input*
                                                                             *standard-output*))
-                                     (*query-io*       *query-io*))
+                                     (*query-io*       *terminal-io*))
                                  (command-eval-line (client-task client) text)))))))
   (client-send-prompt client))
 
@@ -124,7 +125,8 @@ CONFIGURER     Configure le server EMULSE.
 
 
 (defun main (&key (port *server-port*))
-  (let* ((*event-base* (make-instance 'event-base)))
+  (let* ((*event-base* (make-instance 'event-base))
+         (encoding :ascii)) ;; TODO
     (setf *server* (start-server
                     (make-instance 'tcp-ipv4-end-point :interface #(127 0 0 1) :port port)
                     :name "test"
@@ -145,10 +147,10 @@ CONFIGURER     Configure le server EMULSE.
                                 :state :sleeping
                                 :case-insensitive t
                                 :upcase-output nil
-                                :unicode nil ; (eql encoding :utf-8)
-                                :arrows  nil #-(and) (if (eql encoding :utf-8)
-                                                         :unicode-halfwidth
-                                                         nil) 
+                                :unicode (eql encoding :utf-8)
+                                :arrows (if (eql encoding :utf-8)
+                                            :unicode-halfwidth
+                                            :ascii)
                                 :terminal (make-instance 'standard-terminal
                                               :input-stream (make-synonym-stream '*standard-input*)
                                               :output-stream (make-synonym-stream '*standard-output*))))

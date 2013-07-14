@@ -20,7 +20,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2000 - 2004
+;;;;    Copyright Pascal J. Bourguignon 2000 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -114,7 +114,7 @@ Can be either (terminal-output-stream terminal) or tape-output.")
                          :accessor task-arrows
                          :initform :ascii
                          :type (member :ascii :dectech :unicode :unicode-halfwidth)
-                         :documentation "How to output arrows _ et ^.")
+                         :documentation "How to output arrows '_' and '^'.")
    (unicode              :initarg :unicode
                          :accessor task-unicode
                          :initform nil
@@ -154,7 +154,7 @@ so that if next command is ine, we continue automatically.")
    
    (random-state         :accessor task-random-state
                          :initform (make-random-state t) :type random-state)
-   (environnement        :accessor task-environnement :initform nil :type (or null environnement))
+   (environment          :accessor task-environment :initform nil :type (or null environment))
    (vm                   :reader task-vm
                          :initform (make-instance 'lse-vm) :type lse-vm)
    (files                :reader task-files

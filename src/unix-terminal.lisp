@@ -23,7 +23,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -462,6 +462,7 @@ Valid only whe MODERN-MODE is false.
    (vstop                  :initform 0   :reader terminal-vstop)))
 
 
+(defgeneric (setf terminal-modern-mode) (new-mode terminal))
 
 (defmethod (setf terminal-modern-mode) (new-mode (terminal unix-terminal))
   (with-slots (modern-mode

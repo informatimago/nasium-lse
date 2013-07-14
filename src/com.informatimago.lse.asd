@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -98,7 +98,7 @@
                                                            "error" "byte-code" "compiler"
                                                            "variables" "functions" "file"))
 
-                 (:file "task"                :depends-on ("packages" "file" "vm" ))
+                 (:file "task"                :depends-on ("packages" "file" "vm" "environment"))
                  (:file "io"                  :depends-on ("packages" "file" "task"))
                  (:file "commands"            :depends-on ("packages"
                                                            "error" "version"

@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -170,7 +170,7 @@ BONJOUR     ~8A
                            (when old-debugger-hook
                              (funcall old-debugger-hook condition debugger-hook)))))
                    (io-format *task* "~A" *tape-banner*)
-                   (io-format *task* "~?" *title-banner* (list (version)))
+                   (io-format *task* "~?" *title-banner* (list (version) *copyright*))
                    (io-format *task* "~?" *cli-banner*   (list (subseq (dat) 9)))
                    (command-repl *task*))
               (task-close-all-files *task*)

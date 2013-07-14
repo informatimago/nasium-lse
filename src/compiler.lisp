@@ -19,7 +19,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal Bourguignon 2005 - 2005
+;;;;    Copyright Pascal Bourguignon 2005 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -1430,7 +1430,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 (defmacro converting-parser-errors (&body body)
   ;; We convert parser and scanner errors into lse-parser and
   ;; lse-scanner errors, rewriting the error messages.
-  `(handler-bind ((scanner-error-invalid-character
+  `(handler-bind ((lse-scanner-error-invalid-character
                    (lambda (err)
                      (error 'lse-scanner-error-invalid-character
                             :line              (scanner-error-line          err)
@@ -1447,7 +1447,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                                                        (format nil ".~A." (char-code ch)))
                                                    (<= 32 (char-code ch))
                                                    (char-code ch))))))
-                  (parser-end-of-source-not-reached
+                  (lse-parser-error-end-of-source-not-reached
                    (lambda (err)
                      (error 'lse-parser-error-end-of-source-not-reached
                             :line    (parser-error-line err)
@@ -1463,7 +1463,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                                              (token-text token))
                                     (token-kind-label (token-kind token))
                                     (token-text token))))))
-                  (parser-error-unexpected-token
+                  (lse-parser-error-unexpected-token
                    (lambda (err)
                      (error 'lse-parser-error-unexpected-token
                             :line    (parser-error-line err)

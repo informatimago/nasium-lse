@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -161,7 +161,7 @@ TERM indiquent le type de terminal.
   (format t "
 L.S.E.
 VERSION ~A
-COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
+~A
 
 DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLv3.
 
@@ -171,13 +171,14 @@ vous êtes les bienvenus pour redistribuer sous certaines conditions;
 utilisez la commande DO LICENSE pour plus de détails.
 
 "
-          (version))
+          (version)
+          *copyright*)
   (parse-options-finish ex-ok))
 
 
 (defoption ("--fleches-ascii" "--ascii-arrows") ()
   "
-Les caractères _ et ^ sont affichiés tels quels.
+Les caractères _ et ^ sont affichés tels quels.
 "
   (setf (options-output-arrows *options*) nil))
 

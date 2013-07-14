@@ -21,7 +21,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal Bourguignon 2005 - 2012
+;;;;    Copyright Pascal Bourguignon 2005 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -88,8 +88,11 @@
 (defmethod print-object ((self lse-token) stream)
   (if *print-escape*
       (print-unreadable-object (self stream :type t :identity t)
-        (format stream "~D:~D: ~:[~A ~S~;~S~*~]"
-                (token-line self) (token-column self)
+        (format stream "~@[~D:~]~@[~D:~] ~:[~A ~S~;~S~*~]"
+                (and (slot-boundp self 'com.informatimago.common-lisp.parser.scanner::line)
+                     (token-line self))
+                (and (slot-boundp self 'com.informatimago.common-lisp.parser.scanner::column)
+                     (token-column self))
                 (string= (token-kind-label (token-kind self))
                          (token-text self))
                 (token-kind-label (token-kind self))
@@ -403,16 +406,21 @@
   self)
 
 (defmethod print-object ((self lse-scanner) out)
-  (print-unreadable-object (self out :type t :identity t)
-    (format out "~{~S~^ ~}"
-            (list :line          (scanner-line          self)
-                  :column        (scanner-column        self)
-                  :current-token (scanner-current-token self)
-                  :source        (scanner-source        self)
-                  :buffer        (scanner-buffer        self)
-                  :previous-token-kind (scanner-previous-token-kind self))))
-  self)
+  (print-parseable-object (self out :type t :identity t)
+                          (:line          (scanner-line          self))
+                          (:column        (scanner-column        self))
+                          (:current-token (scanner-current-token self))
+                          (:source        (scanner-source        self))
+                          (:buffer        (scanner-buffer        self))
+                          (:previous-token-kind (scanner-previous-token-kind self))))
 
+(macroexpand '(print-parseable-object (self out :type t :identity t)
+                          (:line          (scanner-line          self))
+                          (:column        (scanner-column        self))
+                          (:current-token (scanner-current-token self))
+                          (:source        (scanner-source        self))
+                          (:buffer        (scanner-buffer        self))
+                          (:previous-token-kind (scanner-previous-token-kind self))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   ;; (defconstant +code-limit+ 128 "Number of characters in the LSE charset") ; ASCII

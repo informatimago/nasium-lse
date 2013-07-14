@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -34,10 +34,12 @@
 
 (defpackage "COM.INFORMATIMAGO.ENVIRONMENT"
   (:use "COMMON-LISP")
-  (:export "MAKE-DEFAULT-ENVIRONMENT" "WITH-ENVIRONMENT")
+  (:export "MAKE-DEFAULT-ENVIRONMENT" "WITH-ENVIRONMENT" "ENVIRONMENT")
   (:documentation "This package binds Common Lisp dynamic variables in a user environment."))
 (in-package "COM.INFORMATIMAGO.ENVIRONMENT")
 
+(defstruct environment
+  bindings)
 
 (defun make-default-environment ()
   "
@@ -50,49 +52,50 @@ are configured specifically.
   (flet ((capture (special-variables)
            (mapcar (lambda (var) (cons var (symbol-value var)))
                    special-variables)))
-    (list* (cons '*package*      (load-time-value (find-package "COMMON-LISP-USER")))
-           (cons '*READTABLE*    (copy-readtable *READTABLE*))
-           (cons '*RANDOM-STATE* (make-random-state *RANDOM-STATE*))
-           (cons '*FEATURES*     (copy-list *FEATURES*))
-           (cons '*MODULES*      (copy-list *MODULES*))
-           (cons '*LOAD-PATHNAME* nil)
-           (cons '*LOAD-TRUENAME* nil)
-           (cons '*PRINT-RIGHT-MARGIN* 80)
-           (capture '(#+ecl SI:*PRINT-PACKAGE*  
-                      #+ecl SI:*PRINT-STRUCTURE*  
-                      * ** ***
-                      + ++ +++
-                      -
-                      / // ///
-                      *BREAK-ON-SIGNALS*
-                      *COMPILE-FILE-PATHNAME*
-                      *COMPILE-FILE-TRUENAME*
-                      *COMPILE-PRINT*
-                      *COMPILE-VERBOSE*
-                      *DEBUGGER-HOOK*
-                      *DEFAULT-PATHNAME-DEFAULTS*
-                      *GENSYM-COUNTER*
-                      *LOAD-PRINT*
-                      *LOAD-VERBOSE*
-                      *MACROEXPAND-HOOK*
-                      *PRINT-ARRAY*
-                      *PRINT-BASE*
-                      *PRINT-CASE*
-                      *PRINT-CIRCLE*
-                      *PRINT-ESCAPE*
-                      *PRINT-GENSYM*
-                      *PRINT-LENGTH*
-                      *PRINT-LEVEL*
-                      *PRINT-LINES*
-                      *PRINT-MISER-WIDTH*
-                      *PRINT-PPRINT-DISPATCH*
-                      *PRINT-PRETTY*
-                      *PRINT-RADIX*
-                      *PRINT-READABLY*                      
-                      *READ-BASE*
-                      *READ-DEFAULT-FLOAT-FORMAT*
-                      *READ-EVAL*
-                      *READ-SUPPRESS*)))))
+    (make-environment
+     :bindings (list* (cons '*package*      (load-time-value (find-package "COMMON-LISP-USER")))
+                      (cons '*READTABLE*    (copy-readtable *READTABLE*))
+                      (cons '*RANDOM-STATE* (make-random-state *RANDOM-STATE*))
+                      (cons '*FEATURES*     (copy-list *FEATURES*))
+                      (cons '*MODULES*      (copy-list *MODULES*))
+                      (cons '*LOAD-PATHNAME* nil)
+                      (cons '*LOAD-TRUENAME* nil)
+                      (cons '*PRINT-RIGHT-MARGIN* 80)
+                      (capture '(#+ecl SI:*PRINT-PACKAGE*  
+                                 #+ecl SI:*PRINT-STRUCTURE*  
+                                 * ** ***
+                                 + ++ +++
+                                 -
+                                 / // ///
+                                 *BREAK-ON-SIGNALS*
+                                 *COMPILE-FILE-PATHNAME*
+                                 *COMPILE-FILE-TRUENAME*
+                                 *COMPILE-PRINT*
+                                 *COMPILE-VERBOSE*
+                                 *DEBUGGER-HOOK*
+                                 *DEFAULT-PATHNAME-DEFAULTS*
+                                 *GENSYM-COUNTER*
+                                 *LOAD-PRINT*
+                                 *LOAD-VERBOSE*
+                                 *MACROEXPAND-HOOK*
+                                 *PRINT-ARRAY*
+                                 *PRINT-BASE*
+                                 *PRINT-CASE*
+                                 *PRINT-CIRCLE*
+                                 *PRINT-ESCAPE*
+                                 *PRINT-GENSYM*
+                                 *PRINT-LENGTH*
+                                 *PRINT-LEVEL*
+                                 *PRINT-LINES*
+                                 *PRINT-MISER-WIDTH*
+                                 *PRINT-PPRINT-DISPATCH*
+                                 *PRINT-PRETTY*
+                                 *PRINT-RADIX*
+                                 *PRINT-READABLY*                      
+                                 *READ-BASE*
+                                 *READ-DEFAULT-FLOAT-FORMAT*
+                                 *READ-EVAL*
+                                 *READ-SUPPRESS*))))))
 
 
 (defmacro with-environment (environment &body body)
@@ -102,11 +105,11 @@ Executes the BODY in the given ENVIRONMENT.
 The environment is updated when the BODY exits (locally or not) with
 the new values.  However, *PACKAGE* and *RANDOM-STATE* are reset to
 default values if they are not of the right type."
-  (let ((venv (gensym)))
-    `(let ((,venv ,environment))
+  (let ((vbindings (gensym)))
+    `(let ((,vbindings (environment-bindings ,environment)))
        (progv
-           (mapcar (function car) ,venv)
-           (mapcar (function cdr) ,venv)
+           (mapcar (function car) ,vbindings)
+           (mapcar (function cdr) ,vbindings)
          (unwind-protect
               (progn ,@body)
 
@@ -116,7 +119,7 @@ default values if they are not of the right type."
            (unless (random-state-p *random-state*)
              (setf *random-state* (make-random-state *RANDOM-STATE*)))
            ;; Save the changes:
-           (dolist (binding ,venv)
+           (dolist (binding ,vbindings)
              (setf (cdr binding) (symbol-value (car binding)))))))))
 
 

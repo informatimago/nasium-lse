@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal Bourguignon 2005 - 2005
+;;;;    Copyright Pascal Bourguignon 2005 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -64,7 +64,7 @@
 (defparameter *password*    "MAYER")
 
 (defparameter *header*      "EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]")
-(defparameter *copyright*   "COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON")
+(defparameter *copyright*   "COPYRIGHT 1984 - 2013 PASCAL BOURGUIGNON")
 
 
 ;; (map nil (function ensure-directories-exist)

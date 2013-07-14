@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -57,6 +57,8 @@
                  "iolib.syscalls"
                  "iolib"
 
+                 "trivial-gray-streams"
+
                  #+clisp "com.informatimago.clisp"
                  #+clisp "com.informatimago.susv3"
 
@@ -66,10 +68,11 @@
                  )
     
     :components (
-
+                 (:file "environment")
+                 ;;---------------------
                  (:file "iolib-message"       :depends-on ())
                  (:file "iolib-end-point")
-                 (:file "iolib-utils"         :depends-on ("iolib-message" "iolib-end-point"))
+                 (:file "iolib-utils"         :depends-on ("iolib-message" "iolib-end-point" "environment"))
                  (:file "iolib-server"        :depends-on ("iolib-utils" "iolib-message"))
                  (:file "iolib-client"        :depends-on ("iolib-utils" "iolib-message"))
                  ;;---------------------
@@ -81,6 +84,7 @@
 
                  (:file "server-commands"     :depends-on ("server-package"))
                  (:file "server-arguments"    :depends-on ("server-package"))
+
                  (:file "server"              :depends-on ("server-package"
                                                            "iolib-end-point"
                                                            "iolib-utils"

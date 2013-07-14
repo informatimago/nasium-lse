@@ -19,7 +19,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -1884,7 +1884,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                                            (error         (function invoke-debugger)))
                               (do-it))
                             (do-it)))
-                    (scanner-error-invalid-character (err)
+                    (lse-scanner-error-invalid-character (err)
                       (io-format task "~%ERREUR: ~?~%"
                                  "CARACTÈRE INVALIDE ~A~:[~*~; (~D~)~] EN POSITION ~D"
                                  (destructuring-bind (ch pos) (scanner-error-format-arguments err)

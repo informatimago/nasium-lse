@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -34,27 +34,6 @@
 
 
 (in-package "COMMON-LISP-USER")
-
-(defpackage "COM.INFORMATIMAGO.LSE.UNIX-TERMINAL"
-  (:use "COMMON-LISP"
-        "TRIVIAL-GRAY-STREAMS"
-        "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.ASCII"
-        "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.UTILITY"
-        "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.LIST"
-        "COM.INFORMATIMAGO.RDP"
-        "COM.INFORMATIMAGO.SIGNAL"
-        "COM.INFORMATIMAGO.LSE.OS"
-        "COM.INFORMATIMAGO.LSE")
-
-  (:export "UNIX-TERMINAL"
-           "TERMINAL-MODERN-MODE" "TERMINAL-CR-AS-XOFF"
-           "TERMINAL-VINTR" "TERMINAL-VQUIT" "TERMINAL-VSUSP"
-           "TERMINAL-VKILL" "TERMINAL-VEOF" "TERMINAL-VEOL"
-           "TERMINAL-VEOL2" "TERMINAL-VERASE" "TERMINAL-VWERASE"
-           "TERMINAL-VREPRINT" "TERMINAL-VSTART" "TERMINAL-VSTOP"
-
-           ))
-
 
 (defpackage "COM.INFORMATIMAGO.LSE.CLI"
   (:nicknames "LSE-CLI")

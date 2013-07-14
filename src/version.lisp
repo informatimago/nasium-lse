@@ -18,7 +18,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -68,7 +68,7 @@
 NASIUM L.S.E.
 LANGAGE SYMBOLIQUE D'ENSEIGNEMENT
 VERSION ~A
-COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
+~A
 
 DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLv3.
 ")

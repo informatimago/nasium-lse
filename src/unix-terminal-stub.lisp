@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -35,6 +35,9 @@
 (in-package "COM.INFORMATIMAGO.LSE.UNIX-TERMINAL")
 (defclass unix-terminal (standard-terminal)
   ())
+
+(defgeneric (setf terminal-modern-mode) (new-mode terminal)
+  (:method (new-mode (terminal unix-terminal)) new-mode))
 
 ;;;; THE END ;;;;
 

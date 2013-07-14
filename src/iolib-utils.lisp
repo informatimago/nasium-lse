@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -38,6 +38,7 @@
         "IOLIB.MULTIPLEX"
         "COM.INFORMATIMAGO.LOGGER"
         "COM.INFORMATIMAGO.SIGNAL"
+        "COM.INFORMATIMAGO.ENVIRONMENT"
         "COM.INFORMATIMAGO.IOLIB.END-POINT"
         "COM.INFORMATIMAGO.IOLIB.MESSAGE")
   (:export "*EVENT-BASE*" "EVENT-BASE"

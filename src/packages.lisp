@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -48,6 +48,7 @@
   (:documentation "A portability layer for a few OS operators."))
 
 
+
 (defpackage "COM.INFORMATIMAGO.LSE.BYTE-CODE"
   (:nicknames "BC")
   (:use)
@@ -77,6 +78,7 @@
         
         "COM.INFORMATIMAGO.COMMON-LISP.PARSER.SCANNER"
 
+        "COM.INFORMATIMAGO.ENVIRONMENT"
         "COM.INFORMATIMAGO.SIGNAL"
         "COM.INFORMATIMAGO.RDP"
 
@@ -134,8 +136,9 @@
    "TASK-INTERRUPTION" "TASK-SIGNAL"
    "TASK-CLOSE-ALL-FILES"
    "COMMAND-REPL"
+   "COMMAND-EVAL-LINE"
 
-   "VERSION" "*VERSION*" "*TITLE-BANNER*" "VERSIONS"
+   "VERSION" "*VERSION*" "*COPYRIGHT*" "*TITLE-BANNER*" "VERSIONS"
 
    "DAT"
 
@@ -143,6 +146,27 @@
    "*CURRENT-DIRECTORY*" "*CURRENT-SHELF*" "*LSE-ROOT*"
    )
   (:documentation "The LSE language and system implementation."))
+
+
+(defpackage "COM.INFORMATIMAGO.LSE.UNIX-TERMINAL"
+  (:use "COMMON-LISP"
+        "TRIVIAL-GRAY-STREAMS"
+        "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.ASCII"
+        "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.UTILITY"
+        "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.LIST"
+        "COM.INFORMATIMAGO.RDP"
+        "COM.INFORMATIMAGO.SIGNAL"
+        "COM.INFORMATIMAGO.LSE.OS"
+        "COM.INFORMATIMAGO.LSE")
+
+  (:export "UNIX-TERMINAL"
+           "TERMINAL-MODERN-MODE" "TERMINAL-CR-AS-XOFF"
+           "TERMINAL-VINTR" "TERMINAL-VQUIT" "TERMINAL-VSUSP"
+           "TERMINAL-VKILL" "TERMINAL-VEOF" "TERMINAL-VEOL"
+           "TERMINAL-VEOL2" "TERMINAL-VERASE" "TERMINAL-VWERASE"
+           "TERMINAL-VREPRINT" "TERMINAL-VSTART" "TERMINAL-VSTOP"
+
+           ))
 
 
 ;;; THE END ;;;;

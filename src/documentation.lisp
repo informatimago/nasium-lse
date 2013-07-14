@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2012
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -42,10 +42,8 @@
   text)
 
 (defmethod print-object ((self chapter) stream)
-  (print-unreadable-object (self stream :identity t :type t)
-    (format stream ":title ~S :category ~S"
-            (chapter-title self) (chapter-category self)))
-  self)
+  (print-parseable-object (self stream :type t :identity t)
+                          title category))
 
 (defparameter *chapters* (make-hash-table :test (function equalp)))
 

@@ -17,8 +17,6 @@ sources. ::
     (cd #P "~/src/nasium-lse/src/")
     (load "loader.lisp")
 
-It should be edited, notably there are absolute pathnames to remove
-~/.cache/common-lisp subdirectories.
 
 Once loaded, the lse system can be run and debugged with: ::
 
@@ -39,11 +37,11 @@ The available targets are:
         Compiles the following targets on each of the hosts (thru
         ssh).  The current directory should be shared or a copy
         available at the same path.  The various hosts should be
-        different target plateforms.  (We don't do cross-compiling).
+        different target platforms.  (We don't do cross-compiling).
 
 
-  - ``make unix-cli`` to compile the unix command line.  This is done
-    thru a lisp script, ``generate-unix-clip.lisp``, which generates
+  - ``make cli`` to compile the unix command line.  This is done
+    thru a lisp script, ``generate-cli.lisp``, which generates
     an executable named:
 
         lse-{lisp-implementation}-{system}-{distrib}-{release}-{machine-type}
@@ -53,13 +51,29 @@ The available targets are:
     It also makes a symlink named ``lse``, so that you can easily run
     the last compiled executable.
 
-  - ``make unix-server`` to compile the unix server.  [NOT YET]
+
+  - ``make server`` to compile the unix server.    This is done
+    thru a lisp script, ``generate-server.lisp``, which generates
+    an executable named:
+
+        lse-server-{lisp-implementation}-{system}-{distrib}-{release}-{machine-type}
+
+    and a corresponding manifest (text) file.
+
+    It also makes a symlink named ``lse-server``, so that you can easily run
+    the last compiled executable.
+
+  - ``make documentation`` to generate the documentation HTML.  This
+    is done thru a lisp script, ``generate-documentation.lisp``.  The
+    documentation may also be uploaded to a HTTP server if UPLOAD=1 is
+    given.  See the ``Makefile`` for details.
 
 
 Once compiled, the executables can be run with: ::
 
     $ ./lse --aide
     $ ./lse --montrer-touches --configuration-interactive
+    $ ,/lse-server &
 
 
 Features
@@ -84,7 +98,7 @@ converted to upper case.  For strings, they're kept as given (unicode
 characters are accepted in strings and are encoded in UTF-8).
 
 
-The scripts (``generate-unix-clip.lisp`` and ``loader.lisp``) must be
+The scripts (``generate-clip.lisp`` and ``loader.lisp``) must be
 edited to configure the features.
 
 

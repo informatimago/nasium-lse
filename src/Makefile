@@ -35,7 +35,7 @@
 # If UPLOAD is 1, then documentation is generated in $(UPLOAD_DOC_DIR)
 # and uploaded by make upload in $(UPLOAD_DIR).
 # otherwise, the documentation is generated in $(DOC_DIR).
-UPLOAD         = 1
+UPLOAD         = 0
 UPLOAD_DIR     = /home/pjb/public_html/sites/com.ogamita.www
 UPLOAD_DOC_DIR = $(UPLOAD_DIR)/nasium-lse/
 DOC_DIR        = ../doc/
@@ -78,9 +78,10 @@ all:ChangeLog
 
 help::
 	@printf $(HELPFORMAT) ChangeLog 'Extracts the logs from git into the ChangeLog file.'
-ChangeLog:../_FOSSIL_
-	fossil timeline -n 2000 > ChangeLog
-#	git log > ChangeLog
+ChangeLog:.git
+	git log > ChangeLog
+#ChangeLog:../_FOSSIL_
+#	fossil timeline -n 2000 > ChangeLog
 
 
 
@@ -107,14 +108,14 @@ server:
 help::
 	@printf $(HELPFORMAT) html-doc 'builds the html doc directory.'
 html-doc:
-	if [ $(UPLOAD) -ne 0 ] ; then \
+	if [ $(UPLOAD) -eq 1 ] ; then \
 		 $(LISP) $(EVAL) "(defparameter *doc-dir* \"$(UPLOAD_DOC_DIR)\")" \
 				 $(LOAD) generate-documentation.lisp ;\
 	else \
 		 $(LISP) $(EVAL) "(defparameter *doc-dir* \"$(DOC_DIR)\")" \
 				 $(LOAD) generate-documentation.lisp ;\
 	fi
-	if [ $(UPLOAD) -ne 0 ] ; then $(MAKE) $(MFLAGS) -C $(UPLOAD_DIR) upload ; fi
+	if [ $(UPLOAD) -eq 1 ] ; then $(MAKE) $(MFLAGS) -C $(UPLOAD_DIR) upload ; fi
 
 
 
@@ -135,6 +136,6 @@ help::
 install:
 	cp lse ~/bin/lse
 
-.PHONY: unix-cli html-doc
+.PHONY: cli server html-doc help install macosx
 
 #### THE END ####

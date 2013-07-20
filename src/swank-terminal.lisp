@@ -320,6 +320,7 @@ contents of the OUTPUT-BUFFER, moving the cursor to the CURRENT-COLUMN."
 
 (defmethod terminal-read-line ((terminal swank-terminal) &key (echo t) (beep nil))
   (declare (ignorable echo))
+  (format *trace-output* "~&~A~%" 'swank-terminal)
   (when beep
     (terminal-ring-bell terminal))
   (terminal-finish-output terminal)

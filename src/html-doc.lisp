@@ -44,6 +44,7 @@
           (remove-accents category)))
 
 
+(defvar *documentation-directory* #P"/tmp/doc/")
 
 
 
@@ -352,7 +353,7 @@ NOTE: Unclassified chapters are in the category NIL."
   "Generate a category documentation html file."
   (let ((cat (intern category "KEYWORD")))
     (with-open-file (html:*html-output-stream*
-                     (html-doc-category-file-name category)
+                     (merge-pathnames (html-doc-category-file-name category) *documentation-directory* nil)
                      :direction :output
                      :if-exists :supersede
                      :if-does-not-exist :create
@@ -427,7 +428,7 @@ NOTE: Unclassified chapters are in the category NIL."
 (defun generate-index ()
   "Generate an index file for the catgory html files."
   (with-open-file (html:*html-output-stream*
-                   "index.html"
+                   (merge-pathnames "index.html" *documentation-directory* nil)
                    :direction :output
                    :if-exists :supersede
                    :if-does-not-exist :create
@@ -467,12 +468,12 @@ NOTE: Unclassified chapters are in the category NIL."
                       (html:pcdata "~A" category))))))))))))
 
 
-(defun generate-html-documentation (subdir)
-  (let ((*default-pathname-defaults*
-         (etypecase subdir
-           (pathname subdir)
-           (string   (make-pathname :directory (list :relative subdir))))))
-    (ensure-directories-exist "file.test")
+(defun generate-html-documentation (*documentation-directory*)
+  (let ((*documentation-directory* (etypecase *documentation-directory*
+                                       (pathname *documentation-directory*)
+                                       (stream   (pathname *documentation-directory*))
+                                       (string   (pathname *documentation-directory*)))))
+    (ensure-directories-exist (merge-pathnames "file.test" *documentation-directory* nil))
     (generate-index)
     (loop
       :for (prev category next) :on (append '(nil) *indexed-categories* '(nil))

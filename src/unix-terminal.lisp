@@ -854,6 +854,7 @@ Valid only whe MODERN-MODE is false.
 
 
 (defmethod terminal-read ((terminal unix-terminal) &key (echo t) (beep nil))
+  (format *trace-output* "~&~A~%" 'unix-terminal)
   (with-temporary-echo (terminal echo)
     (when beep
       (terminal-ring-bell terminal))

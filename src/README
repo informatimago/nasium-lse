@@ -20,7 +20,7 @@ sources. ::
 
 Once loaded, the lse system can be run and debugged with: ::
 
-    (com.informatimago.lse.unix-cli:main)
+    (com.informatimago.lse.cli:main)
 
 
 

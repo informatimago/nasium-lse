@@ -272,26 +272,35 @@ When false, no automatic echo occurs.")
     (read-line (terminal-input-stream terminal))))
 
 
+;; TODO: This readtable is not conforming. Anyways we want to read just numbers (and possibly separated by spaces), so it would be better to to use read-char.
+
 (defparameter *lse-readtable*
   (loop
     :with rt =  (copy-readtable nil)
     :for i :below char-code-limit
     :for ch = (code-char i)
-    :when ch
-    :do (set-macro-character ch nil nil rt)
+    :when (and ch (get-macro-character ch rt))
+    :do (set-macro-character ch 'read-symbol nil rt)
     :finally (return rt))
   "A readtable to read L.S.E. data.  Ie, just numbers.
 Symbols will signal an error,
 and strings are read with read-line.")
 
+(defun read% (stream)
+  (loop
+       ))
 
 (defmethod terminal-read ((terminal standard-terminal) &key (echo t) (beep nil))
+  (format *trace-output* "~&~A ~S~%" 'standard-terminal  (terminal-input-stream terminal))
   (with-temporary-echo (terminal echo)
     (when beep
       (terminal-ring-bell terminal))
     (handler-case (let ((*read-eval* nil)
                         (*readtable* *lse-readtable*))
-                    (read (terminal-input-stream terminal)))
+                    (let ((input
+                            (read (terminal-input-stream terminal))))
+                      (format *trace-output* "~&read a ~S: ~S~%" (type-of input) input)
+                      input))
       (reader-error ()
         (clear-input (terminal-input-stream terminal))
         (lse-error "ENTREE INVALIDE")))))

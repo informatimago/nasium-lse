@@ -52,9 +52,9 @@
 #+LSE-T1600 (defun   chainep    (x)  (and (stringp x) (<= (length x) chaine-maximum)))
 #+LSE-T1600 (deftype chaine     ()   '(satisfies chainep))
 
-#-LSE-T1600 (defconstant chaine-maximum array-dimension-limit)
-#-LSE-T1600 (defun   chainep    (x)   (stringp x))
-#-LSE-T1600 (deftype chaine     ()   'string)
+#-LSE-T1600 (defconstant chaine-maximum (min (* 64 1024) array-dimension-limit))
+#-LSE-T1600 (defun   chainep    (x)     (stringp x))
+#-LSE-T1600 (deftype chaine     ()      'string)
 
 
 (defun   identificateurp  (x)  (and (symbolp x)

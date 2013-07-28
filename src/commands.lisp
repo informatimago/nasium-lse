@@ -58,7 +58,7 @@
                                  (read-from-string (second $1))))))
 
 (defgrammar numero-de-ligne
-    :terminals    ((tok-numero  "[0-9]+"))
+    :terminals ((tok-numero  "[0-9]+"))
     :start numero-de-ligne
     :rules ((--> numero-de-ligne
                  tok-numero :action (let ((lino (parse-integer (second $1))))
@@ -1749,11 +1749,11 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
 ~@[~16A pour envoyer le signal d'attention (fonction ATT()).~%~]~
 ~@[~16A pour entrer les données, mais ajoute le code RETOUR aux chaînes.~%~]~
 "
-              (terminal-key terminal :xoff)
-              (terminal-key terminal :delete)
-              (terminal-key terminal :escape)
-              (terminal-key terminal :attention)
-              (terminal-key terminal :return))))
+              (terminal-keysym-label terminal :xoff)
+              (terminal-keysym-label terminal :delete)
+              (terminal-keysym-label terminal :escape)
+              (terminal-keysym-label terminal :attention)
+              (terminal-keysym-label terminal :return))))
 
 #+developing
 (defun initialize-debugging-task ()
@@ -1850,7 +1850,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
         (*print-case* :upcase))
     (io-format task "~&PRET~%")
     (io-finish-output task)
-    (handler-case ; catch au-revoir condition.
+    (handler-case                       ; catch au-revoir condition.
         (loop
           :while (task-state-awake-p task)
           :do (restart-case
@@ -1872,10 +1872,8 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                                    (if (and (io-tape-input-p task)
                                             (eql (stream-error-stream err) (task-input task)))
                                        (io-stop-tape-reader task)
-                                       (progn
-                                         ;; end-of-file on input, let's exit.
-                                         ;; (error err)
-                                         (signal 'au-revoir)))))))
+                                       ;; end-of-file on input, let's exit.
+                                       (signal 'au-revoir))))))
                         (if *debug-repl*
                             (handler-bind ((lse-error     (function signal))
                                            (scanner-error (function signal))

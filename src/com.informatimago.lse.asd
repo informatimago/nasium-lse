@@ -78,7 +78,7 @@
                                                            "configuration" "error"
                                                            "functions"))
 
-                 (:file "documentation"       :depends-on ("packages"))
+                 (:file "documentation"       :depends-on ("packages" "terminal"))
                  (:file "chapters"            :depends-on ("packages" "version" "documentation"))
                  
                  (:file "catalog"             :depends-on ("packages" "configuration"))
@@ -99,7 +99,8 @@
                                                            "variables" "functions" "file"))
 
                  (:file "task"                :depends-on ("packages" "file" "vm" "environment"))
-                 (:file "io"                  :depends-on ("packages" "file" "task"))
+                 (:file "terminal"            :depends-on ("packages" "error" "lse-parser"))
+                 (:file "io"                  :depends-on ("packages" "file" "task" "terminal"))
                  (:file "commands"            :depends-on ("packages"
                                                            "error" "version"
                                                            "documentation"

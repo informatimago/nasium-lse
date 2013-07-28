@@ -1483,7 +1483,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                                     (token-text token)
                                     (token-kind-label (parser-error-expected-token err)))))))
                   (parser-error
-                    (lambda (err)
+                   (lambda (err)
                      (error 'lse-parser-error
                             :line    (parser-error-line err)
                             :column  (parser-error-column err)
@@ -1491,7 +1491,27 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                             :scanner (parser-error-scanner err)
                             :non-terminal-stack (parser-error-non-terminal-stack err)
                             :format-control   (parser-error-format-control   err)
-                            :format-arguments (parser-error-format-arguments err)))))
+                            :format-arguments (parser-error-format-arguments err))))
+                  
+                  (unexpected-token-error
+                   (lambda (err)
+                     (error 'lse-parser-error-unexpected-token
+                            :line    (scanner-error-line err)
+                            :column  (scanner-error-column err)
+                            ;; :grammar (scanner-error-grammar err)
+                            :scanner (scanner-error-scanner err)
+                            ;; :non-terminal-stack (scanner-error-non-terminal-stack err)
+                            :expected-token (com.informatimago.rdp::unexpected-token-error-expected-token err)
+                            :format-control "~:[FIN DE LIGNE INATTENDU~3*~;SYMBOLE INATTENDU ~:[~A ~S~;~*~S~]~]~@[; ATTENDU: ~A~]."
+                            :format-arguments
+                            (let ((token (scanner-current-token
+                                          (scanner-error-scanner err))))
+                              (list (not (or (eolp token) (eofp token)))
+                                    (string= (token-kind-label (token-kind token))
+                                             (token-text token))
+                                    (token-kind-label (token-kind token))
+                                    (token-text token)
+                                    (token-kind-label (com.informatimago.rdp::unexpected-token-error-expected-token err))))))))
      ,@body))
 
 

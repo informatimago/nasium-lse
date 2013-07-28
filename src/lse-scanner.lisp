@@ -407,25 +407,20 @@
 
 (defmethod print-object ((self lse-scanner) out)
   (print-parseable-object (self out :type t :identity t)
-                          (:line          (scanner-line          self))
-                          (:column        (scanner-column        self))
-                          (:current-token (scanner-current-token self))
-                          (:source        (scanner-source        self))
-                          (:buffer        (scanner-buffer        self))
-                          (:previous-token-kind (scanner-previous-token-kind self))))
+                          line column current-token source buffer previous-token-kind))
 
-(macroexpand '(print-parseable-object (self out :type t :identity t)
-                          (:line          (scanner-line          self))
-                          (:column        (scanner-column        self))
-                          (:current-token (scanner-current-token self))
-                          (:source        (scanner-source        self))
-                          (:buffer        (scanner-buffer        self))
-                          (:previous-token-kind (scanner-previous-token-kind self))))
+;; (macroexpand '(print-parseable-object (self out :type t :identity t)
+;;                           (:line          (scanner-line          self))
+;;                           (:column        (scanner-column        self))
+;;                           (:current-token (scanner-current-token self))
+;;                           (:source        (scanner-source        self))
+;;                           (:buffer        (scanner-buffer        self))
+;;                           (:previous-token-kind (scanner-previous-token-kind self))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   ;; (defconstant +code-limit+ 128 "Number of characters in the LSE charset") ; ASCII
   (defconstant +code-limit+ #x110000 "Number of characters in the LSE charset") ; Unicode
-  )
+  );;eval-when
 
 (defmacro case-state (statevar codevar &rest transitions)
   "

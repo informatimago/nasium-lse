@@ -43,9 +43,6 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
 
-  (defconstant XON              DC1)
-  (defconstant XOFF             DC3)
-
   (defconstant +TAPE-READER-ON+   DC1)
   (defconstant +TAPE-PUNCHER-ON+  DC2)
   (defconstant +TAPE-PUNCHER-OFF+ DC4)
@@ -54,27 +51,34 @@
   );;eval-when
 
 
+(defun slog (ctrlstring &rest args)
+  (with-open-file (logstream "/tmp/log.txt"
+                             :direction :output
+                             :if-does-not-exist :create
+                             :if-exists :append)
+    (format logstream "~?" ctrlstring args)))
+
+
 ;;----------------------------------------------------------------------
 ;;; Tape I/O
 ;;----------------------------------------------------------------------
 
 
-(defun io-stop-tape-reader (task)
+(defmethod io-stop-tape-reader ((task t))
   (setf (task-input  task) (terminal-input-stream (task-terminal task))))
 
-(defun io-stop-tape-puncher (task)
+(defmethod io-stop-tape-puncher ((task t))
   (setf (task-output task) (terminal-output-stream (task-terminal task))))
 
 
-(defun io-start-tape-reader (task)
+(defmethod io-start-tape-reader ((task t))
   (setf (task-input  task) (task-tape-input task)))
 
-(defun io-start-tape-puncher (task)
+(defmethod io-start-tape-puncher ((task t))
   (setf (task-output task) (task-tape-output task)))
 
 
-(defun io-standard-redirection
-  (task)
+(defmethod io-standard-redirection ((task t))
   (io-stop-tape-puncher task)
   (io-stop-tape-reader  task)
   (setf (task-silence task) nil)
@@ -82,307 +86,178 @@
 
 
 ;;----------------------------------------------------------------------
-;; Terminal Class
-;;----------------------------------------------------------------------
 
-(defclass terminal ()
-  ())
-
-(defgeneric terminal-initialize (terminal)
-  (:documentation "Initialize the terminal (remote device).")
-  (:method (terminal) terminal))
-
-(defgeneric terminal-finalize (terminal)
-  (:documentation "Finalize the terminal (remote device).")
-  (:method (terminal) terminal))
-
-(defgeneric terminal-columns (terminal)
-  (:documentation "Returns the number of columns in the terminal.")
-  (:method (terminal)
-    (declare (ignorable terminal))
-    80))
-
-(defgeneric terminal-rows (terminal)
-  (:documentation "Returns the number of rows in the terminal.")
-  (:method (terminal)
-    (declare (ignorable terminal))
-    25))
-
-(defgeneric terminal-input-stream (terminal)
-  (:documentation "Returns the input stream used to read from the terminal.")
-  (:method (terminal)
-    (declare (ignorable terminal))
-    *terminal-io*))
-
-(defgeneric terminal-output-stream (terminal)
-  (:documentation "Returns the output stream used to write to the terminal.")
-  (:method (terminal)
-    (declare (ignorable terminal))
-    *terminal-io*))
-  
-(defgeneric terminal-ring-bell (terminal)
-  (:documentation "Ring a bell on the terminal.")
-  (:method (terminal)
-    (declare (ignorable terminal))
-    (values)))
-
-(defgeneric terminal-carriage-return (terminal)
-  (:documentation "Move the cursor to the beginning of the line (Carriage Return).")
-  (:method (terminal)
-    (declare (ignorable terminal))
-    (values)))
-
-(defgeneric terminal-new-line (terminal &optional count)
-  (:documentation "Write COUNT new lines (Line Feed)")
-  (:method (terminal &optional count)
-    (declare (ignorable terminal count))
-    (values)))
-
-(defgeneric terminal-write-string (terminal string &key start end)
-  (:documentation "Write a sub-string of STRING from START to END to the terminal.")
-  (:method (terminal string &key (start 0) (end nil))
-    (declare (ignorable terminal string start end))
-    (values)))
-
-(defgeneric terminal-finish-output (terminal)
-  (:documentation "Flush output buffers.")
-  (:method (terminal)
-    (declare (ignorable terminal))
-    (values)))
-
-(defgeneric terminal-read-line (terminal &key echo beep)
-  (:documentation "Read a line from the terminal.")
-  (:method (terminal &key echo beep)
-    (declare (ignorable terminal echo beep))
-    ""))
-
-(defgeneric terminal-read (terminal &key echo beep)
-  (:documentation "Read an object from the terminal.")
-  (:method (terminal &key echo beep)
-    (declare (ignorable terminal echo beep))
-    nil))
-
-(defgeneric terminal-echo (terminal)
-  (:documentation "Returns the current echo status of the terminal.")
-  (:method (terminal)
-    (declare (ignorable terminal))
-    t))
-
-(defgeneric (setf terminal-echo) (new-echo terminal)
-  (:documentation "Sets the echo status of the terminal.
-When true, the input on that terminal is echoed automatically.
-When false, no automatic echo occurs.")
-  (:method (new-echo terminal)
-    (declare (ignorable terminal))
-    new-echo))
-
-(defgeneric terminal-yield (terminal)
-  (:documentation "Allows the terminal to check for interruptions and signal user-interrupt conditions.")
-  (:method (terminal)
-    (declare (ignorable terminal))
-    (values)))
-
-(defgeneric terminal-key (terminal keysym)
-  (:documentation "Maps the keysym to the key-chord that must be typed on that terminal.")
-  (:method (terminal keysym)
-    (declare (ignorable terminal))
-    (ecase keysym
-      (:escape    "[ESC]")
-      (:attention "[CTRL-A]")
-      (:xoff      "[CTRL-S]")
-      (:delete    "[\\]")
-      (:return    "[RETURN]"))))
-
-;;----------------------------------------------------------------------
-;; Standard I/O Terminal
-;;----------------------------------------------------------------------
-
-(defclass standard-terminal (terminal)
-  ((input-stream  :initarg :input-stream
-                  :reader terminal-input-stream
-                  :initform *standard-input*)
-   (output-stream :initarg :output-stream
-                  :reader terminal-output-stream
-                  :initform *standard-output*)))
-
-(defparameter *io-bell-char*
-  (or (ignore-errors (read-from-string "#\\Bell"))
-      (code-char BEL)))
-
-(defparameter *io-line-feed*
-  (or (ignore-errors (read-from-string "#\\Linefeed"))
-      (code-char LF)))
-
-(defmethod terminal-ring-bell ((terminal standard-terminal))
-  (let ((output (terminal-output-stream terminal)))
-    ;; No bell on a standard-terminal.
-    ;; (princ *io-bell-char* output)
-    (terminal-finish-output terminal)))
-
-(defmethod terminal-carriage-return ((terminal standard-terminal))
-  (let ((output (terminal-output-stream terminal)))
-    (write-char #\Return output)
-    (terminal-finish-output terminal)))
-
-(defmethod terminal-line-feed ((terminal standard-terminal) &optional (count 1))
-  (let ((output (terminal-output-stream terminal)))
-    (loop :repeat count :do (princ *io-line-feed* output))
-    (terminal-finish-output terminal)))
-
-(defmethod terminal-new-line ((terminal standard-terminal) &optional (count 1))
-  (let ((output (terminal-output-stream terminal)))
-    (loop :repeat count :do (terpri output))
-    (terminal-finish-output terminal)))
-
-
-
-
-(defmethod terminal-write-string ((terminal standard-terminal) string &key (start 0) (end nil))
-  (write-sequence string (terminal-output-stream terminal) :start start :end end))
-
-(defmethod terminal-finish-output ((terminal standard-terminal))
-  (finish-output (terminal-output-stream terminal)))
-
-
-(defmacro with-temporary-echo ((terminal echo) &body body)
-  (let  ((vterminal   (gensym))
-         (vecho       (gensym))
-         (vsaved-echo (gensym)))
-    `(let* ((,vterminal ,terminal)
-            (,vecho ,echo)
-            (,vsaved-echo (terminal-echo ,vterminal)))
-       (setf (terminal-echo ,vterminal) ,vecho)
-       (unwind-protect (progn ,@body)
-         (setf (terminal-echo ,vterminal) ,vsaved-echo)))))
-
-
-(defmethod terminal-read-line ((terminal standard-terminal) &key (echo t) (beep nil))
-  (with-temporary-echo (terminal echo)
-    (when beep
-      (terminal-ring-bell terminal))
-    #-(and)
-    (let ((line  (read-line (terminal-input-stream terminal))))
-      (if (position (code-char 13) line)
-          (progn
-            (terminal-new-line terminal)
-            (terminal-write-string terminal "Got a CR!")
-            (terminal-new-line terminal)
-            (remove (code-char 13) line))
-          line))
-    (read-line (terminal-input-stream terminal))))
-
-
-;; TODO: This readtable is not conforming. Anyways we want to read just numbers (and possibly separated by spaces), so it would be better to to use read-char.
-
-(defparameter *lse-readtable*
-  (loop
-    :with rt =  (copy-readtable nil)
-    :for i :below char-code-limit
-    :for ch = (code-char i)
-    :when (and ch (get-macro-character ch rt))
-    :do (set-macro-character ch 'read-symbol nil rt)
-    :finally (return rt))
-  "A readtable to read L.S.E. data.  Ie, just numbers.
-Symbols will signal an error,
-and strings are read with read-line.")
-
-(defun read% (stream)
-  (loop
-       ))
-
-(defmethod terminal-read ((terminal standard-terminal) &key (echo t) (beep nil))
-  (format *trace-output* "~&~A ~S~%" 'standard-terminal  (terminal-input-stream terminal))
-  (with-temporary-echo (terminal echo)
-    (when beep
-      (terminal-ring-bell terminal))
-    (handler-case (let ((*read-eval* nil)
-                        (*readtable* *lse-readtable*))
-                    (let ((input
-                            (read (terminal-input-stream terminal))))
-                      (format *trace-output* "~&read a ~S: ~S~%" (type-of input) input)
-                      input))
-      (reader-error ()
-        (clear-input (terminal-input-stream terminal))
-        (lse-error "ENTREE INVALIDE")))))
-
-
-(defmethod terminal-key ((terminal standard-terminal) keysym)
-  (declare (ignorable terminal))
-  (ecase keysym
-    (:escape    "[CONTRÔLE-C]")
-    (:attention "(PAS DISPONIBLE)")
-    (:xoff      "[ENTRÉE]")
-    (:delete    "[EFFACEMENT]")
-    (:return    "[ENTRÉE]")))
-
-
-;;----------------------------------------------------------------------
-
-(defun io-terminal-output-p (task)
+(defmethod io-terminal-output-p ((task t))
   (eql (task-output task) (terminal-output-stream (task-terminal task))))
 
-(defun io-terminal-input-p  (task)
+(defmethod io-terminal-input-p  ((task t))
   (eql (task-input task) (terminal-input-stream (task-terminal task))))
 
-(defun io-tape-output-p (task)
+(defmethod io-tape-output-p ((task t))
   (eql (task-output task) (task-tape-output task)))
 
-(defun io-tape-input-p  (task)
+(defmethod io-tape-input-p  ((task t))
   (eql (task-input task) (task-tape-input task)))
 
 
+;;----------------------------------------------------------------------
 
-(defun io-bell (task)
-  (terminal-ring-bell (task-terminal task)))
+;;; attributes
 
-(defun io-carriage-return (task)
+(defmethod io-echo ((task t))
+  (terminal-echo (task-terminal task)))
+
+(defmethod (setf io-echo) (new-echo (task t))
+  (setf (terminal-echo (task-terminal task)) new-echo))
+
+;;; output
+
+(defmethod io-bell ((task t))
+  (when (task-allow-bell-output task)
+    (terminal-ring-bell (task-terminal task))))
+
+(defmethod io-carriage-return ((task t))
   (if (io-terminal-output-p task)
       (terminal-carriage-return (task-terminal task))
       (princ #\Return (task-output task))))
 
-(defun io-line-feed (task &optional (count 1))
+(defmethod io-line-feed ((task t) &optional (count 1))
   (if (io-terminal-output-p task)
       (terminal-line-feed (task-terminal task) count)
       (format (task-output task) "~V,,,VA" count LF "")))
 
-(defun io-new-line (task &optional (count 1))
+(defmethod io-new-line ((task t) &optional (count 1))
   (if (io-terminal-output-p task)
       (terminal-new-line (task-terminal task) count)
       (terpri (task-output task))))
 
-(defun io-finish-output (task)
+(defmethod io-finish-output ((task t))
   (if (io-terminal-output-p task)
       (terminal-finish-output (task-terminal task))
       (finish-output (task-output task))))
 
-(defun io-read-line (task &key (echo t) (beep nil))
-  (if (io-terminal-input-p task)
-      (terminal-read-line (task-terminal task) :echo echo :beep beep)
-      (read-line (task-input task))))
 
-(defun io-read (task)
-  (if (io-terminal-input-p task)
-      (terminal-read (task-terminal task))
-      (read (task-input task))))
-
-(defun io-read-string (task)
-  (io-read-line task))
-
-(defun io-read-number (task)
-  (let ((value (io-read task)))
-    (typecase value
-      (integer (un-nombre value))
-      (nombre  value)
-      (t (lse-error "UN NOMBRE ETAIT ATTENDU, PAS ~S" value)))))
-
-(defun io-echo (task)
-   (terminal-echo (task-terminal task)))
-
-(defun (setf io-echo) (new-echo task)
-  (setf (terminal-echo (task-terminal task)) new-echo))
+;;; input
 
 
+(defun push-chaine-buffer (ch buffer)
+  (if (<= (1+ (length buffer)) chaine-maximum)
+      (vector-push-extend ch buffer (max (- chaine-maximum (length buffer)) (length buffer)))
+      (error "CHAINE TROP GRANDE.")))
 
+(defun push-nombre-buffer (ch buffer)
+  (if (<= (1+ (length buffer)) 80)
+      (vector-push-extend ch buffer (max (- chaine-maximum (length buffer)) (length buffer)))
+      (error "SAISIE POUR NOMBRE TROP GRANDE.")))
+
+(declaim (inline push-chaine-buffer push-nombre-buffer))
+
+
+(defmethod io-read-string ((task t) &key (echo t) (beep t))
+  "
+DO:         Reads a string.
+
+read characters until RET or C-s or ESC or string full.
+ESC is interrupt.
+string full is an error condition, 
+RET is included in the string, C-s not.  (It's virtual RET/C-s, real RET can be mapped to C-s).
+
+ECHO: Whether this input must be done echoing the characters (default T).
+BEEP: Whether the terminal should beep before reading the string (default NIL).
+
+RETURN: The LSE string read.
+"
+  (let* ((terminal (task-terminal task))
+         (input    (if (io-terminal-input-p task)
+                       terminal
+                       (task-input task))))
+    (with-temporary-echo (terminal echo)
+      (when (and beep (task-allow-bell-output task)) (terminal-ring-bell terminal))
+      (loop
+        :named reading
+        :with buffer = (make-array 8 :adjustable t :fill-pointer 0 :element-type 'character)
+        :for ch = (io-read-buffered-character input)
+        :do (case ch
+              ((:xoff)
+               (return-from reading buffer))
+              ((:return)
+               (push-chaine-buffer #\Return buffer)
+               (return-from reading buffer))
+              ((:delete)
+               (when (plusp (fill-pointer buffer))
+                 (decf (fill-pointer buffer))))
+              (otherwise
+               (if (characterp ch)
+                   (push-chaine-buffer ch buffer)
+                   (lse-error "ERREUR INTERNE: VALEUR INATTENDUE DE ~S: ~S of type ~S"
+                              (list 'io-read-buffered-character (class-name (class-of input)))
+                              ch (type-of ch)))))))))
+
+
+(defparameter *terminators*
+  (remove-duplicates (vector #\space :xoff :return
+                             #\Newline
+                             #+has-tab      #\Tab
+                             #+has-return   #\return
+                             #+has-linefeed #\linefeed
+                             #+has-page     #\page
+                             #+has-vt       #\vt)))
+
+
+(defmethod io-read-number ((task t) &key (echo t) (beep t))
+  "
+DO:         Reads a number.
+
+skip spaces as many as you want.
+read characters until RET or C-s or spaces or ESC or buffer full.
+ESC is interrupt.
+string full is an error condition, 
+parse the buffer and return the number or signal an error.
+
+ECHO: Whether this input must be done echoing the characters (default T).
+BEEP: Whether the terminal should beep before reading the string (default NIL).
+
+RETURN: The LSE number read.
+"
+  (let* ((terminal (task-terminal task))
+         (input    (if (io-terminal-input-p task)
+                       terminal
+                       (task-input task))))
+    (with-temporary-echo (terminal echo)
+      (when (and beep (task-allow-bell-output task)) (terminal-ring-bell terminal))
+      (io-skip-characters terminal *terminators*)
+      (let ((buffer
+             (loop
+               :named reading
+               :with buffer = (make-array 8 :adjustable t :fill-pointer 0 :element-type 'character)
+               :for ch = (io-read-buffered-character terminal)
+               :do (cond
+                     ((find ch *terminators*)
+                      (return-from reading buffer))
+                     ((eql ch :delete)
+                      (when (plusp (fill-pointer buffer))
+                        (decf (fill-pointer buffer))))
+                     ((characterp ch)
+                      (push-nombre-buffer ch buffer))
+                     (t
+                      (lse-error "ERREUR INTERNE: VALEUR INATTENDUE DE ~S: ~S of type ~S"
+                                 (list 'io-read-buffered-character (class-name (class-of input)))
+                                 ch (type-of ch)))))))
+        (handler-case
+            (destructuring-bind (donnee position) (parse-donnee-lse buffer)
+              (if (< position (length buffer))
+                  (lse-error "SYNTAXE INVALIDE ~S, ATTENDU UN NOMBRE" buffer)
+                  donnee))
+          (error ()
+            (lse-error "DONNEE INVALIDE ~S, ATTENDU UN NOMBRE" buffer)))))))
+
+
+(defmethod io-read-line ((task t) &key (echo t) (beep nil))
+  (io-read-string task :echo echo :beep beep))
+
+
+
+;;; Some more output:
 
 (defparameter *dectech-leftwards-arrow* (or (ignore-errors (code-char #xfb)) #\_))
 (defparameter *dectech-upwards-arrow*   (or (ignore-errors (code-char #xfc)) #\^))
@@ -542,7 +417,7 @@ RETURN: A string transformed according to the flags UPCASE and
             (otherwise          (remove-accents string))))))
 
 
-(defun io-substitute (task string)
+(defmethod io-substitute ((task t) string)
   (if (io-terminal-output-p task)
       (output-substitute (task-upcase-output task)
                          (task-accented-output task)
@@ -557,7 +432,7 @@ RETURN: A string transformed according to the flags UPCASE and
                                         XOFF CR LF))
 
 
-(defun io-format (task control-string &rest arguments)
+(defmethod io-format ((task t) control-string &rest arguments)
   (let* ((buffer (io-substitute task (apply (function format) nil control-string arguments)))
          (start  0)
          (end    (length buffer)))
@@ -655,7 +530,7 @@ RETURN: A string transformed according to the flags UPCASE and
 ;;            (return-from io-valid-tape-name-p nil))))))
 ;; 
 ;; 
-;; (defun io-redirect-input-from-tape (task tape-name)
+;; (defmethod io-redirect-input-from-tape ((task t) tape-name)
 ;;   "
 ;; RETURN: The task-tape-input or nil.
 ;; "
@@ -673,7 +548,7 @@ RETURN: A string transformed according to the flags UPCASE and
 ;;   (task-tape-input task))
 ;; 
 ;; 
-;; (defun io-redirect-output-to-tape (task tape-name)
+;; (defmethod io-redirect-output-to-tape ((task t) tape-name)
 ;;   "
 ;; RETURN: The task-tape-output or nil.
 ;; "

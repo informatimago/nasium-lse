@@ -44,7 +44,19 @@
         "COM.INFORMATIMAGO.LSE.OS"
         "COM.INFORMATIMAGO.LSE"
         "COM.INFORMATIMAGO.LSE.UNIX-TERMINAL")
-  (:export "MAIN"))
+  (:export "MAIN")
+  (:documentation "
+This package contains the Command Line Interface to the LSE system:
+- unix CLI arguments parsing,
+- unix environment variable configuration,
+"))
+
+
+(defpackage "COM.INFORMATIMAGO.LSE.EMACS"
+  (:use)
+  (:documentation
+   "This package will hold the symbols interned by swank in the expressions sent to emacs."))
+
 
 
 ;;;; THE END ;;;;

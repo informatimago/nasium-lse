@@ -209,7 +209,7 @@ RETURN: A string containing the character without accent
                    (funcall (if (task-accented-output *task*)
                                 (function identity)
                                 (function remove-accents))
-                            (keys docstring (lambda (key) (terminal-key terminal key))))))
+                            (keys docstring (lambda (key) (terminal-keysym-label terminal key))))))
         (keys docstring (function identity)))))
 
 

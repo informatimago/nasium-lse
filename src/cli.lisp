@@ -179,4 +179,106 @@ BONJOUR     ~8A
 
 
 
+(defun test-repl (task)
+  (let ((*task* task)
+        (*print-case* :upcase))
+    (io-format task "~&PRET~%")
+    (io-finish-output task)
+    
+    (io-format task "________________________________________")
+    (io-carriage-return task)
+    (io-format task "Hello 1: ")
+
+    (io-line-feed task 2)
+    (io-carriage-return task)
+
+    (io-format task "________________________________________")
+    (io-carriage-return task)
+    (io-format task "Hello 2: ")
+    
+    (let ((line (terminal-read-string (task-terminal task))))
+      (io-format task "Lu 1: ~S~%" line))
+
+    (io-format task "~%")
+    
+    (io-format task "________________________________________")
+    (io-carriage-return task)
+    (io-format task "Hello 3: ")
+
+    (io-line-feed task 2)
+    (io-carriage-return task)
+
+    (io-format task "________________________________________")
+    (io-carriage-return task)
+    (io-format task "Hello 4: ")
+
+    ;; (let ((line (terminal-read-string (task-terminal task))))
+    ;;   (io-format task "Lu 21: ~S~%" line))
+    
+    (let ((line (io-read-line task :beep t)))
+      (io-format task "Lu 22: ~S~%" line))
+    ))
+
+(defun test (&optional args)
+  (push #P"/usr/local/lib/" cffi:*foreign-library-directories*)
+  (setf *program-name* (or (program-name) *default-program-name*))
+  (setf *options* (make-default-options))
+  (set-lse-root)
+  (let ((encoding (locale-terminal-encoding)))
+    (set-terminal-encoding encoding)
+    (let* ((terminal-class (progn
+                             #+swank
+                             (cond
+                               ((typep (stream-output-stream *terminal-io*)
+                                       'swank-backend::slime-output-stream)
+                                'swank-terminal)
+                               ((member (getenv "TERM") '("emacs" "dumb")
+                                        :test (function string=))
+                                'standard-terminal)
+                               (t #+unix 'unix-terminal
+                                  #-unix 'standard-terminal))
+                             #-swank
+                             (cond
+                               ((member (getenv "TERM") '("emacs" "dumb")
+                                        :test (function string=))
+                                'standard-terminal)
+                               (t #+unix 'unix-terminal
+                                  #-unix 'standard-terminal))))
+           (terminal (make-instance terminal-class
+                         :input-stream  (stream-input-stream  *terminal-io*)
+                         :output-stream (stream-output-stream *terminal-io*)))
+           (task     (make-instance 'task
+                         :state :active
+                         :case-insensitive t
+                         :upcase-output nil
+                         :unicode (eql encoding :utf-8)
+                         :arrows  (if (eql encoding :utf-8)
+                                      :unicode-halfwidth
+                                      :ascii) 
+                         :terminal terminal)))
+      (setf *task* task) ; to help debugging, we keep the task in the global binding.
+      (or (parse-options (or args (arguments)))
+          ;; parse-option may call show-bindings which calls
+          ;; apply-options, so we need  *task*.
+          (progn
+            (apply-options *options* *task*)
+            (terminal-initialize terminal)
+            (unwind-protect
+                 (let* ((old-debugger-hook *debugger-hook*)
+                        (*debugger-hook*
+                         (lambda (condition debugger-hook)
+                           ;; We shouldn't come here.
+                           (when debugger-hook
+                             (terminal-finalize terminal))
+                           (opt-format *debug-io* "~%My advice: exit after debugging.~%")
+                           (when old-debugger-hook
+                             (funcall old-debugger-hook condition debugger-hook)))))
+                   (io-format *task* "Test shell~%")
+                   (test-repl *task*))
+              (task-close-all-files *task*)
+              (terminal-finalize terminal)))
+          ex-ok))))
+
+
+
 ;;;; THE END ;;;;

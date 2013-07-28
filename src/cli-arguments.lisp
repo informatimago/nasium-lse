@@ -40,6 +40,7 @@
   (output-upcase        nil)
   (output-arrows        :ascii :type (member :ascii :dectech :unicode :unicode-halfwidth))
   (output-accented      t)
+  (output-no-bell       nil)
   (modern-mode          t)
   (return-is-xoff       nil))
 
@@ -74,6 +75,7 @@ RETURN: A new OPTIONS structure instance.
    :output-arrows        (choice-enval  "LSE_OUTPUT_ARROWS"        :ascii
                                         '(:ascii :dectech :unicode :unicode-halfwidth))
    :output-accented      (boolean-enval "LSE_ACCENTED_OUTPUT"      t)
+   :output-no-bell       (boolean-enval "LSE_NO_BELL"              nil)
    :modern-mode          (boolean-enval "LSE_MODERN_MODE"          t)
    :return-is-xoff       (boolean-enval "LSE_RETURN_IS_XOFF"       nil)))
 
@@ -96,10 +98,11 @@ RETURN: A new OPTIONS structure instance.
 
 
 (defun apply-options (options task)
-  (setf (task-case-insensitive task) (not (options-input-reject-lowcase options))
-        (task-upcase-output    task) (options-output-upcase options)
-        (task-accented-output  task) (options-output-accented options)
-        (task-arrows           task) (options-output-arrows options))
+  (setf (task-case-insensitive  task) (not (options-input-reject-lowcase options))
+        (task-upcase-output     task) (options-output-upcase options)
+        (task-accented-output   task) (options-output-accented options)
+        (task-allow-bell-output task) (not (options-output-no-bell options))
+        (task-arrows            task) (options-output-arrows options))
   (let ((terminal (task-terminal task)))
     (when (typep terminal 'unix-terminal)
       (setf (terminal-modern-mode terminal) (or (member (getenv "TERM") '("emacs" "dumb")
@@ -381,6 +384,25 @@ C'est l'option par défaut.
   (setf (options-output-accented *options*) t))
 
 
+(defoption ("--sans-bip" "--no-bell") ()
+  "
+Si le terminal n'est pas capable de biper,cette option permet d'éviter
+d'envoyer des codes ASCII BEL (^G).
+
+Variable d'environnement: LSE_NO_BELL=T
+"
+  (setf (options-output-no-bell *options*) t))
+
+(defoption ("--avec-bip" "--bell") ()
+  "
+Si le terminal est capable de biper, cette option permet d'autoriser
+l'envoi des codes ASCII BEL (^G).
+
+Variable d'environnement: LSE_NO_BELL=NIL
+"
+  (setf (options-output-no-bell *options*) nil))
+
+
 (defoption ("--mode-moderne" "--modern-mode") ()
   "
 Dans le mode moderne, les caractères et codes de contrôle configurés
@@ -427,11 +449,11 @@ Variable d'environnement: LSE_MODERN_MODE=NIL
 ~@[~16A pour envoyer le signal d'attention (fonction ATT()).~%~]~
 ~@[~16A pour entrer les données, mais ajoute le code RETOUR aux chaînes.~%~]~
 "
-          (terminal-key terminal :xoff)
-          (terminal-key terminal :delete)
-          (terminal-key terminal :escape)
-          (terminal-key terminal :attention)
-          (terminal-key terminal :return)))
+          (terminal-keysym-label terminal :xoff)
+          (terminal-keysym-label terminal :delete)
+          (terminal-keysym-label terminal :escape)
+          (terminal-keysym-label terminal :attention)
+          (terminal-keysym-label terminal :return)))
 
 
 (defun configuration-interactive (options)
@@ -461,6 +483,8 @@ Variable d'environnement: LSE_MODERN_MODE=NIL
                 (if (o-ou-n-p "Est ce que le terminal utilise une police DecTech")
                     :dectech
                     nil)))
+      (setf (options-output-no-bell options)
+            (not (o-ou-n-p "Est ce que le terminal émet un bip quand il reçoit un code ASCII BEL?")))
       (when (and (typep terminal 'unix-terminal)
                  (not (member (getenv "TERM") '("emacs" "dumb")
                               :test (function string-equal))))
@@ -506,6 +530,7 @@ We have utf-8 and nasium-lse.terminal setup.
     (setf (options-input-reject-lowcase options) nil)
     (setf (options-output-upcase options)        nil)
     (setf (options-output-accented options)      t)
+    (setf (options-output-no-bell options)       nil)
     (setf (options-output-arrows options)
           (if (task-unicode task)
               (cond

@@ -130,7 +130,11 @@ Can be either (terminal-output-stream terminal) or tape-output.")
                          :initform t
                          :type boolean
                          :documentation "Whether the output can contain accented characters.")
-
+   (allow-bell-output    :initarg :allow-bell-output
+                         :accessor task-allow-bell-output
+                         :initform t
+                         :type boolean
+                         :documentation "Whether the output terminal can take ASCII BEL codes.")
    (abreger              :accessor task-abreger          :initform nil :type boolean
                          :documentation "AB)REGER - le système ne complète pas les commandes.")
    (silence              :reader task-silence            :initform nil :type boolean
@@ -282,18 +286,20 @@ so that if next command is ine, we continue automatically.")
 (defun console-task (console) (elt *tasks* console))
 
 
-(defun task-inlimbo ()
+(defun task-next-to-schedule ()
   "(thread-safe)
-Retourne un task qui était inlimbo (il est maintant aconnecter).
+Returns: a newly selected task that was in the :inlimbo state,
+switched to the :to-connect state.
 "
   ;;pthread_mutex_lock(&mutex);
   (unwind-protect
-      (let ((task (find-if (function task-state-inlimbo-p) *tasks*)))
+      (let ((task (find-if (function task-state-in-limbo-p) *tasks*)))
         (when task
           (setf (task-state task) :to-connect))
         task)
     (progn ;; pthread_mutex_unlock(&mutex);
       )))
+
 
 (defmethod task-disconnect ((task task))
   (declare (ignorable task))

@@ -442,11 +442,11 @@ Valid only whe MODERN-MODE is false.
    (saved-termios          :initform nil)
    (echo                   :initform t
                            :reader terminal-echo)
-   (buffer                 :initform (make-array 80
+   (input-buffer           :initform (make-array 80
                                                  :element-type 'character
                                                  :adjustable t
                                                  :fill-pointer 0))
-   (input-read             :initform 0)
+   (input-cursor             :initform 0)
    (input-finished         :initform nil)
    (vintr                  :initform 0   :reader terminal-vintr)
    (vquit                  :initform 0   :reader terminal-vquit)
@@ -767,7 +767,7 @@ Valid only whe MODERN-MODE is false.
   (iolib.syscalls:kill pid signum))
 
 
-(defun read-one-char (terminal)
+(defmethod terminal-fill-input-buffer ((terminal unix-terminal))
   ;; MITRA-15    UNIX          x
   ;; \           erase         to \"erase\" the previous character.
   ;; C-s (X-OFF) newline       to send input to the computer.
@@ -778,7 +778,7 @@ Valid only whe MODERN-MODE is false.
   ;; last line, (it's erased before line feed) so that users may see up to
   ;; where they've written.
   (with-slots ((stream input-stream)
-               buffer input-finished
+               input-buffer input-finished
                vintr vquit vsusp vkill veof veol veol2
                verase vwerase vreprint
                modern-mode) terminal
@@ -799,92 +799,95 @@ Valid only whe MODERN-MODE is false.
                  ((and veol  (= code veol))   (setf input-finished t))
                  ((and veol2 (= code veol2))  (setf input-finished t)
                   (unless (terminal-cr-as-xoff terminal)
-                    (vector-push-extend ch buffer 1)))
+                    (vector-push-extend ch input-buffer 1)))
                  ((and verase (= code verase))
-                  (when (plusp (fill-pointer buffer))
+                  (when (plusp (fill-pointer input-buffer))
                     (when modern-mode
                       ;; when modern-mode, erase the character on display
                       (terminal-erase-character terminal))
-                    (decf (fill-pointer buffer))))
+                    (decf (fill-pointer input-buffer))))
                  ((and vwerase (= code vwerase))
-                  (let ((wsize (fill-pointer buffer)))
-                    (setf (fill-pointer buffer)
-                          (or (position-if-not (function alphanumericp) buffer
+                  (let ((wsize (fill-pointer input-buffer)))
+                    (setf (fill-pointer input-buffer)
+                          (or (position-if-not (function alphanumericp) input-buffer
                                                :from-end t
-                                               :end (or (position-if (function alphanumericp) buffer
+                                               :end (or (position-if (function alphanumericp)
+                                                                     input-buffer
                                                                      :from-end t)
                                                         0))
                               0))
                     (when modern-mode
                       ;; when modern-mode, erase the word on display
-                      (terminal-erase-character terminal (- wsize (fill-pointer buffer))))))
+                      (terminal-erase-character terminal (- wsize (fill-pointer input-buffer))))))
                  ((and vreprint (= code vreprint))
                   ;; We need to keep the line on display (output) to reprint it.
                   )
                  (t
-                  (vector-push-extend ch buffer (length buffer))))))))))))
+                  (vector-push-extend ch input-buffer (length input-buffer))))))))))))
 
 
 
 (defmethod terminal-yield ((terminal unix-terminal))
   (loop
     :while (listen (terminal-input-stream terminal))
-    :do (read-one-char terminal)))
+    :do (terminal-fill-input-buffer terminal)))
 
 
-(defmethod terminal-read-line ((terminal unix-terminal) &key (echo t) (beep nil))
+#-(and)
+(defmethod terminal-read-string ((terminal unix-terminal) &key (echo t) (beep nil))
   (with-temporary-echo (terminal echo)
     (when beep
       (terminal-ring-bell terminal))
     (terminal-finish-output terminal)
-    (with-slots (buffer input-finished input-read) terminal
+    (with-slots (input-buffer input-finished input-cursor) terminal
       (flet ((finish ()
-               (prog1 (subseq buffer input-read)
+               (prog1 (subseq input-buffer input-cursor)
                  (setf input-finished nil
-                       input-read 0
-                       (fill-pointer buffer) 0))))
+                       input-cursor 0
+                       (fill-pointer input-buffer) 0))))
         (if input-finished
             (finish)
             (loop
-              #+swank (print (list buffer input-finished input-read) *terminal-io*)
-              (read-one-char terminal)
+              #+swank (print (list input-buffer input-finished input-cursor) *terminal-io*)
+              (terminal-fill-input-buffer terminal)
               (when input-finished
                 (return (finish)))))))))
 
 
-
+#-(and)
 (defmethod terminal-read ((terminal unix-terminal) &key (echo t) (beep nil))
   (format *trace-output* "~&~A~%" 'unix-terminal)
   (with-temporary-echo (terminal echo)
     (when beep
       (terminal-ring-bell terminal))
     (terminal-finish-output terminal)
-    (with-slots (buffer input-finished input-read) terminal
+    (with-slots (input-buffer input-finished input-cursor) terminal
       (flet ((finish ()
                (handler-case
-                   (destructuring-bind (donnee position) (parse-donnee-lse (subseq buffer input-read))
-                     (if (< position (length buffer))
-                         (setf input-read position)
-                         (setf input-read 0
-                               (fill-pointer buffer) 0
+                   (destructuring-bind (donnee position)
+                       (parse-donnee-lse (subseq input-buffer input-cursor))
+                     (incf position input-cursor)
+                     (if (< position (length input-buffer))
+                         (setf input-cursor position)
+                         (setf input-cursor 0
+                               (fill-pointer input-buffer) 0
                                input-finished nil))
                      donnee)
                  (error ()
-                   (let ((donnee (subseq buffer input-read)))
-                     (setf input-read 0
-                           (fill-pointer buffer) 0
+                   (let ((donnee (subseq input-buffer input-cursor)))
+                     (setf input-cursor 0
+                           (fill-pointer input-buffer) 0
                            input-finished nil)
                      (lse-error "DONNEE INVALIDE ~S, ATTENDU UN NOMBRE" donnee))))))
         (if input-finished
             (finish)
             (loop
-              #+swank (print (list buffer input-finished input-read) *terminal-io*)
-              (read-one-char terminal)
+              (terminal-fill-input-buffer terminal)
               (when input-finished
                 (return (finish)))))))))
 
 
-(defmethod terminal-key ((terminal unix-terminal) keysym)
+(defmethod terminal-keysym-label ((terminal unix-terminal) keysym)
   (declare (ignorable terminal))
   (let ((code (funcall (ecase keysym
                          (:escape    (function terminal-vintr))
@@ -941,7 +944,7 @@ Valid only whe MODERN-MODE is false.
                  (terminal-carriage-return *term*)
                  (terminal-write-string *term* "Enter a line: ")
                  (terminal-finish-output *term*)
-                 (print (list (terminal-read-line *term*)
+                 (print (list (terminal-read-string *term*)
                               (task-signal *task*)
                               (task-interruption *task*)))
                  (terminal-new-line *term*)

@@ -39,6 +39,26 @@ TODO
 #+(or lse-unix lse-t1600)
 
 
+LIRE
+====
+
+- un sifflement par instruction LIRE.
+
+- valeur numérique assignée à la variable à la lecture de X-OFF ou
+  SPC.
+
+- valeur chaîne assignée à la variable à la lecture de X-OFF ou RET
+  sur Mitra-15 (mais RET inclus).
+
+AFFICHER
+========
+
+- chaînes affichées telles quelles.
+
+- nombres affichés suivi d'un espace.
+
+
+
 
 NOTES
 =====

@@ -302,11 +302,11 @@ interrompre, entre autres.
 ~@[~16A pour envoyer le signal d'attention (fonction ATT()).~%~]~
 ~@[~16A pour entrer les données, mais ajoute le code RETOUR aux chaînes.~%~]~
 "
-          (terminal-key terminal :xoff)
-          (terminal-key terminal :delete)
-          (terminal-key terminal :escape)
-          (terminal-key terminal :attention)
-          (terminal-key terminal :return)))
+          (terminal-keysym-label terminal :xoff)
+          (terminal-keysym-label terminal :delete)
+          (terminal-keysym-label terminal :escape)
+          (terminal-keysym-label terminal :attention)
+          (terminal-keysym-label terminal :return)))
 
 
 (defun configuration-interactive (options)

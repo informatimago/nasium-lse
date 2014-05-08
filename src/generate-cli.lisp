@@ -18,7 +18,7 @@
 ;;;;    
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
 ;;;;    
-;;;    This program is free software: you can redistribute it and/or modify
+;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
@@ -41,6 +41,7 @@
 
 (load #P"~/quicklisp/setup.lisp")
 
+
 (setf *print-right-margin* 80
       *print-pretty* t
       *print-case* :downcase)
@@ -55,6 +56,9 @@
 (setf *default-pathname-defaults* (dirpath (or *load-truename*
                                                *compile-file-truename*)))
 (pushnew *default-pathname-defaults* asdf:*central-registry* :test 'equal)
+(push (truename (merge-pathnames "../dependencies/"
+                                 *default-pathname-defaults*))
+      ql:*local-project-directories*)
 
 
 (defparameter *program-name* "lse")

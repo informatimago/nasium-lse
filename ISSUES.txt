@@ -1,0 +1,106 @@
+-*- mode:rst; coding:utf-8 -*-
+
+00001:
+
+    ::
+
+        PRET
+        ^Gau
+        AU REVOIR   02:52:54
+
+
+        > Error: Fault during read of memory address #x-4B04C4FC
+        > While executing: CCL::LISP-THREAD-SUSPEND-COUNT, in process Initial(0).
+
+
+        ;;;
+        ;;; #<PROCESS Initial(0) [Active] #x1805D45E> requires access to Shared Terminal Input
+        ;;; Type (:y 0) to yield control to this thread.
+        ;;;
+
+
+
+00002:
+
+    We should add a timeout and disconnect if no input occurs after that delay.
+
+    There seem to be scanners who connect to ports without sending
+    anything, and keeping the ports open indefinitely.  For example: 
+
+    ::
+    
+        11:21:15.325617 IP 193.49.123.6.51872 > voyager.informatimago.com.8115: Flags [S], seq 1980334663, win 65535, options [mss 1460,nop,wscale 4,nop,nop,TS val 1368891875 ecr 0,sackOK,eol], length 0
+        E..@
+        '@./.nN.1{.X.>E....v    .G.......................
+        Q...........
+        11:21:15.326556 IP voyager.informatimago.com.8115 > 193.49.123.6.51872: Flags [S.], seq 414189389, ack 1980334664, win 5792, options [mss 1460,sackOK,TS val 1403523590 ecr 1368891875,nop,wscale 7], length 0
+        E..<..@.@.gyX.>E.1{........Mv   .H.....A.........
+        S...Q.......
+        11:21:15.416583 IP 193.49.123.6.51872 > voyager.informatimago.com.8115: Flags [.], ack 1, win 8235, options [nop,nop,TS val 1368891966 ecr 1403523590], length 0
+        E..4.2@./.~N.1{.X.>E....v       .H...N.. +''.....
+        Q..>S...
+        11:21:18.160791 IP voyager.informatimago.com.8115 > 193.49.123.6.51872: Flags [P.], seq 1:257, ack 1, win 46, options [nop,nop,TS val 1403524299 ecr 1368891966], length 256
+        E..4.S@.@.Q.X.>E.1{........Nv   .H...........
+        S...Q..>
+        [ENTREE]         POUR ENTRER LES DONNEES.
+        [EFFACEMENT]     POUR EFFACER LE CARACTERE PRECEDENT.
+        [CONTROLE-C]     POUR INTERROMPRE.
+        (PAS DISPONIBLE) POUR ENVOYER LE SIGNAL D'ATTENTION (FONCTION ATT()).
+        [ENTREE]         POUR ENTRER LES DONNEES, MAIS AJ
+        11:21:18.206093 IP 193.49.123.6.51872 > voyager.informatimago.com.8115: Flags [.], ack 257, win 8219, options [nop,nop,TS val 1368894740 ecr 1403524299], length 0
+        E..4+|@./.M..1{.X.>E....v       .H...N.. ........
+        Q...S...
+        11:21:18.207059 IP voyager.informatimago.com.8115 > 193.49.123.6.51872: Flags [P.], seq 257:1640, ack 1, win 46, options [nop,nop,TS val 1403524310 ecr 1368894740], length 1383
+        E....T@.@.L.X.>E.1{........Nv   .H....>......
+        S...Q...OUTE LE CODE RETOUR AUX CHAINES.
+
+        ------------------------------------------------------------------------
+        \     OOO                OOOOOOOOOO       OOOOOOOOOO                    \
+         \    OOO               OOOOOOOOOOOO      OOOOOOOOOO      OOOOOOOOOOO    \
+          \   OOO               OOOO     OOO      OOO                             \
+           \  OOO                OOOO             OOOOOO               O OO        \
+            > OOO                  OOOO           OOOOOO          OOO O    O        >
+           /......................................................................./
+          /   OOO              OOO     OOOO       OOO             OOOO OO OO      /
+         /    OOOOOOOOOO  OOO  OOOOOOOOOOOO  OOO  OOOOOOOOOO  OOO OOOO  OO OO    /
+        /     OOOOOOOOOO  OOO   OOOOOOOOOO   OOO  OOOOOOOOOO  OOO  O OOOO OO    /
+        ------------------------------------------------------------------------
+
+
+        NASIUM L.S.E.
+        LANGAGE SYMBOLIQUE D'ENSEIGNEMENT
+        VERSION 1.0.0-0.122-CCL-LINUX
+        COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
+
+        DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLV3.
+
+        CE PROGRAMME EST LIVRE AVEC ABSOLUMENT AUCUNE GARANTIE; POUR PLUS DE
+        DETAILS UTILISEZ LA COMMANDE DO GARANTIE.  CE LOGICIEL EST LIBRE, ET
+        VOUS AVEZ LE DROIT DE LE REDISTRIBUER SOUS CERTAINES CONDITIONS;
+        UTILISEZ LA COMMANDE DO LICENSE POUR PLUS DE DETAILS.
+
+        TAPEZ AI POUR AVOIR DE L'AIDE.
+
+        BONJOUR     11:21:18
+
+        PRET
+
+        11:21:18.253022 IP 193.49.123.6.51872 > voyager.informatimago.com.8115: Flags [.], ack 1640, win 8133, options [nop,nop,TS val 1368894787 ecr 1403524310], length 0
+        ......Q.....
+        Q..CS...
+
+
+        voyager:/home/lse# netstat -tnp|grep 8115
+        tcp        0      0 88.198.62.69:8115       62.23.193.34:31565      ESTABLISHED 24512/lse
+        tcp        0      0 88.198.62.69:8115       92.140.3.120:50785      ESTABLISHED 17970/lse
+        tcp        0      0 88.198.62.69:8115       90.24.180.197:57483     ESTABLISHED 28317/lse
+        tcp        0      0 88.198.62.69:8115       193.49.123.6:51872      ESTABLISHED 11342/lse
+        tcp        0      0 88.198.62.69:8115       90.46.107.24:60060      ESTABLISHED 14863/lse
+        tcp        0      0 88.198.62.69:8115       82.123.216.50:54617     ESTABLISHED 8319/lse
+        tcp        0      0 88.198.62.69:8115       90.46.43.101:65094      ESTABLISHED 3108/lse
+        tcp        0      0 88.198.62.69:8115       92.163.83.173:57699     ESTABLISHED 31147/lse
+        tcp        0      0 88.198.62.69:8115       90.24.196.163:49181     ESTABLISHED 8555/lse
+        tcp        0      0 88.198.62.69:8115       92.140.0.205:53295      ESTABLISHED 18925/lse
+        tcp        0      0 88.198.62.69:8115       82.123.168.209:51062    ESTABLISHED 21410/lse
+        tcp        0      0 88.198.62.69:8115       109.190.38.230:49716    ESTABLISHED 12126/lse
+        tcp        0      0 88.198.62.69:8115       92.163.81.111:62166     ESTABLISHED 25565/lse

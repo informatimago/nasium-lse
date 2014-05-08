@@ -49,7 +49,9 @@
 (setf *default-pathname-defaults* (dirpath (or *load-truename*
                                                *compile-file-truename*)))
 (pushnew *default-pathname-defaults* asdf:*central-registry* :test 'equal)
-
+(push (truename (merge-pathnames "../dependencies/"
+                                 *default-pathname-defaults*))
+      ql:*local-project-directories*)
 
 
 ;; (defun delete-package-and-users (package)

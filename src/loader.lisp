@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal Bourguignon 2005 - 2013
+;;;;    Copyright Pascal Bourguignon 2005 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -48,10 +48,10 @@
 
 (setf *default-pathname-defaults* (dirpath (or *load-truename*
                                                *compile-file-truename*)))
-(pushnew *default-pathname-defaults* asdf:*central-registry* :test 'equal)
-(push (truename (merge-pathnames "../dependencies/"
-                                 *default-pathname-defaults*))
-      ql:*local-project-directories*)
+(pushnew *default-pathname-defaults* asdf:*central-registry* :test (function equal))
+(pushnew (truename (merge-pathnames "../dependencies/" *default-pathname-defaults*))
+         ql:*local-project-directories* :test (function equal))
+(quicklisp-client:register-local-projects)
 
 
 ;; (defun delete-package-and-users (package)

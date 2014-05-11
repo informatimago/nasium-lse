@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -116,6 +116,7 @@
    "INPUT-STREAM" "OUTPUT-STREAM"
    "WITH-TEMPORARY-ECHO"
 
+   "WITH-PAGER"
    "OUTPUT-SUBSTITUTE"
    "IO-TERMINAL-OUTPUT-P" "IO-TERMINAL-INPUT-P"
    "IO-TAPE-OUTPUT-P" "IO-TAPE-INPUT-P" "IO-BELL"

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+./lse --configuration-macosx-terminal
+
 Terminal_PROFILE="$HOME/Desktop/NASIUM-LSE.terminal"
 
 osascript <<EOF

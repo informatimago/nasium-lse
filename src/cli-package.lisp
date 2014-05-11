@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -43,7 +43,8 @@
         "COM.INFORMATIMAGO.COMMON-LISP.UNIX.OPTION"
         "COM.INFORMATIMAGO.LSE.OS"
         "COM.INFORMATIMAGO.LSE"
-        "COM.INFORMATIMAGO.LSE.UNIX-TERMINAL")
+        "COM.INFORMATIMAGO.LSE.UNIX-TERMINAL"
+        "COM.INFORMATIMAGO.SIGNAL")
   (:export "MAIN")
   (:documentation "
 This package contains the Command Line Interface to the LSE system:

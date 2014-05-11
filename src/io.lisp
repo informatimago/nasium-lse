@@ -22,7 +22,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2000 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2000 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -121,14 +121,53 @@
       (terminal-carriage-return (task-terminal task))
       (princ #\Return (task-output task))))
 
+
+(defvar *page-height* nil "For the pager: number of lines in screen.")
+(defvar *line-count*  nil "For the pager: number of lines written so far.")
+
+(defun call-with-pager (task thunk)
+  (let ((paging (task-paging task)))
+    (let ((*page-height* (case paging
+                           ((nil)     nil)
+                           ((t)       (terminal-rows (task-terminal task)))
+                           (otherwise paging)))
+          (*line-count*  (when paging 0)))
+      (funcall thunk))))
+
+(defmacro with-pager (task &body body)
+  `(call-with-pager ,task (lambda () ,@body)))
+
+(defun pager-new-line (task &optional (count 1))
+  (when (and *page-height* *line-count*)
+    (incf *line-count* count)
+    (unless (< (1+ *line-count*) *page-height*)
+      (multiple-value-bind (label available) (terminal-keysym-label (task-terminal task) :xoff)
+        (unless available
+          (multiple-value-setq (label available) (terminal-keysym-label (task-terminal task) :return)))
+        (let ((*page-height* nil)
+              (*line-count*  nil)
+              (old (list *page-height* *line-count*)))
+          (io-new-line task)
+          (with-open-file (out #P "~/Desktop/out.txt" :direction :output
+                               :if-exists :append :if-does-not-exist :create)
+            (format out "Pager ~S~%" (multiple-value-list (decode-universal-time (get-universal-time)))))
+          (io-format task "Taper ~A pour continuer: ~S" label old)
+          (io-read-line task :beep t :echo nil)
+          (io-carriage-return task)))
+      (setf *line-count* 0))))
+
 (defmethod io-line-feed ((task t) &optional (count 1))
   (if (io-terminal-output-p task)
-      (terminal-line-feed (task-terminal task) count)
+      (progn
+        (pager-new-line task count)
+        (terminal-line-feed (task-terminal task) count))
       (format (task-output task) "~V,,,VA" count LF "")))
 
 (defmethod io-new-line ((task t) &optional (count 1))
   (if (io-terminal-output-p task)
-      (terminal-new-line (task-terminal task) count)
+      (progn
+        (pager-new-line task count)
+        (terminal-new-line (task-terminal task) count))
       (terpri (task-output task))))
 
 (defmethod io-finish-output ((task t))
@@ -430,6 +469,8 @@ RETURN: A string transformed according to the flags UPCASE and
 (defparameter *io-active-codes* (vector +TAPE-READER-ON+   +TAPE-PUNCHER-ON+
                                         +TAPE-PUNCHER-OFF+ +TAPE-READER-OFF+
                                         XOFF CR LF))
+
+
 
 
 (defmethod io-format ((task t) control-string &rest arguments)

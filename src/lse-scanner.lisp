@@ -21,7 +21,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal Bourguignon 2005 - 2013
+;;;;    Copyright Pascal Bourguignon 2005 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -36,10 +36,10 @@
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
-
 (in-package "COM.INFORMATIMAGO.LSE")
 
-
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (pushnew :lse-scanner-debug *features*))
 ;;----------------------------------------------------------------------
 ;; tokens
 ;;----------------------------------------------------------------------
@@ -615,7 +615,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                       :format-arguments args
                       :buffer (copy-seq (scanner-buffer scanner))))
              (invalid-character (ch &optional (format-control "") &rest format-arguments)
-               #+lse-scanner-debug (print `(invalid-character ,ch ,format-control ,@format-arguments))
+               #+lse-scanner-debug (print `(invalid-character ,ch  ,(scanner-buffer scanner) ,format-control ,@format-arguments))
                #+lse-scanner-debug (finish-output)
                (error 'lse-scanner-error-invalid-character
                       :line    (scanner-line scanner)

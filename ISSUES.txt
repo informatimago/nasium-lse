@@ -1,9 +1,26 @@
--*- mode:rst; coding:utf-8 -*-
+-*- mode:org; coding:utf-8 -*-
 
-00001:
+* TODO: 00003 FAIRE n POUR I_1 JUSQUA 100 doesn't work.
 
-    ::
+#+BEGIN_SRC(lse)
+1 FAIRE 10 POUR I_1 JUSQUA 100
+2 AFFICHER[C,20X,C,U]I
+3 T_TEM()
+4 SI T=TEM() ALORS ALLER EN 4
+5 AFFICHER['.']
+10* fin faire
+20 TERMINER
+#+END_SRC
 
+#+BEGIN_SRC(lse)
+EXECUTER A PARTIR DE 1
+1 .                 
+TERMINE EN LIGNE 020
+#+END_SRC
+
+* TODO: 00001 segfault
+
+#+BEGIN_SRC(lse)
         PRET
         ^Gau
         AU REVOIR   02:52:54
@@ -17,18 +34,15 @@
         ;;; #<PROCESS Initial(0) [Active] #x1805D45E> requires access to Shared Terminal Input
         ;;; Type (:y 0) to yield control to this thread.
         ;;;
+#+END_SRC
 
-
-
-00002:
-
-    We should add a timeout and disconnect if no input occurs after that delay.
+* TODO: 00002 add a timeout and disconnect if no input occurs after that delay.
 
     There seem to be scanners who connect to ports without sending
     anything, and keeping the ports open indefinitely.  For example: 
 
-    ::
-    
+#+BEGIN_SRC(lse)
+
         11:21:15.325617 IP 193.49.123.6.51872 > voyager.informatimago.com.8115: Flags [S], seq 1980334663, win 65535, options [mss 1460,nop,wscale 4,nop,nop,TS val 1368891875 ecr 0,sackOK,eol], length 0
         E..@
         '@./.nN.1{.X.>E....v    .G.......................
@@ -104,3 +118,5 @@
         tcp        0      0 88.198.62.69:8115       82.123.168.209:51062    ESTABLISHED 21410/lse
         tcp        0      0 88.198.62.69:8115       109.190.38.230:49716    ESTABLISHED 12126/lse
         tcp        0      0 88.198.62.69:8115       92.163.81.111:62166     ESTABLISHED 25565/lse
+
+#END_SRC

@@ -23,7 +23,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -48,7 +48,7 @@
 values for the specified file descriptor FD, and return it.
 ACTION is ignored."
   (declare (ignore action))
-  (let ((termios (cffi:foreign-alloc 'iolib.serial:termios)))
+  (let ((termios (cffi:foreign-alloc '(:struct iolib.serial:termios))))
     (iolib.serial::%tcgetattr fd termios)
     termios))
 
@@ -78,14 +78,14 @@ ACTION specifies when the setting occurs:
   (let ((type (iolib.serial::which-termios-keyword flag)))
     (unless type
       (error "Unknown termios option ~a" flag))
-    (not (plusp (logand (cffi:foreign-slot-value termios 'iolib.serial:termios type)
+    (not (plusp (logand (cffi:foreign-slot-value termios '(:struct iolib.serial:termios) type)
                         (cffi:foreign-enum-value type flag))))))
 
 
 (defun termios-control-character (termios cc)
   "Returns the control character value."
   (cffi:mem-aref (cffi:foreign-slot-pointer termios
-                                            'iolib.serial:termios
+                                            '(:struct iolib.serial:termios)
                                             'iolib.serial::control-chars)
                  'iolib.serial::cc
                  ;; constant name is offset
@@ -363,8 +363,8 @@ RETURN: A sublist of options that didn't change successfully;
               (stream  (iolib.serial::fd-of serial)))))
     (flet ((speed-to-baud (speed)
              (intern (format nil "B~A" speed) "KEYWORD")))
-      (cffi:with-foreign-objects ((termios 'iolib.serial:termios)
-                                  (newterm 'iolib.serial:termios))
+      (cffi:with-foreign-objects ((termios '(:struct iolib.serial:termios))
+                                  (newterm '(:struct iolib.serial:termios)))
         (iolib.serial::%tcgetattr fd termios)
         (loop
           :for (key value) :on options :by (function cddr)
@@ -460,6 +460,15 @@ Valid only whe MODERN-MODE is false.
    (vreprint               :initform 0   :reader terminal-vreprint)
    (vstart                 :initform 0   :reader terminal-vstart)
    (vstop                  :initform 0   :reader terminal-vstop)))
+
+
+(defmethod print-object ((terminal unix-terminal) stream)
+  (com.informatimago.common-lisp.cesarum.utility:print-parseable-object
+      (terminal stream :type t :identity t)
+      input-file-descriptor output-file-descriptor modern-mode
+      cr-as-xoff terminfo saved-termios echo input-buffer input-cursor
+      input-finished vintr vquit vsusp vkill veof veol veol2 verase
+      vwerase vreprint vstart vstop))
 
 
 (defgeneric (setf terminal-modern-mode) (new-mode terminal))
@@ -674,13 +683,13 @@ Valid only whe MODERN-MODE is false.
 (defmethod terminal-columns ((terminal unix-terminal))
   (with-slots (terminfo) terminal
    (let ((terminfo:*terminfo* terminfo))
-     (or terminfo:columns 80))))
+     (or  (getenv "COLUMNS") terminfo:columns 80))))
 
 
 (defmethod terminal-rows ((terminal unix-terminal))
   (with-slots (terminfo) terminal
    (let ((terminfo:*terminfo* terminfo))
-     (or terminfo:lines 25))))
+     (or (getenv "LINES") terminfo:lines 25))))
 
 
 (defmethod terminal-ring-bell ((terminal unix-terminal))
@@ -788,7 +797,7 @@ Valid only whe MODERN-MODE is false.
           ;; (print `(char read ,ch ,(char-code ch))) (finish-output)
           (cond
             ((zerop code)   #|ignore|#)
-            ((= code vintr) (signal 'user-interrupt))
+            ((= code vintr) (signal 'user-interrupt :signal +sigint+))
             ((= code vquit) (setf (task-signal *task*) t))
             ((= code vsusp) (unix-signal 0 +SIGSTOP+))
             ((= code vkill) (unix-signal 0 +SIGKILL+))
@@ -833,58 +842,56 @@ Valid only whe MODERN-MODE is false.
     :do (terminal-fill-input-buffer terminal)))
 
 
-#-(and)
-(defmethod terminal-read-string ((terminal unix-terminal) &key (echo t) (beep nil))
-  (with-temporary-echo (terminal echo)
-    (when beep
-      (terminal-ring-bell terminal))
-    (terminal-finish-output terminal)
-    (with-slots (input-buffer input-finished input-cursor) terminal
-      (flet ((finish ()
-               (prog1 (subseq input-buffer input-cursor)
-                 (setf input-finished nil
-                       input-cursor 0
-                       (fill-pointer input-buffer) 0))))
-        (if input-finished
-            (finish)
-            (loop
-              #+swank (print (list input-buffer input-finished input-cursor) *terminal-io*)
-              (terminal-fill-input-buffer terminal)
-              (when input-finished
-                (return (finish)))))))))
+#-(and)(defmethod terminal-read-string ((terminal unix-terminal) &key (echo t) (beep nil))
+         (with-temporary-echo (terminal echo)
+           (when beep
+             (terminal-ring-bell terminal))
+           (terminal-finish-output terminal)
+           (with-slots (input-buffer input-finished input-cursor) terminal
+             (flet ((finish ()
+                      (prog1 (subseq input-buffer input-cursor)
+                        (setf input-finished nil
+                              input-cursor 0
+                              (fill-pointer input-buffer) 0))))
+               (if input-finished
+                   (finish)
+                   (loop
+                     #+swank (print (list input-buffer input-finished input-cursor) *terminal-io*)
+                             (terminal-fill-input-buffer terminal)
+                             (when input-finished
+                               (return (finish)))))))))
 
 
-#-(and)
-(defmethod terminal-read ((terminal unix-terminal) &key (echo t) (beep nil))
-  (format *trace-output* "~&~A~%" 'unix-terminal)
-  (with-temporary-echo (terminal echo)
-    (when beep
-      (terminal-ring-bell terminal))
-    (terminal-finish-output terminal)
-    (with-slots (input-buffer input-finished input-cursor) terminal
-      (flet ((finish ()
-               (handler-case
-                   (destructuring-bind (donnee position)
-                       (parse-donnee-lse (subseq input-buffer input-cursor))
-                     (incf position input-cursor)
-                     (if (< position (length input-buffer))
-                         (setf input-cursor position)
-                         (setf input-cursor 0
-                               (fill-pointer input-buffer) 0
-                               input-finished nil))
-                     donnee)
-                 (error ()
-                   (let ((donnee (subseq input-buffer input-cursor)))
-                     (setf input-cursor 0
-                           (fill-pointer input-buffer) 0
-                           input-finished nil)
-                     (lse-error "DONNEE INVALIDE ~S, ATTENDU UN NOMBRE" donnee))))))
-        (if input-finished
-            (finish)
-            (loop
-              (terminal-fill-input-buffer terminal)
-              (when input-finished
-                (return (finish)))))))))
+#-(and)(defmethod terminal-read ((terminal unix-terminal) &key (echo t) (beep nil))
+         (format *trace-output* "~&~A~%" 'unix-terminal)
+         (with-temporary-echo (terminal echo)
+           (when beep
+             (terminal-ring-bell terminal))
+           (terminal-finish-output terminal)
+           (with-slots (input-buffer input-finished input-cursor) terminal
+             (flet ((finish ()
+                      (handler-case
+                          (destructuring-bind (donnee position)
+                              (parse-donnee-lse (subseq input-buffer input-cursor))
+                            (incf position input-cursor)
+                            (if (< position (length input-buffer))
+                                (setf input-cursor position)
+                                (setf input-cursor 0
+                                      (fill-pointer input-buffer) 0
+                                      input-finished nil))
+                            donnee)
+                        (error ()
+                          (let ((donnee (subseq input-buffer input-cursor)))
+                            (setf input-cursor 0
+                                  (fill-pointer input-buffer) 0
+                                  input-finished nil)
+                            (lse-error "DONNEE INVALIDE ~S, ATTENDU UN NOMBRE" donnee))))))
+               (if input-finished
+                   (finish)
+                   (loop
+                     (terminal-fill-input-buffer terminal)
+                     (when input-finished
+                       (return (finish)))))))))
 
 
 (defmethod terminal-keysym-label ((terminal unix-terminal) keysym)
@@ -897,13 +904,13 @@ Valid only whe MODERN-MODE is false.
                          (:return    (function terminal-veol2)))
                        terminal)))
     (cond
-      ((or (null code) (zerop code)) "(PAS DISPONIBLE)")
-      ((= code  13) "[ENTRÉE]")
-      ((= code  27) "[ÉCHAPEMENT]")
-      ((< code  32) (format nil "[CONTRÔLE-~C]" (code-char (logand #x7f (+ 64 code)))))
-      ((= code  32) "[ESPACE]")
-      ((= code 127) "[EFFACEMENT]")
-      (t (format nil "[~A]" (code-char code))))))
+      ((or (null code) (zerop code)) (values "(PAS DISPONIBLE)" nil))
+      ((= code  13) (values "[ENTRÉE]" t))
+      ((= code  27) (values "[ÉCHAPEMENT]" t))
+      ((< code  32) (values (format nil "[CONTRÔLE-~C]" (code-char (logand #x7f (+ 64 code)))) t))
+      ((= code  32) (values "[ESPACE]" t))
+      ((= code 127) (values "[EFFACEMENT]" t))
+      (t (values (format nil "[~A]" (code-char code)) t)))))
 
 
 
@@ -944,9 +951,9 @@ Valid only whe MODERN-MODE is false.
                  (terminal-carriage-return *term*)
                  (terminal-write-string *term* "Enter a line: ")
                  (terminal-finish-output *term*)
-                 (print (list (terminal-read-string *term*)
-                              (task-signal *task*)
-                              (task-interruption *task*)))
+                 #-(and)(print (list (terminal-read-string *term*)
+                                     (task-signal *task*)
+                                     (task-interruption *task*)))
                  (terminal-new-line *term*)
                  ;; (terminal-carriage-return *term*)
                  ;; (terminal-write-string *term* "DONE----------")
@@ -958,12 +965,12 @@ Valid only whe MODERN-MODE is false.
                  (terminal-carriage-return *term*)
                  (terminal-write-string *term* "Enter two numbers: ")
                  (terminal-finish-output *term*)
-                 (print (list (list (terminal-read *term*)
-                                    (task-signal *task*)
-                                    (task-interruption *task*))
-                              (list (terminal-read *term*)
-                                    (task-signal *task*)
-                                    (task-interruption *task*))))
+                 #-(and)(print (list (list (terminal-read *term*)
+                                           (task-signal *task*)
+                                           (task-interruption *task*))
+                                     (list (terminal-read *term*)
+                                           (task-signal *task*)
+                                           (task-interruption *task*))))
                  (terminal-new-line *term*)
                  ;; (terminal-carriage-return *term*)
                  ;; (terminal-write-string *term* "DONE----------")

@@ -19,7 +19,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -476,13 +476,12 @@ Bound by COMMAND-EVAL-LINE.")
 
 
 (defmethod command-call ((command command))
-  (let ((gn (command-grammar command)))
-    (if gn
-        (apply (command-function command)
-               (converting-parser-errors
-                (funcall (command-parser command)
-                         (io-read-line *task* :beep t))))
-        (funcall (command-function command)))))
+  (let ((arguments (when (command-grammar command)
+                     (converting-parser-errors
+                       (funcall (command-parser command)
+                                (io-read-line *task* :beep t))))))
+    (with-pager *task*
+      (apply (command-function command) arguments))))
 
 
 (defmethod all-commands ((group command-group))
@@ -1037,6 +1036,13 @@ Voir les commandes SELECTIONNER RUBAN, RUBAN, PERFORER A PARTIR DE, ARCHIVER RUB
   "Selectionne un ruban de l'étagère et le place dans le lecteur de ruban."
   "Selectionne un ruban de l'étagère et le place dans le lecteur de ruban.
 
+Un fichier ruban doit commencer par un titre sur la première ligne,
+suivi des données.
+
+Le titre est lu et affiché par cette commande; le reste des données
+est lu par les commandes et instructions données par l'utilisateur ou
+le programme.
+
 Voir les commandes ETAGERE DE RUBAN, RUBAN, PERFORER A PARTIR DE, ARCHIVER RUBAN."
   (io-new-line *task*)
   (let ((path (catalog-pathname ruban "R")))
@@ -1044,7 +1050,7 @@ Voir les commandes ETAGERE DE RUBAN, RUBAN, PERFORER A PARTIR DE, ARCHIVER RUBAN
       (close (task-tape-input *task*)))
     (setf (task-tape-input *task*) (open path :if-does-not-exist :error))
     (io-format *task* "~&LE RUBAN ~:@(~A~) (~A) EST MIS EN PLACE.~%"
-               ruban (read-line (task-tape-input *task*)))))
+               ruban  (read-line (task-tape-input *task*)))))
 
 
 (defcommand "RUBAN" awake nil ()
@@ -1900,8 +1906,8 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                       (io-format task "~%PRET~%")
                       (io-finish-output task))
                     (user-interrupt (condition)
-                      #+developing
-                      (io-format task "~%Condition: ~A~%" condition)
+                      ;; #+developing (io-format task "~%-Condition: ~A~%" condition)
+                      (io-format task "   ")
                       (io-standard-redirection task)
                       (echo)
                       (io-format task "~%PRET~%")

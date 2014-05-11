@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal Bourguignon 2005 - 2013
+;;;;    Copyright Pascal Bourguignon 2005 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -541,15 +541,22 @@ Cette fonction évalue l'expression Common Lisp EXPR.
         (*package* (find-package #-(and) "COMMON-LISP-USER"
                                  "COM.INFORMATIMAGO.LSE")))
     (handler-case
-        (let ((results (multiple-value-list (eval (read-from-string expr)))))
+        (let* ((results)
+               (output (with-output-to-string (out)
+                         (let ((*standard-output* out)
+                               (*error-output* out)
+                               (*trace-output* out))
+                           (setf results (multiple-value-list (eval (read-from-string expr))))))))
+          (io-format *task* "~&~A~&" output)
           (when (plusp print)
-            (io-format *task* "~%--> ~{~S~^~%    ~}~%" results))
+            (io-format *task* "~&--> ~{~S~^~%    ~}~%" results))
           (typecase (first results)
             ((or integer nombre chaine) (first results))
             (t (prin1-to-string (first results)))))
+      
       (error (err)
         (if (plusp noerr)
-            0.0
+            0.0 ; TODO: we should return '' when a string is expected.
             (error err))))))
 
 

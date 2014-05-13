@@ -1,25 +1,8 @@
 -*- mode:org; coding:utf-8 -*-
 
-* DONE TODO: 00003 FAIRE n POUR I_1 JUSQUA 100 doesn't work.
-  CLOSED: [2014-05-13 Tue 04:11]
-  - State "DONE"       from ""           [2014-05-13 Tue 04:11] \\
-    Corrected bug in GOTO that would pop loops at the wrong time.
-
-#+BEGIN_SRC(lse)
-1 FAIRE 10 POUR I_1 JUSQUA 100
-2 AFFICHER[C,20X,C,U]I
-3 T_TEM()
-4 SI T=TEM() ALORS ALLER EN 4
-5 AFFICHER['.']
-10* fin faire
-20 TERMINER
-#+END_SRC
-
-#+BEGIN_SRC(lse)
-EXECUTER A PARTIR DE 1
-1 .                 
-TERMINE EN LIGNE 020
-#+END_SRC
+* TODO: 00004 restore the terminal on restarts                          :cli:
+The *debugger-hook* resets the terminal for the debugger.
+When we use a restart to continue into LSE, we should reconfigure the LSE terminal.
 
 * TODO: 00001 segfault
 
@@ -39,7 +22,7 @@ TERMINE EN LIGNE 020
         ;;;
 #+END_SRC
 
-* TODO: 00002 add a timeout and disconnect if no input occurs after that delay.
+* TODO: 00002 add a timeout and disconnect if no input occurs after that delay. :server:
 
     There seem to be scanners who connect to ports without sending
     anything, and keeping the ports open indefinitely.  For example: 
@@ -123,3 +106,24 @@ TERMINE EN LIGNE 020
         tcp        0      0 88.198.62.69:8115       92.163.81.111:62166     ESTABLISHED 25565/lse
 
 #END_SRC
+* DONE TODO: 00003 FAIRE n POUR I_1 JUSQUA 100 doesn't work.
+  CLOSED: [2014-05-13 Tue 04:11]
+  - State "DONE"       from ""           [2014-05-13 Tue 04:11] \\
+    Corrected bug in GOTO that would pop loops at the wrong time.
+
+#+BEGIN_SRC(lse)
+1 FAIRE 10 POUR I_1 JUSQUA 100
+2 AFFICHER[C,20X,C,U]I
+3 T_TEM()
+4 SI T=TEM() ALORS ALLER EN 4
+5 AFFICHER['.']
+10* fin faire
+20 TERMINER
+#+END_SRC
+
+#+BEGIN_SRC(lse)
+EXECUTER A PARTIR DE 1
+1 .                 
+TERMINE EN LIGNE 020
+#+END_SRC
+

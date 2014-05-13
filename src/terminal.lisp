@@ -117,6 +117,7 @@
        (when (characterp keysym)
          keysym)))))
 
+
 (defgeneric terminal-keysym-label (terminal keysym)
   (:documentation "
 Maps the keysym to a string describing the key-chord that must be typed on that terminal.
@@ -143,42 +144,26 @@ KEYSYM: (MEMBER :ESCAPE :ATTENTION :XOFF :DELETE :RETURN)
     (read-char stream nil nil)))
 
 
-(defgeneric io-read-buffered-character (source)
+(defgeneric terminal-read-buffered-character (source)
   (:documentation "
 Return a character or a keyword representing a key, read from a
 possibly buffered source.  The possible keywords are: :xoff :delete
 :return
-
-When this function receives the escape character (ESC), it signals a
-USER-INTERRUPT condition with SIGINT+ as USER-INTERRUPT-SIGNAL.
-
-When it receives the attention character (C-a), it signals a
-USER-INTERRUPT with +SIGQUIT+ as USER-INTERRUPT-SIGNAL.
-
-Those user-interrupt can be implemented by the kernel terminal driver,
-instead of methods of this functions for some implementations.
 
 Upon end-of-file, NIL is returned.
 ")
   (:method (source)
     (let* ((ch     (terminal-get-next-char source))
            (keysym (terminal-character-keysym source ch)))
-      (case keysym
-        ((:escape)
-         (signal 'user-interrupt :signal +sigint+)
-         (io-read-buffered-character source))
-        ((:attention)
-         (signal 'user-interrupt :signal +sigquit+)
-         (io-read-buffered-character source))
-        (otherwise
-         keysym)))))
+      #+lse-input-debug (io-format *task* "~%terminal-get-next-char -> ~A .~A.~%" ch (when (characterp ch) (char-code ch)))
+      keysym)))
 
 
-(defgeneric io-skip-characters (source characters)
+(defgeneric terminal-skip-characters (source characters)
   (:documentation "
-Read characters with IO-READ-BUFFERED-CHARACTER while they're in
+Read characters with TERMINAL-READ-BUFFERED-CHARACTER while they're in
 the sequence CHARACTERS.  The first character out of that sequence
-will be read by the next IO-READ-BUFFERED-CHARACTER call.
+will be read by the next TERMINAL-READ-BUFFERED-CHARACTER call.
 ")
   (:method ((stream stream) characters)
     (loop
@@ -379,12 +364,12 @@ When false, no automatic echo occurs.")
     ch))
 
 
-(defmethod io-skip-characters ((terminal standard-terminal) characters)
+(defmethod terminal-skip-characters ((terminal standard-terminal) characters)
   (loop
     :named reading
-    :for ch = (io-read-buffered-character terminal)
+    :for ch = (terminal-read-buffered-character terminal)
     :when (null ch)
-      :do (return-from io-skip-characters)
+      :do (return-from terminal-skip-characters)
     :while (find ch characters)
     :finally (unread-char (terminal-keysym-character terminal ch)
                           (terminal-input-stream terminal))))

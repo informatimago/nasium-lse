@@ -64,7 +64,7 @@ This package exports iolib utilities, functions to make handlers.
   "The current socket")
 
 
-#+developing
+#+debugging
 (defvar *backtrace* nil)
 
 
@@ -83,7 +83,7 @@ Run the event dispatch loop.
         (progn
           ;; let ((iolib.multiplex::*minimum-event-loop-step* 0.0d0)
           ;;      (iolib.multiplex::*maximum-event-loop-step* nil))
-          #+developing
+          #+debugging
           (handler-bind
               ((condition (lambda (condi)
                             (invoke-debugger condi)

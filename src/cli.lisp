@@ -154,7 +154,7 @@ BONJOUR     ~8A
                                                        :unicode-halfwidth
                                                        :ascii) 
                                           :terminal terminal))
-                 (*trace-output* (make-broadcast-stream)))
+                 #-(and) (*trace-output* (make-broadcast-stream)))
             (setf *task* task) ; to help debugging, we keep the task in the global binding.
             (or (parse-options (or args (arguments)) nil nil nil)
                 ;; parse-option may call show-bindings which calls

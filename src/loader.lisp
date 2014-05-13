@@ -76,7 +76,9 @@
 ;; (quick-reload :com.informatimago.rdp)
 
 
-(pushnew :developing           *features*)
+;; (setf *features* (set-difference *features* '(:lse-scanner-debug :lse-input-debug)))
+;; (pushnew :lse-scanner-debug    *features*)
+(pushnew :debugging            *features*)
 (pushnew :lse-case-insensitive *features*)
 (pushnew :lse-unix             *features*)
 (pushnew :lse-extensions       *features*)

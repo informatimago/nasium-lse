@@ -59,7 +59,7 @@
 (defparameter *program-name* "lse")
 (defparameter *program-system*  :com.informatimago.lse.cli)
 
-(pushnew :developing           *features*)
+(pushnew :debugging            *features*)
 (pushnew :lse-case-insensitive *features*)
 (pushnew :lse-unix             *features*)
 (pushnew :lse-extensions       *features*)

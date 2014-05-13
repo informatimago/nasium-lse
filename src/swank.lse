@@ -2,9 +2,10 @@
 10 afficher[/,'Saisir le port: '];lire port
 12 port_ent(port);si 1024<port et port<65536 alors aller en 20
 14 afficher[/,'Port ',u,' invalide.',/]port;aller en 10
-20 chaine host;host_'127.0.0.1'
-30 chaine expr;expr_'(let ((swank::*loopback-interface* "'!host!'"))(swank:create-server :port '!cca(port)!'))'
-35 chaine result;result_lisp('(ql:quickload :swank)',1,0);afficher[u,/]result
+20 chaine host,expr,result
+25 host_'127.0.0.1'
+30 result_lisp('(ql:quickload :swank)',1,0);afficher[u,/]result
+35 expr_'(let ((swank::*loopback-interface* "'!host!'")) (swank:create-server :port '!cca(port)!'))'
 40 result_lisp(expr,1,0);afficher[u,/]result
 50 terminer
 

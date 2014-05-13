@@ -64,7 +64,9 @@
 (defparameter *program-name* "lse")
 (defparameter *program-system*  :com.informatimago.lse.cli)
 
-(pushnew :developing           *features*)
+
+;; (pushnew :lse-scanner-debug    *features*)
+(pushnew :debugging            *features*)
 (pushnew :lse-case-insensitive *features*)
 (pushnew :lse-unix             *features*)
 (pushnew :lse-extensions       *features*)
@@ -78,8 +80,7 @@
   #+windows (mapc 'delete-file (directory dir))
   #-windows (asdf:run-shell-command "rm -rf ~S" (namestring dir)))
 
-
-(ql:quickload :swank)
+;; #+debugging (ql:quickload :swank) ;; cannot load swank since cli.lisp will switch to swank-terminal.
 
 (ql:quickload *program-system*)
 
@@ -108,10 +109,10 @@
 (setf  ccl:*backtrace-print-level* nil)
 (test/fonctions :silence t)
 
-(setf *debug-vm*   '(:error)
-      *debug-repl* t)
-(setf *debug-vm*   '()
-      *debug-repl* nil)
+#+debugging (setf *debug-vm*   '(:error)
+                  *debug-repl* t)
+#-debugging (setf *debug-vm*   '()
+                  *debug-repl* nil)
 
 
 

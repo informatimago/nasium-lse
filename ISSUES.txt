@@ -1,6 +1,9 @@
 -*- mode:org; coding:utf-8 -*-
 
-* TODO: 00003 FAIRE n POUR I_1 JUSQUA 100 doesn't work.
+* DONE TODO: 00003 FAIRE n POUR I_1 JUSQUA 100 doesn't work.
+  CLOSED: [2014-05-13 Tue 04:11]
+  - State "DONE"       from ""           [2014-05-13 Tue 04:11] \\
+    Corrected bug in GOTO that would pop loops at the wrong time.
 
 #+BEGIN_SRC(lse)
 1 FAIRE 10 POUR I_1 JUSQUA 100

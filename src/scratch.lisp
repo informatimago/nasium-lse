@@ -83,14 +83,14 @@
 (cd #P "/home/pjb/src/pjb/nasium-lse/src/")
 (pushnew #P"/home/pjb/src/pjb/nasium-lse/dependencies/zebu-3.5.5-pjb/" asdf:*central-registry*)
 (pushnew #P "/home/pjb/src/pjb/nasium-lse/src/"                        asdf:*central-registry*)
-(pushnew :developing *features*)
+(pushnew :debugging *features*)
 
 ;;----------------------------------------------------------------------
 (in-package :cl-user)
 (cd      #P "/home/pjb/src/pjb/nasium-lse/src/")
 (pushnew #P "/home/pjb/src/pjb/nasium-lse/src/"  asdf:*central-registry*)
 (pushnew #P "/home/pjb/src/public/rdp/"      asdf:*central-registry*)
-(pushnew :developing *features*)
+(pushnew :debugging *features*)
 (setf *print-right-margin* 200
       *print-pretty* t
       *print-case* :downcase)
@@ -110,7 +110,7 @@
 (in-package :cl-user)
 (cd      #P "/home/pjb/src/pjb/nasium-lse/src/")
 (pushnew #P "/home/pjb/src/pjb/nasium-lse/src/" asdf:*central-registry*)
-(pushnew :developing *features*)
+(pushnew :debugging *features*)
 (ql:quickload :com.informatimago.lse :verbose t :explain t)
 (in-package :com.informatimago.lse)
 

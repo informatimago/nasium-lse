@@ -510,7 +510,7 @@ Résultat le OU exclusif bit-à-bit entre les bits de A et ceux de B."
 
 
 
-#+developing
+#+debugging
 (defunction (lisp-eval "LISP") (expr &optional (print 0) (noerr 0))
   "Evaluation d'une expression LISP"
   "LISP(EXPR,PRINT,NOERR)

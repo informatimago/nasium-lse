@@ -37,7 +37,6 @@
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
-
 (in-package "COM.INFORMATIMAGO.LSE")
 
 
@@ -102,7 +101,8 @@
 
 ;;----------------------------------------------------------------------
 
-;;; attributes
+;; attributes
+;; --------------------
 
 (defmethod io-echo ((task t))
   (terminal-echo (task-terminal task)))
@@ -110,7 +110,8 @@
 (defmethod (setf io-echo) (new-echo (task t))
   (setf (terminal-echo (task-terminal task)) new-echo))
 
-;;; output
+;; output
+;; --------------------
 
 (defmethod io-bell ((task t))
   (when (task-allow-bell-output task)
@@ -174,126 +175,6 @@
   (if (io-terminal-output-p task)
       (terminal-finish-output (task-terminal task))
       (finish-output (task-output task))))
-
-
-;;; input
-
-
-(defun push-chaine-buffer (ch buffer)
-  (if (<= (1+ (length buffer)) chaine-maximum)
-      (vector-push-extend ch buffer (max (- chaine-maximum (length buffer)) (length buffer)))
-      (error "CHAINE TROP GRANDE.")))
-
-(defun push-nombre-buffer (ch buffer)
-  (if (<= (1+ (length buffer)) 80)
-      (vector-push-extend ch buffer (max (- chaine-maximum (length buffer)) (length buffer)))
-      (error "SAISIE POUR NOMBRE TROP GRANDE.")))
-
-(declaim (inline push-chaine-buffer push-nombre-buffer))
-
-
-(defmethod io-read-string ((task t) &key (echo t) (beep t))
-  "
-DO:         Reads a string.
-
-read characters until RET or C-s or ESC or string full.
-ESC is interrupt.
-string full is an error condition, 
-RET is included in the string, C-s not.  (It's virtual RET/C-s, real RET can be mapped to C-s).
-
-ECHO: Whether this input must be done echoing the characters (default T).
-BEEP: Whether the terminal should beep before reading the string (default NIL).
-
-RETURN: The LSE string read.
-"
-  (let* ((terminal (task-terminal task))
-         (input    (if (io-terminal-input-p task)
-                       terminal
-                       (task-input task))))
-    (with-temporary-echo (terminal echo)
-      (when (and beep (task-allow-bell-output task)) (terminal-ring-bell terminal))
-      (loop
-        :named reading
-        :with buffer = (make-array 8 :adjustable t :fill-pointer 0 :element-type 'character)
-        :for ch = (io-read-buffered-character input)
-        :do (case ch
-              ((:xoff)
-               (return-from reading buffer))
-              ((:return)
-               (push-chaine-buffer #\Return buffer)
-               (return-from reading buffer))
-              ((:delete)
-               (when (plusp (fill-pointer buffer))
-                 (decf (fill-pointer buffer))))
-              (otherwise
-               (if (characterp ch)
-                   (push-chaine-buffer ch buffer)
-                   (lse-error "ERREUR INTERNE: VALEUR INATTENDUE DE ~S: ~S of type ~S"
-                              (list 'io-read-buffered-character (class-name (class-of input)))
-                              ch (type-of ch)))))))))
-
-
-(defparameter *terminators*
-  (remove-duplicates (vector #\space :xoff :return
-                             #\Newline
-                             #+has-tab      #\Tab
-                             #+has-return   #\return
-                             #+has-linefeed #\linefeed
-                             #+has-page     #\page
-                             #+has-vt       #\vt)))
-
-
-(defmethod io-read-number ((task t) &key (echo t) (beep t))
-  "
-DO:         Reads a number.
-
-skip spaces as many as you want.
-read characters until RET or C-s or spaces or ESC or buffer full.
-ESC is interrupt.
-string full is an error condition, 
-parse the buffer and return the number or signal an error.
-
-ECHO: Whether this input must be done echoing the characters (default T).
-BEEP: Whether the terminal should beep before reading the string (default NIL).
-
-RETURN: The LSE number read.
-"
-  (let* ((terminal (task-terminal task))
-         (input    (if (io-terminal-input-p task)
-                       terminal
-                       (task-input task))))
-    (with-temporary-echo (terminal echo)
-      (when (and beep (task-allow-bell-output task)) (terminal-ring-bell terminal))
-      (io-skip-characters terminal *terminators*)
-      (let ((buffer
-             (loop
-               :named reading
-               :with buffer = (make-array 8 :adjustable t :fill-pointer 0 :element-type 'character)
-               :for ch = (io-read-buffered-character terminal)
-               :do (cond
-                     ((find ch *terminators*)
-                      (return-from reading buffer))
-                     ((eql ch :delete)
-                      (when (plusp (fill-pointer buffer))
-                        (decf (fill-pointer buffer))))
-                     ((characterp ch)
-                      (push-nombre-buffer ch buffer))
-                     (t
-                      (lse-error "ERREUR INTERNE: VALEUR INATTENDUE DE ~S: ~S of type ~S"
-                                 (list 'io-read-buffered-character (class-name (class-of input)))
-                                 ch (type-of ch)))))))
-        (handler-case
-            (destructuring-bind (donnee position) (parse-donnee-lse buffer)
-              (if (< position (length buffer))
-                  (lse-error "SYNTAXE INVALIDE ~S, ATTENDU UN NOMBRE" buffer)
-                  donnee))
-          (error ()
-            (lse-error "DONNEE INVALIDE ~S, ATTENDU UN NOMBRE" buffer)))))))
-
-
-(defmethod io-read-line ((task t) &key (echo t) (beep nil))
-  (io-read-string task :echo echo :beep beep))
-
 
 
 ;;; Some more output:
@@ -465,12 +346,9 @@ RETURN: A string transformed according to the flags UPCASE and
       string))
 
 
-
 (defparameter *io-active-codes* (vector +TAPE-READER-ON+   +TAPE-PUNCHER-ON+
                                         +TAPE-PUNCHER-OFF+ +TAPE-READER-OFF+
                                         XOFF CR LF))
-
-
 
 
 (defmethod io-format ((task t) control-string &rest arguments)
@@ -499,114 +377,162 @@ RETURN: A string transformed according to the flags UPCASE and
 
 
 
-;; Le thread principal peut lire directement le ruban, 
-;; mais pour le terminal, il doit prendre les caracteres dans tampon_entree,
-;; et attendre sur le thread terminal.
-;;
-;; Le thread terminal lit chaque caractere venant du terminal et 
-;; les aiguille :
-;;     - interuption (ESC),
-;;     - signal (CTRL-A),
-;;     - tampon_entree lorsque le thread principal attend une entrée terminal,
-;;     - /dev/null lorsque le thread principal n'attend pas d'entrée terminal,
-;;     - echo sur le terminal lorsqu'on est pas en mode SILENCE.
-;;     - fin de l'entrée et signal du thread principal sur terminateur.
-;;
-;; On va faire lire le ruban  par le thread terminal. Il fera un poll
-;; (on pourrait avoir  plus de 32 descripteurs ouverts  en même temps
-;; avec 16  consoles+rubans) sur  le terminal et  le ruban.  Quand le
-;; ruban est lu,  on ignore toute entrée sur  le terminal sauf CTRL-A
-;; et ESC.
+;; input
+;; --------------------
 
 
-;; (ext:with-keyboard
-;;     (loop 
-;;        for ch = (read-char-no-hang ext:*keyboard-input*)
-;;        until (equalp ch #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C))
-;;        do (when ch (print ch))))
-;; 
-;; 
-;; NIL or:
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\f :BITS 0 :FONT 0 :KEY NIL) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\s :BITS 0 :FONT 0 :KEY NIL) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\c :BITS 0 :FONT 0 :KEY NIL) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\s :BITS 0 :FONT 0 :KEY NIL) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\x :BITS 0 :FONT 0 :KEY NIL) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\S) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\S) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\q :BITS 0 :FONT 0 :KEY NIL) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\Q) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\Q) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\Z) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\Escape :BITS 0 :FONT 0 :KEY NIL) 
+(defun push-chaine-buffer (ch buffer)
+  (if (<= (1+ (length buffer)) chaine-maximum)
+      (vector-push-extend ch buffer (min (- chaine-maximum (length buffer)) (length buffer)))
+      (error "CHAINE TROP GRANDE.")))
+
+(defun push-nombre-buffer (ch buffer)
+  (let ((bufmax 80))
+    (if (<= (1+ (length buffer)) bufmax)
+        (vector-push-extend ch buffer (min (- bufmax (length buffer)) (length buffer)))
+        (error "SAISIE POUR NOMBRE TROP GRANDE."))))
+
+(declaim (inline push-chaine-buffer push-nombre-buffer))
 
 
-;; (defun io-valid-tape-name-p (name)
-;;   "
-;; RETURN: Whether name is a string with the following format:
-;;         name ::= part | part '/' name .
-;;         part ::= [A-Za-z][A-Za-z0-9]{0,4} /
-;; "
-;;   (do ((i 0)
-;;        (l 0)
-;;        (state :first))
-;;       ((>= i (length name)) t)
-;;     (if (eq state :first)
-;;         (if (alpha-char-p (char name i))
-;;             (setf i (1+ i) l 1 state :rest)
-;;             (return-from io-valid-tape-name-p nil))
-;;         (cond
-;;           ((alphanumericp (char name i))
-;;            (setf i (1+ i) l (1+ l))
-;;            (when (> l 5) (return-from io-valid-tape-name-p nil)))
-;;           ((char= (character "/") (char name i))
-;;            (setf i (1+ i) state :first))
-;;           (t
-;;            (return-from io-valid-tape-name-p nil))))))
-;; 
-;; 
-;; (defmethod io-redirect-input-from-tape ((task t) tape-name)
-;;   "
-;; RETURN: The task-tape-input or nil.
-;; "
-;;   (when (task-tape-input task)
-;;     (close (task-tape-input task))
-;;     (setf  (task-tape-input task) nil))
-;;   (setf (task-input task) (terminal-input-stream (task-terminal task)))
-;;   (let ((path (catalog-make-path :tape name)))
-;;     (if path
-;;         (if (setf (task-tape-input task)
-;;                   (open path :direction :input :if-does-not-exists nil))
-;;             (setf (task-input task) (task-tape-input task))
-;;             (error 'file-error-file-is-inaccessible :pathname path))
-;;         (error 'file-error-file-does-not-exist :pathname path)))
-;;   (task-tape-input task))
-;; 
-;; 
-;; (defmethod io-redirect-output-to-tape ((task t) tape-name)
-;;   "
-;; RETURN: The task-tape-output or nil.
-;; "
-;;   (when (task-tape-output task)
-;;     (close (task-tape-output task))
-;;     (setf  (task-tape-output task) nil))
-;;   (setf (task-output task) (terminal-output-stream (task-terminal task)))
-;;   (let ((path (catalog-make-path :tape name)))
-;;     (if path
-;;         (if (setf (task-tape-output task)
-;;                   (open path :direction :output
-;;                         :if-does-not-exists :create
-;;                         :if-exists :supersede))
-;;             (setf (task-output task) (task-tape-output task))
-;;             (error 'file-error-file-is-inaccessible :pathname path))
-;;         (error 'file-error-file-does-not-exist :pathname path)))
-;;   (task-tape-output task))
+(defgeneric io-read-buffered-character (task)
+    (:documentation "
+Return a character or a keyword representing a key, read from a
+possibly buffered source.  The possible keywords are: :xoff :delete
+:return
+
+When this function receives the escape character (ESC), it signals a
+USER-INTERRUPT condition with SIGINT+ as USER-INTERRUPT-SIGNAL.
+
+When it receives the attention character (C-a), it signals a
+USER-INTERRUPT with +SIGQUIT+ as USER-INTERRUPT-SIGNAL.
+
+Those user-interrupt can be implemented by the kernel terminal driver,
+instead of methods of this functions for some implementations.
+
+Upon end-of-file, NIL is returned.
+")
+  (:method ((task task))
+    (let* ((terminal (task-terminal task))
+           (input    (if (io-terminal-input-p task)
+                         terminal
+                         (task-input task)))
+           (keysym   (terminal-read-buffered-character input)))
+      (case keysym
+        ((:escape)
+         (signal 'user-interrupt :signal +sigint+)
+         ;; Should not occur, but in case:
+         (io-read-buffered-character task))
+        ((:attention)
+         (signal 'user-interrupt :signal +sigquit+)
+         ;; Should not occur, but in case:
+         (io-read-buffered-character task))
+        ((#\Return)
+         (if (task-x))
+         )
+        (otherwise
+         keysym)))))
+
+
+(defmethod io-read-string ((task t) &key (echo t) (beep t))
+  "
+DO:         Reads a string.
+
+read characters until RET or C-s or ESC or string full.
+ESC is interrupt.
+string full is an error condition, 
+RET is included in the string, C-s not.  (It's virtual RET/C-s, real RET can be mapped to C-s).
+
+ECHO: Whether this input must be done echoing the characters (default T).
+BEEP: Whether the terminal should beep before reading the string (default NIL).
+
+RETURN: The LSE string read.
+"
+  (let ((terminal (task-terminal task)))
+    (with-temporary-echo (terminal echo)
+      (when (and beep (task-allow-bell-output task)) (terminal-ring-bell terminal))
+      (loop
+        :named reading
+        :with buffer = (make-array 8 :adjustable t :fill-pointer 0 :element-type 'character)
+        :for ch = (io-read-buffered-character task)
+        :do #+lse-input-debug (io-format task "~%io-read-buffered-character -> ~A .~A.~%" ch (when (characterp ch) (char-code ch)))
+            (case ch
+              ((:xoff)
+               (return-from reading buffer))
+              ((:return)
+               (push-chaine-buffer #\Return buffer)
+               (return-from reading buffer))
+              ((:delete)
+               (when (plusp (fill-pointer buffer))
+                 (decf (fill-pointer buffer))))
+              (otherwise
+               (if (characterp ch)
+                   (push-chaine-buffer ch buffer)
+                   (lse-error "ERREUR INTERNE: VALEUR INATTENDUE DE ~S: ~S of type ~S"
+                              (list 'io-read-buffered-character (class-name (class-of input)))
+                              ch (type-of ch)))))))))
+
+
+(defmethod io-read-line ((task t) &key (echo t) (beep nil))
+  (io-read-string task :echo echo :beep beep))
+
+
+(defparameter *terminators*
+  (remove-duplicates (vector #\space :xoff :return
+                             #\Newline
+                             #+has-tab      #\Tab
+                             #+has-return   #\return
+                             #+has-linefeed #\linefeed
+                             #+has-page     #\page
+                             #+has-vt       #\vt)))
+
+
+(defmethod io-read-number ((task t) &key (echo t) (beep t))
+  "
+DO:         Reads a number.
+
+skip spaces as many as you want.
+read characters until RET or C-s or spaces or ESC or buffer full.
+ESC is interrupt.
+string full is an error condition, 
+parse the buffer and return the number or signal an error.
+
+ECHO: Whether this input must be done echoing the characters (default T).
+BEEP: Whether the terminal should beep before reading the string (default NIL).
+
+RETURN: The LSE number read.
+"
+  (let* ((terminal (task-terminal task))
+         (input    (if (io-terminal-input-p task)
+                       terminal
+                       (task-input task))))
+    (with-temporary-echo (terminal echo)
+      (when (and beep (task-allow-bell-output task)) (terminal-ring-bell terminal))
+      (terminal-skip-characters input *terminators*)
+      (let ((buffer
+             (loop
+               :named reading
+               :with buffer = (make-array 8 :adjustable t :fill-pointer 0 :element-type 'character)
+               :for ch = (io-read-buffered-character task)
+               :do (cond
+                     ((find ch *terminators*)
+                      (return-from reading buffer))
+                     ((eql ch :delete)
+                      (when (plusp (fill-pointer buffer))
+                        (decf (fill-pointer buffer))))
+                     ((characterp ch)
+                      (push-nombre-buffer ch buffer))
+                     (t
+                      (lse-error "ERREUR INTERNE: VALEUR INATTENDUE DE ~S: ~S of type ~S"
+                                 (list 'io-read-buffered-character (class-name (class-of input)))
+                                 ch (type-of ch)))))))
+        (handler-case
+            (destructuring-bind (donnee position) (parse-donnee-lse buffer)
+              (if (< position (length buffer))
+                  (lse-error "SYNTAXE INVALIDE ~S, ATTENDU UN NOMBRE" buffer)
+                  donnee))
+          (error ()
+            (lse-error "DONNEE INVALIDE ~S, ATTENDU UN NOMBRE" buffer)))))))
 
 
 

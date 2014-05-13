@@ -59,7 +59,7 @@
 (defparameter *program-name* "lse-server")
 (defparameter *program-system*  :com.informatimago.lse.server)
 
-(pushnew :developing           *features*)
+(pushnew :debugging            *features*)
 (pushnew :lse-case-insensitive *features*)
 (pushnew :lse-unix             *features*)
 (pushnew :lse-extensions       *features*)
@@ -95,11 +95,10 @@
 (setf  ccl:*backtrace-print-level* nil)
 (test/fonctions :silence t)
 
-(setf *debug-vm*   t
-      *debug-repl* t)
-
-(setf *debug-vm*   nil
-      *debug-repl* nil)
+#+debugging (setf *debug-vm*   '(:error)
+                  *debug-repl* t)
+#-debugging (setf *debug-vm*   '()
+                  *debug-repl* nil)
 
 
 ;;;---------------------------------------------------------------------

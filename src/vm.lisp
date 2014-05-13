@@ -956,6 +956,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                 (< limit (variable-value variable)))
         (progn
           ;; end of loop, we exit it.
+          ;; #+debugging (io-format *task* "~&END OF LOOP ~S~&" loop)
           (pop (loop-stack vm))
           nil)
         ;; loop over:
@@ -1010,6 +1011,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun next-line (vm)
   (let ((stack (loop-stack vm)))
+    ;; #+debugging (io-format *task* "~%~S~%" stack)
     (if (and stack
              (= (loop-end-line-number (first stack)) (vm-pc.line vm)))
         (if (test-end-of-loop vm (first stack))
@@ -1049,14 +1051,14 @@ NOTE: on ne peut pas liberer un parametre par reference.
       ((null line)
        (error-bad-line lino))
       (stack
-       ;; When we GO TO a line outside of the current loop, we unwind it.
        (if (or (< (loop-start-line-number (first stack)) lino)
                (<= lino (loop-end-line-number (first stack))))
+           (vm-goto vm lino)
            (progn
+             ;; When we GO TO a line outside of the current loop, we unwind it.
              (pop (loop-stack vm))
              ;; and try again (there may be several embedded loops)
-             (goto vm lino))
-           (vm-goto vm lino)))
+             (goto vm lino))))
       (t
        (vm-goto vm lino)))))
 
@@ -1113,7 +1115,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                          (id::ptr (ptr 2 3))
                          (id::grl (grl 2 3))
                          (id::dat (dat 0 0))
-                         #+developing (id::lisp (lisp-eval 1 3)))))
+                         #+debugging (id::lisp (lisp-eval 1 3)))))
 
 
 
@@ -1416,9 +1418,10 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                                 (op-4/1 (op) `(let ((d (spop)) (c (spop)) (b (spop))) (,op vm (spop) b c d (pfetch))))
                                 (op-0/2 (op) `(,op vm (pfetch) (pfetch)))
                                 (op-2/2 (op) `(let ((b (spop))) (,op vm (spop) b (pfetch) (pfetch)))))
-                       #+developing
+                       #+debugging
                        (when (and (listp *debug-vm*) (member :cop *debug-vm*))
                          (let ((*standard-output* *trace-output*))
+                           (format t "~3D " (vm-pc.line vm))
                            (disassemble-lse (vm-code vm)
                                             :start (vm-pc.offset vm)
                                             :one-instruction t)
@@ -1516,9 +1519,9 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                                    :format-control "INTERNE MACHINE VIRTUELLE: CODE OPERATION INCONNU ~S"
                                    :format-arguments (list cop))))))))))
           
-          #-developing
+          #-debugging
           (run)
-          #+developing
+          #+debugging
           (if (or (eq t *debug-vm*) (member :error *debug-vm*))
               (handler-bind ((error #'invoke-debugger)) (run))
               (run)))
@@ -1532,8 +1535,8 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
         ;; (io-finish-output *task*)
         (error err))
       (user-interrupt (condition)
-        #-developing (declare (ignore condition))
-        #+developing (progn (format *trace-output* "~%Condition: ~A~%" condition)
+        #-debugging (declare (ignore condition))
+        #+debugging (progn (format *trace-output* "~%Condition: ~A~%" condition)
                             (force-output *trace-output*))
         (vm-pause vm) ; no message
         (io-standard-redirection *task*)

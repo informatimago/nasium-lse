@@ -73,7 +73,7 @@
 
 
 
-(defvar *debug-swank* nil)
+(defvar *debug-swank* #+debugging t #-debugging nil)
 ;; (setf  *debug-swank* t)
 ;; (setf  *debug-swank* nil)
 
@@ -424,15 +424,18 @@ contents of the OUTPUT-BUFFER, moving the cursor to the CURRENT-COLUMN."
                        (return-from get-a-byte #\Newline))
                       (t
                        (terminal-fill-input-buffer terminal))))))
+      #+debugging
       (when (null ch)
-        (terminal-write-string terminal (format nil "~%input-buffer = ~S~%" (list input-cursor input-finished input-buffer))))
+        (terminal-write-string terminal
+                               (format nil "~%input-buffer = ~S~%"
+                                       (list input-cursor input-finished input-buffer))))
       ch)))
 
 
-(defmethod io-skip-characters ((terminal swank-terminal) characters)
+(defmethod terminal-skip-characters ((terminal swank-terminal) characters)
   (loop
     :named reading
-    :for ch = (io-read-buffered-character terminal)
+    :for ch = (terminal-read-buffered-character terminal)
     :while (find ch characters)
     :finally (let ((ch (terminal-keysym-character terminal ch)))
                (with-slots (input-buffer input-cursor) terminal
@@ -446,7 +449,7 @@ contents of the OUTPUT-BUFFER, moving the cursor to the CURRENT-COLUMN."
                     (incf (fill-pointer input-buffer))
                     (replace input-buffer input-buffer :start1 0 :start2 1)
                     (setf (aref input-buffer 0) ch))
-                   (t ;; should not occur since we've just called io-read-buffered-character
+                   (t ;; should not occur since we've just called terminal-read-buffered-character
                     (lse-error "ERREUR INTERNE: LIMITE DE TAILLE DE TAMPON D'ENTRÉE ATTEINTE")))))))
 
 ;;;; THE END ;;;;

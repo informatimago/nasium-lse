@@ -53,7 +53,6 @@
                               auto-mode-alist))
 
 
-
 (defgroup lse nil
   "Major mode for editing L.S.E. code."
   :prefix "lse-"

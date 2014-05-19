@@ -66,7 +66,7 @@
 
 
 ;; (pushnew :lse-scanner-debug    *features*)
-(pushnew :debugging            *features*)
+;; (pushnew :debugging            *features*)
 (pushnew :lse-case-insensitive *features*)
 (pushnew :lse-unix             *features*)
 (pushnew :lse-extensions       *features*)

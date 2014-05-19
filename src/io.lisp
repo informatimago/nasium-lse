@@ -146,13 +146,12 @@
         (unless available
           (multiple-value-setq (label available) (terminal-keysym-label (task-terminal task) :return)))
         (let ((*page-height* nil)
-              (*line-count*  nil)
-              (old (list *page-height* *line-count*)))
+              (*line-count*  nil))
           (io-new-line task)
           (with-open-file (out #P "~/Desktop/out.txt" :direction :output
                                :if-exists :append :if-does-not-exist :create)
             (format out "Pager ~S~%" (multiple-value-list (decode-universal-time (get-universal-time)))))
-          (io-format task "Taper ~A pour continuer: ~S" label old)
+          (io-format task "Taper ~A pour continuer:" label)
           (io-read-line task :beep t :echo nil)
           (io-carriage-return task)))
       (setf *line-count* 0))))

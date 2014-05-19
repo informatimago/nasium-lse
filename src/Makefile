@@ -16,7 +16,7 @@
 #LEGAL
 #    AGPL3
 #    
-#    Copyright Pascal J. Bourguignon 2012 - 2012
+#    Copyright Pascal J. Bourguignon 2012 - 2014
 #    
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published by
@@ -63,7 +63,7 @@ LOAD           = $(CCL_LOAD)
 EVAL           = $(CCL_EVAL)
 
 
-HELPFORMAT="$(MAKE) %-20s \# %s\n"
+HELPFORMAT="$$(basename $(MAKE)) %-20s \# %s\n"
 
 help::
 	@printf $(HELPFORMAT) all 'builds all executables on all hosts.'
@@ -77,7 +77,7 @@ all:ChangeLog
 
 
 help::
-	@printf $(HELPFORMAT) ChangeLog 'Extracts the logs from git into the ChangeLog file.'
+	@printf $(HELPFORMAT) ChangeLog 'extracts the logs from git into the ChangeLog file.'
 ChangeLog:.git
 	git log > ChangeLog
 #ChangeLog:../_FOSSIL_
@@ -92,7 +92,7 @@ cli:
 	$(SYMLINK_CLI)
 
 help::
-	@printf $(HELPFORMAT) macosx 'builds the unix cli  executable and the MacOSX application bundle.'
+	@printf $(HELPFORMAT) macosx 'builds the unix cli executable and the MacOSX application bundle.'
 macosx:cli
 	$(MAKE) -C macosx
 

@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2013 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2013 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -54,54 +54,116 @@
 
 
 
+(defgeneric terminal-character-keysym (terminal character)
+  (:documentation "Maps the CHARACTER to a keysym or to itself.")
+  (:method (terminal character)
+    (declare (ignorable terminal))
+    (case character
+      
+      #+has-ascii-code
+      ((#.(code-char SOH))      :attention)
+
+      #+(and has-escape
+         (or (not has-ascii-code)
+             #.(cl:if (cl:char= (cl:code-char COM.INFORMATIMAGO.LSE::ESC) #\Escape) '(:and) '(:or))))
+      ((#\Escape)               :escape)
+      
+      #+(and has-ascii-code
+         (or (not has-escape)
+             #.(cl:if (cl:char/= (cl:code-char COM.INFORMATIMAGO.LSE::ESC) #\Escape) '(:and) '(:or))))
+      ((#.(code-char ESC))      :escape)
 
 
-(defgeneric io-read-buffered-character (source)
+      #+(and has-return
+         (or (not has-ascii-code)
+             #.(cl:if (cl:char= (cl:code-char COM.INFORMATIMAGO.LSE::CR) #\Return) '(:and) '(:or))))
+      ((#\Return)               :return)
+
+      #+(and has-ascii-code
+         (or (not has-return)
+             #.(cl:if (cl:char/= (cl:code-char COM.INFORMATIMAGO.LSE::CR) #\Return) '(:and) '(:or))))
+      ((#.(code-char CR))       :return)
+            
+
+      #+has-ascii-code ((#.(code-char XOFF))     :xoff)
+      ((#\Newline)                               :xoff)
+
+      #+has-backspace  ((#\Backspace)            :delete)
+      #+has-rubout     ((#\Rubout)               :delete)
+      ((#\\)                                     :delete)
+      
+      (otherwise                                 character))))
+
+(defgeneric terminal-keysym-character (terminal keysym)
+  (:documentation "Maps the keysym to a CHARACTER or NIL if not supported.")
+  (:method (terminal keysym)
+    (declare (ignorable terminal))
+    (case keysym
+      (:escape     (or #+has-escape     #\Escape
+                       #+has-ascii-code #.(code-char ESC)))
+      (:attention  (or #+has-ascii-code #.(code-char SOH)))
+      (:xoff       (or #+has-ascii-code #.(code-char XOFF)))
+      (:delete     (or #+has-rubout     #\Rubout
+                       #+has-ascii-code #.(code-char DEL)
+                       #\\))
+      (:return     (or #+has-return     #\Return
+                       #+has-ascii-code #.(code-char CR)
+                       #\Newline))
+      (:bell       (or #+has-bell       #\Bell))
+      (:line-feed  (or #+has-linefeed   #\Linefeed))
+      (:backspace  (or #+has-backspace  #\Backspace))
+      (:page       (or #+has-page       #\Page))
+      (otherwise
+       (when (characterp keysym)
+         keysym)))))
+
+
+(defgeneric terminal-keysym-label (terminal keysym)
+  (:documentation "
+Maps the keysym to a string describing the key-chord that must be typed on that terminal.
+The second value indicates whether that keysym is available.
+KEYSYM: (MEMBER :ESCAPE :ATTENTION :XOFF :DELETE :RETURN)
+")
+  (:method (terminal keysym)
+    (declare (ignorable terminal))
+    (let ((available (terminal-keysym-character terminal keysym)))
+      (ecase keysym
+        (:escape    (values (if available "[ECHAPEMENT]" "(NON DISPONIBLE)") available))
+        (:attention (values (if available "[CONTRÔLE-A]" "(NON DISPONIBLE)") available))
+        (:xoff      (values (if available "[CONTRÔLE-S]" "(NON DISPONIBLE)") available))
+        (:delete    (values (if available
+                                (or #+has-rubout     "[EFFACEMENT]"
+                                    #+has-ascii-code "[EFFACEMENT]"
+                                    #\\)
+                                "(NON DISPONIBLE)") available))
+        (:return    (values "[ENTRÉE]" t))))))
+
+
+(defgeneric terminal-get-next-char (source)
+  (:method ((stream stream))
+    (read-char stream nil nil)))
+
+
+(defgeneric terminal-read-buffered-character (source)
   (:documentation "
 Return a character or a keyword representing a key, read from a
 possibly buffered source.  The possible keywords are: :xoff :delete
 :return
 
-When this function receives the escape character (ESC), it signals a
-USER-INTERRUPT condition. 
-
-When it receives the attention character (C-a), it signals a
-USER-INTERRUPT with +SIGQUIT+ as USER-INTERRUPT-SIGNAL.
-
-Those user-interrupt can be implemented by the kernel terminal driver,
-instead of methods of this functions for some implementations.
+Upon end-of-file, NIL is returned.
 ")
-  (:method ((stream stream))
-    (let ((ch (read-char stream nil nil)))
-      (when ch
-        (let ((keysym (case ch
-                        #+has-ascii-code ((#.(code-char ESC))      :escape)
-                        #+has-ascii-code ((#.(code-char SOH))      :attention)
-                        #+has-ascii-code ((#.(code-char CR))       :return)
-                        #+has-ascii-code ((#.(code-char XOFF))     :xoff)
-                        #+has-backspace  ((#\Backspace)            :delete)
-                        #+has-escape     ((#\Escape)               :escape)
-                        #+has-return     ((#\Return)               :return)
-                        #+has-rubout     ((#\Rubout)               :delete)
-                        ((#\Newline)                               :xoff)
-                        ((#\\)                                     :delete)
-                        (otherwise ch))))
-          (case keysym
-            ((:escape)
-             (signal 'user-interrupt)
-             (io-read-buffered-character stream))
-            ((:attention)
-             (signal 'user-interrupt :signal +sigquit+)
-             (io-read-buffered-character stream))
-            (otherwise
-             keysym)))))))
+  (:method (source)
+    (let* ((ch     (terminal-get-next-char source))
+           (keysym (terminal-character-keysym source ch)))
+      #+lse-input-debug (io-format *task* "~%terminal-get-next-char -> ~A .~A.~%" ch (when (characterp ch) (char-code ch)))
+      keysym)))
 
 
-(defgeneric io-skip-characters (source characters)
+(defgeneric terminal-skip-characters (source characters)
   (:documentation "
-Read characters with IO-READ-BUFFERED-CHARACTER while they're in
+Read characters with TERMINAL-READ-BUFFERED-CHARACTER while they're in
 the sequence CHARACTERS.  The first character out of that sequence
-will be read by the next IO-READ-BUFFERED-CHARACTER call.
+will be read by the next TERMINAL-READ-BUFFERED-CHARACTER call.
 ")
   (:method ((stream stream) characters)
     (loop
@@ -184,63 +246,6 @@ When false, no automatic echo occurs.")
 
 (defgeneric terminal-number-terminators (terminal)
   (:documentation "Return a sequence of keysym or characters that terminate reading numbers (spaces, x-off, return, etc)."))
-
-
-(defgeneric terminal-character-keysym (terminal character)
-  (:documentation "Maps the CHARACTER to a keysym or to itself.")
-  (:method (terminal character)
-    (declare (ignorable terminal))
-    (case character
-      #+has-ascii-code ((#.(code-char ESC))      :escape)
-      #+has-ascii-code ((#.(code-char SOH))      :attention)
-      #+has-ascii-code ((#.(code-char CR))       :return)
-      #+has-ascii-code ((#.(code-char XOFF))     :xoff)
-      #+has-backspace  ((#\Backspace)            :delete)
-      #+has-escape     ((#\Escape)               :escape)
-      #+has-return     ((#\Return)               :return)
-      #+has-rubout     ((#\Rubout)               :delete)
-      ((#\Newline)                               :xoff)
-      ((#\\)                                     :delete)
-      (otherwise character))))
-
-(defgeneric terminal-keysym-character (terminal keysym)
-  (:documentation "Maps the keysym to a CHARACTER or NIL if not supported.")
-  (:method (terminal keysym)
-    (declare (ignorable terminal))
-    (case keysym
-      (:escape     (or #+has-escape     #\Escape
-                       #+has-ascii-code #.(code-char ESC)))
-      (:attention  (or #+has-ascii-code #.(code-char SOH)))
-      (:xoff       (or #+has-ascii-code #.(code-char XOFF)))
-      (:delete     (or #+has-rubout     #\Rubout
-                       #+has-ascii-code #.(code-char DEL)
-                       #\\))
-      (:return     (or #+has-return     #\Return
-                       #+has-ascii-code #.(code-char CR)
-                       #\Newline))
-      (:bell       (or #+has-bell       #\Bell))
-      (:line-feed  (or #+has-linefeed   #\Linefeed))
-      (:backspace  (or #+has-backspace  #\Backspace))
-      (:page       (or #+has-page       #\Page))
-      (otherwise
-       (when (characterp keysym)
-         keysym)))))
-
-(defgeneric terminal-keysym-label (terminal keysym)
-  (:documentation "Maps the keysym to a string describing the key-chord that must be typed on that terminal.")
-  (:method (terminal keysym)
-    (declare (ignorable terminal))
-    (ecase keysym
-      (:escape    (if (terminal-keysym-character terminal keysym) "[ECHAPEMENT]" "(NON DISPONIBLE)"))
-      (:attention (if (terminal-keysym-character terminal keysym) "[CONTRÔLE-A]" "(NON DISPONIBLE)"))
-      (:xoff      (if (terminal-keysym-character terminal keysym) "[CONTRÔLE-S]" "(NON DISPONIBLE)"))
-      (:delete    (if (terminal-keysym-character terminal keysym)
-                      (or #+has-rubout     "[EFFACEMENT]"
-                          #+has-ascii-code "[EFFACEMENT]"
-                          #\\)
-                      "(NON DISPONIBLE)"))
-      (:return    "[ENTRÉE]"))))
-
 
 
 ;; (defparameter *io-bell-char*   (or #+has-bell     #\Bell     (code-char BEL)))
@@ -352,26 +357,19 @@ When false, no automatic echo occurs.")
 ;; terminal input functions:
 ;; --------------------------
 
-(defmethod io-read-buffered-character ((terminal standard-terminal))
+(defmethod terminal-get-next-char ((terminal standard-terminal))
   (let ((ch (read-char (terminal-input-stream terminal) nil nil)))
     (with-slots (input-end-of-file) terminal
       (setf input-end-of-file (null ch)))
-    (let ((keysym (terminal-character-keysym terminal ch)))
-      (case keysym
-        ((:escape)
-         (signal 'user-interrupt)
-         (io-read-buffered-character terminal))
-        ((:attention)
-         (signal 'user-interrupt :signal +sigquit+)
-         (io-read-buffered-character terminal))
-        (otherwise
-         keysym)))))
+    ch))
 
 
-(defmethod io-skip-characters ((terminal standard-terminal) characters)
+(defmethod terminal-skip-characters ((terminal standard-terminal) characters)
   (loop
     :named reading
-    :for ch = (io-read-buffered-character terminal)
+    :for ch = (terminal-read-buffered-character terminal)
+    :when (null ch)
+      :do (return-from terminal-skip-characters)
     :while (find ch characters)
     :finally (unread-char (terminal-keysym-character terminal ch)
                           (terminal-input-stream terminal))))

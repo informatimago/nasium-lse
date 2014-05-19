@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal Bourguignon 2005 - 2013
+;;;;    Copyright Pascal Bourguignon 2005 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -48,8 +48,10 @@
 
 (setf *default-pathname-defaults* (dirpath (or *load-truename*
                                                *compile-file-truename*)))
-(pushnew *default-pathname-defaults* asdf:*central-registry* :test 'equal)
-
+(pushnew *default-pathname-defaults* asdf:*central-registry* :test (function equal))
+(pushnew (truename (merge-pathnames "../dependencies/" *default-pathname-defaults*))
+         ql:*local-project-directories* :test (function equal))
+(quicklisp-client:register-local-projects)
 
 
 ;; (defun delete-package-and-users (package)
@@ -74,7 +76,9 @@
 ;; (quick-reload :com.informatimago.rdp)
 
 
-(pushnew :developing           *features*)
+;; (setf *features* (set-difference *features* '(:lse-scanner-debug :lse-input-debug)))
+;; (pushnew :lse-scanner-debug    *features*)
+(pushnew :debugging            *features*)
 (pushnew :lse-case-insensitive *features*)
 (pushnew :lse-unix             *features*)
 (pushnew :lse-extensions       *features*)

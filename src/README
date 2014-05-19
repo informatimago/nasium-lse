@@ -4,6 +4,28 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
 #######################################################################################
 
 
+Dependencies
+============
+
+Some dependencies are included in this repository, some others must be
+obtained from their own repositories.  This is done by running the
+get-dependencies script: ::
+
+    cd $NASIUM/dependencies
+    ./get-dependencies.sh
+
+
+Then you may need to compile and install libfixposix: ::
+
+    cd $NASIUM/dependencies/libfixposix/
+    autoreconf -i -f 
+    mkdir build 
+    cd build 
+    ../configure  --prefix=/usr/local
+    make
+    make install
+
+
 Compiling
 =========
 

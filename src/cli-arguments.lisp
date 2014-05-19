@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -42,16 +42,29 @@
   (output-accented      t)
   (output-no-bell       nil)
   (modern-mode          t)
-  (return-is-xoff       nil))
+  (return-is-xoff       nil)
+  (pager                t))
 
 
 
 (defun boolean-enval (var default)
   (let ((val (getenv var)))
     (if val
-        (not (not (find val '("T" "Y" "TRUE" "YES" "1") :test (function string-equal))))
+        (not (not (find val '("T" "Y" "TRUE" "YES" "O" "OUI" "1") :test (function string-equal))))
         default)))
 
+
+(defun boolean-or-integer-enval (var default)
+  (let ((val (getenv var)))
+    (if val
+        (cond
+          ((find val '("T" "Y" "TRUE" "YES" "O" "OUI" "1") :test (function string-equal))
+           t)
+          ((find val '("NIL" "N" "FALSE" "NO" "NON" "0") :test (function string-equal))
+           nil)
+          (t
+           (parse-integer val)))
+        default)))
 
 (defun choice-enval (var default choices)
   (let ((val (getenv var)))
@@ -77,7 +90,8 @@ RETURN: A new OPTIONS structure instance.
    :output-accented      (boolean-enval "LSE_ACCENTED_OUTPUT"      t)
    :output-no-bell       (boolean-enval "LSE_NO_BELL"              nil)
    :modern-mode          (boolean-enval "LSE_MODERN_MODE"          t)
-   :return-is-xoff       (boolean-enval "LSE_RETURN_IS_XOFF"       nil)))
+   :return-is-xoff       (boolean-enval "LSE_RETURN_IS_XOFF"       nil)
+   :pager                (boolean-or-integer-enval "LSE_PAGER"     t)))
 
 
 (defvar *options* (make-default-options))
@@ -198,6 +212,11 @@ Indique s'il faut utiliser le mode moderne de saisi, ou le mode ancien
 LSE_RETURN_IS_XOFF       (NIL ou T, défaut: NIL)
 Indique comment traiter la touche [ENTRÉE] dans le mode ancien.
 Correspond aux options --entree-comme-xoff --return-is-xoff.
+
+LSE_PAGER                (NIL, T, ou un nombre de lignes; défaut: T)
+Indique s'il faut pager les sorties sur le terminal.  NIL indique pas
+de pagination; T active la pagination en fonction de la taille du
+terminal; un nombre active la pagination sur ce nombre de ligne.
 "
               "lse"))
 
@@ -569,7 +588,7 @@ We have utf-8 and nasium-lse.terminal setup.
   "
 Permet d'effectuer la saisie des options de ligne de commande de
 manière interactive, en pré-supposant l'usage avec Terminal.app et la
-configuration nasium-lse.temrinal.
+configuration nasium-lse.terminal.
 "
   (setf *options* (configuration-interactive-macosx-terminal *options*)))
 

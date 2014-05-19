@@ -21,7 +21,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal Bourguignon 2005 - 2013
+;;;;    Copyright Pascal Bourguignon 2005 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -36,7 +36,6 @@
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
-
 (in-package "COM.INFORMATIMAGO.LSE")
 
 
@@ -358,8 +357,8 @@
              :non-terminal-stack (copy-list *non-terminal-stack*)
              :expected-token token
              :format-control
-             #+developing "ATTENDU ~S, PAS ~:[~A ~S~;FIN DE LIGNE~2*~]~%PILE NON TERMINAUX: ~A~%PRODUCTION: ~{~A --> ~A~}"
-             #-developing "ATTENDU ~S, PAS ~:[~A ~S~;FIN DE LIGNE~2*~]"
+             #+debugging "ATTENDU ~S, PAS ~:[~A ~S~;FIN DE LIGNE~2*~]~%PILE NON TERMINAUX: ~A~%PRODUCTION: ~{~A --> ~A~}"
+             #-debugging "ATTENDU ~S, PAS ~:[~A ~S~;FIN DE LIGNE~2*~]"
              :format-arguments
              (list
               (token-kind-label (token-kind token))
@@ -477,8 +476,9 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                    base-case)))))
     `(symbol-macrolet ,(generate-state-values transitions)
        (loop
-         #+lse-scanner-debug (print (list 'state '= ,statevar 'code '= ,codevar (format nil "~S" (code-char ,codevar))))
-         #+lse-scanner-debug (finish-output)
+         #+lse-scanner-debug (progn
+                               (print (list 'state '= ,statevar 'code '= ,codevar (format nil "~S" (code-char ,codevar))))
+                               (terpri) (finish-output))
          (ecase ,statevar
            ,@(let ((state-value -1))
                   (mapcar
@@ -615,8 +615,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                       :format-arguments args
                       :buffer (copy-seq (scanner-buffer scanner))))
              (invalid-character (ch &optional (format-control "") &rest format-arguments)
-               #+lse-scanner-debug (print `(invalid-character ,ch ,format-control ,@format-arguments))
-               #+lse-scanner-debug (finish-output)
+               #+lse-scanner-debug (progn (print `(invalid-character ,ch  ,(scanner-buffer scanner) ,format-control ,@format-arguments)) (terpri) (finish-output))
                (error 'lse-scanner-error-invalid-character
                       :line    (scanner-line scanner)
                       :column  (setf (scanner-column scanner) index)
@@ -632,8 +631,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                                               format-control format-arguments)
                       :buffer (copy-seq (scanner-buffer scanner))))
              (skip ()
-               #+lse-scanner-debug (print `(skip))
-               #+lse-scanner-debug (finish-output)
+               #+lse-scanner-debug (progn (print `(skip)) (terpri) (finish-output))
                (if (< (incf index) buflen)
                    (setf code (char-code (aref buffer index)))
                    (return-from scan-lse-token
@@ -641,23 +639,19 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                            (scanner-column scanner) index
                            (scanner-current-token scanner) (make-eol scanner)))))
              (start ()
-               #+lse-scanner-debug (print `(start))
-               #+lse-scanner-debug (finish-output)
+               #+lse-scanner-debug (progn (print `(start)) (terpri) (finish-output))
                (setf start index))
              (produce (token)
-               #+lse-scanner-debug (print `(produce ,token))
-               #+lse-scanner-debug (finish-output)
+               #+lse-scanner-debug (progn (print `(produce ,token)) (finish-output))
                (return-from scan-lse-token
                  (setf (scanner-state scanner) state
                        (scanner-column scanner) index
                        (scanner-current-token scanner) token)))
              (shift (new-state)
-               #+lse-scanner-debug (print `(shift ,new-state))
-               #+lse-scanner-debug (finish-output)
+               #+lse-scanner-debug (progn (print `(shift ,new-state)) (terpri) (finish-output))
                (setf state new-state))
              (motcle ()
-               #+lse-scanner-debug (print `(motcle))
-               #+lse-scanner-debug (finish-output)
+               #+lse-scanner-debug (progn (print `(motcle)) (terpri) (finish-output))
                (let* ((text (subseq buffer start index))
                       (entry (rassoc text (if (= state +in-format+)
                                               *tokens+format-specifiers*
@@ -666,20 +660,20 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                                                (function string-equal)
                                                (function string=)))))
                  (when entry
-                   #+lse-scanner-debug (print `(motcle ,(car entry) ,text))
-                   #+lse-scanner-debug (finish-output)
+                   #+lse-scanner-debug (progn (print `(motcle ,(car entry) ,text)) (terpri) (finish-output))
                    (make-instance 'tok-motcle
                        :kind (car entry)
                        :text text
                        :line (scanner-line scanner)
                        :column (scanner-column scanner)))))
              (token (tok)
-               #+lse-scanner-debug (print `(tok ,tok ,(if (member tok '(tok-litchaine tok-commentaire)) 
-                                                          (subseq buffer start index)
-                                                          (if (task-case-insensitive *task*)
-                                                              (string-upcase (subseq buffer start index))
-                                                              (subseq buffer start index)))))
-               #+lse-scanner-debug (finish-output)
+               #+lse-scanner-debug (progn
+                                     (print `(tok ,tok ,(if (member tok '(tok-litchaine tok-commentaire)) 
+                                                            (subseq buffer start index)
+                                                            (if (task-case-insensitive *task*)
+                                                                (string-upcase (subseq buffer start index))
+                                                                (subseq buffer start index)))))
+                                     (terpri) (finish-output))
                (make-instance tok
                    :kind tok
                    :text (if (member tok '(tok-litchaine tok-commentaire)) 
@@ -690,13 +684,15 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                    :line (scanner-line scanner)
                    :column start)))
       (macrolet ((advance (token &rest args)
-                   #+lse-scanner-debug `(progn (print `(advance ,',token ,',args))
-                                              (finish-output)
-                                              (if (< (incf index) buflen)
-                                                   (setf code (char-code (aref buffer index)))
-                                                   ,(if (eq token :error-on-eof)
-                                                        `(scan-error ,@args)
-                                                        `(produce ,token))))
+                   #+lse-scanner-debug `(progn
+                                          (print `(advance ,',token ,',args))
+                                          (terpri)
+                                          (finish-output)
+                                          (if (< (incf index) buflen)
+                                              (setf code (char-code (aref buffer index)))
+                                              ,(if (eq token :error-on-eof)
+                                                   `(scan-error ,@args)
+                                                   `(produce ,token))))
                    #-lse-scanner-debug
                    `(if (< (incf index) buflen)
                         (setf code (char-code (aref buffer index)))

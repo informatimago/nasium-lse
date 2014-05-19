@@ -19,7 +19,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -476,13 +476,12 @@ Bound by COMMAND-EVAL-LINE.")
 
 
 (defmethod command-call ((command command))
-  (let ((gn (command-grammar command)))
-    (if gn
-        (apply (command-function command)
-               (converting-parser-errors
-                (funcall (command-parser command)
-                         (io-read-line *task* :beep t))))
-        (funcall (command-function command)))))
+  (let ((arguments (when (command-grammar command)
+                     (converting-parser-errors
+                       (funcall (command-parser command)
+                                (io-read-line *task* :beep t))))))
+    (with-pager *task*
+      (apply (command-function command) arguments))))
 
 
 (defmethod all-commands ((group command-group))
@@ -1037,6 +1036,13 @@ Voir les commandes SELECTIONNER RUBAN, RUBAN, PERFORER A PARTIR DE, ARCHIVER RUB
   "Selectionne un ruban de l'étagère et le place dans le lecteur de ruban."
   "Selectionne un ruban de l'étagère et le place dans le lecteur de ruban.
 
+Un fichier ruban doit commencer par un titre sur la première ligne,
+suivi des données.
+
+Le titre est lu et affiché par cette commande; le reste des données
+est lu par les commandes et instructions données par l'utilisateur ou
+le programme.
+
 Voir les commandes ETAGERE DE RUBAN, RUBAN, PERFORER A PARTIR DE, ARCHIVER RUBAN."
   (io-new-line *task*)
   (let ((path (catalog-pathname ruban "R")))
@@ -1044,7 +1050,7 @@ Voir les commandes ETAGERE DE RUBAN, RUBAN, PERFORER A PARTIR DE, ARCHIVER RUBAN
       (close (task-tape-input *task*)))
     (setf (task-tape-input *task*) (open path :if-does-not-exist :error))
     (io-format *task* "~&LE RUBAN ~:@(~A~) (~A) EST MIS EN PLACE.~%"
-               ruban (read-line (task-tape-input *task*)))))
+               ruban  (read-line (task-tape-input *task*)))))
 
 
 (defcommand "RUBAN" awake nil ()
@@ -1663,7 +1669,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
 
 ;;  We provide a REPL for LE (repl) command for debugging.
 
-#+developing
+#+debugging
 (defmacro handling-errors (&body body)
   `(HANDLER-CASE (progn ,@body)
      (simple-condition 
@@ -1678,7 +1684,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
        (io-format *task* "~&~A: ~%  ~S~%"
                   (class-name (class-of err)) err))))
 
-#+developing
+#+debugging
 (defun repl ()
   (do ((+eof+ (gensym))
        (hist 1 (1+ hist)))
@@ -1694,7 +1700,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
      (io-format *task* "~& --> ~{~S~^ ;~%     ~}~%" /))))
 
 
-#+developing
+#+debugging
 (defcommand "LE EVALUER UNE EXPRESSION LISP" awake une-ligne (ligne)
   "Commande de déboguage: évaluation d'une expression LISP."
   (io-new-line *task*)
@@ -1711,7 +1717,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                        (setf results nil))))))
     (io-format *task* "~%~A~%~@[=> ~{~S~%~^   ~}~]" output results)))
 
-#+developing
+#+debugging
 (defcommand "LD DESASSEMBLER A PARTIR DE" awake     deux-numeros-optionels (from to)
   "Commande de deboguage: Désassemble les lignes de programme."
   (io-new-line *task*)
@@ -1727,7 +1733,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
              (vm-code-vectors (task-vm *task*)))
     (io-format *task* "~:{~*~A~%~A~%~}" (sort lines '< :key (function first)))))
 
-#+developing
+#+debugging
 (defcommand "LP DEASSEMBLER/PERFORER A PARTIR DE" awake  deux-numeros-optionels (from to)
   "Commande de deboguage: Désassemble les lignes de programme en perforant un ruban."
   (io-new-line *task*)
@@ -1738,7 +1744,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
   (io-format *task* "~%PERFORATION EFFECTUEE.~%"))
 
 
-#+developing
+#+debugging
 (defcommand "SHOW BINDINGS" awake nil ()
   "Montre les touches."
   (let ((terminal (task-terminal *task*)))
@@ -1755,7 +1761,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
               (terminal-keysym-label terminal :attention)
               (terminal-keysym-label terminal :return))))
 
-#+developing
+#+debugging
 (defun initialize-debugging-task ()
   (setf *command-group* awake
         *task* (make-instance 'task
@@ -1841,7 +1847,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
       #|else empty line, just ignore it.|#)))
 
 
-(defvar *debug-repl* nil)
+(defvar *debug-repl* #+debugging t #-debugging nil)
 ;; (setf *debug-repl* nil)
 ;; (setf *debug-repl* t)
 
@@ -1900,8 +1906,8 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                       (io-format task "~%PRET~%")
                       (io-finish-output task))
                     (user-interrupt (condition)
-                      #+developing
-                      (io-format task "~%Condition: ~A~%" condition)
+                      #+debugging (io-format task "~%-Condition: ~A~%" condition)
+                      (io-format task "   ")
                       (io-standard-redirection task)
                       (echo)
                       (io-format task "~%PRET~%")

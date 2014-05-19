@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -88,7 +88,7 @@
 
 (defun system-depends-on/recursive (system)
   (delete-duplicates
-   (compute-closure 
+   (transitive-closure
     (function system-depends-on)
     (list (string-downcase system)))
    :test 'string=))

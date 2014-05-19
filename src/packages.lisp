@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -111,11 +111,13 @@
    "TERMINAL-CARRIAGE-RETURN" "TERMINAL-LINE-FEED" "TERMINAL-NEW-LINE"
    "TERMINAL-WRITE-STRING" "TERMINAL-FINISH-OUTPUT"
    "TERMINAL-YIELD" 
+   "TERMINAL-SKIP-CHARACTERS" "TERMINAL-READ-BUFFERED-CHARACTER"
    
    "STANDARD-TERMINAL"
    "INPUT-STREAM" "OUTPUT-STREAM"
    "WITH-TEMPORARY-ECHO"
 
+   "WITH-PAGER"
    "OUTPUT-SUBSTITUTE"
    "IO-TERMINAL-OUTPUT-P" "IO-TERMINAL-INPUT-P"
    "IO-TAPE-OUTPUT-P" "IO-TAPE-INPUT-P" "IO-BELL"
@@ -123,7 +125,6 @@
    "IO-NEW-LINE" "IO-FINISH-OUTPUT"
    "IO-READ-LINE" "IO-READ-STRING" "IO-READ-NUMBER"
    "IO-ECHO" "IO-FORMAT"
-   "IO-SKIP-CHARACTERS" "IO-READ-BUFFERED-CHARACTER"
    "*DECTECH-LEFTWARDS-ARROW*"
    "*DECTECH-UPWARDS-ARROW*"
    "*UNICODE-LEFTWARDS-ARROW*"

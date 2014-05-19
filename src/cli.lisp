@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -116,66 +116,74 @@ BONJOUR     ~8A
 
 
 (defun main (&optional args)
-  (push #P "/usr/local/lib/" cffi:*foreign-library-directories*)
-  (setf *program-name* (or (program-name) *default-program-name*))
-  (setf *options* (make-default-options))
-  (set-lse-root)
-  (let ((encoding (locale-terminal-encoding)))
-    (set-terminal-encoding encoding)
-    (let* ((terminal-class (progn
-                             #+swank
-                             (cond
-                               ((typep (stream-output-stream *terminal-io*)
-                                       'swank-backend::slime-output-stream)
-                                'swank-terminal)
-                               ((member (getenv "TERM") '("emacs" "dumb")
-                                        :test (function string=))
-                                'standard-terminal)
-                               (t #+unix 'unix-terminal
-                                  #-unix 'standard-terminal))
-                             #-swank
-                             (cond
-                               ((member (getenv "TERM") '("emacs" "dumb")
-                                        :test (function string=))
-                                'standard-terminal)
-                               (t #+unix 'unix-terminal
-                                  #-unix 'standard-terminal))))
-           (terminal (make-instance terminal-class
-                         :input-stream  (stream-input-stream  *terminal-io*)
-                         :output-stream (stream-output-stream *terminal-io*)))
-           (task     (make-instance 'task
-                         :state :active
-                         :case-insensitive t
-                         :upcase-output nil
-                         :unicode (eql encoding :utf-8)
-                         :arrows  (if (eql encoding :utf-8)
-                                      :unicode-halfwidth
-                                      :ascii) 
-                         :terminal terminal)))
-      (setf *task* task) ; to help debugging, we keep the task in the global binding.
-      (or (parse-options (or args (arguments)))
-          ;; parse-option may call show-bindings which calls
-          ;; apply-options, so we need  *task*.
-          (progn
-            (apply-options *options* *task*)
-            (terminal-initialize terminal)
-            (unwind-protect
-                 (let* ((old-debugger-hook *debugger-hook*)
-                        (*debugger-hook*
-                         (lambda (condition debugger-hook)
-                           ;; We shouldn't come here.
-                           (when debugger-hook
-                             (terminal-finalize terminal))
-                           (opt-format *debug-io* "~%My advice: exit after debugging.~%")
-                           (when old-debugger-hook
-                             (funcall old-debugger-hook condition debugger-hook)))))
-                   (io-format *task* "~A" *tape-banner*)
-                   (io-format *task* "~?" *title-banner* (list (version) *copyright*))
-                   (io-format *task* "~?" *cli-banner*   (list (subseq (dat) 9)))
-                   (command-repl *task*))
-              (task-close-all-files *task*)
-              (terminal-finalize terminal)))
-          ex-ok))))
+  (handler-case 
+      (progn
+        (push #P "/usr/local/lib/" cffi:*foreign-library-directories*)
+        (setf *program-name* (or (program-name) *default-program-name*))
+        (setf *options* (make-default-options))
+        (set-lse-root)
+        (let ((encoding (locale-terminal-encoding)))
+          (set-terminal-encoding encoding)
+          (let* ((terminal-class (progn
+                                   #+swank
+                                   (cond
+                                     ((typep (stream-output-stream *terminal-io*)
+                                             'swank-backend::slime-output-stream)
+                                      'swank-terminal)
+                                     ((member (getenv "TERM") '("emacs" "dumb")
+                                              :test (function string=))
+                                      'standard-terminal)
+                                     (t #+unix 'unix-terminal
+                                        #-unix 'standard-terminal))
+                                   #-swank
+                                   (cond
+                                     ((member (getenv "TERM") '("emacs" "dumb")
+                                              :test (function string=))
+                                      'standard-terminal)
+                                     (t #+unix 'unix-terminal
+                                        #-unix 'standard-terminal))))
+                 (terminal (make-instance terminal-class
+                                          :input-stream  (stream-input-stream  *terminal-io*)
+                                          :output-stream (stream-output-stream *terminal-io*)))
+                 (task     (make-instance 'task
+                                          :state :active
+                                          :case-insensitive t
+                                          :upcase-output nil
+                                          :unicode (eql encoding :utf-8)
+                                          :arrows  (if (eql encoding :utf-8)
+                                                       :unicode-halfwidth
+                                                       :ascii) 
+                                          :terminal terminal))
+                 #-(and) (*trace-output* (make-broadcast-stream)))
+            (setf *task* task) ; to help debugging, we keep the task in the global binding.
+            (or (parse-options (or args (arguments)) nil nil nil)
+                ;; parse-option may call show-bindings which calls
+                ;; apply-options, so we need  *task*.
+                (progn
+                  (apply-options *options* *task*)
+                  (terminal-initialize terminal)
+                  (unwind-protect
+                       (let* ((old-debugger-hook *debugger-hook*)
+                              (*debugger-hook*
+                                (lambda (condition debugger-hook)
+                                  ;; We shouldn't come here.
+                                  (when debugger-hook
+                                    (terminal-finalize terminal))
+                                  (opt-format *debug-io* "~%My advice: exit after debugging.~%")
+                                  (when old-debugger-hook
+                                    (funcall old-debugger-hook condition debugger-hook)))))
+                         (with-pager *task*  
+                           (io-format *task* "~A" *tape-banner*)
+                           (io-format *task* "~?" *title-banner* (list (version) *copyright*))
+                           (io-format *task* "~?" *cli-banner*   (list (subseq (dat) 9))))
+                         (command-repl *task*))
+                    (task-close-all-files *task*)
+                    (terminal-finalize terminal)))
+                ex-ok))))
+    (error (err)
+      (format t "~&~A~%" err)
+      (finish-output)
+      ex-software)))
 
 
 
@@ -257,7 +265,7 @@ BONJOUR     ~8A
                                       :ascii) 
                          :terminal terminal)))
       (setf *task* task) ; to help debugging, we keep the task in the global binding.
-      (or (parse-options (or args (arguments)))
+      (or (parse-options (or args (arguments)) nil nil nil)
           ;; parse-option may call show-bindings which calls
           ;; apply-options, so we need  *task*.
           (progn

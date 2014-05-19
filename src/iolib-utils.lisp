@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -64,7 +64,7 @@ This package exports iolib utilities, functions to make handlers.
   "The current socket")
 
 
-#+developing
+#+debugging
 (defvar *backtrace* nil)
 
 
@@ -83,7 +83,7 @@ Run the event dispatch loop.
         (progn
           ;; let ((iolib.multiplex::*minimum-event-loop-step* 0.0d0)
           ;;      (iolib.multiplex::*maximum-event-loop-step* nil))
-          #+developing
+          #+debugging
           (handler-bind
               ((condition (lambda (condi)
                             (invoke-debugger condi)

@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -59,7 +59,7 @@
 (defparameter *program-name* "lse")
 (defparameter *program-system*  :com.informatimago.lse.cli)
 
-(pushnew :developing           *features*)
+(pushnew :debugging            *features*)
 (pushnew :lse-case-insensitive *features*)
 (pushnew :lse-unix             *features*)
 (pushnew :lse-extensions       *features*)

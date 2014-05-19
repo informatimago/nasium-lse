@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -218,7 +218,7 @@ lse complétant:  B O [XOFF] --> BONJOUR.
 |   ||  NASIUM L.S.E.
 |   ||  LANGAGE SYMBOLIQUE D'ENSEIGNEMENT
 |   ||  VERSION 1.0.0-0.272-CL-UNIX
-|   ||  COPYRIGHT 1984 - 2012 PASCAL BOURGUIGNON
+|   ||  COPYRIGHT 1984 - 2014 PASCAL BOURGUIGNON
 |   ||  
 |   ||  DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLv3.
 |   ||  
@@ -649,7 +649,7 @@ http://fr.wikipedia.org/wiki/LSE_(langage_de_programmation)
     "
 Système L.S.E
 
-Copyright (C) 2013 Pascal Bourguignon
+Copyright (C) 1984 - 2014 Pascal Bourguignon
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -1354,8 +1354,8 @@ nil représente le vide.
 ;;;
 
 (defchapter "INSTRUCTIONS"
-    (write-documentation *task*
-                         "Voici la liste des instructions disponibles.  
+  (write-documentation *task*
+                       "Voici la liste des instructions disponibles.  
 
 Taper DO)CUMENTATION <instruction> pour avoir la documentation de
 chaque instruction:
@@ -1373,8 +1373,8 @@ chaque instruction:
 
 
 (defchapter "FONCTIONS"
-    (write-documentation *task*
-     "Voici la liste des fonctions disponibles.  
+  (write-documentation *task*
+                       "Voici la liste des fonctions disponibles.  
 
 Taper DO)CUMENTATION <fonction> pour avoir la documentation de
 chaque fonction.
@@ -1383,13 +1383,13 @@ chaque fonction.
          (title-width (reduce (function max) chapters
                               :key (compose length chapter-title)
                               :initial-value 0)))
-   (dolist (chapter chapters)
-     (when (stringp (chapter-text chapter))
-       (let ((syntax   (first-line (chapter-text chapter)))
-             (title    (chapter-title chapter))
-             (oneliner (chapter-oneliner chapter)))
-         (io-format *task* "~VA  ~A~@[, ~A~];~%"
-                    title-width title syntax oneliner))))))
+    (dolist (chapter chapters)
+      (when (stringp (chapter-text chapter))
+        (let ((syntax   (first-line (chapter-text chapter)))
+              (title    (chapter-title chapter))
+              (oneliner (chapter-oneliner chapter)))
+          (io-format *task* "~VA  ~A~@[, ~A~];~%"
+                     title-width title syntax oneliner))))))
 
 
 ;;;; THE END ;;;;

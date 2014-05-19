@@ -20,7 +20,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2000 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2000 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -103,7 +103,13 @@ Can be either (terminal-output-stream terminal) or tape-output.")
                          :initform nil
                          :documentation "stream? to a temporary tape")
   
-
+   (paging               :initarg :paging
+                         :accessor task-paging
+                         :initform t
+                         :type (or boolean (integer 2))
+                         :documentation "whether paging should be done.
+NIL: no paging. T: paging performed on terminal height.  (integer 2): paging performed on this height.")
+   
    (case-insensitive     :initarg :case-insensitive
                          :accessor task-case-insensitive
                          :initform nil

@@ -3,17 +3,17 @@
 1- Installation from the binaries.
 -------------------------------------------------
 
+**To Be Done**
 
 
 2- Compilation and Installation from the sources.
 -------------------------------------------------
 
-    0- Install required tools: wget, fossil, git.  They should be
-       available as packages from your system distribution.  If not, you
-       can get them from their respective home sites:
+    0- Install required tools: wget, git.  They should be available as
+       packages from your system distribution.  If not, you can get
+       them from their respective home sites:
 
         http://www.gnu.org/software/wget/
-        http://fossil-scm.org/
         http://git-scm.com/
 
 
@@ -30,7 +30,7 @@
            # solarisx86, windows, linuxppc, or linuxarm. 
            TARGET=linuxx86
            cd /usr/local/src
-           svn co http://svn.clozure.com/publicsvn/openmcl/release/1.7/$TARGET/ccl
+           svn co http://svn.clozure.com/publicsvn/openmcl/release/1.9/$TARGET/ccl
            cp ccl/scripts/ccl /usr/local/bin/
            chmod 755 /usr/local/bin/ccl
 
@@ -55,27 +55,26 @@
     3- Get the sources of nasium: ::
 
            cd ~/src/
-           fossil clone http://fossil.nasium-lse.ogamita.com/nasium-lse nasium-lse.fossil
-           # take note of the login and password of the admin-user!
-
+           git clone https://git.gitorious.org/nasium-lse/nasium-lse.git
            mkdir nasium-lse
            cd nasium-lse
-           fossil open ../nasium-lse.fossil
+           NASIUM_LSE="$(pwd)"
 
 
-    4- Get required dependencies that are not in quicklisp.  We install
-       them in ~/quicklisp/local-projects/ to integrate with quicklisp
-       thought. ::
+    4- Get required dependencies that are not in quicklisp. ::
 
-           cd ~/quicklisp/local-projects/
-           git clone https://github.com/marsijanin/iolib.termios.git
+           cd "${NASIUM_LSE}/dependencies/"
+           ./get-dependencies
 
-       There's a bug in the current quicklisp, so we need to remove
-       system-index.txt and rebuild it from $HOME. ::
+    4.1- Compile and install libfixposix.  See libfixposix/README. ::
 
-           cd ~/
-           rm ~/quicklisp/local-projects/system-index.txt
-           ccl --eval '(ql:quickload :alexandria)' --eval '(ccl:quit)'
+           cd "${NASIUM_LSE}/dependencies/libfixposix/"
+           autoreconf -i -f
+           mkdir build ; cd build
+           ../configure
+           make
+           make install
+
 
     5- Normally, the dependencies in quicklisp are up-to-date (quicklisp
        updates monthly).  However, sometimes we need more recent versions
@@ -111,10 +110,16 @@
 
     6- Compile the executables: ::
 
-        cd ~/src/nasium-lse/src/
-        make UPLOAD=0 cli server html-doc
+           cd ~/src/nasium-lse/src/
+           make UPLOAD=0 cli server html-doc
 
-    7- Check the executables: ::
+       or separately: ::
+
+           make cli
+           make server
+           make UPLOAD=0 html-doc
+
+    7- Check the executables; for example: ::
 
         $ ls -l lse*
         lrwxrwxrwx 1 lse lse       31 Mar 22 13:43 lse -> lse-ccl-linux-debian-6.0.4-i686
@@ -126,7 +131,7 @@
         $ ./lse --help
         
         
-    8- Further questions may be addressed at mailto:pjb@ogamita.com
+    8- Further questions may be addressed at mailto:pjb@informatimago.com
        or bug reports may be posted at http://fossil.nasium-lse.ogamita.com/nasium-lse/reportlist
 
     9- Go to section '1- Installation from the binaries'.

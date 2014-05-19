@@ -16,7 +16,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
 ;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -59,7 +59,7 @@
 (defparameter *program-name* "lse-server")
 (defparameter *program-system*  :com.informatimago.lse.server)
 
-(pushnew :developing           *features*)
+(pushnew :debugging            *features*)
 (pushnew :lse-case-insensitive *features*)
 (pushnew :lse-unix             *features*)
 (pushnew :lse-extensions       *features*)
@@ -95,11 +95,10 @@
 (setf  ccl:*backtrace-print-level* nil)
 (test/fonctions :silence t)
 
-(setf *debug-vm*   t
-      *debug-repl* t)
-
-(setf *debug-vm*   nil
-      *debug-repl* nil)
+#+debugging (setf *debug-vm*   '(:error)
+                  *debug-repl* t)
+#-debugging (setf *debug-vm*   '()
+                  *debug-repl* nil)
 
 
 ;;;---------------------------------------------------------------------

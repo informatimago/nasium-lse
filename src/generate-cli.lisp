@@ -16,9 +16,9 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
-;;;    This program is free software: you can redistribute it and/or modify
+;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
@@ -41,6 +41,7 @@
 
 (load #P"~/quicklisp/setup.lisp")
 
+
 (setf *print-right-margin* 80
       *print-pretty* t
       *print-case* :downcase)
@@ -55,12 +56,17 @@
 (setf *default-pathname-defaults* (dirpath (or *load-truename*
                                                *compile-file-truename*)))
 (pushnew *default-pathname-defaults* asdf:*central-registry* :test 'equal)
+(push (truename (merge-pathnames "../dependencies/"
+                                 *default-pathname-defaults*))
+      ql:*local-project-directories*)
 
 
 (defparameter *program-name* "lse")
 (defparameter *program-system*  :com.informatimago.lse.cli)
 
-(pushnew :developing           *features*)
+
+;; (pushnew :lse-scanner-debug    *features*)
+(pushnew :debugging            *features*)
 (pushnew :lse-case-insensitive *features*)
 (pushnew :lse-unix             *features*)
 (pushnew :lse-extensions       *features*)
@@ -74,7 +80,7 @@
   #+windows (mapc 'delete-file (directory dir))
   #-windows (asdf:run-shell-command "rm -rf ~S" (namestring dir)))
 
-
+;; #+debugging (ql:quickload :swank) ;; cannot load swank since cli.lisp will switch to swank-terminal.
 
 (ql:quickload *program-system*)
 
@@ -103,10 +109,10 @@
 (setf  ccl:*backtrace-print-level* nil)
 (test/fonctions :silence t)
 
-(setf *debug-vm*   '(:error)
-      *debug-repl* t)
-(setf *debug-vm*   '()
-      *debug-repl* nil)
+#+debugging (setf *debug-vm*   '(:error)
+                  *debug-repl* t)
+#-debugging (setf *debug-vm*   '()
+                  *debug-repl* nil)
 
 
 

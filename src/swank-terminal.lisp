@@ -19,7 +19,7 @@
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal J. Bourguignon 2012 - 2013
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -73,7 +73,7 @@
 
 
 
-(defvar *debug-swank* nil)
+(defvar *debug-swank* #+debugging t #-debugging nil)
 ;; (setf  *debug-swank* t)
 ;; (setf  *debug-swank* nil)
 
@@ -254,11 +254,11 @@
 (defmethod terminal-keysym-label ((terminal swank-terminal) keysym)
   (declare (ignorable terminal))
   (ecase keysym
-    (:escape    "[CONTRÔLE-C] [CONTRÔLE-C]")
-    (:attention "(PAS DISPONIBLE)")
-    (:xoff      "[ENTRÉE]")
-    (:delete    "[EFFACEMENT]")
-    (:return    "[ENTRÉE]")))
+    (:escape    (values "[CONTRÔLE-C] [CONTRÔLE-C]" t))
+    (:attention (values "(PAS DISPONIBLE)" nil))
+    (:xoff      (values "[ENTRÉE]" t))
+    (:delete    (values "[EFFACEMENT]" t))
+    (:return    (values "[ENTRÉE]" t))))
 
 
 
@@ -405,12 +405,11 @@ contents of the OUTPUT-BUFFER, moving the cursor to the CURRENT-COLUMN."
       (setf input-finished t))))
 
 
-(defmethod io-read-buffered-character ((terminal swank-terminal))
-  (with-slots ((input-stream com.informatimago.lse::input-stream)
-               input-buffer
+
+(defmethod terminal-get-next-char ((terminal swank-terminal))
+  (with-slots (input-buffer
                input-cursor
-               input-finished
-               (input-end-of-file com.informatimago.lse::input-end-of-file)) terminal
+               input-finished) terminal
     (let ((ch (loop
                 :named get-a-byte
                 ;; :do     (terminal-write-string terminal (format nil "~S~%" (list :buffer input-buffer :cursor input-cursor :finished input-finished :end-of-file input-end-of-file :fill-buffer (fill-pointer input-buffer) :length (length input-buffer)  :stream input-stream)))
@@ -425,23 +424,18 @@ contents of the OUTPUT-BUFFER, moving the cursor to the CURRENT-COLUMN."
                        (return-from get-a-byte #\Newline))
                       (t
                        (terminal-fill-input-buffer terminal))))))
-      (setf input-end-of-file (null ch))
-      (let ((keysym (terminal-character-keysym terminal ch)))
-        (case keysym
-          ((:escape)
-           (signal 'user-interrupt)
-           (io-read-buffered-character terminal))
-          ((:attention)
-           (signal 'user-interrupt :signal +sigquit+)
-           (io-read-buffered-character terminal))
-          (otherwise
-           keysym))))))
+      #+debugging
+      (when (null ch)
+        (terminal-write-string terminal
+                               (format nil "~%input-buffer = ~S~%"
+                                       (list input-cursor input-finished input-buffer))))
+      ch)))
 
 
-(defmethod io-skip-characters ((terminal swank-terminal) characters)
+(defmethod terminal-skip-characters ((terminal swank-terminal) characters)
   (loop
     :named reading
-    :for ch = (io-read-buffered-character terminal)
+    :for ch = (terminal-read-buffered-character terminal)
     :while (find ch characters)
     :finally (let ((ch (terminal-keysym-character terminal ch)))
                (with-slots (input-buffer input-cursor) terminal
@@ -451,11 +445,11 @@ contents of the OUTPUT-BUFFER, moving the cursor to the CURRENT-COLUMN."
                     (setf (aref input-buffer input-cursor) ch))
                    ((zerop (fill-pointer input-buffer))
                     (vector-push ch input-buffer))
-                   ((< (fill-pointer input-buffer) (array-dimensions input-buffer 0))
+                   ((< (fill-pointer input-buffer) (array-dimension input-buffer 0))
                     (incf (fill-pointer input-buffer))
                     (replace input-buffer input-buffer :start1 0 :start2 1)
                     (setf (aref input-buffer 0) ch))
-                   (t ;; should not occur since we've just called io-read-buffered-character
+                   (t ;; should not occur since we've just called terminal-read-buffered-character
                     (lse-error "ERREUR INTERNE: LIMITE DE TAILLE DE TAMPON D'ENTRÉE ATTEINTE")))))))
 
 ;;;; THE END ;;;;

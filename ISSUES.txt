@@ -1,27 +1,9 @@
 -*- mode:org; coding:utf-8 -*-
+* TODO: 00004 restore the terminal on restarts                          :cli:
+The *debugger-hook* resets the terminal for the debugger.
+When we use a restart to continue into LSE, we should reconfigure the LSE terminal.
 
-* DONE TODO: 00003 FAIRE n POUR I_1 JUSQUA 100 doesn't work.
-  CLOSED: [2014-05-13 Tue 04:11]
-  - State "DONE"       from ""           [2014-05-13 Tue 04:11] \\
-    Corrected bug in GOTO that would pop loops at the wrong time.
-
-#+BEGIN_SRC(lse)
-1 FAIRE 10 POUR I_1 JUSQUA 100
-2 AFFICHER[C,20X,C,U]I
-3 T_TEM()
-4 SI T=TEM() ALORS ALLER EN 4
-5 AFFICHER['.']
-10* fin faire
-20 TERMINER
-#+END_SRC
-
-#+BEGIN_SRC(lse)
-EXECUTER A PARTIR DE 1
-1 .                 
-TERMINE EN LIGNE 020
-#+END_SRC
-
-* TODO: 00001 segfault on exit
+* TODO: 00001 segfault on exit                                          :cli:
 
 #+BEGIN_SRC(lse)
         PRET
@@ -38,11 +20,15 @@ TERMINE EN LIGNE 020
         ;;; Type (:y 0) to yield control to this thread.
         ;;;
 #+END_SRC
+ 
+* TODO: 00002 add a timeout and disconnect if no input occurs        :server:
 
-* TODO: 00002 add a timeout and disconnect if no input occurs after that delay.
+Well for the cli too when we use it thru inetd…
 
-    There seem to be scanners who connect to ports without sending
-    anything, and keeping the ports open indefinitely.  For example: 
+Add a timeout and disconnect if no input occurs after that delay.
+
+There seem to be scanners who connect to ports without sending
+anything, and keeping the ports open indefinitely.  For example: 
 
 #+BEGIN_SRC(lse)
 
@@ -122,9 +108,12 @@ TERMINE EN LIGNE 020
         tcp        0      0 88.198.62.69:8115       109.190.38.230:49716    ESTABLISHED 12126/lse
         tcp        0      0 88.198.62.69:8115       92.163.81.111:62166     ESTABLISHED 25565/lse
 
-#END_SRC
-* TODO: 00004 telnet / inetd / lse.sh / cli -> reads C-s instead of RET!
+#+END_SRC
+
+* TODO: 00005 telnet inetd lse.shcli reads C-s instead of RET           :cli:
+
 cf lse@voyager:~/bin/lse.sh :
+
 #+BEGIN_SRC(shell)
 #!/bin/sh
 export TERM=dumb
@@ -139,4 +128,25 @@ exec /home/lse/bin/lse \
     --afficher-en-majuscules \
     --accepter-minuscules \
     --montrer-touches 
+#+END_SRC
+
+* DONE TODO: 00003 FAIRE n POUR I_1 JUSQUA 100 doesn't work.
+  CLOSED: [2014-05-13 Tue 04:11]
+  - State "DONE"       from ""           [2014-05-13 Tue 04:11] \\
+    Corrected bug in GOTO that would pop loops at the wrong time.
+
+#+BEGIN_SRC(lse)
+1 FAIRE 10 POUR I_1 JUSQUA 100
+2 AFFICHER[C,20X,C,U]I
+3 T_TEM()
+4 SI T=TEM() ALORS ALLER EN 4
+5 AFFICHER['.']
+10* fin faire
+20 TERMINER
+#+END_SRC
+
+#+BEGIN_SRC(lse)
+EXECUTER A PARTIR DE 1
+1 .                 
+TERMINE EN LIGNE 020
 #+END_SRC

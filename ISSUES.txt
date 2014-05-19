@@ -21,7 +21,7 @@ EXECUTER A PARTIR DE 1
 TERMINE EN LIGNE 020
 #+END_SRC
 
-* TODO: 00001 segfault
+* TODO: 00001 segfault on exit
 
 #+BEGIN_SRC(lse)
         PRET
@@ -123,3 +123,20 @@ TERMINE EN LIGNE 020
         tcp        0      0 88.198.62.69:8115       92.163.81.111:62166     ESTABLISHED 25565/lse
 
 #END_SRC
+* TODO: 00004 telnet / inetd / lse.sh / cli -> reads C-s instead of RET!
+cf lse@voyager:~/bin/lse.sh :
+#+BEGIN_SRC(shell)
+#!/bin/sh
+export TERM=dumb
+export LSE_TELNET=T
+export LSE_ROOT=/home/lse/files/
+cd $LSE_ROOT
+exec /home/lse/bin/lse \
+    --mode-moderne \
+    --fleches-ascii \
+    --entree-comme-xoff \
+    --afficher-sans-accent \
+    --afficher-en-majuscules \
+    --accepter-minuscules \
+    --montrer-touches 
+#+END_SRC

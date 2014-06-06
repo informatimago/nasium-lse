@@ -56,7 +56,6 @@
 
            cd ~/src/
            git clone https://git.gitorious.org/nasium-lse/nasium-lse.git
-           mkdir nasium-lse
            cd nasium-lse
            NASIUM_LSE="$(pwd)"
 
@@ -73,18 +72,19 @@
            mkdir build ; cd build
            ../configure
            make
-           make install
+           make install # or sudo make install if you don't have write access to /usr/local
 
 
-    5- Normally, the dependencies in quicklisp are up-to-date (quicklisp
-       updates monthly).  However, sometimes we need more recent versions
-       are necessary.  In that case, they may be installed in
-       ~/quicklisp/local-projects/.
-       :: 
+    5- This step is optional, you may have to perform it only if
+       there's a problem with the informatimago library in the next
+       steps.  Usually, you may skip it.  Normally, the dependencies
+       in quicklisp are up-to-date (quicklisp updates monthly).
+       However, sometimes we need more recent versions are necessary.
+       In that case, they may be installed in
+       ~/quicklisp/local-projects/.  :: 
 
            cd ~/quicklisp/local-projects/
            git clone https://git.gitorious.org/com-informatimago/com-informatimago.git
-           git clone https://git.gitorious.org/com-informatimago/com-informatimago-rdp.git
 
        There's a bug in the current quicklisp, so we need to remove
        system-index.txt and rebuild it from $HOME. ::
@@ -92,7 +92,6 @@
            cd ~/
            rm ~/quicklisp/local-projects/system-index.txt
            ccl --eval '(ql:quickload :alexandria)' --eval '(ccl:quit)'
-
 
        Next month, just update quicklisp and remove the old copies in
        ~/quicklisp/local-projects/:
@@ -110,7 +109,7 @@
 
     6- Compile the executables: ::
 
-           cd ~/src/nasium-lse/src/
+           cd ${NASIUM_LSE}/src/
            make UPLOAD=0 cli server html-doc
 
        or separately: ::

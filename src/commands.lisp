@@ -1874,14 +1874,29 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                                        (io-stop-tape-reader task)
                                        ;; end-of-file on input, let's exit.
                                        (signal 'au-revoir))))))
+                        #+developing
                         (if *debug-repl*
-                            (handler-bind ((lse-error     (function signal))
-                                           (scanner-error (function signal))
-                                           (parser-error  (function signal))
-                                           (file-error    (function signal))
-                                           (error         (function invoke-debugger)))
-                              (do-it))
-                            (do-it)))
+                            (flet ((signal-error (err)
+                                     (format *error-output* "ERROR: ~A~%" error-condition)
+                                     #+ccl (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
+                                                   (ccl::backtrace-as-list))
+                                     (finish-output *error-output*)
+                                     (signal err))
+                                   (debug-error (err)
+                                     (format *error-output* "ERROR: ~A~%" error-condition)
+                                     #+ccl (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
+                                                   (ccl::backtrace-as-list))
+                                     (finish-output *error-output*)
+                                     (invoke-debugger err)))
+                             (handler-bind ((lse-error     (function signal-error))
+                                            (scanner-error (function signal-error))
+                                            (parser-error  (function signal-error))
+                                            (file-error    (function signal-error))
+                                            (error         (function debug-error)))
+                               (do-it)))
+                            (do-it))
+                        #-developing
+                        (do-it))
                     (lse-scanner-error-invalid-character (err)
                       (io-format task "~%ERREUR: ~?~%"
                                  "CARACTÈRE INVALIDE ~A~:[~*~; (~D~)~] EN POSITION ~D"

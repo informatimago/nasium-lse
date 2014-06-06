@@ -2,7 +2,8 @@
 oldfont='-dec-terminal-bold-r-normal--14-0-75-75-c-*-dec-dectech' 
 font='-dec-terminal-bold-r-normal-*-14-*-*-*-*-*-dec-dectech'
 
-bin="$(dirname $0)"
+lse="lse"
+bin="$(dirname $0)/.."
 second=0
 
 for arg ; do
@@ -11,15 +12,14 @@ for arg ; do
         second=1
         ;;
     *)
-        bin="$arg"
+        lse="$arg"
         ;;
     esac
 done
 
 if [ "$second" -ne 0 ] ; then
-    bin="$bin/bin"
     save="`stty --save`"
-    trap "echo '' ; echo Exiting... ; stty $save ; exit " SIGINT SIGTERM SIGQUIT
+    trap "echo '' ; echo Exiting... ; stty \"$save\" ; exit " SIGINT SIGTERM SIGQUIT
 
     # We reset the terminal to function as a LSE console.
     # The intr signal is sent upon CTRL-A  key (used by ATT() function).
@@ -42,22 +42,22 @@ if [ "$second" -ne 0 ] ; then
         werase 0x00 \
         lnext  0x00 
 
-    echo  "$bin"/lse 
-    "$bin"/lse 2> trace
+    "$lse" 2> /tmp/lse.trace
 
-    stty $save
+    stty "$save"
 else
 
     xterm \
         -bg '#000' \
         -fg '#5f2' \
-        -fn $font \
+        -fn "$font" \
         -T 'L.S.E. - Console no. 0' \
         +mb +vb +aw +rw -dc \
-        -e "$0" --second "$bin" &
+        -hold \
+        -e "$0" --second "$bin/lse" \
+        &
 
 fi
 
 exit 0
-
-#### emulse.sh                        -- 2003-09-26 18:58:44 -- pascal   ####
+#### THE END ####

@@ -88,7 +88,7 @@
 
 (defun system-depends-on/recursive (system)
   (delete-duplicates
-   (compute-closure 
+   (transitive-closure 
     (function system-depends-on)
     (list (string-downcase system)))
    :test 'string=))

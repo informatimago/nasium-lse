@@ -48,7 +48,7 @@
 values for the specified file descriptor FD, and return it.
 ACTION is ignored."
   (declare (ignore action))
-  (let ((termios (cffi:foreign-alloc 'iolib.serial:termios)))
+  (let ((termios (cffi:foreign-alloc '(:struct iolib.serial:termios))))
     (iolib.serial::%tcgetattr fd termios)
     termios))
 
@@ -78,14 +78,14 @@ ACTION specifies when the setting occurs:
   (let ((type (iolib.serial::which-termios-keyword flag)))
     (unless type
       (error "Unknown termios option ~a" flag))
-    (not (plusp (logand (cffi:foreign-slot-value termios 'iolib.serial:termios type)
+    (not (plusp (logand (cffi:foreign-slot-value termios '(:struct iolib.serial:termios) type)
                         (cffi:foreign-enum-value type flag))))))
 
 
 (defun termios-control-character (termios cc)
   "Returns the control character value."
   (cffi:mem-aref (cffi:foreign-slot-pointer termios
-                                            'iolib.serial:termios
+                                            '(:struct iolib.serial:termios)
                                             'iolib.serial::control-chars)
                  'iolib.serial::cc
                  ;; constant name is offset
@@ -363,8 +363,8 @@ RETURN: A sublist of options that didn't change successfully;
               (stream  (iolib.serial::fd-of serial)))))
     (flet ((speed-to-baud (speed)
              (intern (format nil "B~A" speed) "KEYWORD")))
-      (cffi:with-foreign-objects ((termios 'iolib.serial:termios)
-                                  (newterm 'iolib.serial:termios))
+      (cffi:with-foreign-objects ((termios '(:struct iolib.serial:termios))
+                                  (newterm '(:struct iolib.serial:termios)))
         (iolib.serial::%tcgetattr fd termios)
         (loop
           :for (key value) :on options :by (function cddr)

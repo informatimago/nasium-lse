@@ -11,13 +11,13 @@ Some dependencies are included in this repository, some others must be
 obtained from their own repositories.  This is done by running the
 get-dependencies script: ::
 
-    cd $NASIUM/dependencies
-    ./get-dependencies.sh
+    cd "${NASIUM_LSE}"/dependencies
+    ./get-dependencies
 
 
 Then you may need to compile and install libfixposix: ::
 
-    cd $NASIUM/dependencies/libfixposix/
+    cd "${NASIUM_LSE}"/dependencies/libfixposix/
     autoreconf -i -f 
     mkdir build 
     cd build 

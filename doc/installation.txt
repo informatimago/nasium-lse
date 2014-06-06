@@ -1,13 +1,17 @@
 .. comment: -*- mode:rst; coding:utf-8 -*-
 
+NASIUM-LSE: An Implementation of the L.S.E. programming language written in Common Lisp
+#######################################################################################
+
+
 1- Installation from the binaries.
--------------------------------------------------
+============================================================
 
 **To Be Done**
 
 
 2- Compilation and Installation from the sources.
--------------------------------------------------
+============================================================
 
     0- Install required tools: wget, git.  They should be available as
        packages from your system distribution.  If not, you can get
@@ -70,7 +74,7 @@
            cd "${NASIUM_LSE}/dependencies/libfixposix/"
            autoreconf -i -f
            mkdir build ; cd build
-           ../configure
+           ../configure --prefix=/usr/local
            make
            make install # or sudo make install if you don't have write access to /usr/local
 
@@ -134,5 +138,12 @@
        or bug reports may be posted at http://fossil.nasium-lse.ogamita.com/nasium-lse/reportlist
 
     9- Go to section '1- Installation from the binaries'.
+
+
+3- Loading the source for development and debugging
+============================================================
+
+See `src/README`.
+
 
 .. comment: the end

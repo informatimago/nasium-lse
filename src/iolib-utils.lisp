@@ -83,16 +83,14 @@ Run the event dispatch loop.
         (progn
           ;; let ((iolib.multiplex::*minimum-event-loop-step* 0.0d0)
           ;;      (iolib.multiplex::*maximum-event-loop-step* nil))
-          #+debugging
-          (handler-bind
-              ((condition (lambda (condi)
-                            (invoke-debugger condi)
-                            (setf *backtrace* (backtrace))
-                            (signal condi))))
-            (event-dispatch *event-base*)) 
+          #+debugging (handler-bind
+                          ((condition (lambda (condi)
+                                        (setf *backtrace* (backtrace))
+                                        (invoke-debugger condi)
+                                        (signal condi))))
+                        (event-dispatch *event-base*)) 
 
-          #-developing
-          (event-dispatch *event-base*)) ; keep accepting connections forever.
+          #-debugging (event-dispatch *event-base*)) ; keep accepting connections forever.
 
       (socket-connection-reset-error ()
         (logger :com.informatimago.iolib.util :error "Caught unexpected connection reset by peer!~%"))

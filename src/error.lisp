@@ -174,11 +174,11 @@
 
 
 (defun error-format (task error-condition)
-  #+developing (progn
-                 (format *error-output* "ERROR: ~A~%" error-condition)
-                 #+ccl (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
-                               (ccl::backtrace-as-list))
-                 (finish-output *error-output*))
+  #+debugging (progn
+                (format *error-output* "ERROR: ~A~%" error-condition)
+                #+ccl (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
+                              (ccl::backtrace-as-list))
+                (finish-output *error-output*))
   (io-standard-redirection task)
   (io-new-line task)
   (let* ((message       (split-sequence #\Newline (princ-to-string error-condition)))

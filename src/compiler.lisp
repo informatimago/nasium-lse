@@ -1457,8 +1457,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                             :non-terminal-stack (parser-error-non-terminal-stack err)
                             :format-control "SYMBOLE SURNUMÉRAIRE ~:[~A ~S~;~S~*~]; ATTENDU: FIN DE LA LIGNE."
                             :format-arguments
-                            (let ((token (scanner-current-token
-                                          (parser-error-scanner err))))
+                            (let ((token (scanner-current-token (parser-error-scanner err))))
                               (list (string= (token-kind-label (token-kind token))
                                              (token-text token))
                                     (token-kind-label (token-kind token))
@@ -1474,8 +1473,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                             :expected-token (parser-error-expected-token err)
                             :format-control "~:[FIN DE LIGNE INATTENDU~3*~;SYMBOLE INATTENDU ~:[~A ~S~;~*~S~]~]~@[; ATTENDU: ~A~]."
                             :format-arguments
-                            (let ((token (scanner-current-token
-                                          (parser-error-scanner err))))
+                            (let ((token (scanner-current-token (parser-error-scanner err))))
                               (list (not (or (eolp token) (eofp token)))
                                     (string= (token-kind-label (token-kind token))
                                              (token-text token))
@@ -1504,8 +1502,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                             :expected-token (com.informatimago.rdp::unexpected-token-error-expected-token err)
                             :format-control "~:[FIN DE LIGNE INATTENDU~3*~;SYMBOLE INATTENDU ~:[~A ~S~;~*~S~]~]~@[; ATTENDU: ~A~]."
                             :format-arguments
-                            (let ((token (scanner-current-token
-                                          (scanner-error-scanner err))))
+                            (let ((token (scanner-current-token (scanner-error-scanner err))))
                               (list (not (or (eolp token) (eofp token)))
                                     (string= (token-kind-label (token-kind token))
                                              (token-text token))

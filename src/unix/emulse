@@ -1,6 +1,42 @@
 #!/bin/bash
-oldfont='-dec-terminal-bold-r-normal--14-0-75-75-c-*-dec-dectech' 
+
+font='-dec-terminal-bold-r-normal--14-0-75-75-c-*-dec-dectech' 
 font='-dec-terminal-bold-r-normal-*-14-*-*-*-*-*-dec-dectech'
+font="fixed"
+
+hold="-hold"
+hold=""
+
+# export LC_ALL=en_US.UTF-8
+
+# export LSE_OUTPUT_ARROWS=ASCII
+# export LSE_OUTPUT_ARROWS=DECTECH
+# export LSE_OUTPUT_ARROWS=UNICODE
+export LSE_OUTPUT_ARROWS=UNICODE-HAFLWIDTH
+
+export LSE_RETURN_IS_XOFF=T
+# export LSE_RETURN_IS_XOFF=NIL
+
+# export LSE_REJECT_LOWCASE_INPUT=T
+export LSE_REJECT_LOWCASE_INPUT=NIL
+
+export LSE_UPCASE_OUTPUT=T
+# export LSE_UPCASE_OUTPUT=NIL
+
+export LSE_ACCENTED_OUTPUT=NIL
+# export LSE_ACCENTED_OUTPUT=T
+
+# export LSE_NO_BELL=T
+export LSE_NO_BELL=NIL
+
+# export LSE_MODERN_MODE=T
+export LSE_MODERN_MODE=NIL
+
+# export LSE_PAGER=NIL
+export LSE_PAGER=T
+# export LSE_PAGER=25
+
+
 
 lse="lse"
 bin="$(dirname $0)/.."
@@ -53,7 +89,7 @@ else
         -fn "$font" \
         -T 'L.S.E. - Console no. 0' \
         +mb +vb +aw +rw -dc \
-        -hold \
+        ${hold} \
         -e "$0" --second "$bin/lse" \
         &
 

@@ -1880,16 +1880,16 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                                        (io-stop-tape-reader task)
                                        ;; end-of-file on input, let's exit.
                                        (signal 'au-revoir))))))
-                        #+developing
+                        #+debugging
                         (if *debug-repl*
                             (flet ((signal-error (err)
-                                     (format *error-output* "ERROR: ~A~%" error-condition)
+                                     (format *error-output* "ERROR: ~A~%" err)
                                      #+ccl (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
                                                    (ccl::backtrace-as-list))
                                      (finish-output *error-output*)
                                      (signal err))
                                    (debug-error (err)
-                                     (format *error-output* "ERROR: ~A~%" error-condition)
+                                     (format *error-output* "ERROR: ~A~%" err)
                                      #+ccl (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
                                                    (ccl::backtrace-as-list))
                                      (finish-output *error-output*)
@@ -1901,7 +1901,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                                             (error         (function debug-error)))
                                (do-it)))
                             (do-it))
-                        #-developing
+                        #-debugging
                         (do-it))
                     (lse-scanner-error-invalid-character (err)
                       (io-format task "~%ERREUR: ~?~%"

@@ -1519,12 +1519,10 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                                    :format-control "INTERNE MACHINE VIRTUELLE: CODE OPERATION INCONNU ~S"
                                    :format-arguments (list cop))))))))))
           
-          #-debugging
-          (run)
-          #+debugging
-          (if (or (eq t *debug-vm*) (member :error *debug-vm*))
-              (handler-bind ((error #'invoke-debugger)) (run))
-              (run)))
+          #-debugging (run)
+          #+debugging (if (or (eq t *debug-vm*) (member :error *debug-vm*))
+                          (handler-bind ((error #'invoke-debugger)) (run))
+                          (run)))
 
       ;; TODO: Why do we need error and interruption handling here if
       ;;       it's provided in command.lisp?
@@ -1536,8 +1534,8 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
         (error err))
       (user-interrupt (condition)
         #-debugging (declare (ignore condition))
-        #+debugging (progn (format *trace-output* "~%Condition: ~A~%" condition)
-                            (force-output *trace-output*))
+        #+debugging (progn (format *error-output* "~%Condition: ~A~%" condition)
+                           (force-output *error-output*))
         (vm-pause vm) ; no message
         (io-standard-redirection *task*)
         (setf (task-silence *task*) nil)

@@ -34,65 +34,65 @@
 
 
 (asdf:defsystem :com.informatimago.lse.server
-    :description  "A server for the L.S.E. interpreter."
-    :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
-    :version "1.2.0"
-    :licence "AGPL3"
-    :properties ((#:author-email                   . "pjb@informatimago.com")
-                 (#:date                           . "Winter 2012")
-                 ((#:albert #:output-dir)          . "/tmp/documentation/com.informatimago.lse.server/")
-                 ((#:albert #:formats)             . ("docbook"))
-                 ((#:albert #:docbook #:template)  . "book")
-                 ((#:albert #:docbook #:bgcolor)   . "white")
-                 ((#:albert #:docbook #:textcolor) . "black"))
+  :description  "A server for the L.S.E. interpreter."
+  :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
+  :version "1.2.0"
+  :licence "AGPL3"
+  :properties ((#:author-email                   . "pjb@informatimago.com")
+               (#:date                           . "Winter 2012")
+               ((#:albert #:output-dir)          . "/tmp/documentation/com.informatimago.lse.server/")
+               ((#:albert #:formats)             . ("docbook"))
+               ((#:albert #:docbook #:template)  . "book")
+               ((#:albert #:docbook #:bgcolor)   . "white")
+               ((#:albert #:docbook #:textcolor) . "black"))
 
-    #+asdf-unicode :encoding #+asdf-unicode :utf-8
+  #+asdf-unicode :encoding #+asdf-unicode :utf-8
 
-    :depends-on ("split-sequence"
-                 "alexandria"
-                 "babel"
+  :depends-on ("split-sequence"
+               "alexandria"
+               "babel"
 
-		 #+(and unix (not clisp)) "iolib"
-                 ;; #+(and unix (not clisp)) "iolib.base"
-                 ;; #+(and unix (not clisp)) "iolib.os"
-                 ;; #+(and unix (not clisp)) "iolib.syscalls"
-                 ;; #+(and unix (not clisp)) "iolib"
+               #+(and unix (not clisp)) "iolib"
+               ;; #+(and unix (not clisp)) "iolib.base"
+               ;; #+(and unix (not clisp)) "iolib.os"
+               ;; #+(and unix (not clisp)) "iolib.syscalls"
+               ;; #+(and unix (not clisp)) "iolib"
 
-                 "trivial-gray-streams"
+               "trivial-gray-streams"
 
-                 #+clisp "com.informatimago.clisp"
-                 #+clisp "com.informatimago.susv3"
+               #+clisp "com.informatimago.clisp"
+               #+clisp "com.informatimago.susv3"
 
-                 "com.informatimago.common-lisp"
-                 "com.informatimago.common-lisp.unix"
-                 "com.informatimago.lse"
-                 )
-    
-    :components (
-                 (:file "environment")
-                 ;;---------------------
-                 (:file "iolib-message"       :depends-on ())
-                 (:file "iolib-end-point")
-                 (:file "iolib-utils"         :depends-on ("iolib-message" "iolib-end-point" "environment"))
-                 (:file "iolib-server"        :depends-on ("iolib-utils" "iolib-message"))
-                 (:file "iolib-client"        :depends-on ("iolib-utils" "iolib-message"))
-                 ;;---------------------
+               "com.informatimago.common-lisp"
+               "com.informatimago.common-lisp.unix"
+               "com.informatimago.lse"
+               )
+  
+  :components (
+               (:file "environment")
+               ;;---------------------
+               (:file "iolib-message"       :depends-on ())
+               (:file "iolib-end-point")
+               (:file "iolib-utils"         :depends-on ("iolib-message" "iolib-end-point" "environment"))
+               (:file "iolib-server"        :depends-on ("iolib-utils" "iolib-message"))
+               (:file "iolib-client"        :depends-on ("iolib-utils" "iolib-message"))
+               ;;---------------------
 
-                 (:file "server-package"      :depends-on ("iolib-message"
-                                                           "iolib-end-point"
-                                                           "iolib-utils"
-                                                           "iolib-server"))
+               (:file "server-package"      :depends-on ("iolib-message"
+                                                         "iolib-end-point"
+                                                         "iolib-utils"
+                                                         "iolib-server"))
 
-                 (:file "server-commands"     :depends-on ("server-package"))
-                 (:file "server-arguments"    :depends-on ("server-package"))
+               (:file "server-commands"     :depends-on ("server-package"))
+               (:file "server-arguments"    :depends-on ("server-package"))
 
-                 (:file "server"              :depends-on ("server-package"
-                                                           "iolib-end-point"
-                                                           "iolib-utils"
-                                                           "iolib-server"
-                                                           "server-commands"
-                                                           "server-arguments"))
-                 ))
- 
+               (:file "server"              :depends-on ("server-package"
+                                                         "iolib-end-point"
+                                                         "iolib-utils"
+                                                         "iolib-server"
+                                                         "server-commands"
+                                                         "server-arguments"))
+               ))
+
 
 ;;;; THE END ;;;;

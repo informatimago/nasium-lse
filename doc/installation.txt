@@ -109,7 +109,7 @@
 
     6- Compile the executables: ::
 
-           cd ${NASIUM_LSE}/src/
+           cd "${NASIUM_LSE}/src/"
            make UPLOAD=0 cli server html-doc
 
        or separately: ::

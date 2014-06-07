@@ -45,21 +45,25 @@
   ((line-number :initarg :line-number
                 :initform nil
                 :reader lse-error-line-number)
-   (code :type symbol :initarg :code)))
+   (code :type symbol :initarg :code)
+   (backtrace :type list :initform nil :initarg :backtrace :reader lse-error-backtrace)))
 
 (defun lse-error (format-control &rest format-arguments)
   (error 'lse-error
+         :backtrace (or #+ccl (ccl::backtrace-as-list))
          :format-control format-control
          :format-arguments format-arguments))
 
 (defun error-bad-line (linum)
   (error 'lse-error
+         #+ccl :backtrace #+ccl (ccl::backtrace-as-list)
          :line-number linum
          :format-control "NUMERO DE LIGNE INEXISTANT ~D"
          :format-arguments (list linum)))
 
 (defun error-no-file (ficname fictype &optional pathname deletep)
   (error 'lse-file-error
+         :backtrace (or #+ccl (ccl::backtrace-as-list))
          :pathname pathname
          :format-control "FICHIER ~[PROGRAMME~;DONNEE~;TEMPORAIRE~;RUBAN~;RUBAN TEMPORAIRE~] '~A' INEXISTANT~@[ OU INDESTRUCTIBLE~]"
          :format-arguments (list (case (normalize-fictype fictype)
@@ -170,15 +174,13 @@
 
 
 (defun error-signal (code &rest args)
-  (signal (apply (function make-condition) 'lse-error :code code args)))
+  (signal (apply (function make-condition) 'lse-error
+                 :code code
+                 #+ccl :backtrace #+ccl (ccl::backtrace-as-list)
+                 args)))
 
 
 (defun error-format (task error-condition)
-  #+debugging (progn
-                (format *error-output* "ERROR: ~A~%" error-condition)
-                #+ccl (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
-                              (ccl::backtrace-as-list))
-                (finish-output *error-output*))
   (io-standard-redirection task)
   (io-new-line task)
   (let* ((message       (split-sequence #\Newline (princ-to-string error-condition)))
@@ -193,6 +195,11 @@
                               (io-format task "ERREUR : "))
                             (prog1 22
                               (io-format task "ERREUR EN LIGNE ~3D : " errlino)))))
+    #+debugging (when (and (typep error-condition 'lse-error) (lse-error-backtrace error-condition))
+                  (format *error-output* "ERREUR: ~A~%" error-condition)
+                  (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
+                          (lse-error-backtrace error-condition))
+                  (finish-output *error-output*))
     (flet ((format-line (line)
              (do* ((i 0 (1+ pos))
                    (pos (- (+ i line-length) column)  (+ i line-length)))

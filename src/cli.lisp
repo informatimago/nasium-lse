@@ -190,9 +190,7 @@ BONJOUR     ~8A
 (defun test-repl (task)
   (let ((*task* task)
         (*print-case* :upcase))
-    (io-format task "~&PRET~%")
-    (io-finish-output task)
-    
+    (pret task)
     (io-format task "________________________________________")
     (io-carriage-return task)
     (io-format task "Hello 1: ")

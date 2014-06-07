@@ -37,7 +37,7 @@
 (defun parse-lse (path)
   (let ((zebu:*current-grammar*
          (or (find-grammar "LSE")
-             (error "JE TROUVE PAS MA GRAMMAIRE LSE"))))
+             (lse-error "JE TROUVE PAS MA GRAMMAIRE LSE"))))
     (with-open-file (src path :direction :input)
       (loop for line = (read-line src nil nil)
          while line
@@ -58,7 +58,7 @@
       (lambda (message)
         (format *standard-error*
           "~&~A:~D:~D: ~A~%" path (line scanner) (column scanner) message)
-        (error "~A~%" message))
+        (lse-error "~A~%" message))
       (find-grammar "LSE"))))
       
 
@@ -79,7 +79,7 @@
                   (advance-line)
                   (lambda (parser-data)
                     (scan-next-token scanner parser-data)))
-                (lambda (msg) (error "ERREUR: ~A" msg))
+                (lambda (msg) (lse-error "~A" msg))
                 (find-grammar "LSE"))
     (error (err)
       (format t "Parsing error ~A" err)

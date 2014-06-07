@@ -1,11 +1,18 @@
 #!/bin/bash
 
+## xterm options:
+
 font='-dec-terminal-bold-r-normal--14-0-75-75-c-*-dec-dectech' 
 font='-dec-terminal-bold-r-normal-*-14-*-*-*-*-*-dec-dectech'
 font="fixed"
 
+geom=%80x25
+
 hold="-hold"
 hold=""
+
+
+## lse options/environment:
 
 # export LC_ALL=en_US.UTF-8
 
@@ -84,6 +91,7 @@ if [ "$second" -ne 0 ] ; then
 else
 
     xterm \
+        ${geom} \
         -bg '#000' \
         -fg '#5f2' \
         -fn "$font" \

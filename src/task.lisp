@@ -233,9 +233,7 @@ so that if next command is ine, we continue automatically.")
                      ((string-equal fictype "D") :data)
                      ((string-equal fictype "T") :temporary)
                      ((member fictype '(:data :temporary)) fictype)
-                     (t (error 'lse-error
-                               :format-control "INDICATEUR DE TYPE DE FICHIER INVALIDE: ~A; ATTENDU: D OU T."
-                               :format-arguments (list fictype))))))
+                     (t (lse-error "INDICATEUR DE TYPE DE FICHIER INVALIDE: ~A; ATTENDU: D OU T." fictype)))))
     (cons name fictype)))
 
 (defmethod task-open-file ((task task) name fictype &key (if-does-not-exist :create))

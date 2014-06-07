@@ -41,6 +41,34 @@
 
 (load #P"~/quicklisp/setup.lisp")
 
+;;; --------------------------------------------------
+
+(declaim (optimize
+          (speed 0)
+          (space 0)
+          (safety 3)
+          (debug 3)
+          (compilation-speed 0)
+          #+:lispworks (hcl:fixnum-safety 3)))
+
+(defpackage :cl-ppcre (:use :cl))
+
+(defparameter cl-ppcre::*standard-optimize-settings*
+  '(optimize
+    (speed 0)
+    (space 0)
+    (safety 3)
+    (debug 3)
+    (compilation-speed 0)
+    #+:lispworks (hcl:fixnum-safety 3))
+  "Don't fuck with me!")
+
+(defparameter cl-ppcre::*special-optimize-settings*
+  cl-ppcre::*standard-optimize-settings*
+  "Don't fuck with me!")
+
+;;; --------------------------------------------------
+
 (setf *print-right-margin* 80
       *print-pretty* t
       *print-case* :downcase)
@@ -63,7 +91,7 @@
 (defparameter *program-name* "lse-server")
 (defparameter *program-system*  :com.informatimago.lse.server)
 
-(pushnew :debugging            *features*)
+;; (pushnew :debugging            *features*)
 (pushnew :lse-case-insensitive *features*)
 (pushnew :lse-unix             *features*)
 (pushnew :lse-extensions       *features*)

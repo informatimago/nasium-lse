@@ -165,7 +165,7 @@
 ;;              (catalog-entry-console entry)
 ;;              (catalog-entry-name  entry)))
 ;;     (otherwise
-;;      (error "COMPLETER UNE ENTREE DE CATALOGUE ~@
+;;      (lse-error "COMPLETER UNE ENTREE DE CATALOGUE ~@
 ;;                  DE TYPE ~S IMPOSSIBLE." (catalog-entry-type entry)))))
 
 

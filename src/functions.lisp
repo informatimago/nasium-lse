@@ -308,7 +308,7 @@ Note sur un terminal Unicode, ^ s'affiche comme une flêche vers le
 haut.  Sur un terminal ASCII, c'est un chapeau, AltGr-9 ou chapeau
 espace sur un clavier AZERTY, Shift-6 sur un clavier QWERTY."
   (when (and (< (un-nombre a) 0.0) (/= (truncate (un-nombre b)) b))
-    (error 'argument-invalide
+    (lse-error 'argument-invalide
            :op "POW"
            :index 2
            :argument b
@@ -592,6 +592,7 @@ DE doit être un nombre entier supérieur ou égal à 1."
          (debut (1- (truncate (un-nombre de)))))
     (when (or (< debut 0) (/= (1+ debut) de))
       (error 'argument-invalide
+             :backtrace (or #+ccl (ccl::backtrace-as-list))
              :op "POS"
              :index 2
              :argument de
@@ -629,6 +630,7 @@ code ASCII est CO."
     (if (< -1 co limit)
         (string (code-char co))
         (error 'argument-invalide
+               :backtrace (or #+ccl (ccl::backtrace-as-list))
                :op "EQC"
                :index 1
                :argument co
@@ -681,6 +683,7 @@ utilisé dans la représentation."
          (fin 0))
     (when (or (< debut 0) (/= (1+ debut) de) (<= chlen debut))
       (error 'argument-invalide
+             :backtrace (or #+ccl (ccl::backtrace-as-list))
              :op "CNB"
              :index 2
              :argument de             
@@ -751,6 +754,7 @@ caractère de la sous-chaîne est le dernier caractère de la chaîne."
          (chlen (length (la-chaine ch))))
     (when (or (/= (1+ debut) de) (< debut 0))
       (error 'argument-invalide
+             :backtrace (or #+ccl (ccl::backtrace-as-list))
              :op "SCH"
              :index 2
              :argument de
@@ -760,6 +764,7 @@ caractère de la sous-chaîne est le dernier caractère de la chaîne."
                    (let ((longueur (truncate lo-or-ch)))
                      (if (or (<= longueur 0) (/= longueur lo-or-ch))
                          (error 'argument-invalide
+                                :backtrace (or #+ccl (ccl::backtrace-as-list))
                                 :op "SCH"
                                 :index 3
                                 :argument lo-or-ch
@@ -791,6 +796,7 @@ ou si tous les caractères sont dans la chaine EV."
          (debut (1- (truncate (un-nombre de)))))
     (when (or (< debut 0) (/= (1+ debut) de))
       (error 'argument-invalide
+             :backtrace (or #+ccl (ccl::backtrace-as-list))
              :op "SKP"
              :index 2
              :argument de
@@ -817,6 +823,7 @@ les caractères sont dans la chaine EV."
          (debut (1- (truncate (un-nombre de)))))
     (when (or (< debut 0) (/= (1+ debut) de))
       (error 'argument-invalide
+             :backtrace (or #+ccl (ccl::backtrace-as-list))
              :op "PTR"
              :index 2
              :argument de
@@ -845,6 +852,7 @@ sous-chaîne est le dernier caractère de la chaîne."
          (chlen (length (la-chaine ch))))
     (when (or (< debut 0) (/= (1+ debut) de) (<= chlen debut))
       (error 'argument-invalide
+             :backtrace (or #+ccl (ccl::backtrace-as-list))
              :op "GRL"
              :index 2
              :argument de

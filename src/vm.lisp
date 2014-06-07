@@ -833,9 +833,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
      (incf (vm-pc.offset vm) offset))
     ((null val))
     (t
-     (error 'lse-error
-            :format-control "LE TEST N'EST PAS UN BOOLEEN MAIS ~A"
-            :format-arguments (list val)))))
+     (lse-error "LE TEST N'EST PAS UN BOOLEEN MAIS ~A" val))))
 
 (defun bfalse (vm val offset)
   (cond
@@ -846,9 +844,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
     ((null val)
      (incf (vm-pc.offset vm) offset))
     (t    
-     (error 'lse-error
-            :format-control "LE TEST N'EST PAS UN BOOLEEN MAIS ~A"
-            :format-arguments (list val)))))
+     (lse-error "LE TEST N'EST PAS UN BOOLEEN MAIS ~A" val))))
 
 (defun bnever (vm offset)
   (declare (ignore vm offset)))
@@ -926,6 +922,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                        (or (<= lino (loop-start-line-number (first stack)))
                            (< (loop-end-line-number (first stack)) lino)))
               (error 'lse-error
+                     :backtrace (or #+ccl (ccl::backtrace-as-list))
                      :line-number (vm-pc.line vm)
                      :format-control "BOUCLE FAIRE ~D POUR ~A ENCHEVETREE AVEC LA BOUCHE FAIRE ~D POUR ~A DE LA LIGNE ~D"
                      :format-arguments (list lino var (loop-end-line-number (first stack))
@@ -1004,6 +1001,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
     (if (<= lino max)
         lino
         (error 'lse-error
+               :backtrace (or #+ccl (ccl::backtrace-as-list))
                :line-number (vm-pc.line vm)
                :format-control "FIN DU PROGRAMME ATTEINTE; IL MANQUE UNE INSTRUCTION TERMINER"
                :format-arguments (list (vm-pc.line vm))))))
@@ -1136,16 +1134,14 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                                          :do (push (stack-pop stack) args)
                                          :finally (return args)))
                             stack))
-              (error 'lse-error
-                     :format-control
-                     (if (< nargs minargs)
-                         "NOMBRE D'ARGUMENTS POUR ~:@(~A~) INSUFFISANT (MINIMUM ~D, DONNE~:@(~P~) ~:*~D)"
-                         "NOMBRE D'ARGUMENTS POUR ~:@(~A~) TROP GRAND (MAXIMUM ~D, DONNE~:@(~P~) ~:*~D)")
-                     :format-arguments (list procident
-                                             (if (< nargs minargs)
-                                                 minargs
-                                                 maxargs)
-                                             nargs))))
+              (lse-error (if (< nargs minargs)
+                             "NOMBRE D'ARGUMENTS POUR ~:@(~A~) INSUFFISANT (MINIMUM ~D, DONNE~:@(~P~) ~:*~D)"
+                             "NOMBRE D'ARGUMENTS POUR ~:@(~A~) TROP GRAND (MAXIMUM ~D, DONNE~:@(~P~) ~:*~D)")
+                         procident
+                         (if (< nargs minargs)
+                             minargs
+                             maxargs)
+                         nargs)))
         ;; &procident
         (let ((procedure (gethash procident (vm-procedures vm))))
           (if procedure
@@ -1311,6 +1307,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                   (if status-ident
                       (setf (variable-value statvar) status)
                       (error 'lse-file-error
+                             :backtrace (or #+ccl (ccl::backtrace-as-list))
                              :pathname ficname
                              :file file
                              :record-number enr
@@ -1330,6 +1327,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
             (if status-ident
                 (setf (variable-value statvar) -2)
                 (error 'lse-file-error
+                       :backtrace (or #+ccl (ccl::backtrace-as-list))
                        :pathname (catalog-pathname ficname fictype)
                        :format-control "FICHIER '~A' INEXISTANT OU INACCESSIBLE"
                        :format-arguments (list ficname))))))))
@@ -1386,6 +1384,11 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
 ;; (setf *debug-vm* '(:cop))
 ;; (setf *debug-vm* '(:error))
 ;; (setf *debug-vm* nil)
+
+(defun pret (task)
+  (io-format task "    ~C~%PRET~%" #\Return)
+  (io-finish-output task))
+
 
 (defun run-step (vm)
   (catch 'run-step-done
@@ -1515,9 +1518,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
 
                            (!comment        (op-0/1 comment))
                            (otherwise
-                            (error 'lse-error
-                                   :format-control "INTERNE MACHINE VIRTUELLE: CODE OPERATION INCONNU ~S"
-                                   :format-arguments (list cop))))))))))
+                            (lse-error "INTERNE MACHINE VIRTUELLE: CODE OPERATION INCONNU ~S" cop)))))))))
           
           #-debugging (run)
           #+debugging (if (or (eq t *debug-vm*) (member :error *debug-vm*))
@@ -1529,8 +1530,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
       (error (err)
         (vm-pause vm) ; no message
         ;; (io-format *task* "~%ERREUR: ~A~%" err)
-        ;; (io-format *task* "~%PRET~%")
-        ;; (io-finish-output *task*)
+        ;; (pret *task*)
         (error err))
       (user-interrupt (condition)
         #-debugging (declare (ignore condition))
@@ -1539,8 +1539,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
         (vm-pause vm) ; no message
         (io-standard-redirection *task*)
         (setf (task-silence *task*) nil)
-        (io-format *task* "~%PRET~%")
-        (io-finish-output *task*)))
+        (pret *task*)))
     t))
 
 

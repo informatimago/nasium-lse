@@ -203,7 +203,8 @@
 (defgeneric eolp (token)
   (:documentation "Returns whether the token is an end-of-line token")
   (:method ((token t))       nil)
-  (:method ((token tok-eol)) t))
+  (:method ((token tok-eol)) t)
+  (:method ((token (eql 'tok-eol))) t))
 
 
 
@@ -222,7 +223,9 @@
   (:documentation "Returns whether the token is an end-of-file token")
   (:method ((token t))       nil)
   (:method ((token tok-eof)) t)
-  (:method ((token tok-eol)) t))
+  (:method ((token tok-eol)) t)
+  (:method ((token (eql 'tok-eof))) t)
+  (:method ((token (eql 'tok-eol))) t))
 
 
 
@@ -231,19 +234,6 @@
 ;; tokens
 ;;----------------------------------------------------------------------
 
-(define-condition lse-scanner-error (lse-error scanner-error)
-  ((buffer
-    :initarg :buffer
-    :accessor scanner-error-buffer
-    :type     (or null string)
-    :initform nil))
-  (:report print-scanner-error))
-
-
-(defmethod initialize-instance :after ((self lse-scanner-error) &key &allow-other-keys)
-  (setf (slot-value self 'line-number) (scanner-error-line self)))
-
-
 
 (define-condition lse-source-error (lse-error)
   ((buffer
@@ -251,7 +241,6 @@
     :accessor lse-source-error-buffer
     :type     (or null string)
     :initform nil)))
-
 
 
 (define-condition lse-scanner-error (lse-source-error scanner-error)
@@ -350,6 +339,7 @@
         ;;       (scanner-column scanner))
         (scan-next-token scanner))
       (error 'lse-parser-error-unexpected-token
+             :backtrace (or #+ccl (ccl::backtrace-as-list))
              :line   (scanner-line scanner)
              :column (token-column (scanner-current-token scanner))
              :grammar (grammar-named 'lse)
@@ -450,7 +440,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                  (if (< (char-code ch) +code-limit+)
                      (setf (aref other-codes (char-code ch)) 0)
                      (error  "The character ~C (~D ~:*#x~X) specified ~
-                                             in a transition is out of bound (~D)"
+                              in a transition is out of bound (~D)"
                              ch (char-code ch) +code-limit+))))
              ;; the codevar case:
              (let ((base-case
@@ -598,7 +588,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
 (defmethod scan-lse-token ((scanner lse-scanner))
   (let* ((buffer      (scanner-buffer scanner))
          (buflen      (length (scanner-buffer scanner)))
-         (index       (scanner-column scanner))
+         (index       (1- (scanner-column scanner)))
          (state       (scanner-state scanner))
          (start       0)
          (code        0))
@@ -606,24 +596,26 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                #+lse-scanner-debug (print `(scan-error ,fctrl ,@args))
                #+lse-scanner-debug (finish-output)
                (error 'lse-scanner-error
-                      :line    (scanner-line scanner)
-                      :column  (setf (scanner-column scanner) index)
-                      :state   (setf (scanner-state  scanner) state)
-                      :current-token (scanner-current-token scanner)
-                      :scanner scanner
-                      :format-control fctrl
+                      :backtrace        (or #+ccl (ccl::backtrace-as-list))
+                      :line             (scanner-line scanner)
+                      :column           (setf (scanner-column scanner) (1+ index))
+                      :state            (setf (scanner-state  scanner) state)
+                      :current-token    (scanner-current-token scanner)
+                      :scanner          scanner
+                      :format-control   fctrl
                       :format-arguments args
-                      :buffer (copy-seq (scanner-buffer scanner))))
+                      :buffer           (copy-seq (scanner-buffer scanner))))
              (invalid-character (ch &optional (format-control "") &rest format-arguments)
                #+lse-scanner-debug (progn (print `(invalid-character ,ch  ,(scanner-buffer scanner) ,format-control ,@format-arguments)) (terpri) (finish-output))
                (error 'lse-scanner-error-invalid-character
-                      :line    (scanner-line scanner)
-                      :column  (setf (scanner-column scanner) index)
-                      :state   (setf (scanner-state  scanner) state)
-                      :current-token (scanner-current-token scanner)
-                      :scanner scanner
-                      :format-control "CARACTÈRE INVALIDE ~A~:[~*~; (~D)~]~?"
-                      :format-arguments (list (if (<= 32 (char-code ch))
+                      :backtrace         (or #+ccl (ccl::backtrace-as-list))
+                      :line              (scanner-line scanner)
+                      :column            (setf (scanner-column scanner) (1+ index))
+                      :state             (setf (scanner-state  scanner) state)
+                      :current-token     (scanner-current-token scanner)
+                      :scanner           scanner
+                      :format-control    "CARACTÈRE INVALIDE ~A~:[~*~; (~D)~]~?"
+                      :format-arguments  (list (if (<= 32 (char-code ch))
                                                   (format nil "'~C'" ch)
                                                   (format nil ".~A." (char-code ch)))
                                               (<= 32 (char-code ch))
@@ -636,7 +628,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                    (setf code (char-code (aref buffer index)))
                    (return-from scan-lse-token
                      (setf (scanner-state scanner) state
-                           (scanner-column scanner) index
+                           (scanner-column scanner) (1+ index)
                            (scanner-current-token scanner) (make-eol scanner)))))
              (start ()
                #+lse-scanner-debug (progn (print `(start)) (terpri) (finish-output))
@@ -645,7 +637,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                #+lse-scanner-debug (progn (print `(produce ,token)) (finish-output))
                (return-from scan-lse-token
                  (setf (scanner-state scanner) state
-                       (scanner-column scanner) index
+                       (scanner-column scanner) (1+ index)
                        (scanner-current-token scanner) token)))
              (shift (new-state)
                #+lse-scanner-debug (progn (print `(shift ,new-state)) (terpri) (finish-output))
@@ -702,7 +694,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
        (when (<= buflen index)
          (return-from scan-lse-token
            (setf (scanner-state scanner) state
-                 (scanner-column scanner) buflen
+                 (scanner-column scanner) (1+ buflen)
                  (scanner-current-token scanner) (make-eol scanner))))
        (setf code (char-code (aref buffer index)))
        (case-state
@@ -868,13 +860,13 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
 
 
 
-(defmethod advance-line ((scanner lse-scanner))
+(defun lse-advance-line (scanner)
   "RETURN: The new current token, old next token"
   (cond
     ((typep (scanner-current-token scanner) 'tok-eof) #|End of File -- don't move.|#)   
     ((setf (scanner-buffer scanner) (readline (slot-value scanner 'stream)))
                                         ; got a line -- advance a token.
-     (setf (scanner-column scanner) 0
+     (setf (scanner-column scanner) 1
            (scanner-state  scanner) +maybe-commentaire+)
      (when (plusp (scanner-line   scanner))
        (incf (scanner-line   scanner)))
@@ -883,6 +875,10 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
     (t                                  ; Just got EOF
      (setf (scanner-current-token scanner) (make-eof scanner))))
   (scanner-current-token scanner))
+
+(defmethod advance-line ((scanner lse-scanner))
+  (lse-advance-line scanner))
+
 
 
 (defmethod scan-next-token ((scanner lse-scanner) &optional parser-data)

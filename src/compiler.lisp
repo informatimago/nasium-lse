@@ -429,9 +429,7 @@
       (cond
         ((null parse-tree))              ; nothing to do
         ((atom parse-tree)
-         (error 'lse-error
-                :format-control "INTERNE: UN ATOME ~S DANS L'ARBRE SYNTAXIQUE."
-                :format-arguments (list parse-tree)))
+         (lse-error "INTERNE: UN ATOME ~S DANS L'ARBRE SYNTAXIQUE." parse-tree))
         ((eq (car parse-tree) :liste-instructions)
          (dolist/separator (item (cdr parse-tree) ";")
            (unparse-tree item)))
@@ -443,9 +441,7 @@
          (dolist/separator (item (cddr parse-tree) ";")
            (unparse-tree item)))
         (t
-         (error 'lse-error
-                :format-control "INTERNE: UNE LISTE INVALIDE ~S DANS L'ARBRE SYNTAXIQUE."
-                :format-arguments (list parse-tree)))))))
+         (lse-error "INTERNE: UNE LISTE INVALIDE ~S DANS L'ARBRE SYNTAXIQUE." parse-tree))))))
 
 
 
@@ -747,32 +743,32 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;                      (setf result (nconc result (copy-list code))))
 ;;                    (spec-simple (spec format)
 ;;                      (if (atom spec)
-;;                          (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)
+;;                          (lse-error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)
 ;;                          (case (first spec)
 ;;                            (:rep-1   (collect (gen !pushi 1 nil)))
 ;;                            (:rep     (collect (gen !pushi (numero-valeur (second spec)) nil)))
 ;;                            (:rep-var (when (null exprs)
-;;                                        (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
+;;                                        (lse-error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
 ;;                                      (collect (generate-statement (pop exprs) nil)))
 ;;                            (otherwise
-;;                             (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)))))
+;;                             (lse-error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)))))
 ;;                    (spec-expr (spec op format)
 ;;                      (if (atom spec)
-;;                          (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)
+;;                          (lse-error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)
 ;;                          (case (first spec)
 ;;                            (:rep-1 (when (null exprs)
-;;                                      (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
+;;                                      (lse-error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
 ;;                                    (collect (generate-statement (pop exprs) nil))
 ;;                                    (collect op))
 ;;                            (:rep   (loop
 ;;                                      :repeat (numero-valeur (second spec))
 ;;                                      :do (progn
 ;;                                            (when (null exprs)
-;;                                              (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
+;;                                              (lse-error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
 ;;                                            (collect (generate-statement (pop exprs) nil))
 ;;                                            (collect op))))
 ;;                            (otherwise
-;;                             (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format))))))
+;;                             (lse-error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format))))))
 ;;             (if (second stat)
 ;;                 (loop
 ;;                   :for format :in (second stat)
@@ -1232,32 +1228,32 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
         (let ((exprs (cddr statement)))
           (labels ((spec-simple (spec format)
                      (if (atom spec)
-                         (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)
+                         (lse-error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)
                          (case (first spec)
                            (:rep-1   (gen-code code !pushi 1))
                            (:rep     (gen-code code !pushi (numero-valeur (second spec))))
                            (:rep-var (when (null exprs)
-                                       (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
+                                       (lse-error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
                                      (generate-expression code (pop exprs)))
                            (otherwise
-                            (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)))))
+                            (lse-error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)))))
                    (spec-expr (spec ops format)
                      (if (atom spec)
-                         (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)
+                         (lse-error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format)
                          (case (first spec)
                            (:rep-1 (when (null exprs)
-                                     (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
+                                     (lse-error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
                                    (generate-expression code (pop exprs))
                                    (dolist (op ops) (gen-code code op)))
                            (:rep   (loop
                                      :repeat (numero-valeur (second spec))
                                      :do (progn
                                            (when (null exprs)
-                                             (error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
+                                             (lse-error "IL MANQUE AU MOINS UNE EXPRESSION POUR LE SPECIFICATEUR DE FORMAT ~S" format))
                                            (generate-expression code (pop exprs))
                                            (dolist (op ops) (gen-code code op)))))
                            (otherwise
-                            (error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format))))))
+                            (lse-error "SPECIFICATEUR DE FORMAT INVALIDE ~S" format))))))
             (if (second statement)
                 (loop
                   :for format :in (second statement)
@@ -1403,9 +1399,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
        (gen-code code !stop)                    ; nothing to do
        code))
     ((atom parse-tree)
-     (error 'lse-error
-            :format-control "INTERNE: UN ATOME ~S DANS L'ARBRE SYNTAXIQUE."
-            :format-arguments (list parse-tree)))
+     (lse-error "INTERNE: UN ATOME ~S DANS L'ARBRE SYNTAXIQUE." parse-tree))
     ((eq (car parse-tree) :liste-instructions)
      (let ((code (make-code :line 0)))
        (compile-statement-list code (cdr parse-tree))
@@ -1421,18 +1415,17 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
          (gen-code code !next-line)
          code)))
     (t
-     (error 'lse-error
-            :format-control "INTERNE: UNE LISTE INVALIDE ~S DANS L'ARBRE SYNTAXIQUE."
-            :format-arguments (list parse-tree)))))
+     (lse-error "INTERNE: UNE LISTE INVALIDE ~S DANS L'ARBRE SYNTAXIQUE." parse-tree))))
 
 
 
 (defmacro converting-parser-errors (&body body)
   ;; We convert parser and scanner errors into lse-parser and
   ;; lse-scanner errors, rewriting the error messages.
-  `(handler-bind ((lse-scanner-error-invalid-character
+  `(handler-bind (((or scanner-error-invalid-character lse-scanner-error-invalid-character)
                    (lambda (err)
                      (error 'lse-scanner-error-invalid-character
+                            :backtrace         (or (lse-error-backtrace err) #+ccl (ccl::backtrace-as-list))
                             :line              (scanner-error-line          err)
                             :column            (scanner-error-column        err)
                             :state             (scanner-error-state         err)
@@ -1450,10 +1443,11 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                   (lse-parser-error-end-of-source-not-reached
                    (lambda (err)
                      (error 'lse-parser-error-end-of-source-not-reached
-                            :line    (parser-error-line err)
-                            :column  (parser-error-column err)
-                            :grammar (parser-error-grammar err)
-                            :scanner (parser-error-scanner err)
+                            :backtrace          (or (lse-error-backtrace err) #+ccl (ccl::backtrace-as-list))
+                            :line               (parser-error-line err)
+                            :column             (parser-error-column err)
+                            :grammar            (parser-error-grammar err)
+                            :scanner            (parser-error-scanner err)
                             :non-terminal-stack (parser-error-non-terminal-stack err)
                             :format-control "SYMBOLE SURNUMÉRAIRE ~:[~A ~S~;~S~*~]; ATTENDU: FIN DE LA LIGNE."
                             :format-arguments
@@ -1465,50 +1459,54 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                   (lse-parser-error-unexpected-token
                    (lambda (err)
                      (error 'lse-parser-error-unexpected-token
-                            :line    (parser-error-line err)
-                            :column  (parser-error-column err)
-                            :grammar (parser-error-grammar err)
-                            :scanner (parser-error-scanner err)
+                            :backtrace          (or (lse-error-backtrace err) #+ccl (ccl::backtrace-as-list))
+                            :line               (parser-error-line err)
+                            :column             (parser-error-column err)
+                            :grammar            (parser-error-grammar err)
+                            :scanner            (parser-error-scanner err)
                             :non-terminal-stack (parser-error-non-terminal-stack err)
                             :expected-token (parser-error-expected-token err)
-                            :format-control "~:[FIN DE LIGNE INATTENDU~3*~;SYMBOLE INATTENDU ~:[~A ~S~;~*~S~]~]~@[; ATTENDU: ~A~]."
+                            :format-control "~:[FIN DE LIGNE INATTENDUE~3*~;SYMBOLE INATTENDU ~:[~A ~S~;~*~S~]~]~@[; ATTENDU: ~A~]."
                             :format-arguments
-                            (let ((token (scanner-current-token (parser-error-scanner err))))
-                              (list (not (or (eolp token) (eofp token)))
-                                    (string= (token-kind-label (token-kind token))
-                                             (token-text token))
-                                    (token-kind-label (token-kind token))
-                                    (token-text token)
-                                    (token-kind-label (parser-error-expected-token err)))))))
+                            (print
+                             (let ((token (scanner-current-token (parser-error-scanner err))))
+                               (print token)
+                               (list (not (or (eolp token) (eofp token)))
+                                     (string= (token-kind-label (token-kind token))
+                                              (token-text token))
+                                     (token-kind-label (token-kind token))
+                                     (token-text token)
+                                     (token-kind-label (parser-error-expected-token err))))))))
                   (parser-error
                    (lambda (err)
-                     (error 'lse-parser-error
-                            :line    (parser-error-line err)
-                            :column  (parser-error-column err)
-                            :grammar (parser-error-grammar err)
-                            :scanner (parser-error-scanner err)
+                     (error 'lse-parser-error 
+                            :backtrace          (or #+ccl (ccl::backtrace-as-list))
+                            :line               (parser-error-line err)
+                            :column             (parser-error-column err)
+                            :grammar            (parser-error-grammar err)
+                            :scanner            (parser-error-scanner err)
                             :non-terminal-stack (parser-error-non-terminal-stack err)
-                            :format-control   (parser-error-format-control   err)
-                            :format-arguments (parser-error-format-arguments err))))
+                            :format-control     (parser-error-format-control   err)
+                            :format-arguments   (parser-error-format-arguments err))))
                   
                   (unexpected-token-error
                    (lambda (err)
                      (error 'lse-parser-error-unexpected-token
-                            :line    (scanner-error-line err)
-                            :column  (scanner-error-column err)
+                            :backtrace          (or #+ccl (ccl::backtrace-as-list))
+                            :line               (scanner-error-line err)
+                            :column             (scanner-error-column err)
                             ;; :grammar (scanner-error-grammar err)
-                            :scanner (scanner-error-scanner err)
+                            :scanner            (scanner-error-scanner err)
                             ;; :non-terminal-stack (scanner-error-non-terminal-stack err)
-                            :expected-token (com.informatimago.rdp::unexpected-token-error-expected-token err)
-                            :format-control "~:[FIN DE LIGNE INATTENDU~3*~;SYMBOLE INATTENDU ~:[~A ~S~;~*~S~]~]~@[; ATTENDU: ~A~]."
-                            :format-arguments
-                            (let ((token (scanner-current-token (scanner-error-scanner err))))
-                              (list (not (or (eolp token) (eofp token)))
-                                    (string= (token-kind-label (token-kind token))
-                                             (token-text token))
-                                    (token-kind-label (token-kind token))
-                                    (token-text token)
-                                    (token-kind-label (com.informatimago.rdp::unexpected-token-error-expected-token err))))))))
+                            :expected-token    (com.informatimago.rdp::unexpected-token-error-expected-token err)
+                            :format-control    "~:[FIN DE LIGNE INATTENDUE~3*~;SYMBOLE INATTENDU ~:[~A ~S~;~*~S~]~]~@[; ATTENDU: ~A~]."
+                            :format-arguments  (let ((token (scanner-current-token (scanner-error-scanner err))))
+                                                 (list (not (or (eolp token) (eofp token)))
+                                                       (string= (token-kind-label (token-kind token))
+                                                                (token-text token))
+                                                       (token-kind-label (token-kind token))
+                                                       (token-text token)
+                                                       (token-kind-label (com.informatimago.rdp::unexpected-token-error-expected-token err))))))))
      ,@body))
 
 
@@ -1545,6 +1543,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
     (if stream
         (compile-lse-stream stream)
         (error 'lse-file-error
+               :backtrace (or #+ccl (ccl::backtrace-as-list))
                :pathname source
                :format-control "PAS DE PROGRAMME NOMME '~A' ACCESSIBLE"
                :format-arguments (list name)))))

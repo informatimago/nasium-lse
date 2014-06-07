@@ -63,9 +63,7 @@
     :rules ((--> numero-de-ligne
                  tok-numero :action (let ((lino (parse-integer (second $1))))
                                       (unless (valid-line-number-p lino)
-                                        (error 'lse-error
-                                               :format-control "NUMERO DE LIGNE INVALIDE: ~A"
-                                               :format-arguments (list (second $1))))
+                                        (lse-error  "NUMERO DE LIGNE INVALIDE: ~A" (second $1)))
                                       (list lino)))))
 
 (defgrammar un-numero
@@ -135,9 +133,7 @@
             (--> numero-de-ligne
                  tok-numero :action (let ((lino (parse-integer (second $1))))
                                       (unless (valid-line-number-p lino)
-                                        (error 'lse-error
-                                               :format-control "NUMERO DE LIGNE INVALIDE: ~A"
-                                               :format-arguments (list (second $1))))
+                                        (lse-error "NUMERO DE LIGNE INVALIDE: ~A" (second $1)))
                                       lino))))
 
 
@@ -153,9 +149,7 @@
                  (seq tok-identificateur
                       ;; :action (let ((text (second $1)))
                       ;;   (unless (<= (length text) 5)
-                      ;;     (error 'lse-error
-                      ;;            :format-control "IDENTIFICATEUR INVALIDE: ~A"
-                      ;;            :format-arguments (list text)))
+                      ;;     (lse-error "IDENTIFICATEUR INVALIDE: ~A" text)))
                       ;;   text)
                       :action (second $1))
                  :action $1)))
@@ -176,9 +170,7 @@
                  (seq tok-identificateur
                       ;; :action  (let ((text (second $1)))
                       ;;           (unless (<= (length text) 5)
-                      ;;             (error 'lse-error
-                      ;;                    :format-control "IDENTIFICATEUR INVALIDE: ~A"
-                      ;;                    :format-arguments (list text)))
+                      ;;             (lse-error "IDENTIFICATEUR INVALIDE: ~A" text)))
                       ;;           text)
                       :action (second $1))
                  :action $1)
@@ -186,9 +178,7 @@
                  (seq tok-identificateur
                       :action (let ((text (string-upcase (second $1))))
                                 (unless (member text '("P" "D" "T") :test (function string=))
-                                  (error 'lse-error
-                                         :format-control "TYPE DE FICHIER INVALIDE: ~A; ATTENDU: P, D OU T."
-                                         :format-arguments (list text)))
+                                  (lse-error "TYPE DE FICHIER INVALIDE: ~A; ATTENDU: P, D OU T." text))
                                 text))
                  :action $1)))
 
@@ -204,9 +194,7 @@
                  (seq tok-identificateur
                       ;; :action (let ((text (second $1)))
                       ;;           (unless (<= (length text) 5)
-                      ;;             (error 'lse-error
-                      ;;                    :format-control "IDENTIFICATEUR INVALIDE: ~A"
-                      ;;                    :format-arguments (list text)))
+                      ;;             (lse-error "IDENTIFICATEUR INVALIDE: ~A" text)))
                       ;;           text)
                       :action (second $1))
                  :action $1)))
@@ -225,9 +213,7 @@
                  (seq tok-identificateur
                       ;; :action (let ((text (second $1)))
                       ;;           (unless (<= (length text) 5)
-                      ;;             (error 'lse-error
-                      ;;                    :format-control "IDENTIFICATEUR INVALIDE: ~A"
-                      ;;                    :format-arguments (list text)))
+                      ;;             (lse-error "IDENTIFICATEUR INVALIDE: ~A" text))
                       ;;           text)
                       :action (second $1))
                  :action $1)))
@@ -251,9 +237,7 @@
                  (seq tok-identificateur
                       ;; :action (let ((text (second $1)))
                       ;;           (unless (<= (length text) 5)
-                      ;;             (error 'lse-error
-                      ;;                    :format-control "IDENTIFICATEUR INVALIDE: ~A"
-                      ;;                    :format-arguments (list text)))
+                      ;;             (lse-error "IDENTIFICATEUR INVALIDE: ~A"  text))
                       ;;           text)
                       :action (second $1))
                  :action $1)
@@ -295,6 +279,42 @@
     (cdr (assoc grammar-name *syntaxes*)))
 
   );;eval-when
+
+
+(defmacro generate-advance-line-methods (&rest classes)
+  `(progn
+     ,@(mapcar (lambda (class)
+                 `(defmethod advance-line ((scanner ,class)) (lse-advance-line scanner)))
+               classes)))
+
+(generate-advance-line-methods numero-de-ligne-scanner
+                               un-numero-scanner
+                               deux-numeros-scanner
+                               deux-numeros-optionels-scanner
+                               liste-de-numeros-scanner
+                               un-programme-scanner
+                               un-fichier-scanner
+                               deux-fichiers-scanner
+                               un-fichier-et-deux-numeros-scanner
+                               arguments-supprimer-scanner)
+
+#-(and) (mapcar (lambda (s)
+                  (list s
+                        (handler-case (converting-parser-errors (funcall (intern (format nil "~:@(~A-~A~)" 'parse s)) ""))
+                          (error (err) (ignore-errors (string-trim #(#\newline) (princ-to-string err)))))))
+                '(numero-de-ligne             
+                  un-numero                   
+                  deux-numeros                
+                  deux-numeros-optionels      
+                  liste-de-numeros            
+                  un-programme                
+                  un-fichier                  
+                  deux-fichiers               
+                  un-fichier-et-deux-numeros  
+                  une-ligne                   
+                  arguments-supprimer         
+                  ))
+
 
 
 (defun parse-une-ligne (ligne) (list ligne))
@@ -480,8 +500,9 @@ Bound by COMMAND-EVAL-LINE.")
                      (converting-parser-errors
                        (funcall (command-parser command)
                                 (io-read-line *task* :beep t))))))
-    (with-pager *task*
-      (apply (command-function command) arguments))))
+    (apply (command-function command) arguments)
+    #-(and) (with-pager *task*
+              (apply (command-function command) arguments))))
 
 
 (defmethod all-commands ((group command-group))
@@ -564,17 +585,18 @@ Bound by COMMAND-EVAL-LINE.")
   "Affiche la liste des commandes disponibles.
 
 Voir la commande: DOCUMENTATION."
-  (io-format *task* "~%LES COMMANDES DISPONIBLES SONT:~2%")
-  (let ((*print-right-margin* 80))
-    (dolist (command (all-commands *command-group*))
-      (io-format *task* "~A)~20A ~{~{~<~%~24<~>~1,80:;~A~> ~}~^~%~24<~>~}~%"
-                 (command-initials command)
-                 (subseq (command-name command) 2)
-                 (mapcar (lambda (line) (split-sequence #\Space line))
-                         (split-sequence #\Newline (process-doc (command-oneliner command)))))))
-  (io-format *task* (process-doc "~%POUR ENTRER UNE COMMANDE, TAPEZ SES DEUX ~
+  (with-pager *task*
+    (io-format *task* "~%LES COMMANDES DISPONIBLES SONT:~2%")
+    (let ((*print-right-margin* 80))
+      (dolist (command (all-commands *command-group*))
+        (io-format *task* "~A)~20A ~{~{~<~%~24<~>~1,80:;~A~> ~}~^~%~24<~>~}~%"
+                   (command-initials command)
+                   (subseq (command-name command) 2)
+                   (mapcar (lambda (line) (split-sequence #\Space line))
+                           (split-sequence #\Newline (process-doc (command-oneliner command)))))))
+    (io-format *task* (process-doc "~%POUR ENTRER UNE COMMANDE, TAPEZ SES DEUX ~
                                     PREMIERES LETTRES, SUIVIES DE [XOFF].~
-                                  ~%POUR ANNULER UN CARACTERE, TAPEZ [DEL].~%")))
+                                  ~%POUR ANNULER UN CARACTERE, TAPEZ [DEL].~%"))))
 
 
 
@@ -583,51 +605,52 @@ Voir la commande: DOCUMENTATION."
   "Affiche la documentation d'une commande ou d'une instruction.
 
 Voir la commande: AIDER"
-  (cond
-    ((string-equal what "COMMANDES")
-     (aider))
-    #-(and)
-    ((let ((command (or (find-command what *command-group* :in-extenso nil)
-                        (find-command what *command-group* :in-extenso t))))
-       (when command
-         (io-format *task* "~2%~A)~A ~@[~A~]~2%"
-                    (command-initials command)
-                    (subseq (command-name command) 2)
-                    (syntax (command-grammar command)))
-         (write-documentation *task* (command-documentation command))
-         t)))
-    ((let ((chapters (find-chapter what)))
-       (flet ((print-chapter (chapter)
-                (io-format *task* "~2%~A / ~A~%~V,,,'-<~>~2%"
-                           (chapter-category chapter)
-                           (chapter-title chapter)
-                           (+ (length (chapter-title chapter))
-                              3
-                              (length (chapter-category chapter))))
-                (if (stringp (chapter-text chapter))
-                    (write-documentation *task* (chapter-text chapter))
-                    (funcall (chapter-text chapter) chapter))
-                t))
-         (cond
-           ((null chapters) nil)
-           ((listp chapters)
-            (dolist (chapter chapters t)
-              (print-chapter chapter)))
-           (t (print-chapter chapters) t)))))
-    (t
-     (io-format *task*
-                "~A"
-                (process-doc
-                 (format nil "~2%Il n'y a pas de documentation pour ~S~%~A~%"
-                         what
-                         "Essayez les commandes suivantes:
+  (with-pager *task*
+    (cond
+      ((string-equal what "COMMANDES")
+       (aider))
+      #-(and)
+      ((let ((command (or (find-command what *command-group* :in-extenso nil)
+                          (find-command what *command-group* :in-extenso t))))
+         (when command
+           (io-format *task* "~2%~A)~A ~@[~A~]~2%"
+                      (command-initials command)
+                      (subseq (command-name command) 2)
+                      (syntax (command-grammar command)))
+           (write-documentation *task* (command-documentation command))
+           t)))
+      ((let ((chapters (find-chapter what)))
+         (flet ((print-chapter (chapter)
+                  (io-format *task* "~2%~A / ~A~%~V,,,'-<~>~2%"
+                             (chapter-category chapter)
+                             (chapter-title chapter)
+                             (+ (length (chapter-title chapter))
+                                3
+                                (length (chapter-category chapter))))
+                  (if (stringp (chapter-text chapter))
+                      (write-documentation *task* (chapter-text chapter))
+                      (funcall (chapter-text chapter) chapter))
+                  t))
+           (cond
+             ((null chapters) nil)
+             ((listp chapters)
+              (dolist (chapter chapters t)
+                (print-chapter chapter)))
+             (t (print-chapter chapters) t)))))
+      (t
+       (io-format *task*
+                  "~A"
+                  (process-doc
+                   (format nil "~2%Il n'y a pas de documentation pour ~S~%~A~%"
+                           what
+                           "Essayez les commandes suivantes:
 DO)CUMENTATION GARANTIE       indique qu'aucune garantie n'est assurée;
 DO)CUMENTATION LICENSE        donne la license et votre liberté de copier;
 DO)CUMENTATION SOURCES        où trouver les sources de ce programme;
 DO)CUMENTATION INSTRUCTIONS   donne la liste des instructions;
 DO)CUMENTATION FONCTIONS      donne la liste des fonctions;
 DO)CUMENTATION COMMANDES      donne la liste des commandes;
-AI)DE                         donne la liste des commandes."))))))
+AI)DE                         donne la liste des commandes.")))))))
 
 
 
@@ -857,9 +880,7 @@ AI)DE                         donne la liste des commandes."))))))
     ((string-equal fictype "R") :tape)
     ((string-equal fictype "S") :temporary-tape)
     ((member fictype '(:program :data :temporary :tape :temporary-tape)) fictype)
-    (t (error 'lse-error
-              :format-control "INDICATEUR DE TYPE DE FICHIER INVALIDE: ~A; ATTENDU: P, D ou T."
-              :format-arguments (list fictype)))))
+    (t (lse-error "INDICATEUR DE TYPE DE FICHIER INVALIDE: ~A; ATTENDU: P, D ou T." fictype))))
 
 (defun catalog-pathname (name fictype)
   (let ((fictype (normalize-fictype fictype))
@@ -975,8 +996,7 @@ Voir les commandes LISTER A PARTIR DE, NUMERO A PARTIR DE, PERFORER A PARTIR DE.
 (defcommand "ELIMINER COMMENTAIRES" awake  nil ()
   "Elimine les commentaires."
   (io-new-line *task*)
-  (error 'pas-implemente
-         :what 'eliminer-commentaires))
+  (error 'pas-implemente :what 'eliminer-commentaires))
 
 
 ;; Commandes rubans perforés:
@@ -1129,6 +1149,7 @@ Voir les commandes ETAGERE DE RUBAN, SELECTIONNER RUBAN, RUBAN, PERFORER A PARTI
             (close src)
             (setf (task-tape-output *task*) nil))
           (error 'lse-file-error
+                 :backtrace (or #+ccl (ccl::backtrace-as-list))
                  :pathname dst-path
                  :format-control "IL Y A DEJA UN RUBAN NOMME '~:@(~A~)'."
                  :format-arguments (list ruban))))))
@@ -1236,8 +1257,7 @@ Voir les commandes PAS A PAS, NORMAL, EXECUTER A PARTIR DE, REPRENDRE A PARTIR D
           (vm-unpause vm)
           (vm-run vm)
           (setf (task-pas-a-pas-first *task*) (task-pas-a-pas *task*)))
-        (error 'lse-error
-               :format-control "ON NE PEUT PAS CONTINUER UN PROGRAMME QUI N'EST PAS EN PAUSE."))))
+        (lse-error "ON NE PEUT PAS CONTINUER UN PROGRAMME QUI N'EST PAS EN PAUSE."))))
 
 
 (defcommand "REPRENDRE A PARTIR DE" awake deux-numeros-optionels (from to)
@@ -1281,8 +1301,7 @@ Voir les commandes PAS A PAS, NORMAL, EXECUTER A PARTIR DE, CONTINUER, REPRENDRE
           (vm-unpause vm)
           (vm-run vm)
           (setf (task-pas-a-pas-first *task*) (task-pas-a-pas *task*)))
-        (error 'lse-error
-               :format-control "ON NE PEUT PAS POURSUIVRE UN PROGRAMME QUI N'EST PAS EN PAUSE."))))
+        (lse-error "ON NE PEUT PAS POURSUIVRE UN PROGRAMME QUI N'EST PAS EN PAUSE."))))
 
 
 #-lse-unix
@@ -1347,12 +1366,11 @@ FICHIERS, APPELER, MODIFIER."
                 :for line :in source
                 :do (write-line (code-source line) stream))
               (error 'lse-file-error
+                     :backtrace (or #+ccl (ccl::backtrace-as-list))
                      :pathname path
                      :format-control "UN PROGRAMME NOMME '~A' EXISTE DEJA; UTILISEZ LA COMMANDE MODIFIER."
                      :format-arguments (list pgm))))
-        (error 'lse-error
-               :format-control "IL N'Y A PAS DE PROGRAMME A RANGER."
-               :format-arguments '()))
+        (lse-error "IL N'Y A PAS DE PROGRAMME A RANGER."))
     (values)))
 
 
@@ -1379,9 +1397,7 @@ FICHIERS, APPELER, RANGER."
           (loop
             :for line :in source
             :do (write-line (code-source line) stream)))
-        (error 'lse-error
-               :format-control "IL N'Y A PAS DE PROGRAMME A MODIFIER."
-               :format-arguments '()))
+        (lse-error "IL N'Y A PAS DE PROGRAMME A MODIFIER."))
     (values)))
 
 
@@ -1435,9 +1451,7 @@ Voir les commandes ENCODER, APPELER, RANGER, MODIFIER."
                    :for chunk :in (split-size buffer *max-record-chaine-size*)
                    :do (write-record file rn chunk))
               (lse-data-file-close file))))
-        (error 'lse-error
-               :format-control "IL N'Y A PAS DE PROGRAMME A DECODER."
-               :format-arguments '()))
+        (lse-error "IL N'Y A PAS DE PROGRAMME A DECODER."))
     (values)))
 
 
@@ -1477,6 +1491,7 @@ Voir les commandes DECODER, APPELER, RANGER, MODIFIER."
                                (<= (first line) to)))
                   (put-line vm (first line) line)))))
           (error 'lse-file-error
+                 :backtrace (or #+ccl (ccl::backtrace-as-list))
                  :pathname path
                  :format-control "IL N'Y A PAS DE FICHIER TEMPORAIRE '~A' A ENCODER."
                  :format-arguments (list fichier))))))
@@ -1510,10 +1525,12 @@ FICHIERS."
             (if dst
                 (copy-stream src dst)
                 (error 'lse-file-error
+                       :backtrace (or #+ccl (ccl::backtrace-as-list))
                        :pathname dst-path
                        :format-control "IL Y A DEJA UN FICHIER PERMANENT '~A'."
                        :format-arguments (list permanent))))
           (error 'lse-file-error
+                 :backtrace (or #+ccl (ccl::backtrace-as-list))
                  :pathname src-path
                  :format-control "IL N'Y A PAS DE FICHIER TEMPORAIRE '~A' A CATALOGUER."
                  :format-arguments (list temporaire))))))
@@ -1581,49 +1598,50 @@ Voir les commandes AFFICHER REPERTOIRE, TABLE DES FICHIER, UTILISATION DISQUE."
 répertoire courant, et les fichiers temporaires.
 
 Voir les commandes UTILISATION DISQUE, SUPPRIMER."
-  (io-format *task* "  ~A~%" (dat))
-  (flet ((list-files (type directory control-string modulo)
-           (let* ((files  (directory (make-pathname :name :wild
-                                                    :type (cdr (assoc type *file-types*))
-                                                    :version nil
-                                                    :defaults directory)))
-                  (width  (reduce (function max) files
-                                  :key (lambda (x) (length (pathname-name x)))
-                                  :initial-value 5)))
-             (dolist (file files)
-               (io-format *task* control-string
-                          width
-                          (string-upcase (pathname-name file))
-                          (task-account *task*)
-                          (subseq (formate-date (file-write-date file)) 0 8)
-                          (truncate (or (ignore-errors
-                                          (with-open-file (stream file
-                                                                  :direction :input
-                                                                  :element-type '(unsigned-byte 8)
-                                                                  :if-does-not-exist nil)
-                                            (file-length stream)))
-                                        0)
-                                    modulo))))))
-    
-    (io-format *task* "~%FICHIERS-PROGRAMMES~
+  (with-pager *task*
+    (io-format *task* "  ~A~%" (dat))
+    (flet ((list-files (type directory control-string modulo)
+             (let* ((files  (directory (make-pathname :name :wild
+                                                      :type (cdr (assoc type *file-types*))
+                                                      :version nil
+                                                      :defaults directory)))
+                    (width  (reduce (function max) files
+                                    :key (lambda (x) (length (pathname-name x)))
+                                    :initial-value 5)))
+               (dolist (file files)
+                 (io-format *task* control-string
+                            width
+                            (string-upcase (pathname-name file))
+                            (task-account *task*)
+                            (subseq (formate-date (file-write-date file)) 0 8)
+                            (truncate (or (ignore-errors
+                                           (with-open-file (stream file
+                                                                   :direction :input
+                                                                   :element-type '(unsigned-byte 8)
+                                                                   :if-does-not-exist nil)
+                                             (file-length stream)))
+                                          0)
+                                      modulo))))))
+      
+      (io-format *task* "~%FICHIERS-PROGRAMMES~
                      ~%*******************~
                      ~2% NOM NO.COMPTE  DATE  NB.MOTS~
                      ~2%")
-    (list-files :program *current-directory* "~VA  ~2,'0D    ~8A ~5D~%" 2)
+      (list-files :program *current-directory* "~VA  ~2,'0D    ~8A ~5D~%" 2)
 
-    (io-format *task* "~%FICHIERS-PERMANENTS~
+      (io-format *task* "~%FICHIERS-PERMANENTS~
                      ~%*******************~
                      ~2% NOM NO.COMPTE  DATE  NB.SECTEURS~
                      ~2%")
-    (list-files :data *current-directory* "~VA  ~2,'0D    ~8A ~5D~%" +block-size+)
+      (list-files :data *current-directory* "~VA  ~2,'0D    ~8A ~5D~%" +block-size+)
 
-    (io-format *task* "~%FICHIERS-DONNEE TEMPORAIRES~
+      (io-format *task* "~%FICHIERS-DONNEE TEMPORAIRES~
                      ~%*****************************~
                      ~2% NOM CONSOLE NB.SECTEURS~
                      ~2%")
-    (list-files :temporary (make-temporaries-directory) "~VA  ~2,'0D~*     ~5D~%" +block-size+)
-    (io-new-line *task*)
-    (values)))
+      (list-files :temporary (make-temporaries-directory) "~VA  ~2,'0D~*     ~5D~%" +block-size+)
+      (io-new-line *task*)
+      (values))))
 
 
 (defun free-sectors ()
@@ -1647,17 +1665,18 @@ Voir les commandes UTILISATION DISQUE, SUPPRIMER."
 répertoire courant, et les fichiers temporaires.
 
 Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
-  (table-des-fichiers)
-  (io-format *task* "~%NOMBRE DE SECTEUR LIBRES:~D~
+  (with-pager *task*
+    (table-des-fichiers)
+    (io-format *task* "~%NOMBRE DE SECTEUR LIBRES:~D~
                      ~%*************************~
                      ~2%" (free-sectors))
-  (io-format *task* "~%ESPACE TEMPORAIRE ALLOUE~
+    (io-format *task* "~%ESPACE TEMPORAIRE ALLOUE~
                      ~%************************~
                      ~2%CONSOLE NB.SECTEURS~
                      ~2%")
-  (io-format *task* "~:{ ~2,'0D       ~5D~%~}" (allocated-temporary-space))
-  (io-new-line *task*)
-  (values))
+    (io-format *task* "~:{ ~2,'0D       ~5D~%~}" (allocated-temporary-space))
+    (io-new-line *task*)
+    (values)))
 
 
 
@@ -1744,8 +1763,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
   (io-format *task* "~%PERFORATION EFFECTUEE.~%"))
 
 
-#+debugging
-(defcommand "SHOW BINDINGS" awake nil ()
+(defcommand "TOUCHES" awake nil ()
   "Montre les touches."
   (let ((terminal (task-terminal *task*)))
    (io-format *task* "
@@ -1822,9 +1840,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
               (*command-group* command-group)
               (command (find-command line command-group)))
          (if (null command)
-             (error 'lse-error
-                    :format-control "COMMANDE INCONNUE ~S"
-                    :format-arguments (list line))
+             (lse-error "COMMANDE INCONNUE ~S" line)
              (progn
                (unless (task-silence task)
                  (io-carriage-return task)
@@ -1838,8 +1854,8 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
        (setf (task-pas-a-pas-first *task*) nil)
        (if (task-state-awake-p task)
            (lse-compile-and-execute task line)
-           (error "COMMANDE INVALIDE EN L'ETAT ~A~%ESSAYER LA COMMANDE AI(DE).~%"
-                  (task-state-label (task-state task)))))
+           (lse-error "COMMANDE INVALIDE EN L'ETAT ~A~%ESSAYER LA COMMANDE AI(DE).~%"
+                      (task-state-label (task-state task)))))
 
       ((task-pas-a-pas-first *task*)       
        (continuer))
@@ -1854,8 +1870,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
 (defun command-repl (task)
   (let ((*task* task)
         (*print-case* :upcase))
-    (io-format task "~&PRET~%")
-    (io-finish-output task)
+    (pret task)
     (handler-case                       ; catch au-revoir condition.
         (loop
           :while (task-state-awake-p task)
@@ -1872,7 +1887,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                                          (progn
                                            (io-standard-redirection task)
                                            (echo)
-                                           (io-format task "~%PRET~%"))
+                                           (pret task))
                                          (command-eval-line task line)))
                                  (end-of-file (err)
                                    (if (and (io-tape-input-p task)
@@ -1882,24 +1897,22 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                                        (signal 'au-revoir))))))
                         #+debugging
                         (if *debug-repl*
-                            (flet ((signal-error (err)
-                                     (format *error-output* "ERROR: ~A~%" err)
-                                     #+ccl (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
-                                                   (ccl::backtrace-as-list))
-                                     (finish-output *error-output*)
-                                     (signal err))
-                                   (debug-error (err)
-                                     (format *error-output* "ERROR: ~A~%" err)
-                                     #+ccl (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
-                                                   (ccl::backtrace-as-list))
-                                     (finish-output *error-output*)
-                                     (invoke-debugger err)))
-                             (handler-bind ((lse-error     (function signal-error))
-                                            (scanner-error (function signal-error))
-                                            (parser-error  (function signal-error))
-                                            (file-error    (function signal-error))
-                                            (error         (function debug-error)))
-                               (do-it)))
+                            (labels ((report (err)
+                                       (format *error-output* "ERROR: ~A~%" err)
+                                       (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
+                                               (if (typep err 'lse-error)
+                                                   (or (lse-error-backtrace err)
+                                                       #+ccl (ccl::backtrace-as-list))
+                                                   #+ccl (ccl::backtrace-as-list)))
+                                       (finish-output *error-output*))
+                                     (signal-error (err) (report err) (signal err))
+                                     (debug-error  (err) (report err) (invoke-debugger err)))
+                              (handler-bind ((lse-error     (function signal-error))
+                                             (scanner-error (function signal-error))
+                                             (parser-error  (function signal-error))
+                                             (file-error    (function signal-error))
+                                             (error         (function debug-error)))
+                                (do-it)))
                             (do-it))
                         #-debugging
                         (do-it))
@@ -1914,19 +1927,16 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                                     (<= 32 (char-code ch))
                                     (char-code ch)
                                     pos)))
-                      (io-format task "~%PRET~%")
-                      (io-finish-output task))
+                      (pret task))
                     (error (err)
                       (error-format task err)
-                      (io-format task "~%PRET~%")
-                      (io-finish-output task))
+                      (pret task))
                     (user-interrupt (condition)
                       #+debugging (io-format task "~%-Condition: ~A~%" condition)
                       (io-format task "   ")
                       (io-standard-redirection task)
                       (echo)
-                      (io-format task "~%PRET~%")
-                      (io-finish-output task)))
+                      (pret task)))
                 (continue ()
                   :report "CONTINUER")))
       (au-revoir () (values)))))

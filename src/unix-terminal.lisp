@@ -817,9 +817,9 @@ Valid only when MODERN-MODE is false.
                (cond
                  ((and veof  (= code veof))   (setf input-finished t) #|close the stream|#)
                  ((and veol  (= code veol))   (setf input-finished t)
-                  (print `(char read  veol ,ch ,(char-code ch))) (terpri) (finish-output))
+                  #-(and) (progn (print `(char read  veol ,ch ,(char-code ch))) (terpri) (finish-output)))
                  ((and veol2 (= code veol2))  (setf input-finished t)
-                  (print `(char read veol2  ,ch ,(char-code ch))) (terpri) (finish-output)
+                  #-(and) (progn (print `(char read veol2  ,ch ,(char-code ch))) (terpri) (finish-output))
                   (unless (terminal-cr-as-xoff terminal)
                     (vector-push-extend ch input-buffer 1)))
                  ((and verase (= code verase))
@@ -855,24 +855,24 @@ Valid only when MODERN-MODE is false.
     :do (terminal-fill-input-buffer terminal)))
 
 
-#-(and)(defmethod terminal-read-string ((terminal unix-terminal) &key (echo t) (beep nil))
-         (with-temporary-echo (terminal echo)
-           (when beep
-             (terminal-ring-bell terminal))
-           (terminal-finish-output terminal)
-           (with-slots (input-buffer input-finished input-cursor) terminal
-             (flet ((finish ()
-                      (prog1 (subseq input-buffer input-cursor)
-                        (setf input-finished nil
-                              input-cursor 0
-                              (fill-pointer input-buffer) 0))))
-               (if input-finished
-                   (finish)
-                   (loop
-                     #+swank (print (list input-buffer input-finished input-cursor) *terminal-io*)
-                             (terminal-fill-input-buffer terminal)
-                             (when input-finished
-                               (return (finish)))))))))
+#-(and) (defmethod terminal-read-string ((terminal unix-terminal) &key (echo t) (beep nil))
+          (with-temporary-echo (terminal echo)
+            (when beep
+              (terminal-ring-bell terminal))
+            (terminal-finish-output terminal)
+            (with-slots (input-buffer input-finished input-cursor) terminal
+              (flet ((finish ()
+                       (prog1 (subseq input-buffer input-cursor)
+                         (setf input-finished nil
+                               input-cursor 0
+                               (fill-pointer input-buffer) 0))))
+                (if input-finished
+                    (finish)
+                    (loop
+                      #+swank (print (list input-buffer input-finished input-cursor) *terminal-io*)
+                              (terminal-fill-input-buffer terminal)
+                              (when input-finished
+                                (return (finish)))))))))
 
 
 #-(and)(defmethod terminal-read ((terminal unix-terminal) &key (echo t) (beep nil))

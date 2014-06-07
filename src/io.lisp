@@ -383,13 +383,13 @@ RETURN: A string transformed according to the flags UPCASE and
 (defun push-chaine-buffer (ch buffer)
   (if (<= (1+ (length buffer)) chaine-maximum)
       (vector-push-extend ch buffer (min (- chaine-maximum (length buffer)) (length buffer)))
-      (error "CHAINE TROP GRANDE.")))
+      (lse-error "CHAINE TROP GRANDE.")))
 
 (defun push-nombre-buffer (ch buffer)
   (let ((bufmax 80))
     (if (<= (1+ (length buffer)) bufmax)
         (vector-push-extend ch buffer (min (- bufmax (length buffer)) (length buffer)))
-        (error "SAISIE POUR NOMBRE TROP GRANDE."))))
+        (lse-error "SAISIE POUR NOMBRE TROP GRANDE."))))
 
 (declaim (inline push-chaine-buffer push-nombre-buffer))
 

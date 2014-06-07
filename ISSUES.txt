@@ -130,6 +130,11 @@ exec /home/lse/bin/lse \
     --montrer-touches 
 #+END_SRC
 
+* TODO: 00006 The PRET message is eaten (displays only RET) when ESC    :cli:
+This is probably due to some echoing of ESC.
+Occurs on xterm on MacOSX with emulse
+Doesn't occur in MacOSX Terminal.app or Cathode.app with terminal.env
+
 * DONE TODO: 00003 FAIRE n POUR I_1 JUSQUA 100 doesn't work.
   CLOSED: [2014-05-13 Tue 04:11]
   - State "DONE"       from ""           [2014-05-13 Tue 04:11] \\

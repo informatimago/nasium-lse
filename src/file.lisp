@@ -263,6 +263,7 @@
   (with-slots (stream header record-table) file
     (when (gethash record-number record-table)
       (error 'file-error-record-already-exists
+             :backtrace (or #+ccl (ccl::backtrace-as-list))
              :pathname (file-path file)
              :file file
              :record-number record-number))

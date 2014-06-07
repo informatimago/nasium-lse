@@ -31,8 +31,39 @@
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
-
 (in-package :cl-user)
+
+;;; --------------------------------------------------
+
+(declaim (optimize
+          (speed 0)
+          (space 0)
+          (safety 3)
+          (debug 3)
+          (compilation-speed 0)
+          #+:lispworks (hcl:fixnum-safety 3)))
+
+(unless (find-package :cl-ppcre)
+  (defpackage :cl-ppcre (:use :cl)))
+
+(defparameter cl-ppcre::*standard-optimize-settings*
+  '(optimize
+    (speed 0)
+    (space 0)
+    (safety 3)
+    (debug 3)
+    (compilation-speed 0)
+    #+:lispworks (hcl:fixnum-safety 3))
+  "Don't fuck with me!")
+
+(defparameter cl-ppcre::*special-optimize-settings*
+  cl-ppcre::*standard-optimize-settings*
+  "Don't fuck with me!")
+
+;;; --------------------------------------------------
+
+
+
 (defun quick-reload (&rest systems)
   "Delete and reload the ASDF systems."
   (map 'list (lambda (system)
@@ -52,6 +83,7 @@
 (pushnew (truename (merge-pathnames "../dependencies/" *default-pathname-defaults*))
          ql:*local-project-directories* :test (function equal))
 (quicklisp-client:register-local-projects)
+
 
 
 ;; (defun delete-package-and-users (package)

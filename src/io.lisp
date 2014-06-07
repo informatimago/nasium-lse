@@ -148,9 +148,9 @@
         (let ((*page-height* nil)
               (*line-count*  nil))
           (io-new-line task)
-          (with-open-file (out #P "~/Desktop/out.txt" :direction :output
-                               :if-exists :append :if-does-not-exist :create)
-            (format out "Pager ~S~%" (multiple-value-list (decode-universal-time (get-universal-time)))))
+          #+debugging (with-open-file (out #P "~/Desktop/out.txt" :direction :output
+                                                                  :if-exists :append :if-does-not-exist :create)
+                        (format out "Pager ~S~%" (multiple-value-list (decode-universal-time (get-universal-time)))))
           (io-format task "Taper ~A pour continuer:" label)
           (io-read-line task :beep t :echo nil)
           (io-carriage-return task)))

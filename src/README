@@ -5,7 +5,7 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
 
 
 Dependencies
-============
+========================================
 
 Some dependencies are included in this repository, some others must be
 obtained from their own repositories.  This is done by running the
@@ -27,7 +27,7 @@ Then you may need to compile and install libfixposix: ::
 
 
 Compiling
-=========
+========================================
 
 
 Development
@@ -95,11 +95,11 @@ Once compiled, the executables can be run with: ::
 
     $ ./lse --aide
     $ ./lse --montrer-touches --configuration-interactive
-    $ ,/lse-server &
+    $ ./lse-server &
 
 
 Features
-========
+========================================
 
 Some variants between the T1600 and the Mitra-15 can be selected by
 pushing one or the other of those features: ::
@@ -123,9 +123,22 @@ characters are accepted in strings and are encoded in UTF-8).
 The scripts (``generate-clip.lisp`` and ``loader.lisp``) must be
 edited to configure the features.
 
+Bugs
+========================================
+
+The current known bugs are listed in "${NASIUM_LSE}/ISSUES.txt".
+
+Please, be sure to report any bug you find to 
+mailto:pjb@informatimago.com or mailto:pjb@ogamita.com
+
+Currently, the server is not functional.
+
+Currently, the ``lse`` executable cannot be used as  script `#!` interpreter.
+
+
 
 Debugging
-=========
+========================================
 
 There are a few ``*debug-…*`` flags:
 
@@ -160,7 +173,7 @@ and start a swank server, and continue debugging from emacs+slime: ::
 
     
 Files
-=====
+========================================
 
 
 Utilities:

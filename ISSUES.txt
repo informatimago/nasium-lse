@@ -135,6 +135,11 @@ This is probably due to some echoing of ESC.
 Occurs on xterm on MacOSX with emulse
 Doesn't occur in MacOSX Terminal.app or Cathode.app with terminal.env
 
+* TODO: 00007 Something's fishy in CEFAK                                :cli:
+
+The input seems to be read correctly, but the variable C, F and K
+don't seem to be updated, so the first data is always output.
+
 * DONE TODO: 00003 FAIRE n POUR I_1 JUSQUA 100 doesn't work.
   CLOSED: [2014-05-13 Tue 04:11]
   - State "DONE"       from ""           [2014-05-13 Tue 04:11] \\

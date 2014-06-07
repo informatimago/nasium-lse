@@ -1,0 +1,5 @@
+#!/home/pjb/src/pjb/nasium-lse/src/lse
+10 AFFICHER['Bonjour',/]
+20 AFFICHER['Les arguments sont: ',U]ARGC
+30 AFFICHER ARGV
+40 TERMINER

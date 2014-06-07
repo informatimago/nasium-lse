@@ -111,6 +111,7 @@
 
 (ql:quickload *program-system*)
 
+
 (defparameter *versions* (com.informatimago.lse:versions))
 (loop
   :for version :in *versions*

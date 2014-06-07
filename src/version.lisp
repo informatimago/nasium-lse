@@ -101,14 +101,35 @@ DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLv3.
                           #+(and (not (or bsd darwin linux win32 windows)) unix) "unix"
                           #+(not (or bsd darwin linux unix win32 windows)) "generic")))))
 
+
+(defun shell-command-to-string (command)
+  "Execute the COMMAND with asdf:run-shell-command and returns its
+stdout in a string (going thru a file)."
+  (let ((path (format nil "out-~36,8,'0R.txt" (random (expt 2 32)))))
+    (unwind-protect
+         (when (zerop (asdf:run-shell-command (format nil "~A > ~S" command path)))
+           (with-output-to-string (out)
+             (with-open-file (file path)
+               (loop
+                 :for line = (read-line file nil nil)
+                 :while line :do (write-line line out)))))
+      (ignore-errors (delete-file path)))))
+
+(defun commit ()
+  (string-trim #(#\Newline)
+               (shell-command-to-string "git log -1|sed -n -e 's/^commit //p'")))
+(defvar *commit* (load-time-value (commit)))
+
+(defun long-version ()
+  (multiple-value-bind (se mi ho da mo ye) (decode-universal-time (get-universal-time))
+    (format nil "~A,~% commit ~A,~% compiled ~4,'0D-~2,'0D-~2,'0D ~2,'0D:~2,'0D:~2,'0D,~% on ~A"
+            (version) *commit* ye mo da ho mi se (machine-instance))))
+
 (defun versions ()
   "
 RETURN: A list of three strings, the version, the short version and the long version.
 "
-  (list (version) *version*
-        (multiple-value-bind (se mi ho da mo ye) (decode-universal-time (get-universal-time))
-         (format nil "~A, compiled ~4,'0D-~2,'0D-~2,'0D ~2,'0D:~2,'0D:~2,'0D on ~A"
-                 (version) ye mo da ho mi se (machine-instance)))))
+  (list (version) *version* (long-version)))
 
 
 ;;;; THE END ;;;;

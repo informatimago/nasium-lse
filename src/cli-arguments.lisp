@@ -281,7 +281,7 @@ vous êtes les bienvenus pour redistribuer sous certaines conditions;
 utilisez la commande DO LICENSE pour plus de détails.
 
 "
-          (version)
+          (long-version)
           *copyright*)
   (parse-options-finish ex-ok))
 

@@ -595,8 +595,8 @@ Voir la commande: DOCUMENTATION."
                    (mapcar (lambda (line) (split-sequence #\Space line))
                            (split-sequence #\Newline (process-doc (command-oneliner command)))))))
     (io-format *task* (process-doc "~%POUR ENTRER UNE COMMANDE, TAPEZ SES DEUX ~
-                                    PREMIERES LETTRES, SUIVIES DE [XOFF].~
-                                  ~%POUR ANNULER UN CARACTERE, TAPEZ [DEL].~%"))))
+                                    PREMIERES LETTRES, SUIVIES DE ~%~
+                                    [XOFF].  POUR ANNULER UN CARACTERE, TAPEZ [DEL].~%"))))
 
 
 

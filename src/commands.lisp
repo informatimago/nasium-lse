@@ -1767,11 +1767,11 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
   "Montre les touches."
   (let ((terminal (task-terminal *task*)))
    (io-format *task* "
-~@[~16A pour entrer les données.~%~]~
-~@[~16A pour effacer le caractère précédent.~%~]~
-~@[~16A pour interrompre.~%~]~
-~@[~16A pour envoyer le signal d'attention (fonction ATT()).~%~]~
-~@[~16A pour entrer les données, mais ajoute le code RETOUR aux chaînes.~%~]~
+~@[~15A pour entrer les données.~%~]~
+~@[~15A pour effacer le caractère précédent.~%~]~
+~@[~15A pour interrompre.~%~]~
+~@[~15A pour envoyer le signal d'attention (fonction ATT()).~%~]~
+~@[~15A pour entrer les données, mais ajoute le code RETOUR aux chaînes.~%~]~
 "
               (terminal-keysym-label terminal :xoff)
               (terminal-keysym-label terminal :delete)

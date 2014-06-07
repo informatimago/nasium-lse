@@ -40,13 +40,13 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
 
   (defparameter *version*
-    #. (progn
-         (format nil "1.0.0-~5,3F" (decf (SEXP-FILE-CONTENTS
+    #. (let ((*read-default-float-format* 'double-float))
+         (format nil "1.0.0-~8,6F" (decf (SEXP-FILE-CONTENTS
                                           (make-pathname :name "VERSION" :type nil :version nil
                                                          :defaults (or *load-truename*
                                                                        *compile-file-truename*))
                                           :if-does-not-exist :create)
-                                         0.001)))
+                                         0.000001d0)))
     "The version of the NASIUM LSE system.")
 
 

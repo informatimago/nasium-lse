@@ -136,6 +136,12 @@ help::
 install:
 	cp lse ~/bin/lse
 
+
+help::
+	@printf $(HELPFORMAT) clean 'Remove executables.'
+clean::
+	-rm -f lse{,-server}-{ccl,clisp,sbcl,ecl}-{linux,darwin}-*
+
 .PHONY: cli server html-doc help install macosx
 
 #### THE END ####

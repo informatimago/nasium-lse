@@ -881,6 +881,20 @@ Note: Cette fonction n'est pas conforme Y2K, elle retourne 00 pour 2000."
   (formate-date (get-universal-time)))
 
 
+#+lse-unix
+(defunction env (nom)
+    "Variable d'environement"
+    "ENV(NOM)
+
+Résultat: une chaîne contenant la valeur de la variable d'environement
+POSIX du nom indiqué.  Si la variable d'environement n'existe pas, une
+chaîne vide est retournée.
+
+Exemple: ENV('USERNAME') --> 'pjb'
+"
+  (let* ((nom (la-chaine (deref *vm* nom)))
+         (val (getenv nom)))
+    (or val "")))
 
 
 (defun test/fonctions (&key silence)

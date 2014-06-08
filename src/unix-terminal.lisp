@@ -686,20 +686,20 @@ Valid only when MODERN-MODE is false.
 
 
 (defmethod terminal-columns ((terminal unix-terminal))
-  (or (handler-case (parse-integer (getenv "COLUMNS"))
-        (error () 80))
-      (with-slots (terminfo) terminal
+  (or (with-slots (terminfo) terminal
         (let ((terminfo:*terminfo* terminfo))
           terminfo:columns))
+      (handler-case (parse-integer (getenv "COLUMNS"))
+        (error () 80))
       80))
 
 
 (defmethod terminal-rows ((terminal unix-terminal))
-  (or (handler-case (parse-integer (getenv "LINES"))
-        (error () 25))
-      (with-slots (terminfo) terminal
+  (or (with-slots (terminfo) terminal
         (let ((terminfo:*terminfo* terminfo))
           terminfo:lines))
+      (handler-case (parse-integer (getenv "LINES"))
+        (error () 25))
       25))
 
 

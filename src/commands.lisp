@@ -1813,11 +1813,14 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
     (if (zerop (code-line code))
         ;; instruction line
         (let ((vm (task-vm task)))
-          (setf (vm-state vm) :running
-                (vm-pc.line vm) 0
-                (vm-pc.offset vm) 0
-                (vm-code vm) (code-vector code))
-          (vm-run vm))
+          (unwind-protect
+               (setf (vm-state vm) :running
+                     (gethash 0 (vm-code-vectors vm)) code
+                     (vm-pc.line vm) 0
+                     (vm-pc.offset vm) 0
+                     (vm-code vm) (code-vector code))
+            (vm-run vm))
+          (remhash 0 (vm-code-vectors vm)) code)
         ;; program line
         (if (equalp #(!next-line) (code-vector code))
             (erase-line-number (task-vm task) (code-line code))

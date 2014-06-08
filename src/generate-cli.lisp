@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    This scripts generates a unix cli lse executable.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -173,12 +173,14 @@
 #+ccl (progn (princ "ccl:save-application will exit.") (terpri) (finish-output))
 #+ccl (ccl:save-application
        (executable-filename *program-name*)
-       :toplevel-function (lambda () 
-			    (#__exit (com.informatimago.lse.cli:main))
-			    (ccl:quit (com.informatimago.lse.cli:main)
-				      :error-handler (lambda (err)
-						       (declare (ignore err))
-						       (#__exit -1))))
+       :toplevel-function (if (com.informatimago.lse.cli::boolean-enval "LSE_USE_EXIT" nil)
+                              (lambda ()
+                                (#__exit (com.informatimago.lse.cli:main)))
+                              (lambda ()
+                                (ccl:quit (com.informatimago.lse.cli:main)
+                                          :error-handler (lambda (err)
+                                                           (declare (ignore err))
+                                                           (#__exit -1)))))
        :init-file nil
        :error-handler :quit-quietly
        ;; :application-class ccl:lisp-development-system
@@ -188,7 +190,7 @@
        :mode #o755
        :prepend-kernel t
        ;; :native t
-       ) 
+       )
 
 #+clisp (ext:saveinitmem
          (executable-filename *program-name*)
@@ -213,7 +215,7 @@
 ;; (finish-output)
 
 #|
-    (cd "/home/pjb/src/pjb/nasium-lse/src/")
-    (load "generate-cli.lisp")
+(cd "/home/pjb/src/pjb/nasium-lse/src/")
+(load "generate-cli.lisp")
 |#
 ;;;; THE END ;;;;

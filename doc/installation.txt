@@ -111,13 +111,32 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
            rm -rf ~/quicklisp/local-projects/com-informatimago-rdp
 
 
-    6- Compile the executables: ::
+    6- Compile the executables.  
+
+    6.1- On some `debian` system (eg. 6.0.9), `ccl` has a problem
+         while quitting `lse`: ::
+
+            > Error: Fault during read of memory address #x-4B04C4FC
+            > While executing: CCL::LISP-THREAD-SUSPEND-COUNT, in process Initial(0).
+
+
+            ;;;
+            ;;; #<PROCESS Initial(0) [Active] #x1805D736> requires access to Shared Terminal Input
+            ;;; Type (:y 0) to yield control to this thread.
+            ;;;
+
+         and hangs there.  You have to kill the process with: ::
+
+            kill -9 %1 ; kill -cont %1
+
+         If that happens to you, add this environment variable, to
+         exit more brutally, using exit(2): ::
+            
+            export LSE_USE_EXIT=T
+
+     6.2- Compile: ::
 
            cd "${NASIUM_LSE}/src/"
-           make UPLOAD=0 cli server html-doc
-
-       or separately: ::
-
            make cli
            make server
            make UPLOAD=0 html-doc

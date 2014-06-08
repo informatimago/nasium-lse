@@ -155,7 +155,7 @@ Upon end-of-file, NIL is returned.
   (:method (source)
     (let* ((ch     (terminal-get-next-char source))
            (keysym (terminal-character-keysym source ch)))
-      #+lse-input-debug (io-format *task* "~%terminal-get-next-char -> ~A .~A.~%" ch (when (characterp ch) (char-code ch)))
+      #+lse-input-debug (io-format *task* "~&~S -> ~A .~A.~%" 'terminal-read-buffered-character ch (when (characterp ch) (char-code ch)))
       keysym)))
 
 

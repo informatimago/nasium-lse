@@ -73,7 +73,8 @@
 
 
 
-(defvar *debug-swank* #+debugging t #-debugging nil)
+(defvar *debug-swank* nil)
+;; (defvar *debug-swank* #+debugging t #-debugging nil)
 ;; (setf  *debug-swank* t)
 ;; (setf  *debug-swank* nil)
 
@@ -424,11 +425,11 @@ contents of the OUTPUT-BUFFER, moving the cursor to the CURRENT-COLUMN."
                        (return-from get-a-byte #\Newline))
                       (t
                        (terminal-fill-input-buffer terminal))))))
-      #+debugging
-      (when (null ch)
-        (terminal-write-string terminal
-                               (format nil "~%input-buffer = ~S~%"
-                                       (list input-cursor input-finished input-buffer))))
+      #+lse-input-debug (terminal-write-string
+                         terminal
+                         (format nil "~%~S input-cursor=~S input-buffer=~S input-finished=~S~%"
+                                 'terminal-get-next-char
+                                 input-cursor input-buffer input-finished))
       ch)))
 
 
@@ -439,6 +440,11 @@ contents of the OUTPUT-BUFFER, moving the cursor to the CURRENT-COLUMN."
     :while (find ch characters)
     :finally (let ((ch (terminal-keysym-character terminal ch)))
                (with-slots (input-buffer input-cursor) terminal
+                 #+lse-input-debug (terminal-write-string
+                                    terminal
+                                    (format nil "~%~S input-cursor=~S input-buffer=~S~%"
+                                            'terminal-skip-characters
+                                            input-cursor input-buffer))
                  (cond
                    ((plusp input-cursor)
                     (decf input-cursor)

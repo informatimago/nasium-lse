@@ -68,7 +68,6 @@
 
 
 (defclass task ()
-
   ((console              :initarg :console
                          :reader task-console
                          :initform 0
@@ -81,7 +80,6 @@
                          :accessor task-state
                          :initform :in-limbo
                          :type (member :in-limbo :to-connect :sleeping :active))
-
    (input                :initform nil
                          :reader task-input-stream
                          :documentation "current input stream.
@@ -90,32 +88,27 @@ Can be either (terminal-input-stream terminal) or tape-input.")
                          :reader task-output-stream
                          :documentation "current output stream.
 Can be either (terminal-output-stream terminal) or tape-output.")
-
    (terminal             :initarg :terminal
                          :reader task-terminal
                          :initform nil
-    :documentation "user interaction terminal.")
-  
+                         :documentation "user interaction terminal.")
    (tape-input           :initarg :tape-input
                          :initform nil
                          :documentation "stream? when a tape is loaded.")
    (tape-output          :initarg :tape-output
                          :initform nil
                          :documentation "stream? to a temporary tape")
-  
    (paging               :initarg :paging
                          :accessor task-paging
                          :initform t
                          :type (or boolean (integer 2))
                          :documentation "whether paging should be done.
 NIL: no paging. T: paging performed on terminal height.  (integer 2): paging performed on this height.")
-   
    (case-insensitive     :initarg :case-insensitive
                          :accessor task-case-insensitive
                          :initform nil
                          :type boolean
                          :documentation "whether the input should be case insensitive.") 
-
    (arrows               :initarg :arrows
                          :accessor task-arrows
                          :initform :ascii
@@ -155,13 +148,11 @@ so that if next command is ine, we continue automatically.")
                          :documentation "ESC")
    (signal               :accessor task-signal           :initform nil :type boolean
                          :documentation "CTRL-A  Utilisé par ATT()")
-
    (echo                 :initarg :echo
                          :accessor task-echo
                          :initform nil
                          :type boolean
-                         :documentation "parameter io-read-line.")
-   
+                         :documentation "parameter io-read-line.")   
    (random-state         :accessor task-random-state
                          :initform (make-random-state t) :type random-state)
    (environment          :accessor task-environment :initform nil :type (or null environment))

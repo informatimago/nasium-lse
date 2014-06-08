@@ -401,7 +401,7 @@ possibly buffered source.  The possible keywords are: :xoff :delete
 :return
 
 When this function receives the escape character (ESC), it signals a
-USER-INTERRUPT condition with SIGINT+ as USER-INTERRUPT-SIGNAL.
+USER-INTERRUPT condition with +SIGINT+ as USER-INTERRUPT-SIGNAL.
 
 When it receives the attention character (C-a), it signals a
 USER-INTERRUPT with +SIGQUIT+ as USER-INTERRUPT-SIGNAL.
@@ -417,6 +417,7 @@ Upon end-of-file, NIL is returned.
                          terminal
                          (task-input task)))
            (keysym   (terminal-read-buffered-character input)))
+      #+lse-input-debug (io-format task "~&~S -> ~A .~A.~%" 'io-read-buffered-character keysym (when (characterp keysym) (char-code keysym)))
       (case keysym
         ((:escape)
          (signal 'user-interrupt :signal +sigint+)
@@ -427,8 +428,7 @@ Upon end-of-file, NIL is returned.
          ;; Should not occur, but in case:
          (io-read-buffered-character task))
         ((#\Return)
-         (if (task-x))
-         )
+         :return)
         (otherwise
          keysym)))))
 
@@ -454,7 +454,7 @@ RETURN: The LSE string read.
         :named reading
         :with buffer = (make-array 8 :adjustable t :fill-pointer 0 :element-type 'character)
         :for ch = (io-read-buffered-character task)
-        :do #+lse-input-debug (io-format task "~%io-read-buffered-character -> ~A .~A.~%" ch (when (characterp ch) (char-code ch)))
+        :do #+lse-input-debug (io-format task "~&~S -> ~A .~A.~%" 'io-read-string ch (when (characterp ch) (char-code ch)))
             (case ch
               ((:xoff)
                (return-from reading buffer))
@@ -468,7 +468,10 @@ RETURN: The LSE string read.
                (if (characterp ch)
                    (push-chaine-buffer ch buffer)
                    (lse-error "ERREUR INTERNE: VALEUR INATTENDUE DE ~S: ~S of type ~S"
-                              (list 'io-read-buffered-character (class-name (class-of input)))
+                              (list 'io-read-string
+                                    (class-name (class-of (if (io-terminal-input-p task)
+                                                              terminal
+                                                              (task-input task)))))
                               ch (type-of ch)))))))))
 
 
@@ -509,28 +512,31 @@ RETURN: The LSE number read.
       (when (and beep (task-allow-bell-output task)) (terminal-ring-bell terminal))
       (terminal-skip-characters input *terminators*)
       (let ((buffer
-             (loop
-               :named reading
-               :with buffer = (make-array 8 :adjustable t :fill-pointer 0 :element-type 'character)
-               :for ch = (io-read-buffered-character task)
-               :do (cond
-                     ((find ch *terminators*)
-                      (return-from reading buffer))
-                     ((eql ch :delete)
-                      (when (plusp (fill-pointer buffer))
-                        (decf (fill-pointer buffer))))
-                     ((characterp ch)
-                      (push-nombre-buffer ch buffer))
-                     (t
-                      (lse-error "ERREUR INTERNE: VALEUR INATTENDUE DE ~S: ~S of type ~S"
-                                 (list 'io-read-buffered-character (class-name (class-of input)))
-                                 ch (type-of ch)))))))
+              (loop
+                :named reading
+                :with buffer = (make-array 8 :adjustable t :fill-pointer 0 :element-type 'character)
+                :for ch = (io-read-buffered-character task)
+                :do #+lse-input-debug (io-format task "~&~S -> ~A .~A.~%" 'io-read-number ch (when (characterp ch) (char-code ch)))
+                    (cond
+                      ((find ch *terminators*)
+                       (return-from reading buffer))
+                      ((eql ch :delete)
+                       (when (plusp (fill-pointer buffer))
+                         (decf (fill-pointer buffer))))
+                      ((characterp ch)
+                       (push-nombre-buffer ch buffer))
+                      (t
+                       (lse-error "ERREUR INTERNE: VALEUR INATTENDUE DE ~S: ~S of type ~S"
+                                  (list 'io-read-buffered-character (class-name (class-of input)))
+                                  ch (type-of ch)))))))
+        #+lse-input-debug (io-format task "~&BUFFER: ~S~%" buffer)
         (handler-case
             (destructuring-bind (donnee position) (parse-donnee-lse buffer)
               (if (< position (length buffer))
                   (lse-error "SYNTAXE INVALIDE ~S, ATTENDU UN NOMBRE" buffer)
                   donnee))
-          (error ()
+          (error (#+lse-input-debug err)
+            #+lse-input-debug (io-format task "~&ERROR: ~A~%" err)
             (lse-error "DONNEE INVALIDE ~S, ATTENDU UN NOMBRE" buffer)))))))
 
 

@@ -58,7 +58,7 @@
 (defpackage "COM.INFORMATIMAGO.LSE.IDENTIFIERS"
   (:nicknames "ID")
   (:use)
-  (:documentation "The pacakge where the identifiers for the LSE language are interned."))
+  (:documentation "The package where the identifiers for the LSE language are interned."))
 
 
 (DEFPACKAGE "COM.INFORMATIMAGO.LSE"
@@ -111,6 +111,7 @@
    "TERMINAL-CARRIAGE-RETURN" "TERMINAL-LINE-FEED" "TERMINAL-NEW-LINE"
    "TERMINAL-WRITE-STRING" "TERMINAL-FINISH-OUTPUT"
    "TERMINAL-YIELD" 
+   "TERMINAL-GET-NEXT-CHAR" 
    "TERMINAL-SKIP-CHARACTERS" "TERMINAL-READ-BUFFERED-CHARACTER"
    
    "STANDARD-TERMINAL"
@@ -145,7 +146,7 @@
    "VERSION" "LONG-VERSION" "*VERSION*" "*COPYRIGHT*" "*TITLE-BANNER*" "VERSIONS"
 
    "DAT"
-
+   "PRET"
 
    "*CURRENT-DIRECTORY*" "*CURRENT-SHELF*" "*LSE-ROOT*"
 

@@ -116,11 +116,11 @@
 RETURN: The variable; the frame it belongs to,
         or NIL if the variable cannot be found.
 "
-  (multiple-value-bind (var frame) (find-variable (vm-global-frame vm) ident)
-    (if var
-        (values var frame)
-        (and (vm-local-frame-stack vm)
-             (find-variable (first (vm-local-frame-stack vm)) ident)))))
+  (loop :for frame :in (vm-local-frame-stack vm)
+        :do (multiple-value-bind (var frame) (find-variable frame ident)
+              (when var
+                (return-from find-variable (values var frame))))
+        :finally (return (find-variable (vm-global-frame vm) ident))))
 
 
 (defmethod add-global-variable ((vm lse-vm) var)
@@ -1009,7 +1009,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun next-line (vm)
   (let ((stack (loop-stack vm)))
-    ;; #+debugging (io-format *task* "~%~S~%" stack)
+    ;; #+debugging (io-format *task* "~&~S~%" stack)
     (if (and stack
              (= (loop-end-line-number (first stack)) (vm-pc.line vm)))
         (if (test-end-of-loop vm (first stack))
@@ -1144,69 +1144,69 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                          nargs)))
         ;; &procident
         (let ((procedure (gethash procident (vm-procedures vm))))
-          (if procedure
-              (if (= nargs (length (procedure-parameters procedure)))
-                  (let ((frame (make-instance 'local-frame
-                                   :procedure-name (procedure-name procedure)
-                                   :call-type call-type
-                                   :return.line (vm-pc.line vm)
-                                   :return.offset (vm-pc.offset vm))))
-                    (loop
-                      :for n :from nargs :by -1
-                      :for (passage parameter) :in (procedure-parameters procedure)
-                      :for argument = (stack-pop (vm-stack vm))
-                      :do (ecase passage
-                            (:par-valeur
-                             (let ((argument (deref *vm* argument)))
-                               (add-variable frame
-                                             (make-instance 'lse-variable
-                                                 :name parameter
-                                                 :type (etypecase argument
-                                                         ((or integer nombre) 'nombre)
-                                                         (chaine              'chaine)
-                                                         ((or vecteur tableau)
-                                                          (lse-error "ARGUMENT NO. ~D DE TYPE TABLEAU PASSE PAR VALEUR AU PARAMETRE ~A DE LA PROCEDURE ~A"
-                                                                     n parameter procident)))
-                                                 :value argument))))
-                            (:par-reference
-                             (let ((reference (typecase argument
-                                                (identificateur
-                                                 (let ((var (find-variable vm argument)))
-                                                   (if var
-                                                       var
-                                                       (add-global-variable vm
-                                                                            (make-instance 'lse-variable
-                                                                                :name argument
-                                                                                :type 'nombre)))))
-                                                ((or lse-variable vecteur-ref tableau-ref)
-                                                 argument)
-                                                (otherwise
-                                                 (lse-error
-                                                  "L'ARGUMENT NO. ~D PASSE PAR REFERENCE AU PARAMETRE ~A DE LA PROCEDURE ~A DOIT ETRE UNE REFERENCE A UNE VARIABLE OU UN TABLEAU.")))))
-                               (add-variable frame
-                                             (make-instance 'reference-parameter
-                                                 :name parameter
-                                                 :reference reference))))))
-                    (setf (slot-value frame 'stack-pointer) (fill-pointer (vm-stack vm)))
-                    (push frame (vm-local-frame-stack vm))
-                    (loop
-                      :for local :in (procedure-local-variables procedure)
-                      :do (add-variable frame (make-instance 'lse-variable :name local)))
-                    (let ((line (gethash (procedure-line procedure) (vm-code-vectors vm))))
-                      (if line
-                          (progn
-                            (setf (vm-state     vm) :running
-                                  (vm-pc.line   vm) (procedure-line procedure)
-                                  (vm-pc.offset vm) (procedure-offset procedure)
-                                  (vm-code      vm) (code-vector line))
-                            (when (or (vm-pas-a-pas vm)
-                                      (eql (code-line line) (vm-trap-line vm)))
-                              ;; to get the PAUSE message
-                              (pause vm)))
-                          (lse-error "INTERNE: LE VECTEUR DE CODE POUR LA PROCEDURE ~A EST ABSENT." procident))))
-                  (lse-error "NOMBRE D'ARGUMENTS (~A) DIFFERENT DU NOMBRE DE PARAMETRES (~A) POUR LA PROCEDURE ~A"
-                             nargs (length (procedure-parameters procedure))procident))
-              (lse-error "IL N'Y A PAS DE PROCEDURE NOMMEE ~A" procident))))))
+          (unless procedure
+              (lse-error "IL N'Y A PAS DE PROCEDURE NOMMEE ~A" procident))
+          (if (/= nargs (length (procedure-parameters procedure)))
+              (lse-error "NOMBRE D'ARGUMENTS (~A) DIFFERENT DU NOMBRE DE PARAMETRES (~A) POUR LA PROCEDURE ~A"
+                         nargs (length (procedure-parameters procedure))procident)
+              (let ((frame (make-instance 'local-frame
+                                          :procedure-name (procedure-name procedure)
+                                          :call-type call-type
+                                          :return.line (vm-pc.line vm)
+                                          :return.offset (vm-pc.offset vm))))
+                (loop
+                  :for n :from nargs :by -1
+                  :for (passage parameter) :in (procedure-parameters procedure)
+                  :for argument = (stack-pop (vm-stack vm))
+                  :do (ecase passage
+                        (:par-valeur
+                         (let ((argument (deref *vm* argument)))
+                           (add-variable frame
+                                         (make-instance 'lse-variable
+                                                        :name parameter
+                                                        :type (etypecase argument
+                                                                ((or integer nombre) 'nombre)
+                                                                (chaine              'chaine)
+                                                                ((or vecteur tableau)
+                                                                 (lse-error "ARGUMENT NO. ~D DE TYPE TABLEAU PASSE PAR VALEUR AU PARAMETRE ~A DE LA PROCEDURE ~A"
+                                                                            n parameter procident)))
+                                                        :value argument))))
+                        (:par-reference
+                         (let ((reference (typecase argument
+                                            (identificateur
+                                             (let ((var (find-variable vm argument)))
+                                               (if var
+                                                   var
+                                                   (add-global-variable vm
+                                                                        (make-instance 'lse-variable
+                                                                                       :name argument
+                                                                                       :type 'nombre)))))
+                                            ((or lse-variable vecteur-ref tableau-ref)
+                                             argument)
+                                            (otherwise
+                                             (lse-error
+                                              "L'ARGUMENT NO. ~D PASSE PAR REFERENCE AU PARAMETRE ~A DE LA PROCEDURE ~A DOIT ETRE UNE REFERENCE A UNE VARIABLE OU UN TABLEAU."
+                                              n parameter procident)))))
+                           (add-variable frame
+                                         (make-instance 'reference-parameter
+                                                        :name parameter
+                                                        :reference reference))))))
+                (setf (slot-value frame 'stack-pointer) (fill-pointer (vm-stack vm)))
+                (push frame (vm-local-frame-stack vm))
+                (loop
+                  :for local :in (procedure-local-variables procedure)
+                  :do (add-variable frame (make-instance 'lse-variable :name local)))
+                (let ((line (gethash (procedure-line procedure) (vm-code-vectors vm))))
+                  (unless line
+                    (lse-error "INTERNE: LE VECTEUR DE CODE POUR LA PROCEDURE ~A EST ABSENT." procident))
+                  (setf (vm-state     vm) :running
+                        (vm-pc.line   vm) (procedure-line procedure)
+                        (vm-pc.offset vm) (procedure-offset procedure)
+                        (vm-code      vm) (code-vector line))
+                  (when (or (vm-pas-a-pas vm)
+                            (eql (code-line line) (vm-trap-line vm)))
+                    ;; to get the PAUSE message
+                    (pause vm)))))))))
 
 (defun callf (vm procident nargs) (call vm :function  procident nargs))
 (defun callp (vm procident nargs) (call vm :procedure procident nargs))
@@ -1424,10 +1424,9 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                        #+debugging
                        (when (and (listp *debug-vm*) (member :cop *debug-vm*))
                          (let ((*standard-output* *trace-output*))
-                           (format t "~3D " (vm-pc.line vm))
                            (disassemble-lse (vm-code vm)
                                             :start (vm-pc.offset vm)
-                                            :one-instruction t)
+                                            :one-instruction t :line (vm-pc.line vm))
                            (force-output)))
                        (let ((cop (pfetch)))
                          (case cop
@@ -1525,13 +1524,10 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                           (handler-bind ((error #'invoke-debugger)) (run))
                           (run)))
 
-      ;; TODO: Why do we need error and interruption handling here if
-      ;;       it's provided in command.lisp?
       (error (err)
         (vm-pause vm) ; no message
-        ;; (io-format *task* "~%ERREUR: ~A~%" err)
-        ;; (pret *task*)
         (error err))
+      #+debugging
       (user-interrupt (condition)
         #-debugging (declare (ignore condition))
         #+debugging (progn (format *error-output* "~%Condition: ~A~%" condition)

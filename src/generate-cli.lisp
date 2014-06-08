@@ -173,8 +173,12 @@
 #+ccl (progn (princ "ccl:save-application will exit.") (terpri) (finish-output))
 #+ccl (ccl:save-application
        (executable-filename *program-name*)
-       :toplevel-function (lambda () (ccl:quit (com.informatimago.lse.cli:main)
-					       :error-handler (lambda (err) (#__exit -1))))
+       :toplevel-function (lambda () 
+			    (#__exit (com.informatimago.lse.cli:main))
+			    (ccl:quit (com.informatimago.lse.cli:main)
+				      :error-handler (lambda (err)
+						       (declare (ignore err))
+						       (#__exit -1))))
        :init-file nil
        :error-handler :quit-quietly
        ;; :application-class ccl:lisp-development-system

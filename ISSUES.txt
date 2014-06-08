@@ -1,28 +1,65 @@
 -*- mode:org; coding:utf-8 -*-
+* TODO: 00008 inetd server displays wrong bindings                      :cli:
+
+cf. inetd/lse.sh 
+
+The binding displayed show CONTROLE-S, but this isn't taken into
+account and we have to type RETURN instead.
+
+Both should be accepted, and [ENTREE] (RETURN) should be displayed as
+binding, since we use the telnet line mode.
+
+#+BEGIN_SRC(shell)
+[pjb@kuiper :0.0 src]$ telnet nasium-lse.ogamita.com 8115
+Trying 88.198.62.69...
+Connected to voyager.informatimago.com.
+Escape character is '^]'.
+
+[CONTROLE-S]    POUR ENTRER LES DONNEES.
+[EFFACEMENT]    POUR EFFACER LE CARACTERE PRECEDENT.
+[ECHAPEMENT]    POUR INTERROMPRE.
+[CONTROLE-A]    POUR ENVOYER LE SIGNAL D'ATTENTION (FONCTION ATT()).
+[ENTREE]        POUR ENTRER LES DONNEES, MAIS AJOUTE LE CODE RETOUR AUX CHAINES.
+
+------------------------------------------------------------------------
+\     OOO                OOOOOOOOOO       OOOOOOOOOO                    \
+ \    OOO               OOOOOOOOOOOO      OOOOOOOOOO      OOOOOOOOOOO    \
+  \   OOO               OOOO     OOO      OOO                             \
+   \  OOO                OOOO             OOOOOO               O OO        \
+    > OOO                  OOOO           OOOOOO          OOO O    O        >
+   /......................................................................./
+  /   OOO              OOO     OOOO       OOO             OOOO OO OO      /
+ /    OOOOOOOOOO  OOO  OOOOOOOOOOOO  OOO  OOOOOOOOOO  OOO OOOO  OO OO    /
+/     OOOOOOOOOO  OOO   OOOOOOOOOO   OOO  OOOOOOOOOO  OOO  O OOOO OO    /
+------------------------------------------------------------------------
+
+
+NASIUM L.S.E.
+LANGAGE SYMBOLIQUE D'ENSEIGNEMENT
+VERSION 1.0.0-0.999956-CCL-LINUX
+COPYRIGHT 1984 - 2014 PASCAL BOURGUIGNON
+
+DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLV3.
+
+CE PROGRAMME EST LIVRE AVEC ABSOLUMENT AUCUNE GARANTIE; POUR PLUS DE
+DETAILS UTILISEZ LA COMMANDE DO GARANTIE.  CE LOGICIEL EST LIBRE, ET
+VOUS AVEZ LE DROIT DE LE REDISTRIBUER SOUS CERTAINES CONDITIONS;
+TAPER [CONTROLE-S] POUR CONTINUER:
+
+UTILISEZ LA COMMANDE DO LICENSE POUR PLUS DE DETAILS.
+
+TAPEZ AI POUR AVOIR DE L'AIDE.
+
+BONJOUR     09:48:50
+
+    
+PRET
+#+END_SRC
+
 * TODO: 00006 The PRET message is eaten (displays only RET) when ESC    :cli:
 This is probably due to some echoing of ESC.
 Occurs on xterm on MacOSX with emulse
 Doesn't occur in MacOSX Terminal.app or Cathode.app with terminal.env
-
-* TODO: 00005 telnet inetd lse.sh cli reads C-s instead of RET          :cli:
-
-cf lse@voyager:~/bin/lse.sh :
-
-#+BEGIN_SRC(shell)
-#!/bin/sh
-export TERM=dumb
-export LSE_TELNET=T
-export LSE_ROOT=/home/lse/files/
-cd $LSE_ROOT
-exec /home/lse/bin/lse \
-    --mode-moderne \
-    --fleches-ascii \
-    --entree-comme-xoff \
-    --afficher-sans-accent \
-    --afficher-en-majuscules \
-    --accepter-minuscules \
-    --montrer-touches 
-#+END_SRC
 
 * TODO: 00004 restore the terminal on restarts                          :cli:
 The *debugger-hook* resets the terminal for the debugger.
@@ -115,6 +152,29 @@ anything, and keeping the ports open indefinitely.  For example:
         tcp        0      0 88.198.62.69:8115       109.190.38.230:49716    ESTABLISHED 12126/lse
         tcp        0      0 88.198.62.69:8115       92.163.81.111:62166     ESTABLISHED 25565/lse
 
+#+END_SRC
+
+* DONE TODO: 00005 telnet inetd lse.sh cli reads C-s instead of RET     :cli:
+  CLOSED: [2014-06-08 Sun 09:48]
+  - State "DONE"       from ""           [2014-06-08 Sun 09:48] \\
+    Not anymore.
+
+cf lse@voyager:~/bin/lse.sh :
+
+#+BEGIN_SRC(shell)
+#!/bin/sh
+export TERM=dumb
+export LSE_TELNET=T
+export LSE_ROOT=/home/lse/files/
+cd $LSE_ROOT
+exec /home/lse/bin/lse \
+    --mode-moderne \
+    --fleches-ascii \
+    --entree-comme-xoff \
+    --afficher-sans-accent \
+    --afficher-en-majuscules \
+    --accepter-minuscules \
+    --montrer-touches 
 #+END_SRC
 
 * DONE TODO: 00001 segfault on exit                                     :cli:

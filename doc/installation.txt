@@ -108,7 +108,6 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
        Next month in shell: ::
 
            rm -rf ~/quicklisp/local-projects/com-informatimago
-           rm -rf ~/quicklisp/local-projects/com-informatimago-rdp
 
 
     6- Compile the executables.  

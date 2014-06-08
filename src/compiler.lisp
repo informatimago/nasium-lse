@@ -1727,7 +1727,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 
 
 
-(defun disassemble-lse (byte-code &key (start 0) (end nil) (one-instruction nil))
+(defun disassemble-lse (byte-code &key (start 0) (end nil) (one-instruction nil) (line nil))
   (let ((end (or end (length byte-code))))
     (flet ((nbop (cop) (cdr (gethash cop *cop-info* '(0 . 0))))
            (disa (cop) (car (gethash cop *cop-info* (cons cop 0)))))
@@ -1748,9 +1748,9 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
         (loop
           :initially (format t "~&")
           :with pc = 0
-          :for line :in listing
+          :for listing-line :in listing
           :do (if (and (<= start pc) (< pc end))
-                  (progn (format t "~3D: " pc)
+                  (progn (format t "~@[~3D ~]~3D: " line pc)
                          (if (member pc labels)
                              (format t "@~6:A " pc)
                              (format t "        "))
@@ -1758,7 +1758,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                                  (with-output-to-string (out)
                                    (princ "(" out)
                                    (let ((first t))
-                                     (dolist (item line)
+                                     (dolist (item listing-line)
                                        (if first
                                            (setf first nil)
                                            (princ " " out))
@@ -1766,12 +1766,12 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                                            (princ item out)
                                            (prin1 item out))))
                                    (princ ")" out)))
-                         (if (member (first line) bc::*branches*)
-                             (format t " ; @~A~%"  (+ pc (length line) (second line)))
+                         (if (member (first listing-line) bc::*branches*)
+                             (format t " ; @~A~%"  (+ pc (length listing-line) (second listing-line)))
                              (format t "~%"))
-                         (incf pc (length line))
+                         (incf pc (length listing-line))
                          (when one-instruction (loop-finish)))
-                  (incf pc (length line)))))))
+                  (incf pc (length listing-line)))))))
   (values))
 
 

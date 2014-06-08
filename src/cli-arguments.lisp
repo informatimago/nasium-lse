@@ -453,20 +453,20 @@ Variable d'environnement: LSE_MODERN_MODE=NIL
       (opt-format *query-io* "~? (O/N) ? " control arguments))
     (finish-output *query-io*)
     (let* ((input (string-left-trim " " (read-line *query-io*)))
-           (rep   (subseq input 0 (min 1 (length input)))))
+           (resp  (subseq input 0 (min 1 (length input)))))
       (cond
-        ((string-equal rep "O") (return t))
-        ((string-equal rep "N") (return nil))
+        ((string-equal resp "O") (return t))
+        ((string-equal resp "N") (return nil))
         (t (opt-format *query-io* "REPONSE INVALIDE: ~S; TAPEZ 'O' OU 'N'.~%" rep))))))
 
 
 (defun show-key-bindings (stream terminal)
   (opt-format stream "
-~@[~16A pour entrer les données.~%~]~
-~@[~16A pour effacer le caractère précédent.~%~]~
-~@[~16A pour interrompre.~%~]~
-~@[~16A pour envoyer le signal d'attention (fonction ATT()).~%~]~
-~@[~16A pour entrer les données, mais ajoute le code RETOUR aux chaînes.~%~]~
+~@[~15A pour entrer les données.~%~]~
+~@[~15A pour effacer le caractère précédent.~%~]~
+~@[~15A pour interrompre.~%~]~
+~@[~15A pour envoyer le signal d'attention (fonction ATT()).~%~]~
+~@[~15A pour entrer les données, mais ajoute le code RETOUR aux chaînes.~%~]~
 "
           (terminal-keysym-label terminal :xoff)
           (terminal-keysym-label terminal :delete)

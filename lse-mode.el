@@ -396,7 +396,8 @@
 
 
 
-(defvar *lse-test-commit* "A486BF90")
+(defvar *lse-test-commit*)
+(setq *lse-test-commit* "D4005990")
 (defun lse-test-result (success)
   (interactive "p")
   (lse-goto-line 255)

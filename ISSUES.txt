@@ -1,5 +1,42 @@
 -*- mode:org; coding:utf-8 -*-
-* TODO: 00012 AP 1: Parsing errors in commands fails catastrophically.  :cli:
+* TODO 00015 PG28 TANT QUE SCH()#'**' fails.                            :cli:
+
+#+BEGIN_SRC(lse)
+EXECUTER A PARTIR DE 1
+CLE : 3
+DONNER LE TEXTE;TERMINER PAR ***
+*ello\\\\\HELLO WORLD!***
+PRET
+TEXTE
+PRET
+?TEXTE
+HELLO WORLD!
+?I
+19791
+II_0
+?I
+19791
+II_\\0\_0
+?I
+0
+S\?SCH(TEXTE,I,2)
+ERREUR : LE 2E ARGUMENT POUR SCH, 0.0, N'EST PAS VALIDE: L'ARGUMENT DEBUT DOIT
+ETRE UN NOMBRE ENTIER SUPERIEUR OU EGAL A 1.
+PRET
+?SCH(TEXTE,I,1)
+ERREUR : LE 2E ARGUMENT POUR SCH, 0.0, N'EST PAS VALIDE: L'ARGUMENT DEBUT DOIT
+ETRE UN NOMBRE ENTIER SUPERIEUR OU EGAL A 1.
+PRET
+I_1
+?SCH(TEXTE,I,1)
+H
+CONTINUER
+ERREUR : FILL POINTER OF #() IS 0 .
+PRET 
+
+#+END_SRC
+* TODO 00014 PG27 TANT QUE N#99 doesn't fail when N is read as 99.      :cli:
+* TODO 00012 AP 1: Parsing errors in commands fails catastrophically.   :cli:
 
 Parsing errors in command argument fails catastrophically.
 
@@ -42,7 +79,7 @@ Calling COM.INFORMATIMAGO.LSE:TERMINAL-FINALIZE on a COM.INFORMATIMAGO.LSE.UNIX-
 [pjb@larissa :0.0 src]$ 
 #+END_SRC
 
-* TODO: 00008 inetd server displays wrong bindings                      :cli:
+* TODO 00008 inetd server displays wrong bindings                       :cli:
 
 cf. inetd/lse.sh 
 
@@ -99,12 +136,12 @@ BONJOUR     09:48:50
 PRET
 #+END_SRC
 
-* TODO: 00006 The PRET message is eaten (displays only RET) when ESC    :cli:
+* TODO 00006 The PRET message is eaten (displays only RET) when ESC     :cli:
 This is probably due to some echoing of ESC.
 Occurs on xterm on MacOSX with emulse
 Doesn't occur in MacOSX Terminal.app or Cathode.app with terminal.env
 
-* TODO: 00009 Message PRET EN LIGNE 004 when interrupting a program.    :cli:
+* TODO 00009 Message PRET EN LIGNE 004 when interrupting a program.     :cli:
 
 The message when interrupting a program (at least on T1600)
 should indicate the line number:
@@ -116,12 +153,12 @@ instead of just:
 PRET
 #+END_SRC
 
-* TODO: 00011 A single beep per LIRE statement, instead of variable.    :cli:
-* TODO: 00004 restore the terminal on restarts                          :cli:
+* TODO 00011 A single beep per LIRE statement, instead of variable.     :cli:
+* TODO 00004 restore the terminal on restarts                           :cli:
 The *debugger-hook* resets the terminal for the debugger.
 When we use a restart to continue into LSE, we should reconfigure the LSE terminal.
 
-* TODO: 00002 add a timeout and disconnect if no input occurs        :server:
+* TODO 00002 add a timeout and disconnect if no input occurs         :server:
 
 Well for the cli too when we use it thru inetd…
 
@@ -210,7 +247,7 @@ anything, and keeping the ports open indefinitely.  For example:
 
 #+END_SRC
 
-* DONE TODO: 00005 telnet inetd lse.sh cli reads C-s instead of RET     :cli:
+* DONE 00005 telnet inetd lse.sh cli reads C-s instead of RET     :cli:
   CLOSED: [2014-06-08 Sun 09:48]
   - State "DONE"       from ""           [2014-06-08 Sun 09:48] \\
     Not anymore.
@@ -233,7 +270,7 @@ exec /home/lse/bin/lse \
     --montrer-touches 
 #+END_SRC
 
-* DONE TODO: 00001 segfault on exit                                     :cli:
+* DONE 00001 segfault on exit                                     :cli:
   CLOSED: [2014-06-08 Sun 09:37]
   - State "DONE"       from ""           [2014-06-08 Sun 09:37] \\
     This occured on debian 6.0.9; corrected by adding a LSE_USE_EXIT
@@ -256,7 +293,7 @@ exec /home/lse/bin/lse \
         ;;;
 #+END_SRC
  
-* DONE TODO: 00007 Something's fishy in CEFAK                           :cli:
+* DONE 00007 Something's fishy in CEFAK                           :cli:
   CLOSED: [2014-06-08 Sun 09:36]
   - State "DONE"       from ""           [2014-06-08 Sun 09:36] \\
     Corrected the bug: find-variable searched globals before locals.
@@ -264,7 +301,7 @@ exec /home/lse/bin/lse \
 The input seems to be read correctly, but the variable C, F and K
 don't seem to be updated, so the first data is always output.
 
-* DONE TODO: 00003 FAIRE n POUR I_1 JUSQUA 100 doesn't work.            :cli:
+* DONE 00003 FAIRE n POUR I_1 JUSQUA 100 doesn't work.            :cli:
   CLOSED: [2014-05-13 Tue 04:11]
   - State "DONE"       from ""           [2014-05-13 Tue 04:11] \\
     Corrected bug in GOTO that would pop loops at the wrong time.
@@ -284,7 +321,7 @@ EXECUTER A PARTIR DE 1
 1 .                 
 TERMINE EN LIGNE 020
 #+END_SRC
-* DONE TODO: 00010 PG08: ALLER EN I fails: Variables are not dereferenced enough. :cli:
+* DONE 00010 PG08: ALLER EN I fails: Variables are not dereferenced enough. :cli:
   CLOSED: [2014-06-09 Mon 17:24]
   - State "DONE"       from ""           [2014-06-09 Mon 17:24] \\
     Corrected by calling deref on all VM instruction parameters.
@@ -295,7 +332,7 @@ TAPEZ LE NUMERO DE L'OPERATION A EFFECTUER : 10
 The value #<lse-variable i = 10.0 of type nombre #x302003B1E4AD> is not of the expected type number.
 #+END_SRC
 
-* DONE TODO: 00013 PG24,25,26: fail: Variables are not dereferenced enough. :cli:
+* DONE 00013 PG24,25,26: fail: Variables are not dereferenced enough. :cli:
   CLOSED: [2014-06-09 Mon 17:24]
   - State "DONE"       from ""           [2014-06-09 Mon 17:24] \\
     Corrected by calling deref on all VM instruction parameters.

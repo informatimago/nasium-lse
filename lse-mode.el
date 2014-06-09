@@ -62,8 +62,7 @@
 (defvar lse-mode-syntax-table nil
   "Syntax table in use in L.S.E. buffers.")
 
-(if lse-mode-syntax-table
-    ()
+(unless lse-mode-syntax-table
   (let ((table (make-syntax-table)))
     (modify-syntax-entry ?\\ "\\" table)
     (modify-syntax-entry ?\( "()" table)
@@ -81,19 +80,21 @@
 
 (defvar lse-mode-map nil
   "Keymap used in L.S.E. mode.")
+;; (setf  lse-mode-map nil)
 
-(if lse-mode-map
-    ()
-    (let ((map (make-sparse-keymap)))
-      (do ((lcc ?a (1+ lcc))
-           (ucc ?A (1+ ucc)))
-          ((< ?z lcc))
-        (define-key map (make-string 1 lcc) (make-string 1 ucc)))
-      ;; (define-key map "_"  'lse-assign)
-      (define-key map "\n"  'lse-newline)
-      (define-key map "\r"  'lse-newline)
-      ;; (define-key map "\C-c\C-z" 'suspend-emacs)
-      (setq lse-mode-map map)) )
+(unless lse-mode-map
+  (let ((map (make-sparse-keymap)))
+    (do ((lcc ?a (1+ lcc))
+         (ucc ?A (1+ ucc)))
+        ((< ?z lcc))
+      (define-key map (make-string 1 lcc) (make-string 1 ucc)))
+    ;; (define-key map "_"  'lse-assign)
+    (define-key map "\n"  'lse-newline)
+    (define-key map "\r"  'lse-newline)
+    (define-key map "\C-c\C-g" 'lse-goto-line)
+    (define-key map "\C-c\C-r" 'lse-test-result)
+    ;; (define-key map "\C-c\C-z" 'suspend-emacs)
+    (setq lse-mode-map map)))
 
 ;;(define-key  lse-mode-map "_"  'self-insert-command)
 
@@ -375,9 +376,38 @@
 ;;   (interactive)
 ;;   (lse-put-image lse-assign-image (point) "_"))
 
+(defun lse-line-numbers ()
+  "Return an a-list mapping line numbers to point (sorted by point) in the current buffer."
+  (save-excursion
+   (goto-char (point-min))
+   (let ((linos '()))
+    (while (re-search-forward "^ *\\([0-9]+\\)[* ]" nil t)
+      (push (cons (parse-integer (match-string 1)) (match-beginning 0)) linos))
+     (nreverse linos))))
+
+(defun lse-goto-line (lino)
+  (interactive "nNuméro de ligne: ")
+  (let* ((lines (sort (lse-line-numbers)
+                     (lambda (a b) (< (car a) (car b)))))
+        (line (find lino lines :key (function car) :test-not (function >))))
+    (if line
+        (goto-char (cdr line))
+        (goto-char (point-max)))))
+
+
+
+(defvar *lse-test-commit* "A486BF90")
+(defun lse-test-result (success)
+  (interactive "p")
+  (lse-goto-line 255)
+  (when (looking-at " *255[* ]")
+    (kill-line))
+  (insert (format "255*[TEST NASIUM-LSE %s %s]\n"
+                  (if (plusp success) "REUSSI" "RATE")
+                  *lse-test-commit*)))
+
 
 
 (provide 'lse-mode)
-
-
 ;;;; THE END ;;;;
+

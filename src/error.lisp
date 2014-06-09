@@ -48,6 +48,9 @@
    (code :type symbol :initarg :code)
    (backtrace :type list :initform nil :initarg :backtrace :reader lse-error-backtrace)))
 
+(defmethod lse-error-backtrace ((condition t))
+  nil)
+
 (defun lse-error (format-control &rest format-arguments)
   (error 'lse-error
          :backtrace (or #+ccl (ccl::backtrace-as-list))

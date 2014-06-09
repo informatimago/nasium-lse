@@ -1,0 +1,12 @@
+#!/bin/bash
+SERVER_DIR=/home/pjb/src/pjb/nasium-lse/siab
+exec shellinaboxd \
+     --background=/var/run/lse.pid \
+     --port=8115 \
+     --disable-ssl \
+     --css="${SERVER_DIR}/style.css" \
+     --user=lse \
+     --group=lse \
+     --service="/:lse:lse:/home/lse/files:${SERVER_DIR}/lse.sh ${peer}"
+# ---
+     --verbose \

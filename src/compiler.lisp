@@ -609,7 +609,9 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;     ;;   ⚠ Therefore we can generate the code only globally, just before we
 ;;     ;;     run the program.  Chaining or loading parts of the program while
 ;;     ;;     running means we need to recompile it.
-;;        
+;;
+;;     ;;   OR we can generate vref all the time, and resolve the reference when it's used.
+;;
 ;;        (:decl-procedure
 ;;         ;; Les procedures ne sont pas executable, !procedure generates an error.
 ;;         (destructuring-bind (decl name params locals) stat
@@ -1825,11 +1827,11 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;; (test/parse-string "18*")
 ;; (let ((*print-escape* nil) (*print-pretty* t) (*print-right-margin* 80)) (write (test/parse-file "tpars.lse")))
 
-;; (compile-lse-line "95 AFFICHER['Après la pause…',/]")
-;; (compile-lse-line "20 afficher [10/,20x,'Hello',/,20x,5'*',2/]")
+;; (compile-lse-string "95 AFFICHER['Après la pause…',/]")
+;; (compile-lse-string "20 afficher [10/,20x,'Hello',/,20x,5'*',2/]")
 
 
-;; (test/compile-lse-line "4 executer 'tfic'")
+;; (test/compile-lse-string "4 executer 'tfic'")
 ;; (4 #(50 "tfic" 50 1 35 26) "4 EXECUTER 'tfic'")
 
 ;; (test/parse-string "6 TABLEAU V[3],M[2,2]")

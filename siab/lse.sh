@@ -1,11 +1,15 @@
 #!/bin/sh
-export TERM=dumb
-export LSE_TELNET=T
+export LC_ALL=en_US.UTF-8
+export TERM=vt100
+export LSE_TELNET=NIL
+export LSE_PAGER=NIL
 export LSE_ROOT=/home/lse/files/
+export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:/lib
 cd $LSE_ROOT
 exec /home/lse/bin/lse \
-    --mode-moderne \
-    --fleches-ascii \
+    --mode-ancien \
+    --sans-bip \
+    --fleches-unicode \
     --entree-comme-xoff \
     --afficher-sans-accent \
     --afficher-en-majuscules \

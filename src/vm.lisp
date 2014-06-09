@@ -345,11 +345,42 @@ RETURN: vm
           (slot-value vm 'paused.code)      nil))
   vm)
 
+
+
+(defun deref (vm object)
+  (typecase object
+    (identificateur
+     (let ((var (find-variable vm object)))
+       (if var
+           (let ((val (variable-value var)))
+             (if (indefinip val)
+                 (lse-error "LA VARIABLE ~A N'A PAS ETE INITIALISEE" var)
+                 val))
+           (lse-error "LA VARIABLE ~A N'EXISTE PAS" object))))
+    ((or lse-variable vecteur-ref tableau-ref)
+     (let ((val (variable-value object)))
+       (if (indefinip val)
+           (typecase object
+             (lse-variable (lse-error "LA VARIABLE ~A N'A PAS ETE INITIALISEE"
+                                      object))
+             (vecteur-ref  (lse-error "~A[~A] N'A PAS ETE INITIALISEE"
+                                      (variable-name object)
+                                      (reference-index object)))
+             (tableau-ref  (lse-error "~A[~A,~A] N'A PAS ETE INITIALISEE"
+                                      (variable-name object)
+                                      (reference-index1 object)
+                                      (reference-index2 object))))
+           val)))
+    (otherwise
+     object)))
+
+
 (defmethod vm-line-exist-p ((vm lse-vm) lino)
   (gethash lino (vm-code-vectors vm)))
 
 (defmethod vm-goto ((vm lse-vm) lino)
-  (let ((line (gethash lino (vm-code-vectors vm))))
+  (let* ((lino (truncate (deref vm lino)))
+         (line (gethash lino (vm-code-vectors vm))))
     (if line
         (let ((frame (or (first (vm-local-frame-stack vm))
                          (vm-global-frame vm))))
@@ -403,7 +434,7 @@ RETURN: vm
 
 (defun afficher-nl      (vm rep)
   (declare (ignore vm))
-  (io-line-feed *task* rep))
+  (io-line-feed *task* (deref vm rep)))
 
 (defun afficher-cr      (vm rep)
   (declare (ignore vm rep))
@@ -411,20 +442,20 @@ RETURN: vm
 
 (defun afficher-space   (vm rep)
   (declare (ignore vm))
-  (io-format *task* "~VA" rep ""))
+  (io-format *task* "~VA" (deref vm rep) ""))
 
 (defun afficher-newline (vm rep)
   (declare (ignore vm))
-  (io-new-line *task* rep))
+  (io-new-line *task* (deref vm rep)))
 
 (defun afficher-chaine (vm rep val)
   (declare (ignore vm))
-  (check-type rep (or (integer 1) nombre))
+  (check-type rep (or (integer 1) nombre identifier named-slot))
   (check-type val chaine)
   (io-format *task* "~A" 
              (with-output-to-string (out)
                (loop
-                 :repeat (round rep)
+                 :repeat (round (deref vm rep))
                  :do (princ val out)))))
 
 
@@ -506,8 +537,8 @@ RETURN: vm
 
 (defun declare-tableau1 (vm dim ident)
   (check-type ident identificateur)
-  (check-type dim (or integer nombre))
-  (let ((dim (round dim))
+  (check-type dim (or integer nombre identificateur named-slot))
+  (let ((dim (round (deref vm dim)))
         (var (find-variable vm ident)))
     (flet ((init-value (dim)
              (make-array dim :element-type 'nombre :initial-element 0.0f0)))
@@ -525,10 +556,10 @@ RETURN: vm
 
 (defun declare-tableau2 (vm dim1 dim2 ident)
   (check-type ident identificateur)
-  (check-type dim1 (or integer nombre))
-  (check-type dim2 (or integer nombre))
-  (let ((dim1 (round dim1))
-        (dim2 (round dim2))
+  (check-type dim1 (or integer nombre identificateur named-slot))
+  (check-type dim2 (or integer nombre identificateur named-slot))
+  (let ((dim1 (round (deref vm dim1)))
+        (dim2 (round (deref vm dim2)))
         (var (find-variable vm ident)))
     (flet ((init-value (dim1 dim2)
              (make-array (list dim1 dim2) :element-type 'nombre :initial-element 0.0f0)))
@@ -591,32 +622,6 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 
 
-(defun deref (vm object)
-  (typecase object
-    (identificateur
-     (let ((var (find-variable vm object)))
-       (if var
-           (let ((val (variable-value var)))
-             (if (indefinip val)
-                 (lse-error "LA VARIABLE ~A N'A PAS ETE INITIALISEE" var)
-                 val))
-           (lse-error "LA VARIABLE ~A N'EXISTE PAS" object))))
-    ((or lse-variable vecteur-ref tableau-ref)
-     (let ((val (variable-value object)))
-       (if (indefinip val)
-           (typecase object
-             (lse-variable (lse-error "LA VARIABLE ~A N'A PAS ETE INITIALISEE"
-                                      object))
-             (vecteur-ref  (lse-error "~A[~A] N'A PAS ETE INITIALISEE"
-                                      (variable-name object)
-                                      (reference-index object)))
-             (tableau-ref  (lse-error "~A[~A,~A] N'A PAS ETE INITIALISEE"
-                                      (variable-name object)
-                                      (reference-index1 object)
-                                      (reference-index2 object))))
-           val)))
-    (otherwise
-     object)))
 
 
 
@@ -650,11 +655,11 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun POP&ASTORE1 (vm val index ident)
   (check-type ident identificateur)
-  (check-type index (or integer nombre))
   (let ((val (deref vm val)))
    (check-type val (or integer nombre))
-   (let ((index (round index))
+   (let ((index (round (deref vm index)))
          (var (find-variable vm ident)))
+     (check-type index (or integer nombre))
      (if var
          (if (and (consp (variable-type var))
                   (eql (first (variable-type var)) 'vecteur))
@@ -665,19 +670,19 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun POP&ASTORE2 (vm val index1 index2 ident)
   (check-type ident identificateur)
-  (check-type index1 (or integer nombre))
-  (check-type index2 (or integer nombre))
   (let ((val (deref vm val)))
    (check-type val (or integer nombre))
-   (let ((index1 (round index1))
-         (index2 (round index2))
-         (var (find-variable vm ident)))
-     (if var
-         (if (and (consp (variable-type var))
-                  (eql (first (variable-type var)) 'tableau))
-             (setf (aref (variable-value var) (1- index1) (1- index2)) (un-nombre val))
-             (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
-         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident)))))
+    (let ((index1 (round (deref vm index1)))
+          (index2 (round (deref vm index2)))
+          (var (find-variable vm ident)))
+      (check-type index1 (or integer nombre))
+      (check-type index2 (or integer nombre))
+      (if var
+          (if (and (consp (variable-type var))
+                   (eql (first (variable-type var)) 'tableau))
+              (setf (aref (variable-value var) (1- index1) (1- index2)) (un-nombre val))
+              (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
+          (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident)))))
 
 
 
@@ -712,9 +717,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun lire&astore1 (vm index ident)
   (check-type ident identificateur)
-  (check-type index (or integer nombre))
-  (let ((index (round index))
+  (let ((index (round (deref vm index)))
         (var (find-variable vm ident)))
+    (check-type index (or integer nombre))
     (if var
         (if (and (consp (variable-type var))
                  (eql (first (variable-type var)) 'vecteur))
@@ -728,11 +733,11 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun lire&astore2 (vm index1 index2 ident)
   (check-type ident identificateur)
-  (check-type index1 (or integer nombre))
-  (check-type index2 (or integer nombre))
-  (let ((index1 (round index1))
-        (index2 (round index2))
+  (let ((index1 (round (deref vm index1)))
+        (index2 (round (deref vm index2)))
         (var (find-variable vm ident)))
+    (check-type index1 (or integer nombre))
+    (check-type index2 (or integer nombre))
     (if var
         (if (and (consp (variable-type var))
                  (eql (first (variable-type var)) 'tableau))
@@ -748,9 +753,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun AREF1&PUSH-VAL (vm index ident)
   (check-type ident identificateur)
-  (check-type index (or integer nombre))
-  (let ((index (round index))
+  (let ((index (round (deref vm index)))
         (var (find-variable vm ident)))
+    (check-type index (or integer nombre))
     (if var
         (if (and (consp (variable-type var))
                  (eql (first (variable-type var)) 'vecteur))
@@ -763,11 +768,11 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun AREF2&PUSH-VAL (vm index1 index2 ident)
   (check-type ident identificateur)
-  (check-type index1 (or integer nombre))
-  (check-type index2 (or integer nombre))
-  (let ((index1 (round index1))
-        (index2 (round index2))
+  (let ((index1 (round (deref vm index1)))
+        (index2 (round (deref vm index2)))
         (var (find-variable vm ident)))
+    (check-type index1 (or integer nombre))
+    (check-type index2 (or integer nombre))
     (if var
         (if (and (consp (variable-type var))
                  (eql (first (variable-type var)) 'tableau))
@@ -781,9 +786,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun AREF1&PUSH-REF (vm index ident)
   (check-type ident identificateur)
-  (check-type index (or integer nombre))
-  (let ((index (round index))
+  (let ((index (round (deref vm index)))
         (var (find-variable vm ident)))
+    (check-type index (or integer nombre))
     (if var
         (if (and (consp (variable-type var))
                  (eql (first (variable-type var)) 'vecteur))
@@ -800,22 +805,22 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 (defun AREF2&PUSH-REF (vm index1 index2 ident)
   (check-type ident identificateur)
-  (check-type index1 (or integer nombre))
-  (check-type index2 (or integer nombre))
-  (let ((index1 (round index1))
-        (index2 (round index2))
+  (let ((index1 (round (deref vm index1)))
+        (index2 (round (deref vm index2)))
         (var (find-variable vm ident)))
+    (check-type index1 (or integer nombre))
+    (check-type index2 (or integer nombre))
     (if var
         (if (and (consp (variable-type var))
                  (eql (first (variable-type var)) 'tableau))
             (if (and (<= 1 index1 (array-dimension (variable-value var) 0))
                      (<= 1 index2 (array-dimension (variable-value var) 1)))
                 (stack-push (make-instance 'tableau-ref
-                       :name ident
-                       :tableau (variable-value var)
-                       :index1 index1
-                       :index2 index2)
-                   (vm-stack vm))
+                                           :name ident
+                                           :tableau (variable-value var)
+                                           :index1 index1
+                                           :index2 index2)
+                            (vm-stack vm))
                 (lse-error "DEPASSEMENT DES BORNES ~A[~A,~A] EST INVALIDE" ident index1 index2))
             (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
@@ -903,8 +908,11 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 
 (defun faire (vm loop-class lino init pas limit ident)
-  (let ((line (gethash lino (vm-code-vectors vm)))
-        (var (find-variable vm ident)))
+  (let ((line  (gethash lino (vm-code-vectors vm)))
+        (var   (find-variable vm ident))
+        (init  (deref vm init))
+        (pas   (deref vm pas))
+        (limit (deref vm limit)))
     (if line
         (progn
           (let ((init (if limit
@@ -976,7 +984,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
   (let ((stack (loop-stack vm)))
     (if stack
         (with-slots (end-line-number) (first stack)
-          (unless (eql (le-booleen test) vrai)
+          (unless (eql (le-booleen (deref vm test)) vrai)
             ;; end of loop, we exit it.
             (pop (loop-stack vm))
             (vm-goto vm (following-line vm end-line-number))))
@@ -1043,8 +1051,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 
 (defun goto (vm lino)
-  (let ((line (gethash lino (vm-code-vectors vm)))
-        (stack (loop-stack vm)))
+  (let* ((lino (truncate (deref vm lino)))
+         (line (gethash lino (vm-code-vectors vm)))
+         (stack (loop-stack vm)))
     (cond
       ((null line)
        (error-bad-line lino))
@@ -1069,7 +1078,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 Cette procédure permet de sortir d'un ou de plusieurs niveaux de boucles.
 
-Si N=0 alors cet procédure ne fait rien.
+Si N=0 alors cette procédure ne fait rien.
 
 Si N=1 alors on sort de la boucle courante.
 
@@ -1238,7 +1247,8 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
        ;; When call-type is :function we have an exceptionnal return,
        ;; but it's the same processing.  The stack unwinding is done
        ;; in vm-goto, from the saved frame-stack-pointer.
-       (let ((line (gethash lino (vm-code-vectors vm))))
+       (let ((lino (truncate (deref vm lino)))
+             (line (gethash lino (vm-code-vectors vm))))
          (pop (vm-local-frame-stack vm))
          (if line
              (setf (vm-pc.line   vm) lino

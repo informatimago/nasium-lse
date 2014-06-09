@@ -498,10 +498,10 @@ Variable d'environnement: LSE_MODERN_MODE=NIL
                              *UNICODE-UPWARDS-ARROW*)
                    :unicode)
                   (t
-                   nil))
+                   :ascii))
                 (if (o-ou-n-p "Est ce que le terminal utilise une police DecTech")
                     :dectech
-                    nil)))
+                    :ascii)))
       (setf (options-output-no-bell options)
             (not (o-ou-n-p "Est ce que le terminal émet un bip quand il reçoit un code ASCII BEL?")))
       (when (and (typep terminal 'unix-terminal)

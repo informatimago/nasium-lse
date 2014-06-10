@@ -29,6 +29,5 @@ affichera les données tek pour le terminal: ::
   tektolse tek.data > tek.lse
 
 En appelant et exécutant ce programme avec Nasium LSE dans un terminal
-`xterm`,  on obtient une fenêtre Tek avec la courbe.
-
-
+`xterm`,  on obtient une fenêtre Tek avec la courbe.  Voir ``tek.png``
+comme exemple d'affichage.

@@ -1,0 +1,131 @@
+#!/usr/bin/clisp -ansi -q -E utf-8
+;;;; -*- mode:lisp;coding:utf-8 -*-
+(in-package :cl-user)
+
+(defun chunks (text)
+  (loop
+   :with result = '()
+   :with string = '()
+   :for ch :across text
+   :do (if (<= 32 (char-code ch) 126)
+           (push ch string)
+           (progn
+             (when string
+               (push (coerce (nreverse string) 'string) result)
+               (setf string '()))
+             (push (char-code ch) result)))
+   :finally (when string (push (coerce (nreverse string) 'string) result))
+            (return (nreverse result))))
+
+(defun quote-quote (string)
+  (if (find #\' string)
+      (with-output-to-string (*standard-output*)
+        (loop :for ch :across string
+              :if (char= #\' ch)
+                :do (princ ch) (princ ch)
+              :else
+                :do (princ ch)))
+      string))
+
+
+(defun eat-string (max-length string)
+  (let ((remains))
+    (values (with-output-to-string (*standard-output*)
+              (loop
+                :for i :below (length string)
+                :for ch = (aref string i)
+                :if (and (<= 2 max-length) (char= #\' ch))
+                  :do (princ ch) (princ ch)
+                      (decf max-length 2)
+                :else :if (char= #\' ch)
+                        :do (loop-finish)
+                :else :if (<= 1 max-length)
+                        :do (princ ch)
+                            (decf max-length)
+                :else :do (loop-finish)
+                :finally (setf remains (subseq string i))))
+            remains)))
+
+
+(defun generate-line (lino chunks &key (max-line-length 250))
+  (values (with-output-to-string (*standard-output*)
+            (format t "~D AFFICHER[U]" lino) 
+            (let ((col 15)
+                  (sep ""))
+              (loop
+                :while (and chunks (< (+ col 9) max-line-length))
+                :for item = (let ((item (first chunks)))
+                              (etypecase item
+                                (string
+                                 (multiple-value-bind (item remains)
+                                     (eat-string (- max-line-length col 3) item)
+                                   (pop chunks)
+                                   (when (plusp (length remains))
+                                     (push remains chunks))
+                                   (format nil "~A'~A'" sep item)))
+                                (real
+                                 (pop chunks)
+                                 (format nil "~AEQC(~D)" sep (truncate item)))))
+                :do (setf sep "!") 
+                    (write-string item)
+                    (incf col (length item)))))
+          chunks))
+
+(defun generate-chunk-routine (chunks &key (lino 10))
+  (loop :while chunks
+        :do (let ((instruction))
+              (multiple-value-setq (instruction chunks) (generate-line lino chunks))
+              (write-line instruction)
+              (incf lino 1))))
+
+
+(defun contents-from-stream (stream &key length (min-size 256) max-extend)
+  "
+STREAM:     May be a binary or character, file or non-file stream.
+LENGTH:     NIL, or the number of stream elements to read.
+MIN-SIZE:   Minimum pre-allocated buffer size. If LENGTH is given, or STREAM
+            has a FILE-LENGTH, then the MIN-SIZE is ignored.
+MAX-EXTEND: NIL ==> double the buffer size, or double the buffer size until
+            it's greater than MAX-EXTEND, and then increment by MAX-EXTEND.
+RETURN:     A vector containing the elements read from the STREAM.
+"
+  (let* ((busize (or length (ignore-errors (file-length stream)) min-size))
+         (eltype (stream-element-type stream))
+         (initel (if (subtypep eltype 'integer) 0 #\space))
+         (buffer (make-array busize 
+                             :element-type eltype
+                             :initial-element initel
+                             :adjustable t :fill-pointer t))
+         (start 0))
+    (loop
+       (let ((end (read-sequence buffer stream :start start)))
+         (when (or (< end busize) (and length (= length end)))
+           ;; we got eof, or have read enough
+           (setf (fill-pointer buffer) end)
+           (return-from contents-from-stream buffer))
+         ;; no eof; extend the buffer
+         (setf busize
+               (if (or (null max-extend) (<= (* 2 busize) max-extend))
+                   (* 2 busize)
+                   (+ busize max-extend))
+               start end))
+       (adjust-array buffer busize :initial-element initel :fill-pointer t))))
+
+
+(defun text-file-contents (path &key (if-does-not-exist :error)
+                           (external-format :default))
+  "
+RETURN: The contents of the file at PATH as a LIST of STRING lines.
+        or what is specified by IF-DOES-NOT-EXIST if it doesn't exist.
+"
+  (with-open-file (in path :direction :input
+                      :if-does-not-exist if-does-not-exist
+                      :external-format external-format)
+    (if (and (streamp in) (not (eq in if-does-not-exist)))
+        (contents-from-stream in :min-size 16384)
+        in)))
+
+
+(generate-chunk-routine (chunks (text-file-contents (first ext:*args*))))
+
+

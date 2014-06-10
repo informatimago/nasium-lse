@@ -1,0 +1,51 @@
+#!/usr/bin/clisp -ansi -q -E utf-8
+;;;; -*- mode:lisp;coding:utf-8 -*-
+(in-package :cl-user)
+
+(defun nsplit-list-on-indicator (list indicator)
+  "
+RETURN: a list of sublists of list (the conses from list are reused),
+        the list is splited between items a and b for which (indicator a b).
+"
+  (declare (type (function (t t) t) indicator))
+  (let* ((result nil)
+         (sublist list)
+         (current list)
+         (next    (cdr current)))
+    (loop :while next :do
+      (if (funcall indicator (car current) (car next))
+          (progn ;; split
+            (setf (cdr current) nil)
+            (push sublist result)
+            (setq current next)
+            (setq next (cdr current))
+            (setq sublist current))
+          (progn ;; keep
+            (setq current next)
+            (setq next (cdr current)))))
+    (push sublist result)
+    (nreverse result)))
+
+(defun convert-line (line number)
+  (format t "~D AFFICHER[~{~A,~}/]~%"
+          number
+          (mapcan (lambda (seq)
+                    (when seq
+                      (list
+                       (if (char= #\space (car seq))
+                           (format nil "~DX" (length seq))
+                           (format nil "~D'~C'" (length seq) (car seq))))))
+                  (nsplit-list-on-indicator (coerce line 'list)
+                                            (function char/=)))))
+
+(defun convert-aa-to-af (path &key (start-line 10))
+  (with-open-file (aa path)
+    (loop
+      :for line = (read-line aa nil nil)
+      :while line
+      :do (convert-line line start-line)
+          (incf start-line))))
+
+(map nil (function convert-aa-to-af) ext:*args*)
+
+

@@ -1,0 +1,34 @@
+.. comment: -*- mode:rst;coding:utf-8 -*-
+
+Ce répertoire contient quelques hacks.
+
+Transformer un fichier contenant de l'art ASCII en source LSE affichant cet art.
+================================================================================
+
+::
+   ./aatoaf LSE.txt > lse.lse
+
+
+Afficher une courbe sur le terminal Tek 4014 inclu dans xterm
+================================================================================
+
+Le programme ``courb.lse`` génère les points d'une fonction.
+Enregistrons ces données dans le fichier ``courb.data``.
+
+On génère les commandes pour le terminal Tek avec le script gentek: ::
+
+   gentek < courb.data > tek.data
+
+ou directement avec les commandes adéquates: ::
+
+   graph < courb.data | plot -Ttek > tek.data
+
+Puis on utilise ``tektolse`` pour générer le programe LSE qui
+affichera les données tek pour le terminal: ::
+
+  tektolse tek.data > tek.lse
+
+En appelant et exécutant ce programme avec Nasium LSE dans un terminal
+`xterm`,  on obtient une fenêtre Tek avec la courbe.
+
+

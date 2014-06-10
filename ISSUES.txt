@@ -1,27 +1,39 @@
 -*- mode:org; coding:utf-8 -*-
-* TODO 00018 case of directories and files                       :cli:server:
-For now, directories and files names are case sensitive.
+* TODO 00022 pg49 SCH LO=0                                              :cli:
 
-This is confusing because users may be in uppercase input or mixed
-input, and output may uppercase lowercase names.
+SCH(P,1,0) est valide et doit retourner une chaîne de longueur 0.
 
-For cli or unix scripts, we would want case sensitive (lower case) names.
-For server and historic LSE, we would want to accept uppercase names.
+au lieu de ça on obtient une erreur:
+#+BEGIN_SRC(lse)
+ERREUR EN LIGNE  11 : LE 3E ARGUMENT POUR SCH, 0.0, N'EST PAS VALIDE: L'ARGUMENT LONGEUR DOIT ETRE UN
+ENTIER SUPERIEUR OU EGAL A 1 (OU BIEN UNE CHAINE).
+#+END_SRC(lse)
 
---> either use uppercase for directory and file names in server files,
-    or implement case insensitivity.
+#+BEGIN_SRC(lse)
+1*PROGRAMME DE CLASSEMENT PAR ORDRE ALPHABETIQUE
+2 CHAINE CH,MOT;AFFICHER 'MOT: ';LIRE CH;CH_GRL(CH,1)!'.'
+3 AFFICHER 'MOT: ';LIRE MOT;MOT_GRL(MOT,1)
+4 SI MOT='FIN' ALORS DEBUT AFFICHER CH;TERMINER FIN
+5 CH_&INTER(MOT,CH);ALLER EN 3
+9* PROCEDURE FONCTION D'INTERCLASSEMENT
+10 PROCEDURE &INTER(X,P);Z_1
+11 SI X<GRL(P,Z) ALORS RESULTAT SCH(P,1,Z-1)!X!' '!SCH(P,Z,'.')!'.'
+12 Z_PTR(P,Z+1,' .');SI SCH(P,Z,1)#'.' ALORS DEBUT Z_Z+1;ALLER EN 11 FIN
+13 RESULTAT SCH(P,1,'.')!' '!X!'.'
+251*EXTRAIT DE "LANGAGE SYMBOLIQUE D'ENSEIGNEMENT L.S.E. MANUEL D'UTILISATION"
+252*BULLETIN DE LIAISON "L'INFORMATIQUE ET L'ENSEIGNEMENT SECONDAIRE" JAN 1975
+253*C.LAFOND - INSTITUT NATIONAL DE RECHERCHE ET DE DOCUMENTATION PEDAGOGIQUES
+254*PROGRAMME PG49, PAGE 105, TRI PAR ORDRE ALPHABETIQUE
+255*[PAS TESTE SUR EMULSE]
+#+END_SRC
 
-* TODO 00017 default current working directory                          :cli:
+* TODO 00021 pg43,46,47,51 faire enchevetree                            :cli:
 
-When launching the cli, the directory used by lse (AF, CH, TA) is not
-the original current working directory, but the one saved when
-compiling lse (/home/lse/src/nasium-lse/src/).  By default, it should
-be the cwd of the new process instead. (Unless a LSE_ROOT environment
-variable is given).
+2 FAIRE 2 POUR I_1 JUSQUA 5;FAIRE 2 POUR J_1 JUSQUA 5;A[I,J]_J+5*(I-1)
+ERREUR EN LIGNE   2 : BOUCLE FAIRE 2 POUR J ENCHEVETREE AVEC LA BOUCHE FAIRE 2 POUR I DE LA LIGNE 2
 
-* TODO 00016 invalid option -> silent exit                              :cli:
-./lse --mode-modern 
-exits silently instead of reporting an error.
+Il ne devrait pas y avoir d'erreur dans ce cas.
+
 * TODO 00015 PG28 TANT QUE SCH()#'**' fails.                            :cli:
 
 #+BEGIN_SRC(lse)
@@ -101,6 +113,151 @@ UN-PROGRAMME --> (COM.INFORMATIMAGO.RDP:SEQ (COM.INFORMATIMAGO.LSE::IDENT) ((LIS
 Calling COM.INFORMATIMAGO.LSE:TERMINAL-FINALIZE on a COM.INFORMATIMAGO.LSE.UNIX-TERMINAL:UNIX-TERMINAL not initialized.
 [pjb@larissa :0.0 src]$ 
 #+END_SRC
+
+* TODO 00022 pg44 affichage format                                      :cli:
+cf. page 91.
+Obtenu:
+#+BEGIN_SRC(lse)
+APPELER pg44
+EXECUTER A PARTIR DE 1
+1 2 3 4 5 6 7 8 9 10 11 12
+1 2 3 =====1 2 3 =====
+1 2 3 =====
+  1   2   3 =====
+LA SOMME DES 2 PREMIERS NOMBRES EST : 3 =====
+LA SOMME DES 2 PREMIERS NOMBRES EST3 =====
+LA SOMME DES 2 PREMIERS NOMBRES EST 3 =====
+1    50 
+LUNDI
+1  2  3  4  
+5  6  7  8  
+9  10  11  12  =====
+1    50 
+LUNDI
+1  2  3  4  
+5  6  7  8  
+9  10  11  12  =====
+1    50 
+LUNDI
+
+1  2  3  4  
+5  6  7  8  
+9  10  11  12  =====
+   1    LUNDI   
+1  2  3  4  
+5  6  7  8  
+9  10  11  12  =====
+#+END_SRC
+
+* TODO 00020 pg42 affichage format                                      :cli:
+pg42
+
+F2.0 --> ne doit pas afficher le point.
+U string -> doit afficher un espace suffixe.
+
+Obtenu:
+
+#+BEGIN_SRC(lse)
+EXECUTER A PARTIR DE 1
+
+LUNDI  3. AVRIL1972
+LUNDI 10. AVRIL1972
+LUNDI 17. AVRIL1972
+LUNDI 24. AVRIL1972
+LUNDI 31. AVRIL1972
+TERMINE EN LIGNE 016
+#+END_SRC
+
+Attendu:
+
+#+BEGIN_SRC(lse)
+EXECUTER A PARTIR DE 1
+
+LUNDI  3 AVRIL 1972
+LUNDI 10 AVRIL 1972
+LUNDI 17 AVRIL 1972
+LUNDI 24 AVRIL 1972
+LUNDI 31 AVRIL 1972
+TERMINE EN LIGNE 016
+#+END_SRC
+
+* TODO 00019 pg37 affichage des matrices                                :cli:
+pg37:
+
+Obtenu:
+
+#+BEGIN_SRC(lse)
+EXECUTER A PARTIR DE 1
+1 2 1 2 1 2 1 2 1 2 1 2
+
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  -----
+5 
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  -----
+5 
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  LUNDI-----
+5 LUNDI
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  
+TERMINE EN LIGNE 009
+#+END_SRC
+
+Attendu:
+
+#+BEGIN_SRC(lse)
+EXECUTER A PARTIR DE 1
+1 2 1 2 1 2 1 2 1 2 1 2
+
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  
+-----
+5 
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  
+-----
+5 
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  
+LUNDI-----
+5 LUNDI
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  
+
+TERMINE EN LIGNE 009
+#+END_SRC
+
+* TODO 00018 case of directories and files                       :cli:server:
+For now, directories and files names are case sensitive.
+
+This is confusing because users may be in uppercase input or mixed
+input, and output may uppercase lowercase names.
+
+For cli or unix scripts, we would want case sensitive (lower case) names.
+For server and historic LSE, we would want to accept uppercase names.
+
+--> either use uppercase for directory and file names in server files,
+    or implement case insensitivity.
+
+* TODO 00016 invalid option -> silent exit                              :cli:
+./lse --mode-modern 
+exits silently instead of reporting an error.
+* TODO 00017 default current working directory                          :cli:
+
+When launching the cli, the directory used by lse (AF, CH, TA) is not
+the original current working directory, but the one saved when
+compiling lse (/home/lse/src/nasium-lse/src/).  By default, it should
+be the cwd of the new process instead. (Unless a LSE_ROOT environment
+variable is given).
 
 * TODO 00008 inetd server displays wrong bindings                       :cli:
 
@@ -270,7 +427,7 @@ anything, and keeping the ports open indefinitely.  For example:
 
 #+END_SRC
 
-* DONE 00005 telnet inetd lse.sh cli reads C-s instead of RET     :cli:
+* DONE 00005 telnet inetd lse.sh cli reads C-s instead of RET           :cli:
   CLOSED: [2014-06-08 Sun 09:48]
   - State "DONE"       from ""           [2014-06-08 Sun 09:48] \\
     Not anymore.
@@ -293,7 +450,7 @@ exec /home/lse/bin/lse \
     --montrer-touches 
 #+END_SRC
 
-* DONE 00001 segfault on exit                                     :cli:
+* DONE 00001 segfault on exit                                           :cli:
   CLOSED: [2014-06-08 Sun 09:37]
   - State "DONE"       from ""           [2014-06-08 Sun 09:37] \\
     This occured on debian 6.0.9; corrected by adding a LSE_USE_EXIT
@@ -316,7 +473,7 @@ exec /home/lse/bin/lse \
         ;;;
 #+END_SRC
  
-* DONE 00007 Something's fishy in CEFAK                           :cli:
+* DONE 00007 Something's fishy in CEFAK                                 :cli:
   CLOSED: [2014-06-08 Sun 09:36]
   - State "DONE"       from ""           [2014-06-08 Sun 09:36] \\
     Corrected the bug: find-variable searched globals before locals.
@@ -324,7 +481,7 @@ exec /home/lse/bin/lse \
 The input seems to be read correctly, but the variable C, F and K
 don't seem to be updated, so the first data is always output.
 
-* DONE 00003 FAIRE n POUR I_1 JUSQUA 100 doesn't work.            :cli:
+* DONE 00003 FAIRE n POUR I_1 JUSQUA 100 doesn't work.                  :cli:
   CLOSED: [2014-05-13 Tue 04:11]
   - State "DONE"       from ""           [2014-05-13 Tue 04:11] \\
     Corrected bug in GOTO that would pop loops at the wrong time.
@@ -355,7 +512,7 @@ TAPEZ LE NUMERO DE L'OPERATION A EFFECTUER : 10
 The value #<lse-variable i = 10.0 of type nombre #x302003B1E4AD> is not of the expected type number.
 #+END_SRC
 
-* DONE 00013 PG24,25,26: fail: Variables are not dereferenced enough. :cli:
+* DONE 00013 PG24,25,26: fail: Variables are not dereferenced enough.   :cli:
   CLOSED: [2014-06-09 Mon 17:24]
   - State "DONE"       from ""           [2014-06-09 Mon 17:24] \\
     Corrected by calling deref on all VM instruction parameters.

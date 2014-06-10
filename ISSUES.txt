@@ -1,4 +1,27 @@
 -*- mode:org; coding:utf-8 -*-
+* TODO 00018 case of directories and files                       :cli:server:
+For now, directories and files names are case sensitive.
+
+This is confusing because users may be in uppercase input or mixed
+input, and output may uppercase lowercase names.
+
+For cli or unix scripts, we would want case sensitive (lower case) names.
+For server and historic LSE, we would want to accept uppercase names.
+
+--> either use uppercase for directory and file names in server files,
+    or implement case insensitivity.
+
+* TODO 00017 default current working directory                          :cli:
+
+When launching the cli, the directory used by lse (AF, CH, TA) is not
+the original current working directory, but the one saved when
+compiling lse (/home/lse/src/nasium-lse/src/).  By default, it should
+be the cwd of the new process instead. (Unless a LSE_ROOT environment
+variable is given).
+
+* TODO 00016 invalid option -> silent exit                              :cli:
+./lse --mode-modern 
+exits silently instead of reporting an error.
 * TODO 00015 PG28 TANT QUE SCH()#'**' fails.                            :cli:
 
 #+BEGIN_SRC(lse)

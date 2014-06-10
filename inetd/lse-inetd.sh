@@ -1,9 +1,10 @@
 #!/bin/sh
 export TERM=dumb
 export LSE_TELNET=T
-export LSE_ROOT=/home/lse/files/
+export LSE_PAGER=NIL
+export LSE_ROOT=/srv/lse/files/
 cd $LSE_ROOT
-exec /home/lse/bin/lse \
+exec /srv/lse/bin/lse \
     --mode-moderne \
     --fleches-ascii \
     --entree-comme-xoff \

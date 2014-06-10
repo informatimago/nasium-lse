@@ -1470,15 +1470,13 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                             :expected-token (parser-error-expected-token err)
                             :format-control "~:[FIN DE LIGNE INATTENDUE~3*~;SYMBOLE INATTENDU ~:[~A ~S~;~*~S~]~]~@[; ATTENDU: ~A~]."
                             :format-arguments
-                            (print
-                             (let ((token (scanner-current-token (parser-error-scanner err))))
-                               (print token)
-                               (list (not (or (eolp token) (eofp token)))
-                                     (string= (token-kind-label (token-kind token))
-                                              (token-text token))
-                                     (token-kind-label (token-kind token))
-                                     (token-text token)
-                                     (token-kind-label (parser-error-expected-token err))))))))
+                            (let ((token (scanner-current-token (parser-error-scanner err))))
+                              (list (not (or (eolp token) (eofp token)))
+                                    (string= (token-kind-label (token-kind token))
+                                             (token-text token))
+                                    (token-kind-label (token-kind token))
+                                    (token-text token)
+                                    (token-kind-label (parser-error-expected-token err)))))))
                   (parser-error
                    (lambda (err)
                      (error 'lse-parser-error 

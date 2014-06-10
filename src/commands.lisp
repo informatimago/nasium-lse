@@ -1587,7 +1587,7 @@ Voir les commandes AFFICHER REPERTOIRE, TABLE DES FICHIER, UTILISATION DISQUE."
     (when (and (stringp nouveau-repertoire)
                (< 1 (length nouveau-repertoire)))
       (unless (char= #\/ (aref nouveau-repertoire (1- (length nouveau-repertoire))))
-        (setf nouveau-repertoire (concatenate 'string nouveau-repertoire "/")))
+        (setf nouveau-repertoire (concatenate 'string (string-downcase nouveau-repertoire) "/")))
       (setf *current-directory* (change-directory *lse-root*  *current-directory*  nouveau-repertoire))))
   (task-close-all-files *task*))
 

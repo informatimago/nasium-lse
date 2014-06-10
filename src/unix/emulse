@@ -6,7 +6,11 @@ font='-dec-terminal-bold-r-normal--14-0-75-75-c-*-dec-dectech'
 font='-dec-terminal-bold-r-normal-*-14-*-*-*-*-*-dec-dectech'
 font="fixed"
 
-geom=%80x25
+if [ -s "$RATPOISON" ] ; then
+    geom=
+else
+    geom=%80x25
+fi
 
 hold="-hold"
 hold=""

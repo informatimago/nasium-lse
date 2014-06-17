@@ -641,7 +641,7 @@ PRET
 
 #+END_SRC
 * TODO 00014 PG27 TANT QUE N#99 doesn't fail when N is read as 99.      :cli:
-* TODO 00012 AP 1: Parsing errors in commands fails catastrophically.   :cli:
+* TODO 00012 AP 1: Parsing errors in commands fail catastrophically.    :cli:
 
 Parsing errors in command argument fails catastrophically.
 

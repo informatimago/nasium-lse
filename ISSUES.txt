@@ -1,4 +1,72 @@
 -*- mode:org; coding:utf-8 -*-
+* TODO 00033 specificités T-1600 / Mitra-15                             :cli:
+
+T-1600:   fonctions SH, CH, TH, SGN, UN et ZER.
+
+Mitra-15: instruction SUPPRIMER pour supprimer un fichier donnée.
+
+T-1600:   10 ALLER EN @+3 -> aller en 13
+
+Mitra-15: 10 I_@50 ; 20 ALLER EN I -> aller en 50
+          renumérotage tient compte de @50.
+
+Voir aussi les autres limitations; par exemple sur les fichiers.  Un
+fichier Mitra-15/T-1600 avait des blocks de 256 octets (Mitra-15
+pouvant écrire les chaines sur plusieurs blocks).  Les fichiers
+implémentés par nasium ont des blocs de 1024 octets.
+
+                          LSE-MITRA-15        LSE-T1600      LSE-UNIX
+------------------------  -----------------  --------------  --------------
+
+commandes:                ------------------------------     --------------
+                                  IDentification
+                                  DRoits
+                                  BOnjour
+                                  ADieux
+                                  PRendre etat console
+                          ------------------------------     --------------
+
+------------------------  -----------------  --------------  --------------
+fonctions:                                                   ENV(nom)
+                                                             ARG(i[,r]) -- pas encore implémenté
+                                                             LISP(e,p,r) -- debugging
+------------------------  -----------------  --------------  --------------
+extensions:
+
+   fonction ATT()
+   fonction DIS(secteur) -- non implémenté
+   fonction ETL(a,b)
+   fonction OUL(a,b)
+   fonction OUX(a,b)
+   fonction XIT(ea)
+
+------------------------  -----------------  --------------  --------------
+numéro de ligne            1-250              1-255          1-65535
+max longueur de ligne      80                 80             65535
+
+max répetition format      ?                  62             ?              pas implémenté
+------------------------  -----------------  --------------  --------------
+sémantique @               I_@50 = ligne      ALLER EN @+3   pas implémenté
+------------------------  -----------------  --------------  --------------
+longueur chaine max       65536               256            65536
+------------------------  -----------------  --------------  --------------
+EQC max code              128                 256            cl:char-code-limit
+                                                             eg. 1114112 avec unicode
+------------------------  -----------------  --------------  --------------
+AFFICHER[Fn.m,En.m]VE,TA  non                oui             oui
+------------------------  -----------------  --------------  --------------
+PAUSE EN LIGNE 000                                  x              x
+TERMINE EN LIGNE 000                                x              x
+PAUSE                            x
+TERMINE                          x
+------------------------  -----------------  --------------  --------------
+
+
+Mentionné: T-1600: $ signifie quelque chose.
+Annoncé: Mitra-15: procédures externes rangées sur disque (Quelle syntaxe? #proc()?)
+
+
+
 * TODO 00032 afficher[*'I']N                                            :cli:
 
 #+BEGIN_SRC(lse)

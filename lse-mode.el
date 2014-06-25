@@ -21,13 +21,14 @@
 ;;;;          Mick Jordan
 ;;;;          Peter Robinson
 ;;;;MODIFICATIONS
-;;;;    2003-01-31 <PJB> Created, from the modula-2 mode.
+;;;;    2014-06-25 <PJB> Improved lse-renumber-region (update ALLER EN etc).
 ;;;;    2005-08-21 <PJB> Added header & license.
+;;;;    2003-01-31 <PJB> Created, from the modula-2 mode.
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    GPL
 ;;;;    
-;;;;    Copyright Pascal Bourguignon 2005 - 2005
+;;;;    Copyright Pascal Bourguignon 2005 - 2014
 ;;;;    
 ;;;;    This program is free software; you can redistribute it and/or
 ;;;;    modify it under the terms of the GNU General Public License
@@ -125,10 +126,11 @@
               '("ENT" "RAC" "ABS" "EXP" "LGN" "SIN" "COS" "ATG" "ALE"
                 "TEM" "ATT" "DIS" "ETL" "OUL" "OUX" "CCA" "CNB" "CNB"
                 "DAT" "EQC" "EQN" "EQN" "GRL" "GRL" "LGR" "POS" "PTR"
-                "PTR" "SCH" "SCH" "SKP" "SKP" ))
+                "PTR" "SCH" "SCH" "SKP" "SKP"
+                ;; unix extensions:
+                "ENV" "ARG"))
              (lse-types
-              '("CHAINE" "TABLEAU" ))
-             )
+              '("CHAINE" "TABLEAU" )))
          (list
           ;;
           ;; Keywords except those fontified elsewhere.
@@ -276,27 +278,70 @@
          (delete-region (match-beginning 0) (match-end 0)))))))
 
 
+
+(defvar *lse-jumps-re* "\\<\\(\\(ALLER\\|RETOUR\\) +EN\\|FAIRE\\) +\\([0-9]+\\)[\n ;]")
+
+(defun lse-jumps ()
+  "Return an a-list mapping line number jumped to to point at which jump instruction is found (sorted by point) in the current buffer."
+  (save-excursion
+   (goto-char (point-min))
+   (let ((linos '()))
+    (while (re-search-forward *lse-jumps-re* nil t)
+      (push (cons (parse-integer (match-string 3)) (match-beginning 3)) linos))
+     linos)))
+
+
+(defun lse-marker (point)
+  (let ((marker (make-marker)))
+    (set-marker marker point)
+    marker))
+
+(defun lse-free-markers (sexp)
+  (cond
+    ((markerp sexp) (set-marker sexp nil))
+    ((atom sexp))
+    (t (lse-free-markers (car sexp))
+       (lse-free-markers (cdr sexp)))))
+
+
 (defun* lse-renumber-region (start end &optional (from 1) (step 1))
+  "Renumber lines in the region.
+If there are instructions ALLER EN, RETOUR EN, ou FAIRE in the buffer,
+the following line number is updated according to the new number of
+the changed lines."
   (interactive "r\nnFrom: \nnStep: ")
-  (let ((linum from)
-        (end (let ((m (make-marker))) (set-marker m end) m)))
-    (goto-char start)
-    (while (< (point) end)
-      (beginning-of-line)
-      (when (looking-at " *[0-9]+ *")
-        (delete-region (match-beginning 0) (match-end 0)))
-      (if (looking-at "*")
-          (insert (format "%d" linum))
-          (insert (format "%d " linum)))
-      (incf linum step)
-      (forward-line 1))))
-
-;; TODO: implement a command to renumber the whole file that will
-;;       update the line number in the instructions ALLER EN …,
-;;       RETOUR EN …, and FAIRE … POUR
-
-
-
+  (let ((jumps (mapcar (lambda (e)
+                         (cons (car e)
+                               (lse-marker (cdr e))))
+                       (lse-jumps)))
+        (linum from)
+        (end (lse-marker end)))
+    (unwind-protect
+         (let ((renumbers '()))
+           (goto-char start)
+           (while (< (point) end)
+                  (beginning-of-line)
+                  (when (looking-at " *\\([0-9]+\\) *")
+                    (push (cons (parse-integer (buffer-substring-no-properties
+                                                (match-beginning 1) (match-end 1)))
+                                linum)
+                          renumbers)
+                    (delete-region (match-beginning 0) (match-end 0)))
+                  (if (looking-at "*")
+                      (insert (format "%d" linum))
+                      (insert (format "%d " linum)))
+                  (incf linum step)
+                  (forward-line 1))
+           (while renumbers
+                  (destructuring-bind (old . new) (pop renumbers)
+                    (dolist (j jumps)
+                      (when (= (car j) old)
+                        (goto-char (cdr j))
+                        (forward-sexp)
+                        (delete-region (cdr j) (point))
+                        (insert (format "%d" new)))))))
+      (lse-free-markers end)
+      (lse-free-markers jumps))))
 
 
 ;; (defparameter lse-assign-image  
@@ -411,4 +456,5 @@
 
 (provide 'lse-mode)
 ;;;; THE END ;;;;
+
 

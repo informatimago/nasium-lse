@@ -1,282 +1,4 @@
 -*- mode:org; coding:utf-8 -*-
-* TODO 00033 specificités T-1600 / Mitra-15                             :cli:
-
-T-1600:   fonctions SH, CH, TH, SGN, UN et ZER.
-
-Mitra-15: instruction SUPPRIMER pour supprimer un fichier donnée.
-
-T-1600:   10 ALLER EN @+3 -> aller en 13
-
-Mitra-15: 10 I_@50 ; 20 ALLER EN I -> aller en 50
-          renumérotage tient compte de @50.
-
-Voir aussi les autres limitations; par exemple sur les fichiers.  Un
-fichier Mitra-15/T-1600 avait des blocks de 256 octets (Mitra-15
-pouvant écrire les chaines sur plusieurs blocks).  Les fichiers
-implémentés par nasium ont des blocs de 1024 octets.
-
-                          LSE-MITRA-15        LSE-T1600      LSE-UNIX
-------------------------  -----------------  --------------  --------------
-
-commandes:                ------------------------------     --------------
-                                  IDentification
-                                  DRoits
-                                  BOnjour
-                                  ADieux
-                                  PRendre etat console
-                          ------------------------------     --------------
-
-------------------------  -----------------  --------------  --------------
-fonctions:                                                   ENV(nom)
-                                                             ARG(i[,r]) -- pas encore implémenté
-                                                             LISP(e,p,r) -- debugging
-------------------------  -----------------  --------------  --------------
-extensions:
-
-   fonction ATT()
-   fonction DIS(secteur) -- non implémenté
-   fonction ETL(a,b)
-   fonction OUL(a,b)
-   fonction OUX(a,b)
-   fonction XIT(ea)
-
-------------------------  -----------------  --------------  --------------
-numéro de ligne            1-250              1-255          1-65535
-max longueur de ligne      80                 80             65535
-
-max répetition format      ?                  62             ?              pas implémenté
-------------------------  -----------------  --------------  --------------
-sémantique @               I_@50 = ligne      ALLER EN @+3   pas implémenté
-------------------------  -----------------  --------------  --------------
-longueur chaine max       65536               256            65536
-------------------------  -----------------  --------------  --------------
-EQC max code              128                 256            cl:char-code-limit
-                                                             eg. 1114112 avec unicode
-------------------------  -----------------  --------------  --------------
-AFFICHER[Fn.m,En.m]VE,TA  non                oui             oui
-------------------------  -----------------  --------------  --------------
-PAUSE EN LIGNE 000                                  x              x
-TERMINE EN LIGNE 000                                x              x
-PAUSE                            x
-TERMINE                          x
-------------------------  -----------------  --------------  --------------
-
-
-Mentionné: T-1600: $ signifie quelque chose.
-Annoncé: Mitra-15: procédures externes rangées sur disque (Quelle syntaxe? #proc()?)
-
-
-
-* TODO 00032 afficher[*'I']N                                            :cli:
-
-#+BEGIN_SRC(lse)
-AFFICHER[/,*'I---','I',/]4
-I---I---I---I---I
-
-N_5;AFFICHER[/,*'I---','I',/]N
-ERROR: Unknown type specifier: IDENTIFIER
---------------------------------------------------------------------------------
-(BACKTRACE-AS-LIST :CONTEXT NIL :PROCESS NIL :ORIGIN NIL :COUNT 1152921504606846975 :START-FRAME-NUMBER 0 :PRINT-LEVEL 2 :PRINT-LENGTH 5 :SHOW-INTERNAL-FRAMES NIL)
-(FUNCALL (:INTERNAL REPORT COMMAND-REPL) #<SIMPLE-ERROR #x302004722EFD>)
-(FUNCALL (:INTERNAL DEBUG-ERROR COMMAND-REPL) #<SIMPLE-ERROR #x302004722EFD>)
-(SIGNAL #<SIMPLE-ERROR #x302004722EFD>)
-(%ERROR #<SIMPLE-ERROR #x302004722EFD> NIL 77142635)
-(RUN-STEP #<LSE-VM 1 global variable, 0 local frames, 1 line, current line 0 #x3020045B07CD>)
-(FUNCALL #<STANDARD-METHOD VM-RUN (LSE-VM)> #<LSE-VM 1 global variable, 0 local frames, 1 line, current line 0 #x3020045B07CD>)
-(LSE-COMPILE-AND-EXECUTE #<TASK #x3020045B08AD> "N_4;AFFICHER[/,*'I---','I',/]N")
-(COMMAND-EVAL-LINE #<TASK #x3020045B08AD> "N_4;AFFICHER[/,*'I---','I',/]N")
-(FUNCALL (:INTERNAL DO-IT COMMAND-REPL))
-(COMMAND-REPL #<TASK #x3020045B08AD>)
-(MAIN NIL)
-(CALL-CHECK-REGS COM.INFORMATIMAGO.LSE.CLI:MAIN)
-(CHEAP-EVAL (COM.INFORMATIMAGO.LSE.CLI:MAIN))
-(EVAL-REGION "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-")
-(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
-(TRACK-PACKAGE #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B0F9F>)
-(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
-(CALL-WITH-RETRY-RESTART "Retry SLIME REPL evaluation request." #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B102F>)
-(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
-(FUNCALL #<Anonymous Function #x30200182569F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B106F>)
-(CALL-WITH-SYNTAX-HOOKS #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B106F>)
-(CALL-WITH-BUFFER-SYNTAX NIL #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B106F>)
-(REPL-EVAL "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-")
-(LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-"
-  :WINDOW-WIDTH
-  NIL)
-(CALL-CHECK-REGS
-  SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-")
-(CHEAP-EVAL (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-"))
-(EVAL-FOR-EMACS
-  (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-")
-  "COM.INFORMATIMAGO.LSE"
-  126)
-(PROCESS-REQUESTS NIL)
-(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
-(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
-(FUNCALL SWANK-BACKEND:CALL-WITH-DEBUGGER-HOOK #<Compiled-function SWANK:SWANK-DEBUGGER-HOOK #x3020019AB05F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71EDF>)
-(CALL-WITH-DEBUGGER-HOOK #<Compiled-function SWANK:SWANK-DEBUGGER-HOOK #x3020019AB05F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71EDF>)
-(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
-(CALL-WITH-BINDINGS
-  ((*STANDARD-OUTPUT* . #) (*STANDARD-INPUT* . #) (*TRACE-OUTPUT* . #) (*ERROR-OUTPUT* . #) (*DEBUG-IO* . #<TWO-WAY-STREAM input #, output # #x302001B68EBD>) ...)
-  #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71E8F>)
-(HANDLE-REQUESTS #<MULTITHREADED-CONNECTION #x302001A1CBED> NIL)
-(REPL-LOOP #<MULTITHREADED-CONNECTION #x302001A1CBED>)
-(FUNCALL (:INTERNAL SWANK::SPAWN-REPL-THREAD))
-(CALL-WITH-BINDINGS
-  ((*PRINT-PRETTY*) (*PRINT-LEVEL*) (*PRINT-LENGTH*) (*PRINT-CIRCLE* . T) (*PRINT-CASE* . :DOWNCASE) ...)
-  #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::SPAWN-REPL-THREAD) #x302001B7222F>)
-(FUNCALL (:INTERNAL SWANK::SPAWN-REPL-THREAD))
-(RUN-PROCESS-INITIAL-FORM #<PROCESS repl-thread(14) [Active] #x302001B6015D> (#<CCL:COMPILED-LEXICAL-CLOSURE # #x302001B5FEEF>))
-(FUNCALL (:INTERNAL (CCL::%PROCESS-PRESET-INTERNAL (CCL:PROCESS))) #<PROCESS repl-thread(14) [Active] #x302001B6015D> (#<CCL:COMPILED-LEXICAL-CLOSURE # #x302001B5FEEF>))
-(FUNCALL (:INTERNAL CCL::THREAD-MAKE-STARTUP-FUNCTION))
---------------------------------------------------------------------------------
-#+END_SRC
-
-* TODO 00031 encoder                                                    :cli:
-
-#+BEGIN_SRC(lse)
-APPELER PP
-ENCODER PROC
-
-100 PROCEDURE &PROC(PF1,PF2)
-101 P_POS(F,1,PF1);SI P=0 ALORS RETOUR
-102 N_CNB(F,P+1);SI N=0 ALORS N_1
-103 M_M+N*PF2
-104 RETOUR
-251*EXTRAIT DE "LANGAGE SYMBOLIQUE D'ENSEIGNEMENT L.S.E. MANUEL D'UTILISATION"
-252*BULLETIN DE LIAISON "L'INFORMATIQUE ET L'ENSEIGNEMENT SECONDAIRE" JAN 1975
-253*C.LAFOND - INSTITUT NATIONAL DE RECHERCHE ET DE DOCUMENTATION PEDAGOGIQUES
-254*PROGRAMME PROC, PAGE 152, ENCODE/DECODE
-255*[PAS TESTE]
-
-
-ERROR: The value #S(CODE :LINE 100 :VECTOR #(39 26)
-                         :PROCEDURE #S(PROCEDURE :NAME COM.INFORMATIMAGO.LSE.IDENTIFIERS::&PROC
-                                                 :PARAMETERS ((:PAR-REFERENCE COM.INFORMATIMAGO.LSE.IDENTIFIERS::PF2) (:PAR-REFERENCE COM.INFORMATIMAGO.LSE.IDENTIFIERS::PF1)) :LOCAL-VARIABLES NIL
-                                                 :LINE 100 :OFFSET 1)
-                         :SOURCE "100 PROCEDURE &PROC(PF1,PF2)") is not of the expected type LIST.
---------------------------------------------------------------------------------
-(BACKTRACE-AS-LIST :CONTEXT NIL :PROCESS NIL :ORIGIN NIL :COUNT 1152921504606846975 :START-FRAME-NUMBER 0 :PRINT-LEVEL 2 :PRINT-LENGTH 5 :SHOW-INTERNAL-FRAMES NIL)
-(FUNCALL (:INTERNAL REPORT COMMAND-REPL) #<TYPE-ERROR #x30200462387D>)
-(FUNCALL (:INTERNAL DEBUG-ERROR COMMAND-REPL) #<TYPE-ERROR #x30200462387D>)
-(SIGNAL #<TYPE-ERROR #x30200462387D>)
-(%ERROR #<TYPE-ERROR #x30200462387D> NIL 77142614)
-(FUNCALL (:INTERNAL CCL::%XERR-DISP))
-(FUNCALL-WITH-ERROR-REENTRY-DETECTION #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL CCL::%XERR-DISP) #x24DAF7EF>)
-(FUNCALL CCL::%XERR-DISP 371931296)
-(%PASCAL-FUNCTIONS% 2 371931296)
-(FIRST #S(CODE :LINE 100 :VECTOR #(39 26) ...))
-(ENCODER "PROC" 1 NIL)
-(FUNCALL #<STANDARD-METHOD COMMAND-CALL (COMMAND)> #S(COMMAND :INITIALS "EN" :NAME "ENCODER" ...))
-(COMMAND-EVAL-LINE #<TASK #x30200443F1BD> "EN")
-(FUNCALL (:INTERNAL DO-IT COMMAND-REPL))
-(COMMAND-REPL #<TASK #x30200443F1BD>)
-(MAIN NIL)
-(CALL-CHECK-REGS COM.INFORMATIMAGO.LSE.CLI:MAIN)
-(CHEAP-EVAL (COM.INFORMATIMAGO.LSE.CLI:MAIN))
-(EVAL-REGION "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-")
-(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
-(TRACK-PACKAGE #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200443F8AF>)
-(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
-(CALL-WITH-RETRY-RESTART "Retry SLIME REPL evaluation request." #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200443F93F>)
-(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
-(FUNCALL #<Anonymous Function #x30200182569F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200443F97F>)
-(CALL-WITH-SYNTAX-HOOKS #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200443F97F>)
-(CALL-WITH-BUFFER-SYNTAX NIL #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200443F97F>)
-(REPL-EVAL "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-")
-(LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-"
-  :WINDOW-WIDTH
-  NIL)
-(CALL-CHECK-REGS
-  SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-")
-(CHEAP-EVAL (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-"))
-(EVAL-FOR-EMACS
-  (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-")
-  "COM.INFORMATIMAGO.LSE"
-  104)
-(PROCESS-REQUESTS NIL)
-(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
-(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
-(FUNCALL SWANK-BACKEND:CALL-WITH-DEBUGGER-HOOK #<Compiled-function SWANK:SWANK-DEBUGGER-HOOK #x3020019AB05F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71EDF>)
-(CALL-WITH-DEBUGGER-HOOK #<Compiled-function SWANK:SWANK-DEBUGGER-HOOK #x3020019AB05F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71EDF>)
-(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
-(CALL-WITH-BINDINGS
-  ((*STANDARD-OUTPUT* . #) (*STANDARD-INPUT* . #) (*TRACE-OUTPUT* . #) (*ERROR-OUTPUT* . #) (*DEBUG-IO* . #<TWO-WAY-STREAM input #, output # #x302001B68EBD>) ...)
-  #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71E8F>)
-(HANDLE-REQUESTS #<MULTITHREADED-CONNECTION #x302001A1CBED> NIL)
-(REPL-LOOP #<MULTITHREADED-CONNECTION #x302001A1CBED>)
-(FUNCALL (:INTERNAL SWANK::SPAWN-REPL-THREAD))
-(CALL-WITH-BINDINGS
-  ((*PRINT-PRETTY*) (*PRINT-LEVEL*) (*PRINT-LENGTH*) (*PRINT-CIRCLE* . T) (*PRINT-CASE* . :DOWNCASE) ...)
-  #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::SPAWN-REPL-THREAD) #x302001B7222F>)
-(FUNCALL (:INTERNAL SWANK::SPAWN-REPL-THREAD))
-(RUN-PROCESS-INITIAL-FORM #<PROCESS repl-thread(14) [Active] #x302001B6015D> (#<CCL:COMPILED-LEXICAL-CLOSURE # #x302001B5FEEF>))
-(FUNCALL (:INTERNAL (CCL::%PROCESS-PRESET-INTERNAL (CCL:PROCESS))) #<PROCESS repl-thread(14) [Active] #x302001B6015D> (#<CCL:COMPILED-LEXICAL-CLOSURE # #x302001B5FEEF>))
-(FUNCALL (:INTERNAL CCL::THREAD-MAKE-STARTUP-FUNCTION))
---------------------------------------------------------------------------------
-#+END_SRC
-
-* TODO 00030 declaration & charger                                      :cli:
-Une déclaration avant CHARGER doit être sans effet.
-LIBERER V;LIBERER V devrait être accepté aussi.
-
-* TODO 00029 pg60 variable locale chaine ou tableau                     :cli:
-
-#+BEGIN_SRC(lse)
-10 PROCEDURE &PERA(I,CH) LOCAL CH,I,J,V,W,N,K
-11 CHAINE V,W
-ERREUR EN LIGNE  11 : LA VARIABLE V EXISTE DEJA ET N'EST PAS UNE CHAINE
-#+END_SRC
-
-* TODO 00028 pg59,pg59b parametre tableau par valeur                    :cli:
-#+BEGIN_SRC(lse)
-APPELER PG59
-EXECUTER A PARTIR DE 1
-
-N = 3
-ERREUR EN LIGNE   7 : ARGUMENT NO. 2 DE TYPE TABLEAU PASSE PAR VALEUR AU PARAMETRE A DE
-LA PROCEDURE &PERM
-#+END_SRC
-    
-* TODO 00027 pg55 parametre fonctions                                   :cli:
-
-#+BEGIN_SRC(lse)
-ERREUR EN LIGNE 201 : /Users/pjb/src/pjb/lse-progr/inrdp/pg55.lse:201:24: 
-    201 PROCEDURE &COURB(&F,N,X,Y,P) LOCAL P,N,YMI,YMA,I
-#+END_SRC
-
 * TODO 00026 pg63,pg64,pg641,pg642,pg65,pg65s,fsoup,pgpp problem with variables: :cli:
 
 #+BEGIN_SRC(lse)
@@ -289,6 +11,78 @@ when called with arguments:
   (3 NIL)
 #+END_SRC
 
+* TODO 00023 pg49,pg49b,pg71 SCH LO=0                                   :cli:
+
+SCH(P,1,0) est valide et doit retourner une chaîne de longueur 0.
+
+au lieu de ça on obtient une erreur:
+#+BEGIN_SRC(lse)
+ERREUR EN LIGNE  11 : LE 3E ARGUMENT POUR SCH, 0.0, N'EST PAS VALIDE: L'ARGUMENT LONGEUR DOIT ETRE UN
+ENTIER SUPERIEUR OU EGAL A 1 (OU BIEN UNE CHAINE).
+#+END_SRC(lse)
+
+#+BEGIN_SRC(lse)
+1*PROGRAMME DE CLASSEMENT PAR ORDRE ALPHABETIQUE
+2 CHAINE CH,MOT;AFFICHER 'MOT: ';LIRE CH;CH_GRL(CH,1)!'.'
+3 AFFICHER 'MOT: ';LIRE MOT;MOT_GRL(MOT,1)
+4 SI MOT='FIN' ALORS DEBUT AFFICHER CH;TERMINER FIN
+5 CH_&INTER(MOT,CH);ALLER EN 3
+9* PROCEDURE FONCTION D'INTERCLASSEMENT
+10 PROCEDURE &INTER(X,P);Z_1
+11 SI X<GRL(P,Z) ALORS RESULTAT SCH(P,1,Z-1)!X!' '!SCH(P,Z,'.')!'.'
+12 Z_PTR(P,Z+1,' .');SI SCH(P,Z,1)#'.' ALORS DEBUT Z_Z+1;ALLER EN 11 FIN
+13 RESULTAT SCH(P,1,'.')!' '!X!'.'
+251*EXTRAIT DE "LANGAGE SYMBOLIQUE D'ENSEIGNEMENT L.S.E. MANUEL D'UTILISATION"
+252*BULLETIN DE LIAISON "L'INFORMATIQUE ET L'ENSEIGNEMENT SECONDAIRE" JAN 1975
+253*C.LAFOND - INSTITUT NATIONAL DE RECHERCHE ET DE DOCUMENTATION PEDAGOGIQUES
+254*PROGRAMME PG49, PAGE 105, TRI PAR ORDRE ALPHABETIQUE
+255*[PAS TESTE SUR EMULSE]
+#+END_SRC
+
+* TODO 00021 pg43,46,47,51,76  faire enchevetree                        :cli:
+
+2 FAIRE 2 POUR I_1 JUSQUA 5;FAIRE 2 POUR J_1 JUSQUA 5;A[I,J]_J+5*(I-1)
+ERREUR EN LIGNE   2 : BOUCLE FAIRE 2 POUR J ENCHEVETREE AVEC LA BOUCHE FAIRE 2 POUR I DE LA LIGNE 2
+
+Il ne devrait pas y avoir d'erreur dans ce cas.
+
+* TODO 00015 PG28 TANT QUE SCH()#'**' fails.                            :cli:
+
+#+BEGIN_SRC(lse)
+EXECUTER A PARTIR DE 1
+CLE : 3
+DONNER LE TEXTE;TERMINER PAR ***
+*ello\\\\\HELLO WORLD!***
+PRET
+TEXTE
+PRET
+?TEXTE
+HELLO WORLD!
+?I
+19791
+II_0
+?I
+19791
+II_\\0\_0
+?I
+0
+S\?SCH(TEXTE,I,2)
+ERREUR : LE 2E ARGUMENT POUR SCH, 0.0, N'EST PAS VALIDE: L'ARGUMENT DEBUT DOIT
+ETRE UN NOMBRE ENTIER SUPERIEUR OU EGAL A 1.
+PRET
+?SCH(TEXTE,I,1)
+ERREUR : LE 2E ARGUMENT POUR SCH, 0.0, N'EST PAS VALIDE: L'ARGUMENT DEBUT DOIT
+ETRE UN NOMBRE ENTIER SUPERIEUR OU EGAL A 1.
+PRET
+I_1
+?SCH(TEXTE,I,1)
+H
+CONTINUER
+ERREUR : FILL POINTER OF #() IS 0 .
+PRET 
+
+#+END_SRC
+* TODO 00014 PG27 TANT QUE N#99 doesn't fail when N is read as 99.      :cli:
 * TODO 00025 pg54,pg77 retour en 10                                     :cli:
 
 #+BEGIN_SRC(lse)
@@ -488,6 +282,135 @@ LISTER A PARTIR DE 1
 255*[PAS TESTE SUR EMULSE]
 #+END_SRC
 
+* TODO 00029 pg60 variable locale chaine ou tableau                     :cli:
+
+#+BEGIN_SRC(lse)
+10 PROCEDURE &PERA(I,CH) LOCAL CH,I,J,V,W,N,K
+11 CHAINE V,W
+ERREUR EN LIGNE  11 : LA VARIABLE V EXISTE DEJA ET N'EST PAS UNE CHAINE
+#+END_SRC
+
+* TODO 00028 pg59,pg59b parametre tableau par valeur                    :cli:
+#+BEGIN_SRC(lse)
+APPELER PG59
+EXECUTER A PARTIR DE 1
+
+N = 3
+ERREUR EN LIGNE   7 : ARGUMENT NO. 2 DE TYPE TABLEAU PASSE PAR VALEUR AU PARAMETRE A DE
+LA PROCEDURE &PERM
+#+END_SRC
+    
+* TODO 00027 pg55 parametre fonctions                                   :cli:
+
+#+BEGIN_SRC(lse)
+ERREUR EN LIGNE 201 : /Users/pjb/src/pjb/lse-progr/inrdp/pg55.lse:201:24: 
+    201 PROCEDURE &COURB(&F,N,X,Y,P) LOCAL P,N,YMI,YMA,I
+#+END_SRC
+
+* TODO 00031 encoder                                                    :cli:
+
+#+BEGIN_SRC(lse)
+APPELER PP
+ENCODER PROC
+
+100 PROCEDURE &PROC(PF1,PF2)
+101 P_POS(F,1,PF1);SI P=0 ALORS RETOUR
+102 N_CNB(F,P+1);SI N=0 ALORS N_1
+103 M_M+N*PF2
+104 RETOUR
+251*EXTRAIT DE "LANGAGE SYMBOLIQUE D'ENSEIGNEMENT L.S.E. MANUEL D'UTILISATION"
+252*BULLETIN DE LIAISON "L'INFORMATIQUE ET L'ENSEIGNEMENT SECONDAIRE" JAN 1975
+253*C.LAFOND - INSTITUT NATIONAL DE RECHERCHE ET DE DOCUMENTATION PEDAGOGIQUES
+254*PROGRAMME PROC, PAGE 152, ENCODE/DECODE
+255*[PAS TESTE]
+
+
+ERROR: The value #S(CODE :LINE 100 :VECTOR #(39 26)
+                         :PROCEDURE #S(PROCEDURE :NAME COM.INFORMATIMAGO.LSE.IDENTIFIERS::&PROC
+                                                 :PARAMETERS ((:PAR-REFERENCE COM.INFORMATIMAGO.LSE.IDENTIFIERS::PF2) (:PAR-REFERENCE COM.INFORMATIMAGO.LSE.IDENTIFIERS::PF1)) :LOCAL-VARIABLES NIL
+                                                 :LINE 100 :OFFSET 1)
+                         :SOURCE "100 PROCEDURE &PROC(PF1,PF2)") is not of the expected type LIST.
+--------------------------------------------------------------------------------
+(BACKTRACE-AS-LIST :CONTEXT NIL :PROCESS NIL :ORIGIN NIL :COUNT 1152921504606846975 :START-FRAME-NUMBER 0 :PRINT-LEVEL 2 :PRINT-LENGTH 5 :SHOW-INTERNAL-FRAMES NIL)
+(FUNCALL (:INTERNAL REPORT COMMAND-REPL) #<TYPE-ERROR #x30200462387D>)
+(FUNCALL (:INTERNAL DEBUG-ERROR COMMAND-REPL) #<TYPE-ERROR #x30200462387D>)
+(SIGNAL #<TYPE-ERROR #x30200462387D>)
+(%ERROR #<TYPE-ERROR #x30200462387D> NIL 77142614)
+(FUNCALL (:INTERNAL CCL::%XERR-DISP))
+(FUNCALL-WITH-ERROR-REENTRY-DETECTION #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL CCL::%XERR-DISP) #x24DAF7EF>)
+(FUNCALL CCL::%XERR-DISP 371931296)
+(%PASCAL-FUNCTIONS% 2 371931296)
+(FIRST #S(CODE :LINE 100 :VECTOR #(39 26) ...))
+(ENCODER "PROC" 1 NIL)
+(FUNCALL #<STANDARD-METHOD COMMAND-CALL (COMMAND)> #S(COMMAND :INITIALS "EN" :NAME "ENCODER" ...))
+(COMMAND-EVAL-LINE #<TASK #x30200443F1BD> "EN")
+(FUNCALL (:INTERNAL DO-IT COMMAND-REPL))
+(COMMAND-REPL #<TASK #x30200443F1BD>)
+(MAIN NIL)
+(CALL-CHECK-REGS COM.INFORMATIMAGO.LSE.CLI:MAIN)
+(CHEAP-EVAL (COM.INFORMATIMAGO.LSE.CLI:MAIN))
+(EVAL-REGION "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+")
+(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
+(TRACK-PACKAGE #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200443F8AF>)
+(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
+(CALL-WITH-RETRY-RESTART "Retry SLIME REPL evaluation request." #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200443F93F>)
+(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
+(FUNCALL #<Anonymous Function #x30200182569F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200443F97F>)
+(CALL-WITH-SYNTAX-HOOKS #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200443F97F>)
+(CALL-WITH-BUFFER-SYNTAX NIL #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200443F97F>)
+(REPL-EVAL "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+")
+(LISTENER-EVAL
+  "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+"
+  :WINDOW-WIDTH
+  NIL)
+(CALL-CHECK-REGS
+  SWANK:LISTENER-EVAL
+  "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+")
+(CHEAP-EVAL (SWANK:LISTENER-EVAL
+  "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+"))
+(EVAL-FOR-EMACS
+  (SWANK:LISTENER-EVAL
+  "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+")
+  "COM.INFORMATIMAGO.LSE"
+  104)
+(PROCESS-REQUESTS NIL)
+(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
+(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
+(FUNCALL SWANK-BACKEND:CALL-WITH-DEBUGGER-HOOK #<Compiled-function SWANK:SWANK-DEBUGGER-HOOK #x3020019AB05F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71EDF>)
+(CALL-WITH-DEBUGGER-HOOK #<Compiled-function SWANK:SWANK-DEBUGGER-HOOK #x3020019AB05F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71EDF>)
+(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
+(CALL-WITH-BINDINGS
+  ((*STANDARD-OUTPUT* . #) (*STANDARD-INPUT* . #) (*TRACE-OUTPUT* . #) (*ERROR-OUTPUT* . #) (*DEBUG-IO* . #<TWO-WAY-STREAM input #, output # #x302001B68EBD>) ...)
+  #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71E8F>)
+(HANDLE-REQUESTS #<MULTITHREADED-CONNECTION #x302001A1CBED> NIL)
+(REPL-LOOP #<MULTITHREADED-CONNECTION #x302001A1CBED>)
+(FUNCALL (:INTERNAL SWANK::SPAWN-REPL-THREAD))
+(CALL-WITH-BINDINGS
+  ((*PRINT-PRETTY*) (*PRINT-LEVEL*) (*PRINT-LENGTH*) (*PRINT-CIRCLE* . T) (*PRINT-CASE* . :DOWNCASE) ...)
+  #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::SPAWN-REPL-THREAD) #x302001B7222F>)
+(FUNCALL (:INTERNAL SWANK::SPAWN-REPL-THREAD))
+(RUN-PROCESS-INITIAL-FORM #<PROCESS repl-thread(14) [Active] #x302001B6015D> (#<CCL:COMPILED-LEXICAL-CLOSURE # #x302001B5FEEF>))
+(FUNCALL (:INTERNAL (CCL::%PROCESS-PRESET-INTERNAL (CCL:PROCESS))) #<PROCESS repl-thread(14) [Active] #x302001B6015D> (#<CCL:COMPILED-LEXICAL-CLOSURE # #x302001B5FEEF>))
+(FUNCALL (:INTERNAL CCL::THREAD-MAKE-STARTUP-FUNCTION))
+--------------------------------------------------------------------------------
+#+END_SRC
+
+* TODO 00030 declaration & charger                                      :cli:
+Une déclaration avant CHARGER doit être sans effet.
+LIBERER V;LIBERER V devrait être accepté aussi.
+
 * TODO 00024 lecture fin de ruban                                       :cli:
 
 When reaching the end of the tape while reading commands (and perhaps
@@ -637,78 +560,6 @@ CCL::BASIC-FILE-CHARACTER-INPUT-STREAM): NIL of type NULL
     
 PRET
 
-* TODO 00023 pg49,pg49b,pg71 SCH LO=0                                   :cli:
-
-SCH(P,1,0) est valide et doit retourner une chaîne de longueur 0.
-
-au lieu de ça on obtient une erreur:
-#+BEGIN_SRC(lse)
-ERREUR EN LIGNE  11 : LE 3E ARGUMENT POUR SCH, 0.0, N'EST PAS VALIDE: L'ARGUMENT LONGEUR DOIT ETRE UN
-ENTIER SUPERIEUR OU EGAL A 1 (OU BIEN UNE CHAINE).
-#+END_SRC(lse)
-
-#+BEGIN_SRC(lse)
-1*PROGRAMME DE CLASSEMENT PAR ORDRE ALPHABETIQUE
-2 CHAINE CH,MOT;AFFICHER 'MOT: ';LIRE CH;CH_GRL(CH,1)!'.'
-3 AFFICHER 'MOT: ';LIRE MOT;MOT_GRL(MOT,1)
-4 SI MOT='FIN' ALORS DEBUT AFFICHER CH;TERMINER FIN
-5 CH_&INTER(MOT,CH);ALLER EN 3
-9* PROCEDURE FONCTION D'INTERCLASSEMENT
-10 PROCEDURE &INTER(X,P);Z_1
-11 SI X<GRL(P,Z) ALORS RESULTAT SCH(P,1,Z-1)!X!' '!SCH(P,Z,'.')!'.'
-12 Z_PTR(P,Z+1,' .');SI SCH(P,Z,1)#'.' ALORS DEBUT Z_Z+1;ALLER EN 11 FIN
-13 RESULTAT SCH(P,1,'.')!' '!X!'.'
-251*EXTRAIT DE "LANGAGE SYMBOLIQUE D'ENSEIGNEMENT L.S.E. MANUEL D'UTILISATION"
-252*BULLETIN DE LIAISON "L'INFORMATIQUE ET L'ENSEIGNEMENT SECONDAIRE" JAN 1975
-253*C.LAFOND - INSTITUT NATIONAL DE RECHERCHE ET DE DOCUMENTATION PEDAGOGIQUES
-254*PROGRAMME PG49, PAGE 105, TRI PAR ORDRE ALPHABETIQUE
-255*[PAS TESTE SUR EMULSE]
-#+END_SRC
-
-* TODO 00021 pg43,46,47,51,76  faire enchevetree                        :cli:
-
-2 FAIRE 2 POUR I_1 JUSQUA 5;FAIRE 2 POUR J_1 JUSQUA 5;A[I,J]_J+5*(I-1)
-ERREUR EN LIGNE   2 : BOUCLE FAIRE 2 POUR J ENCHEVETREE AVEC LA BOUCHE FAIRE 2 POUR I DE LA LIGNE 2
-
-Il ne devrait pas y avoir d'erreur dans ce cas.
-
-* TODO 00015 PG28 TANT QUE SCH()#'**' fails.                            :cli:
-
-#+BEGIN_SRC(lse)
-EXECUTER A PARTIR DE 1
-CLE : 3
-DONNER LE TEXTE;TERMINER PAR ***
-*ello\\\\\HELLO WORLD!***
-PRET
-TEXTE
-PRET
-?TEXTE
-HELLO WORLD!
-?I
-19791
-II_0
-?I
-19791
-II_\\0\_0
-?I
-0
-S\?SCH(TEXTE,I,2)
-ERREUR : LE 2E ARGUMENT POUR SCH, 0.0, N'EST PAS VALIDE: L'ARGUMENT DEBUT DOIT
-ETRE UN NOMBRE ENTIER SUPERIEUR OU EGAL A 1.
-PRET
-?SCH(TEXTE,I,1)
-ERREUR : LE 2E ARGUMENT POUR SCH, 0.0, N'EST PAS VALIDE: L'ARGUMENT DEBUT DOIT
-ETRE UN NOMBRE ENTIER SUPERIEUR OU EGAL A 1.
-PRET
-I_1
-?SCH(TEXTE,I,1)
-H
-CONTINUER
-ERREUR : FILL POINTER OF #() IS 0 .
-PRET 
-
-#+END_SRC
-* TODO 00014 PG27 TANT QUE N#99 doesn't fail when N is read as 99.      :cli:
 * TODO 00012 AP 1: Parsing errors in commands fail catastrophically.    :cli:
 
 Parsing errors in command argument fails catastrophically.
@@ -750,6 +601,87 @@ UN-PROGRAMME --> (COM.INFORMATIMAGO.RDP:SEQ (COM.INFORMATIMAGO.LSE::IDENT) ((LIS
 --------------------------------------------------------------------------------
 Calling COM.INFORMATIMAGO.LSE:TERMINAL-FINALIZE on a COM.INFORMATIMAGO.LSE.UNIX-TERMINAL:UNIX-TERMINAL not initialized.
 [pjb@larissa :0.0 src]$ 
+#+END_SRC
+
+* TODO 00032 afficher[*'I']N                                            :cli:
+
+#+BEGIN_SRC(lse)
+AFFICHER[/,*'I---','I',/]4
+I---I---I---I---I
+
+N_5;AFFICHER[/,*'I---','I',/]N
+ERROR: Unknown type specifier: IDENTIFIER
+--------------------------------------------------------------------------------
+(BACKTRACE-AS-LIST :CONTEXT NIL :PROCESS NIL :ORIGIN NIL :COUNT 1152921504606846975 :START-FRAME-NUMBER 0 :PRINT-LEVEL 2 :PRINT-LENGTH 5 :SHOW-INTERNAL-FRAMES NIL)
+(FUNCALL (:INTERNAL REPORT COMMAND-REPL) #<SIMPLE-ERROR #x302004722EFD>)
+(FUNCALL (:INTERNAL DEBUG-ERROR COMMAND-REPL) #<SIMPLE-ERROR #x302004722EFD>)
+(SIGNAL #<SIMPLE-ERROR #x302004722EFD>)
+(%ERROR #<SIMPLE-ERROR #x302004722EFD> NIL 77142635)
+(RUN-STEP #<LSE-VM 1 global variable, 0 local frames, 1 line, current line 0 #x3020045B07CD>)
+(FUNCALL #<STANDARD-METHOD VM-RUN (LSE-VM)> #<LSE-VM 1 global variable, 0 local frames, 1 line, current line 0 #x3020045B07CD>)
+(LSE-COMPILE-AND-EXECUTE #<TASK #x3020045B08AD> "N_4;AFFICHER[/,*'I---','I',/]N")
+(COMMAND-EVAL-LINE #<TASK #x3020045B08AD> "N_4;AFFICHER[/,*'I---','I',/]N")
+(FUNCALL (:INTERNAL DO-IT COMMAND-REPL))
+(COMMAND-REPL #<TASK #x3020045B08AD>)
+(MAIN NIL)
+(CALL-CHECK-REGS COM.INFORMATIMAGO.LSE.CLI:MAIN)
+(CHEAP-EVAL (COM.INFORMATIMAGO.LSE.CLI:MAIN))
+(EVAL-REGION "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+")
+(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
+(TRACK-PACKAGE #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B0F9F>)
+(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
+(CALL-WITH-RETRY-RESTART "Retry SLIME REPL evaluation request." #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B102F>)
+(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
+(FUNCALL #<Anonymous Function #x30200182569F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B106F>)
+(CALL-WITH-SYNTAX-HOOKS #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B106F>)
+(CALL-WITH-BUFFER-SYNTAX NIL #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B106F>)
+(REPL-EVAL "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+")
+(LISTENER-EVAL
+  "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+"
+  :WINDOW-WIDTH
+  NIL)
+(CALL-CHECK-REGS
+  SWANK:LISTENER-EVAL
+  "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+")
+(CHEAP-EVAL (SWANK:LISTENER-EVAL
+  "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+"))
+(EVAL-FOR-EMACS
+  (SWANK:LISTENER-EVAL
+  "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+")
+  "COM.INFORMATIMAGO.LSE"
+  126)
+(PROCESS-REQUESTS NIL)
+(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
+(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
+(FUNCALL SWANK-BACKEND:CALL-WITH-DEBUGGER-HOOK #<Compiled-function SWANK:SWANK-DEBUGGER-HOOK #x3020019AB05F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71EDF>)
+(CALL-WITH-DEBUGGER-HOOK #<Compiled-function SWANK:SWANK-DEBUGGER-HOOK #x3020019AB05F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71EDF>)
+(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
+(CALL-WITH-BINDINGS
+  ((*STANDARD-OUTPUT* . #) (*STANDARD-INPUT* . #) (*TRACE-OUTPUT* . #) (*ERROR-OUTPUT* . #) (*DEBUG-IO* . #<TWO-WAY-STREAM input #, output # #x302001B68EBD>) ...)
+  #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71E8F>)
+(HANDLE-REQUESTS #<MULTITHREADED-CONNECTION #x302001A1CBED> NIL)
+(REPL-LOOP #<MULTITHREADED-CONNECTION #x302001A1CBED>)
+(FUNCALL (:INTERNAL SWANK::SPAWN-REPL-THREAD))
+(CALL-WITH-BINDINGS
+  ((*PRINT-PRETTY*) (*PRINT-LEVEL*) (*PRINT-LENGTH*) (*PRINT-CIRCLE* . T) (*PRINT-CASE* . :DOWNCASE) ...)
+  #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::SPAWN-REPL-THREAD) #x302001B7222F>)
+(FUNCALL (:INTERNAL SWANK::SPAWN-REPL-THREAD))
+(RUN-PROCESS-INITIAL-FORM #<PROCESS repl-thread(14) [Active] #x302001B6015D> (#<CCL:COMPILED-LEXICAL-CLOSURE # #x302001B5FEEF>))
+(FUNCALL (:INTERNAL (CCL::%PROCESS-PRESET-INTERNAL (CCL:PROCESS))) #<PROCESS repl-thread(14) [Active] #x302001B6015D> (#<CCL:COMPILED-LEXICAL-CLOSURE # #x302001B5FEEF>))
+(FUNCALL (:INTERNAL CCL::THREAD-MAKE-STARTUP-FUNCTION))
+--------------------------------------------------------------------------------
 #+END_SRC
 
 * TODO 00022 pg44 affichage format                                      :cli:
@@ -1064,6 +996,72 @@ anything, and keeping the ports open indefinitely.  For example:
         tcp        0      0 88.198.62.69:8115       92.163.81.111:62166     ESTABLISHED 25565/lse
 
 #+END_SRC
+
+* TODO 00033 specificités T-1600 / Mitra-15                             :cli:
+
+T-1600:   fonctions SH, CH, TH, SGN, UN et ZER.
+
+Mitra-15: instruction SUPPRIMER pour supprimer un fichier donnée.
+
+T-1600:   10 ALLER EN @+3 -> aller en 13
+
+Mitra-15: 10 I_@50 ; 20 ALLER EN I -> aller en 50
+          renumérotage tient compte de @50.
+
+Voir aussi les autres limitations; par exemple sur les fichiers.  Un
+fichier Mitra-15/T-1600 avait des blocks de 256 octets (Mitra-15
+pouvant écrire les chaines sur plusieurs blocks).  Les fichiers
+implémentés par nasium ont des blocs de 1024 octets.
+
+                          LSE-MITRA-15        LSE-T1600      LSE-UNIX
+------------------------  -----------------  --------------  --------------
+
+commandes:                ------------------------------     --------------
+                                  IDentification
+                                  DRoits
+                                  BOnjour
+                                  ADieux
+                                  PRendre etat console
+                          ------------------------------     --------------
+
+------------------------  -----------------  --------------  --------------
+fonctions:                                                   ENV(nom)
+                                                             ARG(i[,r]) -- pas encore implémenté
+                                                             LISP(e,p,r) -- debugging
+------------------------  -----------------  --------------  --------------
+extensions:
+
+   fonction ATT()
+   fonction DIS(secteur) -- non implémenté
+   fonction ETL(a,b)
+   fonction OUL(a,b)
+   fonction OUX(a,b)
+   fonction XIT(ea)
+
+------------------------  -----------------  --------------  --------------
+numéro de ligne            1-250              1-255          1-65535
+max longueur de ligne      80                 80             65535
+
+max répetition format      ?                  62             ?              pas implémenté
+------------------------  -----------------  --------------  --------------
+sémantique @               I_@50 = ligne      ALLER EN @+3   pas implémenté
+------------------------  -----------------  --------------  --------------
+longueur chaine max       65536               256            65536
+------------------------  -----------------  --------------  --------------
+EQC max code              128                 256            cl:char-code-limit
+                                                             eg. 1114112 avec unicode
+------------------------  -----------------  --------------  --------------
+AFFICHER[Fn.m,En.m]VE,TA  non                oui             oui
+------------------------  -----------------  --------------  --------------
+PAUSE EN LIGNE 000                                  x              x
+TERMINE EN LIGNE 000                                x              x
+PAUSE                            x
+TERMINE                          x
+------------------------  -----------------  --------------  --------------
+
+
+Mentionné: T-1600: $ signifie quelque chose.
+Annoncé: Mitra-15: procédures externes rangées sur disque (Quelle syntaxe? #proc()?)
 
 * DONE 00005 telnet inetd lse.sh cli reads C-s instead of RET           :cli:
   CLOSED: [2014-06-08 Sun 09:48]

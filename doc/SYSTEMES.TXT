@@ -18,14 +18,24 @@ particularités d'un terminal Mitra-15  (X-OFF, echo, bell, Ctrl-A, \).
 D'autre part, un serveur accessible via le réseau simulant le
 fonctionnement d'un système L.S.E sur Mitra-15, avec plusieurs
 consoles (ce qui permet le travail en groupe, notament par la commande
-PRENDRE ETAT CONSOLE).  Ce serveur est muni d'une facade permettant de
-sélectionner la machine Mitra-15 virtuelle avec laquel on se connecte,
-et d'un outil d'administration permettant de configurer ces machines
-virtuelles et de les sécuriser (mots-de-passe, etc).
+PRENDRE ETAT CONSOLE).  Ce serveur est muni d'une façade permettant de
+sélectionner la machine Mitra-15 ou T-1600 virtuelle avec laquelle on
+se connecte, et d'un outil d'administration permettant de configurer
+ces machines virtuelles et de les sécuriser (mots-de-passe, etc).
 
 ==>  On accède au serveur via telnet, et le serveur utilise le
      protocole telnet pour gérer le terminal (X-OFF, echo, bell,
      Ctrl-A, \).
+
+
+Note: le système serveur L.S.E. n'est pas encore implémenté.  Pour
+l'instant, on peut accéder à un serveur exécutant le système
+L.S.E. unix via telnet ou http. Ce serveur n'offre aucune sécurité
+pour les programmes des utilisateurs ou des groupes.
+
+Par telnet: telnet://nasium-lse.ogamita.com:8115
+
+Par http: http://nasium-lse.ogamita.com:8117
 
 
 
@@ -120,7 +130,7 @@ par défaut.
 
 
 Commandes
-.........
+=========
 
 
 Pour toutes les commandes ou instructions prenant un nom de fichier,
@@ -251,7 +261,7 @@ EXECUTER ec[,ea]
 
 
 Instructions
-............
+============
 
 
 GARER id,ea,ec
@@ -279,7 +289,7 @@ CHANGER REPERTOIRE ec
 
 
 Fonctions
-.........
+=========
 
 
 REP()
@@ -386,11 +396,11 @@ Fichiers programmes
 
 Les fichiers programmes d'extension '.lse' sont des fichiers texte
 unix normaux.  Les lignes sont terminées par un code ASCII Line Feed
-(LF, 10).  Elles sont encodées en UTF-8, si les chaînes ou les
-commentaires contiennent des lettres accentuées.
+(LF, 10).  Elles sont encodées en UTF-8, ce qui peut être sensible sur
+les chaînes ou les commentaires contenant des lettres accentuées.
 
-Les lignes vides ou ne contenant que des espaces sont ignorées (elles
-ne sont pas générée).  Chaque ligne de programme doit commencer par un
+Les lignes vides ou ne contenant que des espaces sont ignorées (et ne
+sont pas générée).  Chaque ligne de programme doit commencer par un
 numéro de ligne.  Elles ne sont pas forcément dans l'ordre, et si un
 numéro se répète, la dernière prend le dessus.  Dans les fichiers
 généres, il n'y a pas de numéro de ligne en double, et les lignes sont
@@ -410,7 +420,8 @@ Les fichiers données ont une structure par enregistrement. Chaque
 enregistrement est un bloc de taille fixe de 1024 octets.  Chaque
 enregistrement peut contenir une donnée de type:
 
-    - nombre (flottant IEEE-754 32 bits, ordre des octets "big endian").
+    - nombre (flottant IEEE-754 32 bits, avec l'octet le plus
+      signifiant en premier).
     - un tableau de nombre (IEEE-754 32 bits) à une dimension.
     - un tableau de nombre (IEEE-754 32 bits) à deux dimensions.
     - une chaîne de caractère encodée en UTF-8.
@@ -427,18 +438,19 @@ Les 4 octets du premier bloc de position 1016 à 1019 contiennent la
 position de la liste des bloc libres, ou 0 s'il n'y en a pas.
 
 Les blocs libres sont les enregistrements qui ont été supprimés.
-Chaque bloc libre contient dans ses octets 4 à 7 (ordre "big-endian"),
-la position du bloc libre suivant dans la liste, le dernier contient
-0.
+Chaque bloc libre contient dans ses octets 4 à 7 (ordre avec l'octet
+le plus signifiant en premier), la position du bloc libre suivant dans
+la liste, le dernier contient 0.
 
-Les 4 derniers octets du premier bloc (positions 1020 à
-1023) indiquent la position de la table des enregistrement à la fin du
+Les 4 derniers octets du premier bloc (positions 1020 à 1023)
+indiquent la position de la table des enregistrement à la fin du
 fichier, ou 0 s'il elle n'existe pas (elle peut alors être ajoutée
 automatiquement lors de la prochaine fermeture du fichier).
 
 Le fichier peut contenir une table des enregistrements à la fin, qui
 est une séquence triée de numéros d'enregistrement et de position dans
-le fichier, tout les deux sur 32-bit en ordre "big-endian".
+le fichier, tout les deux sur 32 bits avec l'octet le plus signifiant
+en premier.
 
 
     | numero | position |
@@ -450,8 +462,8 @@ Les enregistrements ont le format suivant:
     | numero : type | donnée … |
 
 Le numéro d'enregistrement est stocké dans les trois premiers octets,
-en ordre big endian.  Le type de donnée est indiqué par le quatrième
-octet:
+avec l'octet le plus signifiant en premier.  Le type de donnée est
+indiqué par le quatrième octet:
 
     0 = enregistrement supprimé.
     1 = nombre.
@@ -459,40 +471,43 @@ octet:
     3 = tableau de dimensions deux.
     4 = chaîne.
 
-Le format de donnée depent de son type.
+Le format de donnée dépend de son type.
 
 
 Enregistrement Nombre
 
     | numero : 1 | nombre |
 
-    Les nombres sont des nombres flottant IEEE 754 en ordre "big-endian".
+    Les nombres sont des nombres flottant IEEE 754 avec l'octet le
+    plus signifiant en premier.
 
 
 Enregistrement Tableau à une dimension
 
     | numero : 2 | dimension | nombre | … | nombre |
 
-    Les nombres sont des nombre flottant IEEE 754 en ordre "big-endian".
+    Les nombres sont des nombre flottant IEEE 754 avec l'octet le
+    plus signifiant en premier.
 
 
 Enregistrement Tableau à deux dimensions
 
     | numero : 3 | dimension-1 | dimension-2 | nombre | … | nombre |
 
-    Les nombres sont des nombre flottant IEEE 754 en ordre
-    "big-endian".  Les nombres sont enregistrés dans l'ordre: T[1,1]
-    T[1,2] T[1,3] T[2,1] T[2,2] T[2,3] T[3,1] T[3,2] T[3,3] T[4,1]
-    T[4,2] T[4,3]    
+    Les nombres sont des nombre flottant IEEE 754 avec l'octet le
+    plus signifiant en premier.  Les nombres sont enregistrés dans
+    l'ordre: T[1,1] T[1,2] T[1,3] T[2,1] T[2,2] T[2,3] T[3,1] T[3,2]
+    T[3,3] T[4,1] T[4,2] T[4,3]    
 
 Enregistrement Chaîne
 
     | numero : 4 | longueur | code | … | code |
 
-    La longeur est donnée sur deux octets en ordre "big-endian".  La
+    La longeur est donnée sur deux octets avec l'octet le plus
+    signifiant en premier.  C'est le nombre d'octet de code.  La
     chaîne est encodée en UTF-8.  La longueur maximum de la chaîne est
-    donc 1018 octets, ce qui donne un nombre  de caractères inférieur
-    ou égal à 1028 selon l'encodage UTF-8.
+    donc 1018 octets, ce qui donne un nombre de caractères inférieur
+    ou égal à 1018 selon l'encodage UTF-8.
 
 
 

@@ -228,14 +228,19 @@ so that if next command is ine, we continue automatically.")
     (cons name fictype)))
 
 (defmethod task-open-file ((task task) name fictype &key (if-does-not-exist :create))
-  (let ((key (file-key name fictype)))
-    (or (gethash key (task-files task))
-        (let ((file (handler-case (lse-data-file-open (catalog-pathname name fictype)
-                                                      :if-does-not-exist if-does-not-exist)
-                      (file-error (err)
-                        (error-no-file name fictype (file-error-pathname err))))))
-          (when file
-            (setf (gethash key (task-files task)) file))))))
+  (let* ((key (file-key name fictype))
+         (file (gethash key (task-files task))))
+    (cond
+      ((null file)
+       (let ((file (handler-case (lse-data-file-open (catalog-pathname name fictype)
+                                                     :if-does-not-exist if-does-not-exist)
+                     (file-error (err)
+                       (error-no-file name fictype (file-error-pathname err))))))
+         (when file
+           (setf (gethash key (task-files task)) file))))
+      ((lse-data-file-open-p file) file)
+      (t (task-close-file task name fictype)
+         (task-open-file  task name fictype :if-does-not-exist if-does-not-exist)))))
 
 (defmethod task-close-file ((task task) name fictype)
   (let* ((key (file-key name fictype))

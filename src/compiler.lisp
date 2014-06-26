@@ -335,7 +335,11 @@
                    (:charger    "CHARGER ")
                    (:supprimer  "SUPPRIMER ")
                    (:executer   "EXECUTER ")))
-          (dolist/separator (item (rest expr) ",")
+          (dolist/separator (item (if (and (eq  (first expr) :charger)
+                                           (null (first (last expr))))
+                                      (butlast (rest expr))
+                                      (rest expr))
+                                ",")
             (unparse-tree item)))
          
          (:decl-procedure

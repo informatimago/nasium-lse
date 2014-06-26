@@ -1147,7 +1147,8 @@ Voir les commandes ETAGERE DE RUBAN, SELECTIONNER RUBAN, RUBAN, PERFORER A PARTI
             (write-line (io-read-line *task*) dst)
             (copy-stream src dst)
             (close src)
-            (setf (task-tape-output *task*) nil))
+            (setf (task-tape-output *task*) nil)
+            (io-new-line *task*))
           (error 'lse-file-error
                  :backtrace (or #+ccl (ccl::backtrace-as-list))
                  :pathname dst-path
@@ -1465,6 +1466,17 @@ Cette commande consiste à lire les instructions contenues dans le
 fichier à décoder et à les compiler.
 
 Voir les commandes DECODER, APPELER, RANGER, MODIFIER."
+
+  ;; TODO:
+  
+  ;; Sur Mitra-15, fonctionne comme APpeler: le programme courant est
+  ;; effacé et remplacé par le programme chargé.
+
+  ;; Sur T-1600, encoder remplace ligne par ligne, sans effacer le
+  ;; reste du programme courant.
+
+  ;; On s'arrête à la première erreur.
+  
   (io-new-line *task*)
   (let* ((path      (catalog-pathname fichier :T))
          (vm        (task-vm *task*)))
@@ -1482,14 +1494,20 @@ Voir les commandes DECODER, APPELER, RANGER, MODIFIER."
                                                 :until (char= (aref chunk (1- (length chunk))) *nul*))
                                            (lse-data-file-close file))
                                          ""))))
-            (io-format *task* "~2&~A~2&" source)
+            #+debugging (io-format *task* "~2&~A~2&" source)
+            ;; #+lse-mitra-15 (let* ((path      (catalog-pathname pgm :p))
+            ;;                       (vm        (task-vm *task*))
+            ;;                       (new-pgm   (compile-lse-file path pgm)))
+            ;;                  (vm-terminer vm)
+            ;;                  (replace-program vm new-pgm)
+            ;;                  (values))
             (with-input-from-string (stream source)
               (dolist (line (compile-lse-stream stream))
-                ;; ENCODER merges the lines.
-                (when (and (<= from (first line))
+                ;; ENCODER merges the lines on T-1600 and unix.
+                (when (and (<= from (code-line line))
                            (or (null to)
-                               (<= (first line) to)))
-                  (put-line vm (first line) line)))))
+                               (<= (code-line line) to)))
+                  (put-line vm (code-line line) line)))))
           (error 'lse-file-error
                  :backtrace (or #+ccl (ccl::backtrace-as-list))
                  :pathname path
@@ -1874,75 +1892,88 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
   (let ((*task* task)
         (*print-case* :upcase))
     (pret task)
-    (handler-case                       ; catch au-revoir condition.
-        (loop
-          :while (task-state-awake-p task)
-          :do (restart-case
-                  (handler-case
-                      (flet ((do-it ()
-                               (setf (task-interruption task) nil)
-                               ;; (unless (task-silence task)
-                               ;;   (io-new-line task))
-                               (io-finish-output task)
-                               (handler-case
-                                   (let ((line (io-read-line task :beep (not (task-silence task)))))
-                                     (if (task-interruption task)
-                                         (progn
-                                           (io-standard-redirection task)
-                                           (echo)
-                                           (pret task))
-                                         (command-eval-line task line)))
-                                 (end-of-file (err)
-                                   (if (and (io-tape-input-p task)
-                                            (eql (stream-error-stream err) (task-input task)))
-                                       (io-stop-tape-reader task)
-                                       ;; end-of-file on input, let's exit.
-                                       (signal 'au-revoir))))))
-                        #+debugging
-                        (if *debug-repl*
-                            (labels ((report (err)
-                                       (format *error-output* "ERROR: ~A~%" err)
-                                       (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
-                                               (if (typep err 'lse-error)
-                                                   (or (lse-error-backtrace err)
-                                                       #+ccl (ccl::backtrace-as-list))
-                                                   #+ccl (ccl::backtrace-as-list)))
-                                       (finish-output *error-output*))
-                                     (signal-error (err) (report err) (signal err))
-                                     (debug-error  (err) (report err) (invoke-debugger err)))
-                              (handler-bind ((lse-error     (function signal-error))
-                                             (scanner-error (function signal-error))
-                                             (parser-error  (function signal-error))
-                                             (file-error    (function signal-error))
-                                             (error         (function debug-error)))
-                                (do-it)))
-                            (do-it))
-                        #-debugging
-                        (do-it))
-                    (lse-scanner-error-invalid-character (err)
-                      (io-format task "~%ERREUR: ~?~%"
-                                 "CARACTÈRE INVALIDE ~A~:[~*~; (~D~)~] EN POSITION ~D"
-                                 (destructuring-bind (ch pos) (scanner-error-format-arguments err)
-                                   (list
-                                    (if (<= 32 (char-code ch))
-                                        (format nil "'~A'" ch)
-                                        (format nil ".~A." (char-code ch)))
-                                    (<= 32 (char-code ch))
-                                    (char-code ch)
-                                    pos)))
-                      (pret task))
-                    (error (err)
-                      (error-format task err)
-                      (pret task))
-                    (user-interrupt (condition)
-                      #+debugging (io-format task "~%-Condition: ~A~%" condition)
-                      (io-format task "   ")
-                      (io-standard-redirection task)
-                      (echo)
-                      (pret task)))
-                (continue ()
-                  :report "CONTINUER")))
-      (au-revoir () (values)))))
+    (labels ((reset-ready ()
+               (io-standard-redirection task)
+               (echo) ; prints a new line
+               (io-format task "   ")
+               (pret task))
+
+             (do-it ()
+               (setf (task-interruption task) nil)
+               ;; (unless (task-silence task)
+               ;;   (io-new-line task))
+               (io-finish-output task)
+               (handler-case
+                   (let ((line (io-read-line task :beep (not (task-silence task)))))
+                     (if (task-interruption task)
+                         (reset-ready)
+                         (command-eval-line task line)))
+                 (end-of-file (err)
+                   (if (and (io-tape-input-p task)
+                            (eql (stream-error-stream err) (task-input task)))
+                       (io-stop-tape-reader task)
+                       ;; end-of-file on input, let's exit:
+                       (signal 'au-revoir)))))
+             
+             (invalid-character-error (err)
+               (io-format task "~%ERREUR: ~?~%"
+                          "CARACTÈRE INVALIDE ~A~:[~*~; (~D~)~] EN POSITION ~D"
+                          (destructuring-bind (ch pos) (scanner-error-format-arguments err)
+                            (list
+                             (if (<= 32 (char-code ch))
+                                 (format nil "'~A'" ch)
+                                 (format nil ".~A." (char-code ch)))
+                             (<= 32 (char-code ch))
+                             (char-code ch)
+                             pos)))
+               (pret task))
+             
+             (report-error (err)
+               (error-format task err)
+               (pret task))
+             
+             (user-interrupt (condition)
+               #+debugging (io-format task "~%-Condition: ~A~%" condition) 
+              (reset-ready))
+
+             #+debugging
+             (debug-report-error (err)
+               (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
+                       (if (typep err 'lse-error)
+                           (or (lse-error-backtrace err)
+                               #+ccl (ccl::backtrace-as-list))
+                           #+ccl (ccl::backtrace-as-list)))
+               (format *error-output* "COMMAND ERROR: ~A~%" err)
+               (finish-output *error-output*))
+
+             #+debugging
+             (report-and-signal-error (err) (debug-report-error err) (signal err))
+
+             #+debugging
+             (report-and-debug-error  (err) (debug-report-error err) (invoke-debugger err)))
+      
+      (handler-case                       ; catch au-revoir condition.
+          (loop
+            :while (task-state-awake-p task)
+            :do (restart-case
+                    (handler-case
+                        #-debugging (do-it)
+                        #+debugging (if *debug-repl* 
+                                        (handler-bind ((lse-error     (function report-and-signal-error))
+                                                       (scanner-error (function report-and-signal-error))
+                                                       (parser-error  (function report-and-signal-error))
+                                                       (file-error    (function report-and-signal-error))
+                                                       (error         (function report-and-debug-error)))
+                                          (do-it))
+                                        (do-it))
+
+                        (lse-scanner-error-invalid-character (err) (invalid-character-error err))
+                        (error                               (err) (report-error err))
+                        (user-interrupt                      (cnd) (user-interrupt cnd)))
+                  
+                  (continue () :report "CONTINUER")))
+        
+        (au-revoir () (values))))))
 
 
 

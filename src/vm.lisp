@@ -433,7 +433,6 @@ RETURN: vm
 
 
 (defun afficher-nl      (vm rep)
-  (declare (ignore vm))
   (io-line-feed *task* (deref vm rep)))
 
 (defun afficher-cr      (vm rep)
@@ -441,15 +440,12 @@ RETURN: vm
   (io-carriage-return *task*))
 
 (defun afficher-space   (vm rep)
-  (declare (ignore vm))
   (io-format *task* "~VA" (deref vm rep) ""))
 
 (defun afficher-newline (vm rep)
-  (declare (ignore vm))
   (io-new-line *task* (deref vm rep)))
 
 (defun afficher-chaine (vm rep val)
-  (declare (ignore vm))
   (check-type rep (or (integer 1) nombre identifier named-slot))
   (check-type val chaine)
   (io-format *task* "~A" 
@@ -529,7 +525,7 @@ RETURN: vm
         (if (member (variable-type var) '(:undefined chaine))
             (setf (variable-type  var) 'chaine
                   (variable-value var) :unbound)
-            (lse-error "LA VARIABLE ~A EXISTE DEJA ET N'EST PAS UNE CHAINE" ident))
+            (lse-error "LA VARIABLE ~A EXISTE DEJA ET N'EST PAS UNE CHAINE; UTILISEZ LIBERER?" ident))
         (add-global-variable vm (make-instance 'lse-variable
                                       :name ident
                                       :type 'chaine
@@ -548,7 +544,7 @@ RETURN: vm
                        (member (first (variable-type var)) '(vecteur tableau))))
               (setf (variable-type  var) `(vecteur ,dim)
                     (variable-value var) (init-value dim))
-              (lse-error "LA VARIABLE ~A EXISTE DEJA ET N'EST PAS UN TABLEAU" ident))
+              (lse-error "LA VARIABLE ~A EXISTE DEJA ET N'EST PAS UN TABLEAU; UTILISEZ LIBERER?" ident))
           (add-global-variable vm (make-instance 'lse-variable
                                         :name  ident
                                         :type  `(vecteur ,dim)
@@ -569,7 +565,7 @@ RETURN: vm
                        (member (first (variable-type var)) '(vecteur tableau))))
               (setf (variable-type  var) `(tableau ,dim1 ,dim2)
                     (variable-value var) (init-value dim1 dim2))
-              (lse-error "LA VARIABLE ~A EXISTE DEJA ET N'EST PAS UN TABLEAU" ident))
+              (lse-error "LA VARIABLE ~A EXISTE DEJA ET N'EST PAS UN TABLEAU; UTILISEZ LIBERER?" ident))
           (add-global-variable vm (make-instance 'lse-variable
                                         :name  ident
                                         :type  `(tableau ,dim1 ,dim2)
@@ -582,13 +578,12 @@ NOTE: on ne peut pas liberer un parametre par reference.
 "
   (check-type ident identificateur)
   (multiple-value-bind (var frame) (find-variable vm ident)
-    (if var
-        (etypecase var
-          (lse-variable
-           (remove-variable frame var))
-          (reference-parameter
-           (lse-error "LA VARIABLE ~A EST UN PARAMETRE PAR REFERENCE ET NE PEUT PAS ETRE LIBEREE" ident)))
-        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+    (when var
+      (etypecase var
+        (lse-variable
+         (remove-variable frame var))
+        (reference-parameter
+         (lse-error "LA VARIABLE ~A EST UN PARAMETRE PAR REFERENCE ET NE PEUT PAS ETRE LIBEREE" ident))))))
 
 
 
@@ -1300,12 +1295,12 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
 
 
 (defun charger (vm enr fic ident status-ident)
-  (let ((statvar (and status-ident (find-variable vm status-ident))))
-    (when (and status-ident (not statvar))
-      (setf statvar (add-global-variable vm (make-instance 'lse-variable
-                                                :name status-ident
-                                                :type 'nombre
-                                                :value 0))))
+  (let ((statvar (and status-ident
+                      (or (find-variable vm status-ident)
+                          (add-global-variable vm (make-instance 'lse-variable
+                                                                 :name status-ident
+                                                                 :type 'nombre
+                                                                 :value 0))))))
     (multiple-value-bind (ficname fictype) (validate-file-name (deref vm fic))
       (let ((file (task-open-file *task* ficname fictype
                                   :if-does-not-exist (if status-ident
@@ -1326,14 +1321,15 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                              :format-arguments (list enr ficname)))
                   (let ((var (or (find-variable vm ident)
                                  (add-global-variable vm (make-instance 'lse-variable
-                                                             :name ident)))))
+                                                                        :name ident)))))
                     (setf (variable-type var) (case status
                                                 (0 'nombre)
                                                 (1 `(vecteur ,(array-dimension data 0)))
                                                 (2 `(tableau ,(array-dimension data 0)  ,(array-dimension data 1)))
                                                 (3 'chaine))
-                          (variable-value var) data
-                          (variable-value statvar) status))))
+                          (variable-value var) data)
+                    (when statvar
+                      (setf (variable-value statvar) status)))))
             ;; No file:
             (if status-ident
                 (setf (variable-value statvar) -2)
@@ -1402,152 +1398,149 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
 
 
 (defun run-step (vm)
-  (catch 'run-step-done
-    (handler-case
-        (flet ((run ()
-                 (let ((stack (vm-stack vm))
-                       (code  (vm-code  vm))
-                       (*vm*  vm))
-                   (handler-case
-                       (terminal-yield (task-terminal *task*))
-                     (user-interrupt (condition)
-                       (if (eql +sigquit+ (user-interrupt-signal condition))
-                           (setf (task-signal *task*) t)
-                           (signal condition))))
-                   (flet ((spush  (val) (vector-push-extend val stack))
-                          (spop   ()    (vector-pop stack))
-                          (pfetch ()    (prog1 (aref code (vm-pc.offset vm))
-                                          (incf (vm-pc.offset vm)))))
-                     (declare (inline spush spop pfetch))
-                     (macrolet ((op-1*  (op) `(spush (,op (deref vm (spop)))))
-                                (op-2*  (op) `(spush (let ((b (spop))) (,op (deref vm (spop)) (deref vm b)))))
-                                (op-0   (op) `(,op vm))
-                                (op-1   (op) `(,op vm (spop)))
-                                (op-2   (op) `(let ((b (spop))) (,op vm (spop) b)))
-                                (op-3   (op) `(let ((c (spop)) (b (spop))) (,op vm (spop) b c)))
-                                (op-0/1 (op) `(,op vm (pfetch)))
-                                (op-1/1 (op) `(,op vm (spop) (pfetch)))
-                                (op-2/1 (op) `(let ((b (spop))) (,op vm (spop) b (pfetch))))
-                                (op-3/1 (op) `(let ((c (spop)) (b (spop))) (,op vm (spop) b c (pfetch))))
-                                (op-4/1 (op) `(let ((d (spop)) (c (spop)) (b (spop))) (,op vm (spop) b c d (pfetch))))
-                                (op-0/2 (op) `(,op vm (pfetch) (pfetch)))
-                                (op-2/2 (op) `(let ((b (spop))) (,op vm (spop) b (pfetch) (pfetch)))))
-                       #+debugging
-                       (when (and (listp *debug-vm*) (member :cop *debug-vm*))
-                         (let ((*standard-output* *trace-output*))
-                           (disassemble-lse (vm-code vm)
-                                            :start (vm-pc.offset vm)
-                                            :one-instruction t :line (vm-pc.line vm))
-                           (force-output)))
-                       (let ((cop (pfetch)))
-                         (case cop
-                           
-                           (!non    (op-1* non))
-                           (!et     (op-2* et))
-                           (!ou     (op-2* ou))
+  (flet ((run ()
+           (let ((stack (vm-stack vm))
+                 (code  (vm-code  vm))
+                 (*vm*  vm))
+             (handler-case
+                 (terminal-yield (task-terminal *task*))
+               (user-interrupt (condition)
+                 (if (eql +sigquit+ (user-interrupt-signal condition))
+                     (setf (task-signal *task*) t)
+                     (signal condition))))
+             (flet ((spush  (val) (vector-push-extend val stack))
+                    (spop   ()    (vector-pop stack))
+                    (pfetch ()    (prog1 (aref code (vm-pc.offset vm))
+                                    (incf (vm-pc.offset vm)))))
+               (declare (inline spush spop pfetch))
+               (macrolet ((op-1*  (op) `(spush (,op (deref vm (spop)))))
+                          (op-2*  (op) `(spush (let ((b (spop))) (,op (deref vm (spop)) (deref vm b)))))
+                          (op-0   (op) `(,op vm))
+                          (op-1   (op) `(,op vm (spop)))
+                          (op-2   (op) `(let ((b (spop))) (,op vm (spop) b)))
+                          (op-3   (op) `(let ((c (spop)) (b (spop))) (,op vm (spop) b c)))
+                          (op-0/1 (op) `(,op vm (pfetch)))
+                          (op-1/1 (op) `(,op vm (spop) (pfetch)))
+                          (op-2/1 (op) `(let ((b (spop))) (,op vm (spop) b (pfetch))))
+                          (op-3/1 (op) `(let ((c (spop)) (b (spop))) (,op vm (spop) b c (pfetch))))
+                          (op-4/1 (op) `(let ((d (spop)) (c (spop)) (b (spop))) (,op vm (spop) b c d (pfetch))))
+                          (op-0/2 (op) `(,op vm (pfetch) (pfetch)))
+                          (op-2/2 (op) `(let ((b (spop))) (,op vm (spop) b (pfetch) (pfetch)))))
+                 #+debugging
+                 (when (and (listp *debug-vm*) (member :cop *debug-vm*))
+                   (let ((*standard-output* *trace-output*))
+                     (disassemble-lse (vm-code vm)
+                                      :start (vm-pc.offset vm)
+                                      :one-instruction t :line (vm-pc.line vm))
+                     (force-output)))
+                 (let ((cop (pfetch)))
+                   (case cop
+                     
+                     (!non    (op-1* non))
+                     (!et     (op-2* et))
+                     (!ou     (op-2* ou))
 
-                           (!eg     (op-2* eg))
-                           (!ne     (op-2* ne))
-                           (!le     (op-2* le))
-                           (!lt     (op-2* lt))
-                           (!ge     (op-2* ge))
-                           (!gt     (op-2* gt))
+                     (!eg     (op-2* eg))
+                     (!ne     (op-2* ne))
+                     (!le     (op-2* le))
+                     (!lt     (op-2* lt))
+                     (!ge     (op-2* ge))
+                     (!gt     (op-2* gt))
 
-                           (!concat (op-2* concatenation))
+                     (!concat (op-2* concatenation))
 
-                           (!neg    (op-1* neg))
-                           (!add    (op-2* add))
-                           (!sub    (op-2* sub))
-                           (!mul    (op-2* mul))
-                           (!div    (op-2* div))
-                           (!pow    (op-2* pow))
+                     (!neg    (op-1* neg))
+                     (!add    (op-2* add))
+                     (!sub    (op-2* sub))
+                     (!mul    (op-2* mul))
+                     (!div    (op-2* div))
+                     (!pow    (op-2* pow))
 
-                           (!afficher-e       (op-3 afficher-e))
-                           (!afficher-f       (op-3 afficher-f))
-                           (!afficher-cr      (op-1 afficher-cr))
-                           (!afficher-nl      (op-1 afficher-nl))
-                           (!afficher-space   (op-1 afficher-space))
-                           (!afficher-newline (op-1 afficher-newline))
-                           (!afficher-chaine  (op-2 afficher-chaine))
-                           (!afficher-u       (op-1 afficher-u))
-                           
-                           (!beep             (op-0 beep))
-                           (!LIRE&STORE       (op-0/1 LIRE&STORE))
-                           (!LIRE&ASTORE1     (op-1/1 LIRE&ASTORE1))
-                           (!LIRE&ASTORE2     (op-2/1 LIRE&ASTORE2))
+                     (!afficher-e       (op-3 afficher-e))
+                     (!afficher-f       (op-3 afficher-f))
+                     (!afficher-cr      (op-1 afficher-cr))
+                     (!afficher-nl      (op-1 afficher-nl))
+                     (!afficher-space   (op-1 afficher-space))
+                     (!afficher-newline (op-1 afficher-newline))
+                     (!afficher-chaine  (op-2 afficher-chaine))
+                     (!afficher-u       (op-1 afficher-u))
+                     
+                     (!beep             (op-0 beep))
+                     (!LIRE&STORE       (op-0/1 LIRE&STORE))
+                     (!LIRE&ASTORE1     (op-1/1 LIRE&ASTORE1))
+                     (!LIRE&ASTORE2     (op-2/1 LIRE&ASTORE2))
 
-                           (!next-line        (op-0 next-line))
-                           (!retour           (op-0 retour))
-                           (!retour-en        (op-1 retour-en))
-                           (!result           (op-1 result))
-                           (!goto             (op-1 goto))
+                     (!next-line        (op-0 next-line))
+                     (!retour           (op-0 retour))
+                     (!retour-en        (op-1 retour-en))
+                     (!result           (op-1 result))
+                     (!goto             (op-1 goto))
 
-                           (!garer                     (op-2/1 garer))
-                           (!charger                   (op-2/2 charger))
-                           (!supprimer-enregistrement  (op-2 supprimer-enregistrement))
-                           (!supprimer-fichier         (op-1 supprimer-fichier))
-                           (!executer                  (op-2 executer))
-                           
-                           (!pause          (op-0 pause))
-                           (!terminer       (op-0 terminer))
-                           (!stop           (op-0 stop))
-                           
-                           (!AREF1&PUSH-REF (op-1/1 AREF1&PUSH-REF))
-                           (!AREF1&PUSH-VAL (op-1/1 AREF1&PUSH-VAL))
-                           (!AREF2&PUSH-REF (op-2/1 AREF2&PUSH-REF))
-                           (!AREF2&PUSH-VAL (op-2/1 AREF2&PUSH-VAL))
+                     (!garer                     (op-2/1 garer))
+                     (!charger                   (op-2/2 charger))
+                     (!supprimer-enregistrement  (op-2 supprimer-enregistrement))
+                     (!supprimer-fichier         (op-1 supprimer-fichier))
+                     (!executer                  (op-2 executer))
+                     
+                     (!pause          (op-0 pause))
+                     (!terminer       (op-0 terminer))
+                     (!stop           (op-0 stop))
+                     
+                     (!AREF1&PUSH-REF (op-1/1 AREF1&PUSH-REF))
+                     (!AREF1&PUSH-VAL (op-1/1 AREF1&PUSH-VAL))
+                     (!AREF2&PUSH-REF (op-2/1 AREF2&PUSH-REF))
+                     (!AREF2&PUSH-VAL (op-2/1 AREF2&PUSH-VAL))
 
-                           (!dup            (let ((a (spop))) (spush a) (spush a)))
-                           (!pop            (spop))                           
-                           (!POP&ASTORE1    (op-2/1 POP&ASTORE1))
-                           (!POP&ASTORE2    (op-3/1 POP&ASTORE2))
-                           (!POP&STORE      (op-1/1 POP&STORE))
+                     (!dup            (let ((a (spop))) (spush a) (spush a)))
+                     (!pop            (spop))                           
+                     (!POP&ASTORE1    (op-2/1 POP&ASTORE1))
+                     (!POP&ASTORE2    (op-3/1 POP&ASTORE2))
+                     (!POP&STORE      (op-1/1 POP&STORE))
 
-                           (!push-ref       (op-0/1 push-ref))
-                           (!push-val       (op-0/1 push-val))
-                           (!pushi          (op-0/1 pushi))
+                     (!push-ref       (op-0/1 push-ref))
+                     (!push-val       (op-0/1 push-val))
+                     (!pushi          (op-0/1 pushi))
 
-                           (!chaine         (op-0/1 declare-chaine))
-                           (!tableau1       (op-1/1 declare-tableau1))
-                           (!tableau2       (op-2/1 declare-tableau2))
-                           (!liberer        (op-0/1 declare-liberer))
+                     (!chaine         (op-0/1 declare-chaine))
+                     (!tableau1       (op-1/1 declare-tableau1))
+                     (!tableau2       (op-2/1 declare-tableau2))
+                     (!liberer        (op-0/1 declare-liberer))
 
-                           
-                           (!balways        (op-0/1 balways))
-                           (!btrue          (op-1/1 btrue))
-                           (!bfalse         (op-1/1 bfalse))
-                           (!bnever         (op-0/1 bnever))
+                     
+                     (!balways        (op-0/1 balways))
+                     (!btrue          (op-1/1 btrue))
+                     (!bfalse         (op-1/1 bfalse))
+                     (!bnever         (op-0/1 bnever))
 
-                           (!faire-jusqu-a  (op-4/1 faire-jusqu-a))
-                           (!faire-tant-que (op-3/1 faire-tant-que))
-                           (!tant-que       (op-1 tant-que))
+                     (!faire-jusqu-a  (op-4/1 faire-jusqu-a))
+                     (!faire-tant-que (op-3/1 faire-tant-que))
+                     (!tant-que       (op-1 tant-que))
 
-                           (!callf          (op-0/2 callf))
-                           (!callp          (op-0/2 callp))
-                           (!procedure      (lse-error "PROCEDURE N'EST PAS EXECUTABLE."))
+                     (!callf          (op-0/2 callf))
+                     (!callp          (op-0/2 callp))
+                     (!procedure      (lse-error "PROCEDURE N'EST PAS EXECUTABLE."))
 
-                           (!comment        (op-0/1 comment))
-                           (otherwise
-                            (lse-error "INTERNE MACHINE VIRTUELLE: CODE OPERATION INCONNU ~S" cop)))))))))
+                     (!comment        (op-0/1 comment))
+                     (otherwise
+                      (lse-error "INTERNE MACHINE VIRTUELLE: CODE OPERATION INCONNU ~S" cop)))))))))
+
+    (catch 'run-step-done
+      (handler-case
           
           #-debugging (run)
           #+debugging (if (or (eq t *debug-vm*) (member :error *debug-vm*))
                           (handler-bind ((error #'invoke-debugger)) (run))
-                          (run)))
+                          (run))
 
-      (error (err)
-        (vm-pause vm) ; no message
-        (error err))
-      #+debugging
-      (user-interrupt (condition)
-        #-debugging (declare (ignore condition))
-        #+debugging (progn (format *error-output* "~%Condition: ~A~%" condition)
-                           (force-output *error-output*))
-        (vm-pause vm) ; no message
-        (io-standard-redirection *task*)
-        (setf (task-silence *task*) nil)
-        (pret *task*)))
-    t))
+          (error (err)
+            (vm-pause vm) ; no message
+            (error err))
+          
+          (user-interrupt (condition)
+            (vm-pause vm) ; no message
+            (signal condition)))
+      
+      t)))
 
 
 

@@ -170,8 +170,11 @@ BONJOUR     ~8A
                                   (when debugger-hook
                                     (terminal-finalize terminal))
                                   (opt-format *debug-io* "~%My advice: exit after debugging.~%")
-                                  (when old-debugger-hook
-                                    (funcall old-debugger-hook condition debugger-hook)))))
+                                  (unwind-protect
+                                       (when old-debugger-hook
+                                         (funcall old-debugger-hook condition debugger-hook))
+                                    (when debugger-hook
+                                      (terminal-initialize terminal))))))
                          (with-pager *task*  
                            (io-format *task* "~A" *tape-banner*)
                            (io-format *task* "~?" *title-banner* (list (version) *copyright*))

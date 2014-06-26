@@ -762,13 +762,13 @@ caractère de la sous-chaîne est le dernier caractère de la chaîne."
     (let ((fin  (etypecase lo-or-ch
                   ((or integer nombre)
                    (let ((longueur (truncate lo-or-ch)))
-                     (if (or (<= longueur 0) (/= longueur lo-or-ch))
+                     (if (or (< longueur 0) (/= longueur lo-or-ch))
                          (error 'argument-invalide
                                 :backtrace (or #+ccl (ccl::backtrace-as-list))
                                 :op "SCH"
                                 :index 3
                                 :argument lo-or-ch
-                                :reason "L'ARGUMENT LONGEUR DOIT ETRE UN ENTIER SUPERIEUR OU EGAL A 1 (OU BIEN UNE CHAINE).")
+                                :reason "L'ARGUMENT LONGEUR DOIT ETRE UN ENTIER SUPERIEUR OU EGAL A 0 (OU BIEN UNE CHAINE).")
                          (+ debut longueur))))
                   (chaine
                    (or (position-if
@@ -812,11 +812,12 @@ ou si tous les caractères sont dans la chaine EV."
   "Pointeur"
   "PTR(CH,DE) ou PTR(CH,DE,EV)
 
-Résultat: la position dans la chaîne CH, à partir de la position DE,
-soit du premier caractère qui n'est pas une lettre si EV n'est pas
-donné, soit du premier caractère qui est n'est pas dans la chaîne EV;
-ou bien LGR(CH)+1 si tous les caractères sont des lettres, ou si tous
-les caractères sont dans la chaine EV."
+Résultat: Si EV n'est pas donné : la position dans la chaîne CH, à
+partir de la position DE, du premier caractère qui n'est pas une
+lettre, ou LGR(CH)+1 si tous les caractères sont des lettres.  Si EV
+est donné: la position dans la chaîne CH, à partir de la position DE,
+du premier caractère qui EST dans la chaîne EV, ou LGR(CH)+1 si aucun
+des caractères de CH ne sont dans la chaine EV."
   (let* ((ch (deref *vm* ch))
          (de (deref *vm* de))
          (ev (deref *vm* ev))
@@ -828,9 +829,9 @@ les caractères sont dans la chaine EV."
              :index 2
              :argument de
              :reason "L'ARGUMENT DEBUT DOIT ETRE UN ENTIER SUPERIEUR OU EGAL A 1."))
-    (+ 1.0 (or (position-if (if (null ev)
-                                (complement (function alpha-char-p))
-                                (complement (progn (la-chaine ev) (lambda (ch) (position ch ev)))))
+    (+ 1.0 (or (position-if (if ev
+                                (progn (la-chaine ev) (lambda (ch) (find ch ev)))
+                                (complement (function alpha-char-p)))
                             (la-chaine ch) :start debut)
                (length ch)))))
 

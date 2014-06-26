@@ -1,14 +1,12 @@
 -*- mode:org; coding:utf-8 -*-
-* TODO 00026 pg63,pg64,pg641,pg642,pg65,pg65s,fsoup,pgpp problem with variables: :cli:
+* TODO 00034 sequence d'instructions en mode machine de bureau          :cli:
+
+On doit pouvoir saisir et executer une séquence d'instructions en mode machine de bureau:
 
 #+BEGIN_SRC(lse)
-APPELER PG64
-EXECUTER A PARTIR DE 1
-
-TEXTE : BONJOUR LE MONDEERROR: There is no applicable method for the generic function:
-  #<STANDARD-GENERIC-FUNCTION (SETF VARIABLE-VALUE) #x3020029C50AF>
-when called with arguments:
-  (3 NIL)
+?NOMP;?LIGR?NOMF;?NBENR;?LIBEL
+ERREUR EN LIGNE   2 : COLONNE 7 : 
+    ?NOMP;?LIGR?NOMF;?NBENR;?LIBEL
 #+END_SRC
 
 * TODO 00023 pg49,pg49b,pg71 SCH LO=0                                   :cli:
@@ -406,10 +404,6 @@ ERROR: The value #S(CODE :LINE 100 :VECTOR #(39 26)
 (FUNCALL (:INTERNAL CCL::THREAD-MAKE-STARTUP-FUNCTION))
 --------------------------------------------------------------------------------
 #+END_SRC
-
-* TODO 00030 declaration & charger                                      :cli:
-Une déclaration avant CHARGER doit être sans effet.
-LIBERER V;LIBERER V devrait être accepté aussi.
 
 * TODO 00024 lecture fin de ruban                                       :cli:
 
@@ -908,6 +902,16 @@ PRET
 The *debugger-hook* resets the terminal for the debugger.
 When we use a restart to continue into LSE, we should reconfigure the LSE terminal.
 
+* TODO 00035 ERREUR après TERMINER                                      :cli:
+
+Les erreurs survenant après terminer ne devraient pas donner le numéro de ligne:
+
+#+BEIGN_SRC(lse)
+TERMINE EN LIGNE 019
+
+ERREUR EN LIGNE  19 : The value NIL is not of the expected type CHARACTER.
+#+END_SRC
+
 * TODO 00002 add a timeout and disconnect if no input occurs         :server:
 
 Well for the cli too when we use it thru inetd…
@@ -1023,6 +1027,13 @@ commandes:                ------------------------------     --------------
                                   ADieux
                                   PRendre etat console
                           ------------------------------     --------------
+ENCODER:
+
+      Sur Mitra-15, fonctionne comme APpeler: le programme courant est
+      effacé et remplacé par le programme chargé.
+
+      Sur T-1600 (et unix), ENcoder remplace ligne par ligne, sans
+      effacer le reste du programme courant.
 
 ------------------------  -----------------  --------------  --------------
 fonctions:                                                   ENV(nom)
@@ -1062,6 +1073,29 @@ TERMINE                          x
 
 Mentionné: T-1600: $ signifie quelque chose.
 Annoncé: Mitra-15: procédures externes rangées sur disque (Quelle syntaxe? #proc()?)
+
+* DONE 00026 pg63,pg64,pg641,pg642,pg65,pg65s,fsoup,pgpp problem with variables: :cli:
+  CLOSED: [2014-06-26 Thu 17:30]
+  - State "DONE"       from "TODO"       [2014-06-26 Thu 17:30] \\
+    Corrected. commit 1423e2aa79d8388ac77148377bff04b5858972b3
+
+#+BEGIN_SRC(lse)
+APPELER PG64
+EXECUTER A PARTIR DE 1
+
+TEXTE : BONJOUR LE MONDEERROR: There is no applicable method for the generic function:
+  #<STANDARD-GENERIC-FUNCTION (SETF VARIABLE-VALUE) #x3020029C50AF>
+when called with arguments:
+  (3 NIL)
+#+END_SRC
+
+* DONE 00030 declaration & charger                                      :cli:
+  CLOSED: [2014-06-26 Thu 17:30]
+  - State "DONE"       from "TODO"       [2014-06-26 Thu 17:30] \\
+    Corrected. commit 1423e2aa79d8388ac77148377bff04b5858972b3
+
+Une déclaration avant CHARGER doit être sans effet.
+LIBERER V;LIBERER V devrait être accepté aussi.
 
 * DONE 00005 telnet inetd lse.sh cli reads C-s instead of RET           :cli:
   CLOSED: [2014-06-08 Sun 09:48]

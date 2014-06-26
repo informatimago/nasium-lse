@@ -6,7 +6,7 @@ Transformer un fichier contenant de l'art ASCII en source LSE affichant cet art.
 ================================================================================
 
 ::
-   ./aatoaf LSE.txt > lse.lse
+   ./aatoaf lse.txt > lse.lse
 
 
 Afficher une courbe sur le terminal Tek 4014 inclu dans xterm

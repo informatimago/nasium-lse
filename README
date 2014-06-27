@@ -2,17 +2,17 @@ NASIUM L.S.E.
 http://nasium-lse.ogamita.com/
 
 ------------------------------------------------------------------------
-
 See doc/EMULSE.TXT
 See doc/SYSTEMES.TXT
+See doc/installation.txt for installation instructions.
 See src/README for compilation instructions and current status.
 See ISSUES.txt for a current known bug list.
 
 doc/                Documentation.
 
-dependencies/       Dependencies (zebu-3.5.5-pjb).  (For now, we use
-                    quicklisp for dependencies, but eventually we'll
-                    have to freeze them and copy them here).
+dependencies/       Dependencies.  (For now, we use quicklisp for
+                    dependencies, but eventually we'll have to freeze
+                    them and copy them here).
 
 src/                Sources of the LSE interpreter and system.
 
@@ -20,6 +20,9 @@ progr/              Example programs (unix cli format: with LF).
 
 tapes-xoff/         Example programs (LSE tape format: with X-OFF).
 
+
+scripts/            Example scripts and configuration files for
+                    shellinaboxd and inetd (telnet) lse servers.
 
 
 The dependencies and src are loaded with ASD files:

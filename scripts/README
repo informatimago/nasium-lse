@@ -1,0 +1,13 @@
+
+inetd.conf          An example inetd.conf line to run lse as a telnet server.
+lse-inetd.sh        Script used by the inetd.conf line to launch the lse cli.
+lse-siab.sh         Script used by siab to launch the lse cli.
+siab                Script to lauch the shellinaboxd lse server (http terminal emulator).
+style.css           Stylesheet for siab.
+
+
+siab can be launched from /etc/rc.local:
+
+     /srv/lse/scripts/siab  # port 8117
+
+

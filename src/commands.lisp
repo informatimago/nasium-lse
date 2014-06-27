@@ -1209,8 +1209,8 @@ Voir les commandes PAS A PAS, CONTINUER, REPRENDRE A PARTIR DE, POURSUIVRE JUSQU
 
 
 (defcommand "EXECUTER A PARTIR DE" awake deux-numeros-optionels (from to)
-  "Exécute le programme."
-  "Fait passer la console de l'état «moniteur» à l'état «exécution».
+            "Exécute le programme."
+            "Fait passer la console de l'état «moniteur» à l'état «exécution».
 
 Fait exécuter le programme courant de l'utilisateur à partir de la
 ligne de numéro N1 (si aucune ligne de numéro N1 existe, une erreur
@@ -1231,16 +1231,16 @@ L'exécution se poursuivra jusqu'à ce qu'on arrive :
   l'exécution.
 
 Voir les commandes PAS A PAS, NORMAL, CONTINUER, REPRENDRE A PARTIR DE, POURSUIVRE JUSQU'EN."
-  (io-new-line *task*)
-  (let ((vm (task-vm *task*)))
-    (unless (or (null to) (vm-line-exist-p vm to))
-      (error-bad-line to))
-    (when (vm-line-exist-p vm from)
-      (vm-reset-variables vm))
-    (setf (vm-trap-line vm) to)
-    (catch 'run-step-done (vm-goto vm from))
-    (vm-run vm)
-    (setf (task-pas-a-pas-first *task*) (task-pas-a-pas *task*))))
+            (io-new-line *task*)
+            (let ((vm (task-vm *task*)))
+              (unless (or (null to) (vm-line-exist-p vm to))
+                (error-bad-line to))
+              (when (vm-line-exist-p vm from)
+                (vm-reset-variables vm))
+              (setf (vm-trap-line vm) to)
+              (catch 'run-step-done (vm-goto vm from))
+              (vm-run vm)
+              (setf (task-pas-a-pas-first *task*) (task-pas-a-pas *task*))))
 
 
 (defcommand "CONTINUER" awake             nil ()
@@ -1888,92 +1888,117 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
 ;; (setf *debug-repl* nil)
 ;; (setf *debug-repl* t)
 
+
+(defun reset-ready (*task*)
+  (io-standard-redirection *task*)
+  (echo) ; prints a new line
+  (pret *task*))
+
+
+(defun call-with-error-reporting (task thunk)
+  (labels ((invalid-character-error (err)
+             (io-format task "~%ERREUR: ~?~%"
+                        "CARACTÈRE INVALIDE ~A~:[~*~; (~D~)~] EN POSITION ~D"
+                        (destructuring-bind (ch pos) (scanner-error-format-arguments err)
+                          (list
+                           (if (<= 32 (char-code ch))
+                               (format nil "'~A'" ch)
+                               (format nil ".~A." (char-code ch)))
+                           (<= 32 (char-code ch))
+                           (char-code ch)
+                           pos)))
+             (pret task))
+           
+           (report-error (err)
+             (error-format task err)
+             (pret task))
+           
+           (user-interrupt (condition)
+             #+debugging (io-format task "~%-Condition: ~A~%" condition) 
+             (reset-ready task))
+
+           #+debugging
+           (debug-report-error (err)
+             (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
+                     (if (typep err 'lse-error)
+                         (or (lse-error-backtrace err)
+                             #+ccl (ccl::backtrace-as-list))
+                         #+ccl (ccl::backtrace-as-list)))
+             (format *error-output* "COMMAND ERROR: ~A~%" err)
+             (finish-output *error-output*))
+
+           #+debugging
+           (report-and-signal-error (err) (debug-report-error err) (signal err))
+
+           #+debugging
+           (report-and-debug-error  (err) (debug-report-error err) (invoke-debugger err)))
+   (handler-case
+       #-debugging (funcall thunk)
+       #+debugging (if *debug-repl* 
+                       (handler-bind ((lse-error     (function report-and-signal-error))
+                                      (scanner-error (function report-and-signal-error))
+                                      (parser-error  (function report-and-signal-error))
+                                      (file-error    (function report-and-signal-error))
+                                      (error         (function report-and-debug-error)))
+                         (funcall thunk))
+                       (funcall thunk))
+
+       (lse-scanner-error-invalid-character (err) (invalid-character-error err))
+       (error                               (err) (report-error err))
+       (user-interrupt                      (cnd) (user-interrupt cnd)))))
+
+
+(defmacro with-error-reporting (task &body body)
+  `(call-with-error-reporting ,task (lambda () ,@body)))
+
+
+(defun command-run-script (task script-stream)
+  (let ((*task*       task)
+        (*print-case* :upcase))
+    (handler-case                     ; catch au-revoir condition.
+        (progn
+          (restart-case (with-error-reporting task
+                          (let* ((vm           (task-vm *task*))
+                                 (new-pgm      (compile-lse-stream script-stream)))
+                            (vm-terminer vm)
+                            (replace-program vm new-pgm)
+                            (executer-a-partir-de (minimum-line-number vm) nil)
+                            (signal 'au-revoir)))
+            (debug    () :report "DEBOGUER")))
+      (au-revoir ()
+        (return-from command-run-script (values)))))
+  (command-repl task))
+
+
 (defun command-repl (task)
   (let ((*task* task)
         (*print-case* :upcase))
-    (pret task)
-    (labels ((reset-ready ()
-               (io-standard-redirection task)
-               (echo) ; prints a new line
-               (io-format task "   ")
-               (pret task))
+    (flet ((do-it ()
+             (setf (task-interruption task) nil)
+             ;; (unless (task-silence task)
+             ;;   (io-new-line task))
+             (io-finish-output task)
+             (handler-case
+                 (let ((line (io-read-line task :beep (not (task-silence task)))))
+                   (if (task-interruption task)
+                       (reset-ready task)
+                       (command-eval-line task line)))
+               (end-of-file (err)
+                 (if (and (io-tape-input-p task)
+                          (eql (stream-error-stream err) (task-input task)))
+                     (io-stop-tape-reader task)
+                     ;; end-of-file on input, let's exit:
+                     (signal 'au-revoir))))))
 
-             (do-it ()
-               (setf (task-interruption task) nil)
-               ;; (unless (task-silence task)
-               ;;   (io-new-line task))
-               (io-finish-output task)
-               (handler-case
-                   (let ((line (io-read-line task :beep (not (task-silence task)))))
-                     (if (task-interruption task)
-                         (reset-ready)
-                         (command-eval-line task line)))
-                 (end-of-file (err)
-                   (if (and (io-tape-input-p task)
-                            (eql (stream-error-stream err) (task-input task)))
-                       (io-stop-tape-reader task)
-                       ;; end-of-file on input, let's exit:
-                       (signal 'au-revoir)))))
-             
-             (invalid-character-error (err)
-               (io-format task "~%ERREUR: ~?~%"
-                          "CARACTÈRE INVALIDE ~A~:[~*~; (~D~)~] EN POSITION ~D"
-                          (destructuring-bind (ch pos) (scanner-error-format-arguments err)
-                            (list
-                             (if (<= 32 (char-code ch))
-                                 (format nil "'~A'" ch)
-                                 (format nil ".~A." (char-code ch)))
-                             (<= 32 (char-code ch))
-                             (char-code ch)
-                             pos)))
-               (pret task))
-             
-             (report-error (err)
-               (error-format task err)
-               (pret task))
-             
-             (user-interrupt (condition)
-               #+debugging (io-format task "~%-Condition: ~A~%" condition) 
-              (reset-ready))
-
-             #+debugging
-             (debug-report-error (err)
-               (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
-                       (if (typep err 'lse-error)
-                           (or (lse-error-backtrace err)
-                               #+ccl (ccl::backtrace-as-list))
-                           #+ccl (ccl::backtrace-as-list)))
-               (format *error-output* "COMMAND ERROR: ~A~%" err)
-               (finish-output *error-output*))
-
-             #+debugging
-             (report-and-signal-error (err) (debug-report-error err) (signal err))
-
-             #+debugging
-             (report-and-debug-error  (err) (debug-report-error err) (invoke-debugger err)))
-      
-      (handler-case                       ; catch au-revoir condition.
+      (reset-ready task)
+      (handler-case                     ; catch au-revoir condition.
           (loop
             :while (task-state-awake-p task)
-            :do (restart-case
-                    (handler-case
-                        #-debugging (do-it)
-                        #+debugging (if *debug-repl* 
-                                        (handler-bind ((lse-error     (function report-and-signal-error))
-                                                       (scanner-error (function report-and-signal-error))
-                                                       (parser-error  (function report-and-signal-error))
-                                                       (file-error    (function report-and-signal-error))
-                                                       (error         (function report-and-debug-error)))
-                                          (do-it))
-                                        (do-it))
-
-                        (lse-scanner-error-invalid-character (err) (invalid-character-error err))
-                        (error                               (err) (report-error err))
-                        (user-interrupt                      (cnd) (user-interrupt cnd)))
-                  
+            :do (restart-case (with-error-reporting task
+                                (do-it))
                   (continue () :report "CONTINUER")))
-        
         (au-revoir () (values))))))
+
 
 
 

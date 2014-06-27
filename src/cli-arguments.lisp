@@ -43,7 +43,8 @@
   (output-no-bell       nil)
   (modern-mode          t)
   (return-is-xoff       nil)
-  (pager                t))
+  (pager                t)
+  (script               nil))
 
 
 

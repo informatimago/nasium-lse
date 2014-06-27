@@ -115,6 +115,131 @@ BONJOUR     ~8A
           *default-pathname-defaults* *lse-root*)))
 
 
+(defun check-script (path)
+  (let (stream result arguments)
+    (handler-case
+        (when (setf stream (open path :direction :input :if-does-not-exist nil))
+          (setf result
+                (let ((shebang (read-line stream nil nil)))
+                  (when (and shebang (string= "#!" shebang :end2 2))
+                    (setf arguments
+                          (loop
+                            :while (char= #\- (peek-char nil stream nil nil))
+                            :append (split-sequence #\space (read-line stream nil nil)
+                                                    :remove-empty-subseqs t)))
+                    (setf result stream))))
+          (unless result (close stream))
+          (values result arguments))
+      (error (err)
+        (when stream (close stream))
+        (values nil nil)))))
+
+(defun process-argument (argument remaining)
+  "
+NOTE:       When the command is used interactively, no non-option
+            argument should be given.
+
+            When the command is used as an interpreter for a script,
+            the user should give no option on the shebang line.  It is
+            expected the command is invoked by the kernel by passing
+            the (relative) path to the script as command line
+            argument.
+
+            LSE scripts should therefore contain:
+
+                - the shebang line with the bare path to the lse interpreter,
+                - zero or more lines containing options (must start with a dash,
+                  several options can be given on the same line separated by
+                  spaces).
+                - optionally empty lines.
+                - a lse program.
+
+            For example:
+
+                #!/usr/local/bin/lse
+                --modern-mode
+                1 afficher 'hello'
+                2 terminer
+
+           Therefore this function expects a single argument, which
+           should be a relative path to such a script file, and no
+           other remaining argument.  The script file is checked, and
+           if invalid, an error is signaled.  Otherwise, the 
+
+DO:        This function is called by PARSE-OPTIONS when an unexpected
+           option is found.  
+
+ARGUMENT:  The argument that is not an option.
+
+REMAINING: A list of command line arguments remaining to be processed.
+
+RETURN:    A list of remaining command line arguments to be parsed by
+           PARSE-OPTIONS.
+"
+  (if remaining
+      (error "invalid arguments ~S" (cons argument remaining))
+      (multiple-value-bind (script new-arguments) (check-script argument)
+        (if script
+            (progn
+              (setf (options-script *options*) script)
+              new-arguments)
+            (error "invalid arguments ~S" (cons argument remaining))))))
+
+(defun call-with-terminal (terminal thunk)
+  (terminal-initialize terminal)
+  (unwind-protect
+       (let* ((old-debugger-hook *debugger-hook*)
+              (*debugger-hook*
+                (lambda (condition debugger-hook)
+                  ;; We shouldn't come here.
+                  (when debugger-hook
+                    (terminal-finalize terminal))
+                  (opt-format *debug-io* "~%My advice: exit after debugging.~%")
+                  (unwind-protect
+                       (when old-debugger-hook
+                         (funcall old-debugger-hook condition debugger-hook))
+                    (when debugger-hook
+                      (terminal-initialize terminal))))))
+         (funcall thunk))
+    (terminal-finalize terminal)))
+
+(defmacro with-terminal (terminal &body body)
+  `(call-with-terminal ,terminal (lambda () ,@body)))
+
+
+(defun script (options task terminal)
+  "
+DO:     Execute the script specified in options.
+RETURN: EX-OK
+"
+  (apply-options options task)
+  (with-terminal terminal
+    (unwind-protect
+         (command-run-script task (options-script options))
+      (io-finish-output task)
+      (task-close-all-files task))))
+
+
+(defun interactive (options task terminal)
+  "
+DO:     Perform the interactive lse interactions.
+RETURN: EX-OK
+"
+  ;; parse-options may call show-bindings which calls
+  ;; apply-options, so we need  *task*.
+  (apply-options options task)
+  (with-terminal terminal
+    (unwind-protect
+         (progn
+           (with-pager task  
+             (io-format task "~A" *tape-banner*)
+             (io-format task "~?" *title-banner* (list (long-version) *copyright*))
+             (io-format task "~?" *cli-banner*   (list (subseq (dat) 9))))
+           (command-repl task))
+      (io-finish-output task)
+      (task-close-all-files task))))
+
+
 (defun main (&optional args)
   (handler-case 
       (progn
@@ -156,34 +281,12 @@ BONJOUR     ~8A
                                           :terminal terminal))
                  #-(and) (*trace-output* (make-broadcast-stream)))
             (setf *task* task) ; to help debugging, we keep the task in the global binding.
-            (or (parse-options (or args (arguments)) nil nil nil)
-                
-                ;; parse-option may call show-bindings which calls
-                ;; apply-options, so we need  *task*.
+            (or (parse-options (or args (arguments)) nil (function process-argument) nil)
                 (progn
-                  (apply-options *options* *task*)
-                  (terminal-initialize terminal)
-                  (unwind-protect
-                       (let* ((old-debugger-hook *debugger-hook*)
-                              (*debugger-hook*
-                                (lambda (condition debugger-hook)
-                                  ;; We shouldn't come here.
-                                  (when debugger-hook
-                                    (terminal-finalize terminal))
-                                  (opt-format *debug-io* "~%My advice: exit after debugging.~%")
-                                  (unwind-protect
-                                       (when old-debugger-hook
-                                         (funcall old-debugger-hook condition debugger-hook))
-                                    (when debugger-hook
-                                      (terminal-initialize terminal))))))
-                         (with-pager *task*  
-                           (io-format *task* "~A" *tape-banner*)
-                           (io-format *task* "~?" *title-banner* (list (version) *copyright*))
-                           (io-format *task* "~?" *cli-banner*   (list (subseq (dat) 9))))
-                         (command-repl *task*))
-                    (task-close-all-files *task*)
-                    (terminal-finalize terminal)))
-                ex-ok))))
+                  (if (options-script *options*)
+                      (script      *options* task terminal)
+                      (interactive *options* task terminal))
+                  ex-ok)))))
     (error (err)
       (format *error-output* "~&~A~%" err)
       (finish-output *error-output*)

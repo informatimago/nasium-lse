@@ -55,6 +55,7 @@
                  ;; "uffi
 
                  "trivial-gray-streams"
+                 "split-sequence"
 
 		 #+(and unix (not clisp)) "iolib"
                  ;; #+(and unix (not clisp)) "iolib.base"

@@ -164,4 +164,28 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
 See `src/README`.
 
 
+4- Bash integration
+============================================================
+
+To obtain option completion for the lse command, evaluate the
+following line in bash: ::
+
+    eval $( lse --bash-completion-function )
+
+Then, typing in bash: ::
+  
+    lse TAB
+
+will display the options, and: ::
+
+    lse --fl TAB
+
+will display: ::
+
+    lse --fleches-
+
+and further typing `TAB` `TAB` will display all the options starting with
+`--fleches-`.
+
+
 .. comment: the end

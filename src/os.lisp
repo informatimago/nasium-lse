@@ -312,6 +312,14 @@ This excludes the arguments processed by the lisp implementation."
   #-(or ccl clisp cmu ecl sbcl) nil)
 
 
+(defvar *script-path* nil)
+(defun script-path () *script-path*)
+(defun (setf script-path) (new-path) (setf  *script-path* new-path))
+
+(defvar *script-arguments* nil)
+(defun script-arguments () *script-arguments*)
+(defun (setf script-arguments) (new-arguments) (setf  *script-arguments* new-arguments))
+
 
 (defun prepare-options (options)
   (mapcar (lambda (option)

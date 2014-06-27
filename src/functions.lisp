@@ -510,7 +510,7 @@ Résultat le OU exclusif bit-à-bit entre les bits de A et ceux de B."
 
 
 
-#+debugging
+;; #+debugging
 (defunction (lisp-eval "LISP") (expr &optional (print 0) (noerr 0))
   "Evaluation d'une expression LISP"
   "LISP(EXPR,PRINT,NOERR)
@@ -895,6 +895,25 @@ Exemple: ENV('USERNAME') --> 'pjb'
 "
   (let* ((nom (la-chaine (deref *vm* nom)))
          (val (getenv nom)))
+    (or val "")))
+
+#+lse-unix
+(defunction arg (i)
+    "Script argument"
+    "ARG(I)
+
+Résultat: une chaîne contenant la valeur de l'argument de ligne de
+commande d'index indiqué.  S'il n'y a pas d'argument à l'index donné,
+une chaîne vide est retournée. ARG(0) retourne le nom de la commande.
+
+Exemple: ARG(1) --> '--help'
+"
+  (let* ((i (round (un-nombre (deref *vm* i))))
+         (val (if (zerop i)
+                  (or (script-path) (program-name)) 
+                  (nth (1- i) (if (script-path)
+                                  (script-arguments)
+                                  (arguments))))))
     (or val "")))
 
 

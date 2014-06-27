@@ -1,0 +1,4 @@
+#!/usr/local/bin/lse
+--mode-moderne --fleches-ascii --affichage-mixte
+1 afficher[U,/]'Bonjour le Monde !'
+2 terminer

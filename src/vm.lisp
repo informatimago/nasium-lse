@@ -1118,7 +1118,10 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                          (id::grl (grl 2 3))
                          (id::dat (dat 0 0))
                          #+lse-unix (id::env (env 1 1))
-                         #+debugging (id::lisp (lisp-eval 1 3)))))
+                         #+lse-unix (id::arg (arg 1 1))
+                         ;; #+debugging
+                         (id::lisp (lisp-eval 1 3))
+                         )))
 
 
 

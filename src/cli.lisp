@@ -212,6 +212,8 @@ RETURN:    A list of remaining command line arguments to be parsed by
 DO:     Execute the script specified in options.
 RETURN: EX-OK
 "
+  (setf (script-path) (namestring (pathname (options-script options)))
+        (script-arguments) (butlast (arguments)))
   (apply-options options task)
   (with-terminal terminal
     (unwind-protect
@@ -281,6 +283,7 @@ RETURN: EX-OK
                                           :terminal terminal))
                  #-(and) (*trace-output* (make-broadcast-stream)))
             (setf *task* task) ; to help debugging, we keep the task in the global binding.
+            (format t "args=~S~%" (arguments))
             (or (parse-options (or args (arguments)) nil (function process-argument) nil)
                 (progn
                   (if (options-script *options*)

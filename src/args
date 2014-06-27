@@ -1,0 +1,10 @@
+#!/usr/local/bin/lse
+--mode-moderne --fleches-ascii --affichage-mixte
+1 &E('HOME')
+2 FAIRE 3 POUR I_0 JUSQUA 10 
+3 AFFICHER['ARG[',U,']=',U,/]I,ARG(I)
+4 AFFICHER LISP('(ccl::command-line-arguments)',1,1)
+5 TERMINER
+100 PROCEDURE &E(VAR) LOCAL VAR
+101 AFFICHER[U,'=',U,/]VAR,ENV(VAR)
+102 RETOUR

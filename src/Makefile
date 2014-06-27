@@ -45,7 +45,9 @@ BUILD_HOSTS    = kuiper galatea lassell # triton
 RMERGE         = rsync -HSWacvxz --progress -e ssh
 RSYNCH         = rsync -HSWacvxz --progress -e ssh --force --delete --delete-after
 
-LOGFILE        = /tmp/lse-build.log
+UID            = $(shell id -u)
+TMPDIR         = /tmp/lse$(UID)
+LOGFILE        = $(TMPDIR)/lse-build.log
 SYMLINK_CLI    = awk '/Generating/{print $$2}' < $(LOGFILE) | ( read executable ; rm -f lse ; ln -sf $$executable lse )
 SYMLINK_SERVER = awk '/Generating/{print $$2}' < $(LOGFILE) | ( read executable ; rm -f lse-server ; ln -sf $$executable lse-server )
 
@@ -88,6 +90,7 @@ ChangeLog:.git
 help::
 	@printf $(HELPFORMAT) cli 'builds the unix cli executable.'
 cli:
+	-@mkdir -p $(TMPDIR)
 	$(LISP) $(LOAD) generate-cli.lisp | tee $(LOGFILE)
 	$(SYMLINK_CLI)
 
@@ -100,6 +103,7 @@ macosx:cli
 help::
 	@printf $(HELPFORMAT) server 'builds the server executable.'
 server:
+	-@mkdir -p $(TMPDIR)
 	$(LISP) $(LOAD) generate-server.lisp | tee $(LOGFILE)
 	$(SYMLINK_SERVER)
 

@@ -126,16 +126,17 @@
 ;;; Let's run some tests:
 
 (in-package "COM.INFORMATIMAGO.LSE")
-(format t "~2%Running a few tests.~%")
-(finish-output)
+#-(and) (progn
+          (format t "~2%Running a few tests.~%")
+          (finish-output)
 
-(unless (fboundp 'etl)
-  (format t "ETL not bound~% *features* = ~S~%" *features*)
-  (finish-output)
-  #+ccl (ccl:quit))
+          (unless (fboundp 'etl)
+            (format t "ETL not bound~% *features* = ~S~%" *features*)
+            (finish-output)
+            #+ccl (ccl:quit))
 
-(setf  ccl:*backtrace-print-level* nil)
-(test/fonctions :silence t)
+          (setf  ccl:*backtrace-print-level* nil)
+          (test/fonctions :silence t))
 
 #+debugging (setf *debug-vm*   '(:error)
                   *debug-repl* t)
@@ -168,19 +169,42 @@
 ;;             (setf (shlib.handle lib) handle)))))))
 ;; (in-package "COMMON-LISP-USER")
 
+(defun test-main ()
+  (let ((bare (com.informatimago.common-lisp.cesarum.stream:bare-stream *standard-input* :direction :input)))
+    (com.informatimago.common-lisp.interactive.interactive:show
+     (ccl::command-line-arguments)
+     ccl:*command-line-argument-list*
+     ccl:*unprocessed-command-line-arguments*
+     (interactive-stream-p *standard-input*)
+     (typep *standard-input* 'file-stream)
+     bare
+     (type-of *standard-input*)
+     *terminal-io*       
+     *standard-input*    
+     *standard-output*   
+     *error-output*      
+     *trace-output*   
+     *query-io*          
+     *debug-io*
+     (open (first (last ccl:*command-line-argument-list*)))
+     ))
+  (finish-output)
+  (ccl:quit))
+
 #+ccl (dolist (lib ccl::*shared-libraries* (terpri))
         (print lib))
 #+ccl (progn (princ "ccl:save-application will exit.") (terpri) (finish-output))
 #+ccl (ccl:save-application
        (executable-filename *program-name*)
-       :toplevel-function (if (com.informatimago.lse.cli::boolean-enval "LSE_USE_EXIT" nil)
-                              (lambda ()
-                                (#__exit (com.informatimago.lse.cli:main)))
-                              (lambda ()
-                                (ccl:quit (com.informatimago.lse.cli:main)
-                                          :error-handler (lambda (err)
-                                                           (declare (ignore err))
-                                                           (#__exit -1)))))
+       :toplevel-function ; (function main) #-(and)
+       (if (com.informatimago.lse.cli::boolean-enval "LSE_USE_EXIT" nil)
+           (lambda ()
+             (#__exit (com.informatimago.lse.cli:main)))
+           (lambda ()
+             (ccl:quit (com.informatimago.lse.cli:main)
+                       :error-handler (lambda (err)
+                                        (declare (ignore err))
+                                        (#__exit -1)))))
        :init-file nil
        :error-handler :quit-quietly
        ;; :application-class ccl:lisp-development-system

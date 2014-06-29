@@ -6,7 +6,7 @@
  
 # Un script LSE moderne sur systeme unix:
 --mode-moderne --fleches-ascii --affichage-mixte --sans-bip
-# --debogue-sur-erreur
+# --deboguer-sur-erreur
 
 # Ce script affiche quelques variables d'environnement et
 # les arguments.

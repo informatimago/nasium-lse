@@ -1,16 +1,14 @@
 #!/usr/local/bin/lse --
 # -*- mode:lse;coding:utf-8 -*-
 --mode-moderne --fleches-ascii --affichage-mixte --sans-bip
---debogue-sur-erreur
+# --deboguer-sur-erreur
 # Ce script termine avec comme status son argument.
 1 STATU_0
-4 SI NARG()<1 ALORS DEBUT &E('Il manque un argument.');&U(ARG(0));STATU_1;TERMINER FIN
-6 SI LGR(ARG(1))=0 ALORS DEBUT &E('L''argument ne doit pas être une chaîne vide.');&U(ARG(0));STATUS_2;TERMINER FIN
-8 STATU_CNB(ARG(1),1)
-10 AFFICHER['status=',U,/]STATU
-12 AFFICHER 'HI'
-14 AFFICHER LISP('(command-status *task*)',1,1)
-16 TERMINER
+2 SI NARG()<1 ALORS DEBUT &E('Il manque un argument.');&U(ARG(0));STATU_1;TERMINER FIN
+3 SI LGR(ARG(1))=0 ALORS DEBUT &E('L''argument ne doit pas être une chaîne vide.');&U(ARG(0));STATUS_2;TERMINER FIN
+4 STATU_CNB(ARG(1),1)
+5 AFFICHER['status=',U,/]STATU
+6 TERMINER
 100 PROCEDURE &E(MSG) LOCAL MSG
 101 AFFICHER['Erreur: ',U,/]MSG
 102 RETOUR

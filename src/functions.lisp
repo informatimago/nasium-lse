@@ -768,7 +768,7 @@ caractère de la sous-chaîne est le dernier caractère de la chaîne."
                                 :op "SCH"
                                 :index 3
                                 :argument lo-or-ch
-                                :reason "L'ARGUMENT LONGEUR DOIT ETRE UN ENTIER SUPERIEUR OU EGAL A 0 (OU BIEN UNE CHAINE).")
+                                :reason "L'ARGUMENT LONGUEUR DOIT ETRE UN ENTIER SUPERIEUR OU EGAL A 0 (OU BIEN UNE CHAINE).")
                          (+ debut longueur))))
                   (chaine
                    (or (position-if
@@ -837,21 +837,21 @@ des caractères de CH ne sont dans la chaine EV."
 
 
 (defunction grl (ch de &optional va)
-  "Groupe de lettres"
-  "GRL(CH,DE) ou GRL(CH,DE,VA)
+    "Groupe de lettres"
+    "GRL(CH,DE) ou GRL(CH,DE,VA)
 
 Résultat: la sous-chaîne composée de la première séquence continue de
 lettres à partir de la position DE.
 
 Si VA est présent, ce doit être une variable arithmétique à laquelle
-la fonction SCH affecte soit la position du premier caractère qui
+la fonction GRL affecte soit la position du premier caractère qui
 n'est pas une lettre, soit LGR(CH)+1 si le dernier caractère de la
 sous-chaîne est le dernier caractère de la chaîne."
   (let* ((ch (deref *vm* ch))
          (de (deref *vm* de))
          (debut (1- (truncate (un-nombre de))))
          (chlen (length (la-chaine ch))))
-    (when (or (< debut 0) (/= (1+ debut) de) (<= chlen debut))
+    (when (or (< debut 0) (/= (1+ debut) de) (<= chlen debut)) 
       (error 'argument-invalide
              :backtrace (or #+ccl (ccl::backtrace-as-list))
              :op "GRL"
@@ -863,9 +863,9 @@ sous-chaîne est le dernier caractère de la chaîne."
           (let ((fin (position-if-not (function alpha-char-p) ch :start debut)))
             (values (subseq ch debut fin)
                     (set-va va (if fin (1+ fin) (1+ chlen)))))
-          (values ""
-                  (set-va va (1+ chlen)))))))
-           
+          (values "" (set-va va (1+ chlen)))))))
+
+
 (defun formate-date (universal-time)
   (multiple-value-bind (se mi ho da mo ye) (decode-universal-time universal-time)
     (format nil "~2,'0D/~2,'0D/~2,'0D ~2,'0D:~2,'0D:~2,'0D"

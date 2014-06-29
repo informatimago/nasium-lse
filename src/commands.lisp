@@ -1610,6 +1610,36 @@ Voir les commandes AFFICHER REPERTOIRE, TABLE DES FICHIER, UTILISATION DISQUE."
   (task-close-all-files *task*))
 
 
+(defun table-des-fichiers/t-1600 (files temp-space-used-sectors temp-space-used-percentage)
+  "
+FILES: A list of (file-name file-type word-size write-date protection)
+"
+  (io-format *task* "~%ESPACE TEMPORAIRE(~4D SECT.) OCCUPE A ~3D %~2%"
+             temp-space-used-sectors temp-space-used-percentage)
+  (loop :for (file-name file-type word-size nil protection) :in files
+        :initially (io-format *task* " NOM       TYPE        LONGUEUR MOTS   PROTECTION~%")
+        :do (io-format *task* "~5A     ~10A      ~6D             ~A~%"
+                       file-name
+                       (case file-type
+                         (:temporary "TEMPORAIRE")
+                         (:data      " DONNEE   ")
+                         (:program   "PROGRAMME "))
+                       word-size
+                       (case protection
+                         (:read  "L")
+                         (:write "E")
+                         (:none  " ")))
+        :finally (io-format *task* "~%")))
+
+#-(and)
+(defun table-des-fichiers/mitra-15 (files temp-space-used-sectors temp-space-used-percentage)
+  "
+FILES: A list of (file-name file-type word-size write-date protection)
+"
+)
+
+
+
 (defcommand "TABLE DES FICHIERS" awake nil ()
   "Liste la table des fichiers (répertoire courant, et fichiers temporaires)."
   "Cette comamnde liste tous les fichiers programmes et donnée du

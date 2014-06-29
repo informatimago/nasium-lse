@@ -922,7 +922,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                                                       :value init)))))
           (let ((stack (loop-stack vm)))
             (when (and stack
-                       (or (<= lino (loop-start-line-number (first stack)))
+                       (or (< lino (loop-start-line-number (first stack)))
                            (< (loop-end-line-number (first stack)) lino)))
               (error 'lse-error
                      :backtrace (or #+ccl (ccl::backtrace-as-list))
@@ -1055,8 +1055,8 @@ NOTE: on ne peut pas liberer un parametre par reference.
       ((null line)
        (error-bad-line lino))
       (stack
-       (if (or (< (loop-start-line-number (first stack)) lino)
-               (<= lino (loop-end-line-number (first stack))))
+       (if (and (< (loop-start-line-number (first stack)) lino)
+                (<= lino (loop-end-line-number (first stack))))
            (vm-goto vm lino)
            (progn
              ;; When we GO TO a line outside of the current loop, we unwind it.

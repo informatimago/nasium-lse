@@ -1,5 +1,8 @@
 -*- mode:org; coding:utf-8 -*-
-* TODO 00021 pg43,46,47,51,76  faire enchevetree                        :cli:
+* DONE 00021 pg43,46,47,51,76  faire enchevetree                        :cli:
+  CLOSED: [2014-06-29 Sun 18:51]
+  - State "DONE"       from "TODO"       [2014-06-29 Sun 18:51] \\
+    Corrected.
 
 2 FAIRE 2 POUR I_1 JUSQUA 5;FAIRE 2 POUR J_1 JUSQUA 5;A[I,J]_J+5*(I-1)
 ERREUR EN LIGNE   2 : BOUCLE FAIRE 2 POUR J ENCHEVETREE AVEC LA BOUCHE FAIRE 2 POUR I DE LA LIGNE 2

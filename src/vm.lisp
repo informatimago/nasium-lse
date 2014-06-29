@@ -1119,12 +1119,12 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                          (id::ptr (ptr 2 3))
                          (id::grl (grl 2 3))
                          (id::dat (dat 0 0))
-                         #+lse-unix (id::env   (env 1 1))
-                         #+lse-unix (id::narg  (narg 0 0))
-                         #+lse-unix (id::arg   (arg 1 1))
-                         #+lse-unix (id::exec  (exec 1 1))
+                         #+(and lse-unix (not lse-server)) (id::env   (env 1 1))
+                         #+(and lse-unix (not lse-server)) (id::narg  (narg 0 0))
+                         #+(and lse-unix (not lse-server)) (id::arg   (arg 1 1))
+                         #+(and lse-unix (not lse-server)) (id::exec  (exec 1 1))
                          ;; #+debugging
-                         (id::lisp (lisp-eval 1 3))
+                         #+(and lse-unix (not lse-server)) (id::lisp (lisp-eval 1 3))
                          )))
 
 

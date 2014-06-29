@@ -91,7 +91,8 @@
 (defparameter *program-name* "lse")
 (defparameter *program-system*  :com.informatimago.lse.cli)
 
-
+(when (com.informatimago.lse.cli::boolean-enval "LSE_COMPILE_SERVER" nil)
+  (pushnew :lse-server *features*))
 ;; (pushnew :lse-scanner-debug    *features*)
 ;; (pushnew :debugging            *features*)
 (pushnew :lse-case-insensitive *features*)

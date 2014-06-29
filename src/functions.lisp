@@ -882,7 +882,7 @@ Note: Cette fonction n'est pas conforme Y2K, elle retourne 00 pour 2000."
   (formate-date (get-universal-time)))
 
 
-#+lse-unix
+#+(and lse-unix (not lse-server))
 (defunction env (nom)
     "Variable d'environement"
     "ENV(NOM)
@@ -898,7 +898,7 @@ Exemple: ENV('USERNAME') --> 'pjb'
     (or val "")))
 
 
-#+lse-unix
+#+(and lse-unix (not lse-server))
 (defunction narg ()
     "Nombre d'argument de script"
     "NARG()
@@ -912,7 +912,7 @@ Exemple: 1 FAIRE 1 POUR I_1 JUSQUA NARG(); AFFICHER I,'->',ARG(I)
               (task-script-arguments *task*)
               (arguments))))
 
-#+lse-unix
+#+(and lse-unix (not lse-server))
 (defunction arg (i)
     "Script argument"
     "ARG(I)
@@ -931,7 +931,7 @@ Exemple: ARG(1) --> '--help'
                                    (arguments))))))
     (or val "")))
 
-#+lse-unix
+#+(and lse-unix (not lse-server))
 (defunction exec (command)
     "Execute une commande shell"
     "EXEC(CMD)

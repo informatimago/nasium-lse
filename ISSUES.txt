@@ -1,14 +1,4 @@
 -*- mode:org; coding:utf-8 -*-
-* TODO 00034 sequence d'instructions en mode machine de bureau          :cli:
-
-On doit pouvoir saisir et executer une séquence d'instructions en mode machine de bureau:
-
-#+BEGIN_SRC(lse)
-?NOMP;?LIGR?NOMF;?NBENR;?LIBEL
-ERREUR EN LIGNE   2 : COLONNE 7 : 
-    ?NOMP;?LIGR?NOMF;?NBENR;?LIBEL
-#+END_SRC
-
 * TODO 00037 pg71 fails                                                 :cli:
 * TODO 00021 pg43,46,47,51,76  faire enchevetree                        :cli:
 
@@ -969,6 +959,19 @@ TERMINE                          x
 
 Mentionné: T-1600: $ signifie quelque chose.
 Annoncé: Mitra-15: procédures externes rangées sur disque (Quelle syntaxe? #proc()?)
+
+* DONE 00034 sequence d'instructions en mode machine de bureau          :cli:
+  CLOSED: [2014-06-29 Sun 15:47]
+  - State "DONE"       from "TODO"       [2014-06-29 Sun 15:47] \\
+    Allowed ?a;?b and mixing a_1;?a etc.
+
+On doit pouvoir saisir et executer une séquence d'instructions en mode machine de bureau:
+
+#+BEGIN_SRC(lse)
+?NOMP;?LIGR?NOMF;?NBENR;?LIBEL
+ERREUR EN LIGNE   2 : COLONNE 7 : 
+    ?NOMP;?LIGR?NOMF;?NBENR;?LIBEL
+#+END_SRC
 
 * DONE 00023 pg49,pg49b,pg71 SCH LO=0                                   :cli:
   CLOSED: [2014-06-26 Thu 20:10]

@@ -175,10 +175,9 @@
 
             (--> debut
                  (alt
-                  (seq ligne-programme    :action $1)
-                  (seq liste-inst-ou-decl :action (cons :liste-instructions $1))
-                  (seq affic              :action (list :liste-instructions $1))
-                  (seq                    :action (progn nil)))
+                  (seq ligne-programme             :action $1)
+                  (seq liste-inst-ou-decl-ou-affic :action (cons :liste-instructions $1))
+                  (seq                             :action (progn nil)))
                  :action $1)
 
             (--> ligne-programme
@@ -206,6 +205,14 @@
                  (alt
                   (seq instruction (opt tok-ptvirg liste-inst-ou-decl :action liste-inst-ou-decl) :action (cons $1 $2))
                   (seq decl        (opt tok-ptvirg liste-inst-ou-decl :action liste-inst-ou-decl) :action (cons $1 $2))
+                  (seq tok-commentaire                                :action (list (list :commentaire $1))))
+                 :action $1)
+
+            (--> liste-inst-ou-decl-ou-affic
+                 (alt
+                  (seq affic       (opt tok-ptvirg liste-inst-ou-decl-ou-affic :action $2) :action (cons $1 $2))
+                  (seq instruction (opt tok-ptvirg liste-inst-ou-decl-ou-affic :action $2) :action (cons $1 $2))
+                  (seq decl        (opt tok-ptvirg liste-inst-ou-decl-ou-affic :action $2) :action (cons $1 $2))
                   (seq tok-commentaire                                :action (list (list :commentaire $1))))
                  :action $1)
 

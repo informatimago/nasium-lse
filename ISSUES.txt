@@ -964,6 +964,7 @@ Annoncé: Mitra-15: procédures externes rangées sur disque (Quelle syntaxe? #p
   CLOSED: [2014-06-29 Sun 15:47]
   - State "DONE"       from "TODO"       [2014-06-29 Sun 15:47] \\
     Allowed ?a;?b and mixing a_1;?a etc.
+    commit d5a044454713322e4d5b4270117577e8cca9bb8e
 
 On doit pouvoir saisir et executer une séquence d'instructions en mode machine de bureau:
 

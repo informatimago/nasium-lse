@@ -900,7 +900,7 @@ Exemple: ENV('USERNAME') --> 'pjb'
 
 #+lse-unix
 (defunction narg ()
-    "Nombre d'argument de script."
+    "Nombre d'argument de script"
     "NARG()
 
 Résultat: Un entier indiquant le nombre d'arguments de ligne de
@@ -908,8 +908,8 @@ commande passés au script.
 
 Exemple: 1 FAIRE 1 POUR I_1 JUSQUA NARG(); AFFICHER I,'->',ARG(I)
 "
-  (length (if (script-path)
-              (script-arguments)
+  (length (if (task-script-path *task*)
+              (task-script-arguments *task*)
               (arguments))))
 
 #+lse-unix
@@ -925,11 +925,24 @@ Exemple: ARG(1) --> '--help'
 "
   (let* ((i (round (un-nombre (deref *vm* i))))
          (val (if (zerop i)
-                  (or (script-path) (program-name)) 
-                  (nth (1- i) (if (script-path)
-                                  (script-arguments)
-                                  (arguments))))))
+                  (or (task-script-path *task*) (program-name)) 
+                  (nth (1- i)  (if (task-script-path *task*)
+                                   (task-script-arguments *task*)
+                                   (arguments))))))
     (or val "")))
+
+#+lse-unix
+(defunction exec (command)
+    "Execute une commande shell"
+    "EXEC(CMD)
+
+Execute la commande shell indiquée par la chaine CMD.
+Résultat: le status de la commande.
+
+Exemple: EXEC(\"ls -l\") --> 0
+"
+  (let ((command (la-chaine (deref *vm* command))))
+    (shell "~A" command)))
 
 
 (defun test/fonctions (&key silence)

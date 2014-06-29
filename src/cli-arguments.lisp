@@ -45,7 +45,8 @@
   (return-is-xoff       nil)
   (pager                t)
   (script-stream        nil)
-  (script-arguments     '()))
+  (script-arguments     '())
+  (script-debug         nil))
 
 
 
@@ -93,7 +94,8 @@ RETURN: A new OPTIONS structure instance.
    :output-no-bell       (boolean-enval "LSE_NO_BELL"              nil)
    :modern-mode          (boolean-enval "LSE_MODERN_MODE"          t)
    :return-is-xoff       (boolean-enval "LSE_RETURN_IS_XOFF"       nil)
-   :pager                (boolean-or-integer-enval "LSE_PAGER"     t)))
+   :pager                (boolean-or-integer-enval "LSE_PAGER"     t)
+   :script-debug         (boolean-enval "LSE_DEBUG_ON_ERROR"       nil)))
 
 
 (defvar *options* (make-default-options))
@@ -118,7 +120,11 @@ RETURN: A new OPTIONS structure instance.
         (task-upcase-output     task) (options-output-upcase options)
         (task-accented-output   task) (options-output-accented options)
         (task-allow-bell-output task) (not (options-output-no-bell options))
-        (task-arrows            task) (options-output-arrows options))
+        (task-arrows            task) (options-output-arrows options)
+        (task-script-path       task) (when (options-script-stream options)
+                                        (namestring (truename (options-script-stream options))))
+        (task-script-arguments  task) (options-script-arguments options)
+        (task-script-debug      task) (options-script-debug options))
   (let ((terminal (task-terminal task)))
     (when (typep terminal 'unix-terminal)
       (setf (terminal-modern-mode terminal) (or (member (getenv "TERM") '("emacs" "dumb")
@@ -446,6 +452,18 @@ interrompre, entre autres.
 Variable d'environnement: LSE_MODERN_MODE=NIL
 "
   (setf (options-modern-mode *options*) nil))
+
+
+(defoption ("--deboguer-sur-erreur" "--debug-on-error") ()
+  "
+Dans un script, quand une erreur survient, le script s'arrête et un
+status 1 est retourné au processus appelant.  Quand
+--deboguer-sur-erreur est donné, le script passe en mode interactif
+afin de pouvoir être débogué.
+
+Variable d'environnement: LSE_DEBUG_ON_ERROR=NIL
+"
+  (setf (options-script-debug *options*) t))
 
 
 

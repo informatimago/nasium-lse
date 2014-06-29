@@ -263,8 +263,9 @@ PRE: (fd-stream-p stream)"
 
 
 (defun shell  (command &rest arguments)
+  #+ccl   (ccl::os-command (format nil command arguments))
   #+clisp (ext:shell (format nil command arguments))
-  #-clisp (not-implemented-here 'shell))
+  #-(or ccl clisp) (not-implemented-here 'shell))
 
 
 (defun run-program (program arguments &key (input :terminal) (output :terminal)
@@ -310,15 +311,6 @@ This excludes the arguments processed by the lisp implementation."
   #+ecl   (first ext:*command-args*)
   #+sbcl  (first sb-ext:*posix-argv*)
   #-(or ccl clisp cmu ecl sbcl) nil)
-
-
-(defvar *script-path* nil)
-(defun script-path () *script-path*)
-(defun (setf script-path) (new-path) (setf  *script-path* new-path))
-
-(defvar *script-arguments* nil)
-(defun script-arguments () *script-arguments*)
-(defun (setf script-arguments) (new-arguments) (setf  *script-arguments* new-arguments))
 
 
 (defun prepare-options (options)

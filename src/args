@@ -6,13 +6,14 @@
  
 # Un script LSE moderne sur systeme unix:
 --mode-moderne --fleches-ascii --affichage-mixte --sans-bip
+# --debogue-sur-erreur
 
 # Ce script affiche quelques variables d'environnement et
 # les arguments.
 
 1 &E('HOME');&E('SHELL');&E('USER')
 2 FAIRE 3 POUR I_0 JUSQUA NARG()
-3 &A(I)
+3 &A(I);&C()
 4 TERMINER
 100 PROCEDURE &E(VAR) LOCAL VAR
 101 AFFICHER[U,'=',U,/]VAR,ENV(VAR)

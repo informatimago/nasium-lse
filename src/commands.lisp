@@ -1952,7 +1952,21 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
   `(call-with-error-reporting ,task (lambda () ,@body)))
 
 
+(defun lse-variable (vm identifier &optional type)
+  (let ((var (find-variable vm identifier)))
+    (and var
+         (or (not type)
+             (eq type (variable-type var)))
+         (variable-value var))))
+
+(defun command-status (task)
+  (round (lse-variable (task-vm task) 'id::statu 'nombre)))
+
 (defun command-run-script (task script-stream)
+  "
+DO:     Run the script read from the SCRIPT-STREAM.
+RETURN: T on success, NIL when the script fails without debugging.
+"
   (let ((*task*       task)
         (*print-case* :upcase))
     (handler-case                     ; catch au-revoir condition.
@@ -1964,13 +1978,20 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                             (replace-program vm new-pgm)
                             (executer-a-partir-de (minimum-line-number vm) nil)
                             (signal 'au-revoir)))
-            (debug    () :report "DEBOGUER")))
+            (debug    () :report "DEBOGUER"))
+          (unless (task-script-debug *task*)
+            (return-from command-run-script NIL)))
       (au-revoir ()
-        (return-from command-run-script (values)))))
-  (command-repl task))
+        (return-from command-run-script T)))
+    (setf (task-script-debug *task*) :debugging)
+    (command-repl task)))
 
 
 (defun command-repl (task)
+  "
+DO:     Run a LSE command REPL.
+RETURN: T
+"
   (let ((*task* task)
         (*print-case* :upcase))
     (flet ((do-it ()
@@ -1997,7 +2018,8 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
             :do (restart-case (with-error-reporting task
                                 (do-it))
                   (continue () :report "CONTINUER")))
-        (au-revoir () (values))))))
+        (au-revoir ()))
+      T)))
 
 
 

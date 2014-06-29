@@ -253,8 +253,9 @@ RETURN:    A list of remaining command line arguments to be parsed by
           (progn
             (setf (options-script-stream    *options*) script
                   (options-script-arguments *options*) arguments)
+            
             new-arguments)
-          (error "invalid arguments ~S" (cons argument remaining))))))
+          (error "arguments invalides : ~S" (cons argument remaining))))))
 
 
 
@@ -283,14 +284,14 @@ RETURN:    A list of remaining command line arguments to be parsed by
 (defun script (options task terminal)
   "
 DO:     Execute the script specified in options.
-RETURN: EX-OK
+RETURN: EX-OK or EX-SOFTWARE when the script fails.
 "
-  (setf (script-path)      (namestring (pathname (options-script-stream options)))
-        (script-arguments) (options-script-arguments options))
   (apply-options options task)
   (with-terminal terminal
     (unwind-protect
-         (command-run-script task (options-script-stream options))
+         (if (command-run-script task (options-script-stream options))
+             (or (command-status task) EX-OK)
+             EX-SOFTWARE)
       (io-finish-output task)
       (task-close-all-files task))))
 
@@ -310,7 +311,8 @@ RETURN: EX-OK
              (io-format task "~A" *tape-banner*)
              (io-format task "~?" *title-banner* (list (long-version) *copyright*))
              (io-format task "~?" *cli-banner*   (list (subseq (dat) 9))))
-           (command-repl task))
+           (command-repl task)
+           EX-OK)
       (io-finish-output task)
       (task-close-all-files task))))
 
@@ -356,10 +358,6 @@ RETURN: EX-OK
                                           :terminal terminal))
                  #-(and) (*trace-output* (make-broadcast-stream)))
             (setf *task* task) ; to help debugging, we keep the task in the global binding.
-            #+debugging (com.informatimago.common-lisp.interactive.interactive:show
-                          (arguments)
-                          ccl:*command-line-argument-list*
-                          ccl:*unprocessed-command-line-arguments*)
             (or (parse-options (or args (arguments)) nil (function process-argument) nil)
                 (progn
                   (if (options-script-stream *options*)
@@ -367,7 +365,7 @@ RETURN: EX-OK
                       (interactive *options* task terminal))
                   ex-ok)))))
     (error (err)
-      (format *error-output* "~&~A~%" err)
+      (format *error-output* "~&ERREUR: ~A~%" err)
       (finish-output *error-output*)
       ex-software)))
 

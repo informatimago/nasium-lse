@@ -1034,9 +1034,11 @@ NOTE: on ne peut pas liberer un parametre par reference.
   (throw 'run-step-done nil))
 
 (defun terminer (vm)
-  (io-format *task*
-             #-LSE-MITRA-15 "~%TERMINE EN LIGNE ~3,'0D~%"
-             #+LSE-MITRA-15 "~%TERMINE~%" (vm-pc.line vm))
+  (when (or (not (task-script-path *task*))
+            (eq (task-script-debug *task*) :debugging))
+    (io-format *task*
+               #-LSE-MITRA-15 "~%TERMINE EN LIGNE ~3,'0D~%"
+               #+LSE-MITRA-15 "~%TERMINE~%" (vm-pc.line vm)))
   (vm-terminer vm)
   (throw 'run-step-done nil))
 
@@ -1117,9 +1119,10 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                          (id::ptr (ptr 2 3))
                          (id::grl (grl 2 3))
                          (id::dat (dat 0 0))
-                         #+lse-unix (id::env  (env 1 1))
-                         #+lse-unix (id::narg (narg 0 0))
-                         #+lse-unix (id::arg  (arg 1 1))
+                         #+lse-unix (id::env   (env 1 1))
+                         #+lse-unix (id::narg  (narg 0 0))
+                         #+lse-unix (id::arg   (arg 1 1))
+                         #+lse-unix (id::exec  (exec 1 1))
                          ;; #+debugging
                          (id::lisp (lisp-eval 1 3))
                          )))

@@ -160,7 +160,20 @@ so that if next command is ine, we continue automatically.")
                          :initform (make-instance 'lse-vm) :type lse-vm)
    (files                :reader task-files
                          :initform (make-hash-table :test 'equalp)
-                         :documentation "Maps file names to open FILE objects.")))
+                         :documentation "Maps file names to open FILE objects.")
+   (script-path          :accessor task-script-path
+                         :initform nil
+                         :type (or null string)
+                         :documentation "The path to the current script or NIL when interactive.")
+   (script-arguments     :accessor task-script-arguments
+                         :initform '()
+                         :type list ; of strings
+                         :documentation "List of command line arguments for LSE scripts.")
+   (script-debug         :accessor task-script-debug
+                         :initform NIL
+                         :type (member nil t :debugging)
+                         :documentation "Whether an error in the LSE script should break
+into the interactive REPL.")))
 
 
 (defmethod (setf task-silence) (new-flag (task task))

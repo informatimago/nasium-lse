@@ -95,7 +95,9 @@ alors le système entre en mode interactif, sinon le script se termine
 avec un status non nul.  Si l'instruction `PAUSE` est exécutée, alors le
 système entre en mode interactif.
 
-Entre la ligne `#!` et le début du programme `LSE`, on peut placer des lignes de commentaire commençant par `#`, ou des options pour l'interprèteur `LSE`.
+Entre la ligne `#!` et le début du programme `LSE`, on peut placer des
+lignes de commentaire commençant par `#`, ou des options pour
+l'interprèteur `LSE`.
 
 ::
 
@@ -138,10 +140,20 @@ Entre la ligne `#!` et le début du programme `LSE`, on peut placer des lignes d
     ARG[7 ]=c
 
 
-Dans les scripts, la fonction `NARG()` retourne le nombre d'arguments;
-la fonction `ARG(I)` retourne l'argument à l'indexe indiqué, ou le
-chemin du script pour `ARG(0)`.  La fonction `ENV(N)` retourne la
-variable d'environnement `N`.
+Dans les scripts, les fonctions suivantes sont disponible:
+
+- `NARG()` retourne le nombre d'arguments;
+
+- `ARG(I)` retourne l'argument à l'index indiqué, ou le
+  chemin du script pour `ARG(0)`. 
+
+- `ENV(N)` retourne la variable d'environnement `N`.
+
+- `EXEC(C)` execute la commande shell contenue passée en argument.
+  Retourne le status de cette commande.
+
+Lorsque le script termine, si la variable `STATU` a une valeur
+numérique, elle est utilisée comme status de la commande.
 
 
 

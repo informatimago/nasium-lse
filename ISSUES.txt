@@ -1,5 +1,4 @@
 -*- mode:org; coding:utf-8 -*-
-* TODO 00037 pg71 fails                                                 :cli:
 * TODO 00021 pg43,46,47,51,76  faire enchevetree                        :cli:
 
 2 FAIRE 2 POUR I_1 JUSQUA 5;FAIRE 2 POUR J_1 JUSQUA 5;A[I,J]_J+5*(I-1)
@@ -960,6 +959,10 @@ TERMINE                          x
 Mentionné: T-1600: $ signifie quelque chose.
 Annoncé: Mitra-15: procédures externes rangées sur disque (Quelle syntaxe? #proc()?)
 
+* DONE 00037 pg71 fails                                                 :cli:
+  CLOSED: [2014-06-29 Sun 17:43]
+  - State "DONE"       from "TODO"       [2014-06-29 Sun 17:43] \\
+    Actually passes the tests: FIN must be added to EACH input line.
 * DONE 00034 sequence d'instructions en mode machine de bureau          :cli:
   CLOSED: [2014-06-29 Sun 15:47]
   - State "DONE"       from "TODO"       [2014-06-29 Sun 15:47] \\

@@ -1,6 +1,15 @@
 #!/usr/local/bin/lse --
 # -*- mode:lse;coding:utf-8 -*-
+# (Le commentaire -*- pour emacs doit être sur la première ou deuxième
+# ligne.  Comme la première ligne est #!, c'est forcément la deuxième,
+# dans les scripts.)
+ 
+# Un script LSE moderne sur systeme unix:
 --mode-moderne --fleches-ascii --affichage-mixte --sans-bip
+
+# Ce script affiche quelques variables d'environnement et
+# les arguments.
+
 1 &E('HOME');&E('SHELL');&E('USER')
 2 FAIRE 3 POUR I_0 JUSQUA NARG()
 3 &A(I)

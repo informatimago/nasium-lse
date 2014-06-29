@@ -85,34 +85,63 @@ Script
 ------
 
 Un programme L.S.E peut être exécuté comme script.  Il suffit pour
-celà de placer #!/usr/bin/lse sur la première ligne, suivit du
+celà de placer `#!/usr/bin/lse --` sur la première ligne, suivit du
 programme.  Lorsqu'on invoque le script, le programme est chargé, et
 s'il n'y a aucune erreur de syntaxe, il est automatiquement exécuté à
 partir de la première ligne.  Lorsqu'il se termine normalement, le
 script se termine.  Si une erreur est rencontrée, elle est signalée,
-et si l'option --deboguer est donnée sur la ligne #!/usr/bin/lse,
+et si l'option `--deboguer` est donnée sur la ligne `#!/usr/bin/lse`,
 alors le système entre en mode interactif, sinon le script se termine
-avec un status non nul.  Si l'instruction PAUSE est exécutée, alors le
+avec un status non nul.  Si l'instruction `PAUSE` est exécutée, alors le
 système entre en mode interactif.
 
+Entre la ligne `#!` et le début du programme `LSE`, on peut placer des lignes de commentaire commençant par `#`, ou des options pour l'interprèteur `LSE`.
 
 ::
 
-    user@unix$ cat example RET
-    #!/usr/bin/lse --deboguer
-    10 AFFICHER['Bonjour',/]
-    20 AFFICHER['Les arguments sont: ',U]ARGC
-    30 AFFICHER ARGV
-    40 TERMINER
-    user@unix$ chmod 755 example RET
-    user@unix$ ./example 1 2 3 a b c RET
-    Bonjour
-    Les arguments sont: 6 
-    ./example|1|2|3|a|b|c
+    user@unix$ cat args RET
+    #!/usr/local/bin/lse --
+    # -*- mode:lse;coding:utf-8 -*-
+    # (Le commentaire -*- pour emacs doit être sur la première ou deuxième
+    # ligne.  Comme la première ligne est #!, c'est forcément la deuxième,
+    # dans les scripts.)
 
-La variable ARGC est initialisée avec le nombre d'arguments; la
-variable chaîne ARGV est initialisée avec la concatenation du nom du
-programme et des arguments, séparés par une barre verticale '|'.
+    # Un script LSE moderne sur systeme unix:
+    --mode-moderne --fleches-ascii --affichage-mixte --sans-bip
+
+    # Ce script affiche quelques variables d'environnement et
+    # les arguments.
+
+    1 &E('HOME');&E('SHELL');&E('USER')
+    2 FAIRE 3 POUR I_0 JUSQUA NARG()
+    3 &A(I)
+    4 TERMINER
+    100 PROCEDURE &E(VAR) LOCAL VAR
+    101 AFFICHER[U,'=',U,/]VAR,ENV(VAR)
+    102 RETOUR
+    103 PROCEDURE &A(I) LOCAL I
+    104 AFFICHER['ARG[',U,']=',U,/]I,ARG(I)
+    105 RETOUR
+    user@unix$ chmod 755 args RET
+    user@unix$ ./args --options 1 2 3 a b c RET
+
+    HOME=/home/pjb
+    SHELL=/bin/bash
+    USER=pjb
+    ARG[0 ]=/home/pjb/src/git/pjb/nasium-lse/src/./args
+    ARG[1 ]=--options
+    ARG[2 ]=1
+    ARG[3 ]=2
+    ARG[4 ]=3
+    ARG[5 ]=a
+    ARG[6 ]=b
+    ARG[7 ]=c
+
+
+Dans les scripts, la fonction `NARG()` retourne le nombre d'arguments;
+la fonction `ARG(I)` retourne l'argument à l'indexe indiqué, ou le
+chemin du script pour `ARG(0)`.  La fonction `ENV(N)` retourne la
+variable d'environnement `N`.
 
 
 

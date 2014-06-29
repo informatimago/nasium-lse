@@ -45,7 +45,8 @@
         "COM.INFORMATIMAGO.LSE.OS"
         "COM.INFORMATIMAGO.LSE"
         "COM.INFORMATIMAGO.LSE.UNIX-TERMINAL"
-        "COM.INFORMATIMAGO.SIGNAL")
+        "COM.INFORMATIMAGO.SIGNAL"
+        "COM.INFORMATIMAGO.RDP")
   (:export "MAIN")
   (:documentation "
 This package contains the Command Line Interface to the LSE system:

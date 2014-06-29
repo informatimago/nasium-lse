@@ -623,7 +623,7 @@ LUNDI 31 AVRIL 1972
 TERMINE EN LIGNE 016
 #+END_SRC
 
-* TODO 00019 pg37 affichage des matrices                                :cli:
+* TODO 00019 pg37,pg46,pg47,pg76 affichage des matrices                 :cli:
 pg37:
 
 Obtenu:
@@ -905,6 +905,10 @@ commandes:                ------------------------------     --------------
                                   ADieux
                                   PRendre etat console
                           ------------------------------     --------------
+
+TA                        implementé         pas encore      on pourrait avoir
+UT                        implementé         pas encore      un autre format.
+
 ENCODER:
 
       Sur Mitra-15, fonctionne comme APpeler: le programme courant est

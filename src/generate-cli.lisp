@@ -91,7 +91,13 @@
 (defparameter *program-name* "lse")
 (defparameter *program-system*  :com.informatimago.lse.cli)
 
-(when (com.informatimago.lse.cli::boolean-enval "LSE_COMPILE_SERVER" nil)
+(defun boolean-enval (var default)
+  (let ((val (ccl:getenv var)))
+    (if val
+        (not (not (find val '("T" "Y" "TRUE" "YES" "O" "OUI" "1") :test (function string-equal))))
+        default)))
+
+(when (boolean-enval "LSE_COMPILE_SERVER" nil)
   (pushnew :lse-server *features*))
 ;; (pushnew :lse-scanner-debug    *features*)
 ;; (pushnew :debugging            *features*)

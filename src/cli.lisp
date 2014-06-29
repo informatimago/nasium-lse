@@ -212,25 +212,30 @@ DO:               Parse a script file at the given PATH.
 
 (defun process-argument (argument remaining)
   "
-NOTE:      When the command is used interactively, no non-option
+DO:        This function is called by PARSE-OPTIONS when an unexpected
+           option is found.
+
+           When the command is used interactively, no non-option
            argument should be given.
 
            When the command is used as an interpreter for a script,
-           the user should give no option on the shebang line.  It is
-           expected the command is invoked by the kernel by passing
-           the (relative) path to the script as command line
-           argument.
+           the user should give no option on the shebang line, only --
+           to prevent the lisp implementation to parse options..
+
+           It is expected the command is invoked by the kernel by
+           passing the shebang options, the (relative) path to the
+           script, and the actual command line arguments.
 
            See PARSE-SCRIPT for the expected format for the script
            file.
 
-           Therefore this function expects a single argument, which
-           should be a relative path to such a script file, and no
-           other remaining argument.  The script file is checked, and
-           if invalid, an error is signaled.  Otherwise, the 
+           Therefore this function expects:
 
-DO:        This function is called by PARSE-OPTIONS when an unexpected
-           option is found.  
+               [--] script-file {script-arguments}
+
+           The script file is checked, and if invalid, an error is
+           signaled.    Otherwise the script stream and script
+           arguments are stored in *options*.
 
 ARGUMENT:  The argument that is not an option.
 
@@ -239,14 +244,17 @@ REMAINING: A list of command line arguments remaining to be processed.
 RETURN:    A list of remaining command line arguments to be parsed by
            PARSE-OPTIONS.
 "
-  (if remaining
-      (error "invalid arguments ~S" (cons argument remaining))
-      (multiple-value-bind (script new-arguments) (parse-script argument)
-        (if script
-            (progn
-              (setf (options-script *options*) script)
-              new-arguments)
-            (error "invalid arguments ~S" (cons argument remaining))))))
+  (let* ((arguments (if (string= "--" argument)
+                        remaining
+                        (cons argument remaining)))
+         (script-path (pop arguments)))
+    (multiple-value-bind (script new-arguments) (parse-script script-path)
+      (if script
+          (progn
+            (setf (options-script-stream    *options*) script
+                  (options-script-arguments *options*) arguments)
+            new-arguments)
+          (error "invalid arguments ~S" (cons argument remaining))))))
 
 
 
@@ -277,12 +285,12 @@ RETURN:    A list of remaining command line arguments to be parsed by
 DO:     Execute the script specified in options.
 RETURN: EX-OK
 "
-  (setf (script-path) (namestring (pathname (options-script options)))
-        (script-arguments) (butlast (arguments)))
+  (setf (script-path)      (namestring (pathname (options-script-stream options)))
+        (script-arguments) (options-script-arguments options))
   (apply-options options task)
   (with-terminal terminal
     (unwind-protect
-         (command-run-script task (options-script options))
+         (command-run-script task (options-script-stream options))
       (io-finish-output task)
       (task-close-all-files task))))
 
@@ -348,13 +356,13 @@ RETURN: EX-OK
                                           :terminal terminal))
                  #-(and) (*trace-output* (make-broadcast-stream)))
             (setf *task* task) ; to help debugging, we keep the task in the global binding.
-            (com.informatimago.common-lisp.interactive.interactive:show
-              (arguments)
-              ccl:*command-line-argument-list*
-              ccl:*unprocessed-command-line-arguments*)
+            #+debugging (com.informatimago.common-lisp.interactive.interactive:show
+                          (arguments)
+                          ccl:*command-line-argument-list*
+                          ccl:*unprocessed-command-line-arguments*)
             (or (parse-options (or args (arguments)) nil (function process-argument) nil)
                 (progn
-                  (if (options-script *options*)
+                  (if (options-script-stream *options*)
                       (script      *options* task terminal)
                       (interactive *options* task terminal))
                   ex-ok)))))

@@ -897,6 +897,21 @@ Exemple: ENV('USERNAME') --> 'pjb'
          (val (getenv nom)))
     (or val "")))
 
+
+#+lse-unix
+(defunction narg ()
+    "Nombre d'argument de script."
+    "NARG()
+
+Résultat: Un entier indiquant le nombre d'arguments de ligne de
+commande passés au script.
+
+Exemple: 1 FAIRE 1 POUR I_1 JUSQUA NARG(); AFFICHER I,'->',ARG(I)
+"
+  (length (if (script-path)
+              (script-arguments)
+              (arguments))))
+
 #+lse-unix
 (defunction arg (i)
     "Script argument"

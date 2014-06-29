@@ -44,7 +44,8 @@
   (modern-mode          t)
   (return-is-xoff       nil)
   (pager                t)
-  (script               nil))
+  (script-stream        nil)
+  (script-arguments     '()))
 
 
 

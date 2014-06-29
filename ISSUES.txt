@@ -1,14 +1,4 @@
 -*- mode:org; coding:utf-8 -*-
-* DONE 00021 pg43,46,47,51,76  faire enchevetree                        :cli:
-  CLOSED: [2014-06-29 Sun 18:51]
-  - State "DONE"       from "TODO"       [2014-06-29 Sun 18:51] \\
-    Corrected.
-
-2 FAIRE 2 POUR I_1 JUSQUA 5;FAIRE 2 POUR J_1 JUSQUA 5;A[I,J]_J+5*(I-1)
-ERREUR EN LIGNE   2 : BOUCLE FAIRE 2 POUR J ENCHEVETREE AVEC LA BOUCHE FAIRE 2 POUR I DE LA LIGNE 2
-
-Il ne devrait pas y avoir d'erreur dans ce cas.
-
 * TODO 00015 PG28 TANT QUE SCH()#'**' fails.                            :cli:
 
 #+BEGIN_SRC(lse)
@@ -961,6 +951,16 @@ TERMINE                          x
 
 Mentionné: T-1600: $ signifie quelque chose.
 Annoncé: Mitra-15: procédures externes rangées sur disque (Quelle syntaxe? #proc()?)
+
+* DONE 00021 pg43,46,47,51,76  faire enchevetree                        :cli:
+  CLOSED: [2014-06-29 Sun 18:51]
+  - State "DONE"       from "TODO"       [2014-06-29 Sun 18:51] \\
+    Corrected. commit 255df182ede7286902a657958a494868ae178e36
+
+2 FAIRE 2 POUR I_1 JUSQUA 5;FAIRE 2 POUR J_1 JUSQUA 5;A[I,J]_J+5*(I-1)
+ERREUR EN LIGNE   2 : BOUCLE FAIRE 2 POUR J ENCHEVETREE AVEC LA BOUCHE FAIRE 2 POUR I DE LA LIGNE 2
+
+Il ne devrait pas y avoir d'erreur dans ce cas.
 
 * DONE 00037 pg71 fails                                                 :cli:
   CLOSED: [2014-06-29 Sun 17:43]

@@ -62,7 +62,7 @@
     :start numero-de-ligne
     :rules ((--> numero-de-ligne
                  tok-numero :action (let ((lino (parse-integer (second $1))))
-                                      (unless (valid-line-number-p lino)
+                                      (unless (line-number-valid-p lino)
                                         (lse-error  "NUMERO DE LIGNE INVALIDE: ~A" (second $1)))
                                       (list lino)))))
 
@@ -132,7 +132,7 @@
 
             (--> numero-de-ligne
                  tok-numero :action (let ((lino (parse-integer (second $1))))
-                                      (unless (valid-line-number-p lino)
+                                      (unless (line-number-valid-p lino)
                                         (lse-error "NUMERO DE LIGNE INVALIDE: ~A" (second $1)))
                                       lino))))
 
@@ -318,9 +318,6 @@
 
 
 (defun parse-une-ligne (ligne) (list ligne))
-
-(defun valid-line-number-p (lino) (<= 1 lino 255))
-
 
 (defun test/command-grammars ()
   (assert (equal '(  9) (parse-numero-de-ligne "9")))

@@ -129,7 +129,7 @@ stdout in a string (going thru a file)."
                   #+:lse-t1600 :lse-t1600
                   #+:lse-unix :lse-unix
                   #+:lse-extensions :lse-extensions
-                  #+lse-compile-server :lse-compile-server
+                  #+lse-server :lse-server
                   #+:lse-case-insensitive :lse-case-insensitive
                   #+:debugging :debugging
                   #+:lse-scanner-debug :lse-scanner-debug))))

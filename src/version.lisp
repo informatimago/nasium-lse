@@ -47,7 +47,7 @@
                                                                        *compile-file-truename*))
                                           :if-does-not-exist :create)
                                          0.000001d0)))
-    "The version of the NASIUM LSE system.")
+    "The version of the NASIUM L.S.E system.")
 
 
   (defparameter  *license*
@@ -122,8 +122,19 @@ stdout in a string (going thru a file)."
 
 (defun long-version ()
   (multiple-value-bind (se mi ho da mo ye) (decode-universal-time (get-universal-time))
-    (format nil "~A,~% commit ~A,~% compiled ~4,'0D-~2,'0D-~2,'0D ~2,'0D:~2,'0D:~2,'0D,~% on ~A"
-            (version) *commit* ye mo da ho mi se (machine-instance))))
+    (format nil "~A,~% commit ~A,~% compiled ~4,'0D-~2,'0D-~2,'0D ~2,'0D:~2,'0D:~2,'0D,~% ~
+                 on ~A,~% with features ~A."
+            (version) *commit* ye mo da ho mi se
+            (machine-instance) 
+            (list #+:lse-mitra-15 :lse-mitra-15
+                  #+:lse-t1600 :lse-t1600
+                  #+:lse-unix :lse-unix
+                  #+:lse-extensions :lse-extensions
+                  #+lse-server :lse-server
+                  #+:lse-case-insensitive :lse-case-insensitive
+                  #+:debugging :debugging
+                  #+:lse-scanner-debug :lse-scanner-debug))))
+
 
 (defun versions ()
   "

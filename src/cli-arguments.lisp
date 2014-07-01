@@ -277,21 +277,16 @@ BODY:           The body of the option processing function.
 
 (defoption ("--version" "-V" "-v") ()
   "Affiche la version."
-  (opt-format t "
-L.S.E.
-VERSION ~A
-~A
-
-DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLv3.
-
+  (opt-format t "~?
 Ce programme est livré avec ABSOLUMENT AUCUNE GARANTIE; pour plus de
 détails utilisez la commande DO GARANTIE.  Ce logiciel est libre, et
 vous êtes les bienvenus pour redistribuer sous certaines conditions;
 utilisez la commande DO LICENSE pour plus de détails.
 
 "
-          (long-version)
-          *copyright*)
+              *title-banner*
+              (list (long-version)
+                    *copyright*))
   (finish-output t)
   (parse-options-finish ex-ok))
 

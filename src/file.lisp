@@ -285,7 +285,8 @@
                       :direction :io
                       :element-type '(unsigned-byte 8)
                       :if-exists if-exists
-                      :if-does-not-exist if-does-not-exist)))
+                      :if-does-not-exist if-does-not-exist
+                      #+ccl :sharing #+ccl :lock)))
     (when stream
       (when (zerop (file-length stream))
         (let ((buffer (make-block)))

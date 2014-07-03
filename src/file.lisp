@@ -330,23 +330,24 @@
                    (byte ,exponent-bits ,(1- mantissa-bits))
                    (ldb (byte ,(1- mantissa-bits) 0) mantissa)))))
      (defun ,(intern (with-standard-io-syntax (format nil "IEEE-754-TO-~A" name)) (symbol-package name))  (ieee)
-       (let ((aval (scale-float
-                    (coerce
-                     (dpb 1 (byte 1 ,(1- mantissa-bits))
-                          (ldb (byte ,(1- mantissa-bits) 0) ieee))
-                     ,type)
-                    (- (ldb (byte ,exponent-bits ,(1- mantissa-bits))
-                            ieee) 
-                       ,(1- (expt 2 (1- exponent-bits)))
-                       ,(1- mantissa-bits)))))
-         (if (zerop (ldb (byte 1 ,(1- (+ exponent-bits mantissa-bits))) ieee))
-             aval
-             (- aval))))))
+       (if (zerop ieee)
+           0.0f0
+           (let ((aval (scale-float
+                        (coerce
+                         (dpb 1 (byte 1 ,(1- mantissa-bits))
+                              (ldb (byte ,(1- mantissa-bits) 0) ieee))
+                         ,type)
+                        (- (ldb (byte ,exponent-bits ,(1- mantissa-bits))
+                                ieee) 
+                           ,(1- (expt 2 (1- exponent-bits)))
+                           ,(1- mantissa-bits)))))
+             (if (zerop (ldb (byte 1 ,(1- (+ exponent-bits mantissa-bits))) ieee))
+                 aval
+                 (- aval)))))))
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   ;; (gen-ieee-encoding float-64 'double-float 11 53)
   (gen-ieee-encoding float-32 'single-float  8 24))
-
 
 
 (defmethod read-record ((file file) record-number)

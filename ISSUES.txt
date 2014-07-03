@@ -1,40 +1,4 @@
 -*- mode:org; coding:utf-8 -*-
-* TODO 00015 PG28 TANT QUE SCH()#'**' fails.                            :cli:
-
-#+BEGIN_SRC(lse)
-EXECUTER A PARTIR DE 1
-CLE : 3
-DONNER LE TEXTE;TERMINER PAR ***
-*ello\\\\\HELLO WORLD!***
-PRET
-TEXTE
-PRET
-?TEXTE
-HELLO WORLD!
-?I
-19791
-II_0
-?I
-19791
-II_\\0\_0
-?I
-0
-S\?SCH(TEXTE,I,2)
-ERREUR : LE 2E ARGUMENT POUR SCH, 0.0, N'EST PAS VALIDE: L'ARGUMENT DEBUT DOIT
-ETRE UN NOMBRE ENTIER SUPERIEUR OU EGAL A 1.
-PRET
-?SCH(TEXTE,I,1)
-ERREUR : LE 2E ARGUMENT POUR SCH, 0.0, N'EST PAS VALIDE: L'ARGUMENT DEBUT DOIT
-ETRE UN NOMBRE ENTIER SUPERIEUR OU EGAL A 1.
-PRET
-I_1
-?SCH(TEXTE,I,1)
-H
-CONTINUER
-ERREUR : FILL POINTER OF #() IS 0 .
-PRET 
-
-#+END_SRC
 * TODO 00014 PG27 TANT QUE N#99 doesn't fail when N is read as 99.      :cli:
 * TODO 00025 pg54,pg77 retour en 10                                     :cli:
 
@@ -879,7 +843,28 @@ anything, and keeping the ports open indefinitely.  For example:
 
 #+END_SRC
 
-* TODO 00033 specificités T-1600 / Mitra-15                             :cli:
+* TODO 00040 vérifier SI 1=1 ALORS SINON AFFICHER 'NON';;               :cli:
+
+Sur Siris, l'instruction vide existe, alors ;; et ALORS SINON sont possible.
+
+* TODO 00039 vérifier page 28 paramètres et déclarations manuel siris   :cli:
+* TODO 00038 vérifier RETOUR EN = RETOUR + ALLER EN vs. FAIRE POUR      :cli:
+et tester:
+
+ERREUR EN LIGNE  20 : NUMERO DE LIGNE INEXISTANT 20
+    
+PRET
+LISTER A PARTIR DE 1
+1 Y_&RAC(3,20);AFFICHER Y
+2 Y_&RAC(-3,20);AFFICHER Y
+3 TERMINER
+20 AFFICHER 'Pas de racine réelle.'
+21 TERMINER
+100 PROCEDURE &RAC(ARG,ERRE) LOCAL ARG,ERRE
+101 SI ARG<0 ALORS RETOUR EN ERRE
+102 RESULTAT RAC(ARG)
+
+* TODO 00033 specificités T-1600 / Mitra-15 / Siris                     :cli:
 
 T-1600:   fonctions SH, CH, TH, SGN, UN et ZER.
 
@@ -895,16 +880,40 @@ fichier Mitra-15/T-1600 avait des blocks de 256 octets (Mitra-15
 pouvant écrire les chaines sur plusieurs blocks).  Les fichiers
 implémentés par nasium ont des blocs de 1024 octets.
 
-                          LSE-MITRA-15        LSE-T1600      LSE-UNIX
-------------------------  -----------------  --------------  --------------
+Sur Siris 7/Siris 8, on avait un compilateur LSE.
 
-commandes:                ------------------------------     --------------
+Différence lexicales:
+  Mini   Siris
+    ^ ---> **
+    _ ---> <-
+    [ ---> (/
+    ] ---> /)
+
+1 à 4 cartes; 
+colonnes 1-4 pour le numéro de ligne,
+colonnes 5-80 pour le texte de la ligne,
+jusqu'à 3 cartes continuation sans rien dans les colonnes 1-4.
+
+Commentaires: * ou #
+
+Lire: les données sont sur flot continu de cartes.
+      les chaînes doivent être quotées:  'UNE ''CHAINE''' (comme en lisp avec READ).
+
+Procédure externes: module avec seulement des procédures -> bibliothèque
+                    programme référençant des procédures externe => édition de lien
+
+
+
+                          LSE-MITRA-15        LSE-T1600      LSE-UNIX        LSE-SIRIS
+------------------------  -----------------  --------------  --------------  --------------
+
+commandes:                ------------------------------     --------------  --------------
                                   IDentification
                                   DRoits
                                   BOnjour
                                   ADieux
                                   PRendre etat console
-                          ------------------------------     --------------
+                          ------------------------------     --------------  --------------
 
 TA                        implementé         pas encore      on pourrait avoir
 UT                        implementé         pas encore      un autre format.
@@ -917,11 +926,14 @@ ENCODER:
       Sur T-1600 (et unix), ENcoder remplace ligne par ligne, sans
       effacer le reste du programme courant.
 
-------------------------  -----------------  --------------  --------------
+------------------------  -----------------  --------------  --------------  --------------
 fonctions:                                                   ENV(nom)
                                                              ARG(i[,r]) -- pas encore implémenté
                                                              LISP(e,p,r) -- debugging
-------------------------  -----------------  --------------  --------------
+                                                                             DAT() -> hh*mm*ss*cc jj*mm*aa
+                                                                             EXS(x) = e^x
+
+------------------------  -----------------  --------------  --------------  --------------
 extensions:
 
    fonction ATT()
@@ -931,31 +943,80 @@ extensions:
    fonction OUX(a,b)
    fonction XIT(ea)
 
-------------------------  -----------------  --------------  --------------
-numéro de ligne            1-250              1-255          1-65535
+------------------------  -----------------  --------------  --------------  --------------
+code caractères            ASCII              ASCII           Unicode         EBCDIC
+longueur identificateur    5                  5                               8
+numéro de ligne            1-250              1-255          1-65535          1-9999
 max longueur de ligne      80                 80             65535
-
-max répetition format      ?                  62             ?              pas implémenté
-------------------------  -----------------  --------------  --------------
+max longueur nom fichier   5                  5              5 ?              4 !
+max répetition format      ?                  62             ? pas implémenté
+taille bloc fichier        256                256            1024 (par défault) 1024 (par défaut)
+longueur clé               2                  2              2               4
+------------------------  -----------------  --------------  --------------  --------------
 sémantique @               I_@50 = ligne      ALLER EN @+3   pas implémenté
-------------------------  -----------------  --------------  --------------
+------------------------  -----------------  --------------  --------------  --------------
 longueur chaine max       65536               256            65536
-------------------------  -----------------  --------------  --------------
+------------------------  -----------------  --------------  --------------  --------------
 EQC max code              128                 256            cl:char-code-limit
                                                              eg. 1114112 avec unicode
-------------------------  -----------------  --------------  --------------
+------------------------  -----------------  --------------  --------------  --------------
 AFFICHER[Fn.m,En.m]VE,TA  non                oui             oui
-------------------------  -----------------  --------------  --------------
+------------------------  -----------------  --------------  --------------  --------------
 PAUSE EN LIGNE 000                                  x              x
 TERMINE EN LIGNE 000                                x              x
 PAUSE                            x
 TERMINE                          x
-------------------------  -----------------  --------------  --------------
+------------------------  -----------------  --------------  --------------  --------------
+instructions
+                                                                             FAIRE POUR DEBUT FIN
+                                                                             instruction vide.
+                                                                             format P pour page.
+                                                                             
+------------------------  -----------------  --------------  --------------  --------------
 
 
 Mentionné: T-1600: $ signifie quelque chose.
 Annoncé: Mitra-15: procédures externes rangées sur disque (Quelle syntaxe? #proc()?)
 
+* DONE 00015 PG28 TANT QUE SCH()#'**' fails.                            :cli:
+  CLOSED: [2014-06-30 Mon 19:24]
+  - State "DONE"       from "TODO"       [2014-06-30 Mon 19:24] \\
+    Corrected by issue 00021 correction.
+
+#+BEGIN_SRC(lse)
+EXECUTER A PARTIR DE 1
+CLE : 3
+DONNER LE TEXTE;TERMINER PAR ***
+*ello\\\\\HELLO WORLD!***
+PRET
+TEXTE
+PRET
+?TEXTE
+HELLO WORLD!
+?I
+19791
+II_0
+?I
+19791
+II_\\0\_0
+?I
+0
+S\?SCH(TEXTE,I,2)
+ERREUR : LE 2E ARGUMENT POUR SCH, 0.0, N'EST PAS VALIDE: L'ARGUMENT DEBUT DOIT
+ETRE UN NOMBRE ENTIER SUPERIEUR OU EGAL A 1.
+PRET
+?SCH(TEXTE,I,1)
+ERREUR : LE 2E ARGUMENT POUR SCH, 0.0, N'EST PAS VALIDE: L'ARGUMENT DEBUT DOIT
+ETRE UN NOMBRE ENTIER SUPERIEUR OU EGAL A 1.
+PRET
+I_1
+?SCH(TEXTE,I,1)
+H
+CONTINUER
+ERREUR : FILL POINTER OF #() IS 0 .
+PRET 
+
+#+END_SRC
 * DONE 00021 pg43,46,47,51,76  faire enchevetree                        :cli:
   CLOSED: [2014-06-29 Sun 18:51]
   - State "DONE"       from "TODO"       [2014-06-29 Sun 18:51] \\

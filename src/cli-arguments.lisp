@@ -270,6 +270,7 @@ BODY:           The body of the option processing function.
                   (pop lines))
                 lines)))
     (opt-format t "~A~%" *documentation-text*)
+    (finish-output t)
     (parse-options-finish ex-ok)))
 
 
@@ -286,6 +287,7 @@ utilisez la commande DO LICENSE pour plus de détails.
               *title-banner*
               (list (long-version)
                     *copyright*))
+  (finish-output t)
   (parse-options-finish ex-ok))
 
 
@@ -487,7 +489,8 @@ Variable d'environnement: LSE_DEBUG_ON_ERROR=NIL
           (terminal-keysym-label terminal :delete)
           (terminal-keysym-label terminal :escape)
           (terminal-keysym-label terminal :attention)
-          (terminal-keysym-label terminal :return)))
+          (terminal-keysym-label terminal :return))
+  (finish-output stream))
 
 
 (defun configuration-interactive (options)

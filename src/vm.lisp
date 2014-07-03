@@ -911,40 +911,43 @@ NOTE: on ne peut pas liberer un parametre par reference.
         (init  (deref vm init))
         (pas   (deref vm pas))
         (limit (deref vm limit)))
-    (if line
-        (progn
-          (let ((init (if limit
-                          (- init pas)
-                          init)))
-            (if var
-                (if (member (variable-type var) '(nombre :undefined))
-                    (setf (variable-type var) 'nombre
-                          (variable-value var) init)
-                    (lse-error "LA VARIABLE DE BOUCLE FAIRE ~A EXISTE, MAIS N'EST PAS UNE VARIABLE ARITHMETIQUE" ident))
-                (setf var (add-global-variable vm (make-instance 'lse-variable
-                                                      :name  ident
-                                                      :value init)))))
-          (let ((stack (loop-stack vm)))
-            (when (and stack
-                       (or (< lino (loop-start-line-number (first stack)))
-                           (< (loop-end-line-number (first stack)) lino)))
-              (error 'lse-error
-                     :backtrace (or #+ccl (ccl::backtrace-as-list))
-                     :line-number (vm-pc.line vm)
-                     :format-control "BOUCLE FAIRE ~D POUR ~A ENCHEVETREE AVEC LA BOUCHE FAIRE ~D POUR ~A DE LA LIGNE ~D"
-                     :format-arguments (list lino var (loop-end-line-number (first stack))
-                                             (loop-variable (first stack))
-                                             (loop-start-line-number (first stack))))))
-          (let ((loop (apply (function make-instance) loop-class
-                             :start-line-number (vm-pc.line vm)
-                             :start-offset (vm-pc.offset vm)
-                             :end-line-number lino
-                             :step pas
-                             :variable var
-                             (when limit (list :limit limit)))))
-            (push loop (loop-stack vm))
-            (when limit (test-end-of-loop vm loop))))
-        (error-bad-line lino))))
+    (unless line
+      (error-bad-line lino))
+    ;; initialisation:
+    (let ((init (if limit
+                    (- init pas)
+                    init)))
+      (if var
+          (if (member (variable-type var) '(nombre :undefined))
+              (setf (variable-type var) 'nombre
+                    (variable-value var) init)
+              (lse-error "LA VARIABLE DE BOUCLE FAIRE ~A EXISTE, MAIS N'EST PAS UNE VARIABLE ARITHMETIQUE" ident))
+          (setf var (add-global-variable vm (make-instance 'lse-variable
+                                                           :name  ident
+                                                           :value init)))))
+    ;; check embedded loop
+    (let ((stack (loop-stack vm)))
+      (when (and stack
+                 (or (< lino (loop-start-line-number (first stack)))
+                     (< (loop-end-line-number (first stack)) lino)))
+        (error 'lse-error
+               :backtrace (or #+ccl (ccl::backtrace-as-list))
+               :line-number (vm-pc.line vm)
+               :format-control "BOUCLE FAIRE ~D POUR ~A ENCHEVETREE AVEC LA BOUCHE FAIRE ~D POUR ~A DE LA LIGNE ~D"
+               :format-arguments (list lino var (loop-end-line-number (first stack))
+                                       (loop-variable (first stack))
+                                       (loop-start-line-number (first stack))))))
+    ;; make the loop
+    (let ((loop (apply (function make-instance) loop-class
+                       :start-line-number (vm-pc.line vm)
+                       :start-offset (vm-pc.offset vm)
+                       :end-line-number lino
+                       :step pas
+                       :variable var
+                       (when limit (list :limit limit)))))
+      (push loop (loop-stack vm))
+      (when limit
+        (test-end-of-loop vm loop)))))
 
 
 (defun faire-jusqu-a (vm lino init pas limit ident)
@@ -962,7 +965,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
           ;; end of loop, we exit it.
           ;; #+debugging (io-format *task* "~&END OF LOOP ~S~&" loop)
           (pop (loop-stack vm))
-          nil)
+          ;; jump to end of loop
+          
+          )
         ;; loop over:
         (setf (vm-pc.line vm) start-line-number
               (vm-pc.offset vm) start-offset
@@ -1000,6 +1005,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 
 (defun following-line (vm lino)
+  "Return the line number of the line following LINO."
   (let ((max  (maximum-line-number vm)))
     (loop
       :while (and (<= lino max)

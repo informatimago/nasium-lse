@@ -185,7 +185,7 @@ variable-type may be:
 ;; LSE-VARIABLES:
 
 (defclass lse-variable (named-slot)
-  ((type :initarg :type :accessor variable-type :initform 'nombre)
+  ((type  :initarg :type  :accessor variable-type  :initform :undefined)
    (value :initarg :value :accessor variable-value :initform :unbound)))
 
 (defmethod print-object ((variable lse-variable) stream)

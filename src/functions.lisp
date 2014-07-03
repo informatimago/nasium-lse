@@ -499,9 +499,9 @@ Résultat le OU logique bit-à-bit entre les bits de A et ceux de B."
 
 
 #+lse-extensions
-(defunction oux (a b)
+(defunction oxl (a b)
   "OU exclusif bit-à-bit"
-  "OUX(A,B)
+  "OXL(A,B)
 
 Résultat le OU exclusif bit-à-bit entre les bits de A et ceux de B."
   (un-nombre (logxor (truncate (un-nombre (deref *vm* a)))

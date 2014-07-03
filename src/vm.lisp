@@ -627,10 +627,11 @@ NOTE: on ne peut pas liberer un parametre par reference.
     (let ((var (find-variable vm ident)))
       (if var
           (case (variable-type var)
-            (nombre
+            ((nombre :undefined)
              (if (chainep val)
                  (lse-error "LA VARIABLE ~A N'EST PAS UNE CHAINE" ident)
-                 (setf (variable-value var) (un-nombre val))))
+                 (setf (variable-type var) 'nombre
+                       (variable-value var) (un-nombre val))))
             (chaine
              (if (chainep val)
                  (setf (variable-value var) val)
@@ -641,8 +642,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
           (typecase val
             ((or integer nombre)
              (add-global-variable vm (make-instance 'lse-variable
-                                         :name  ident
-                                         :value (un-nombre val))))
+                                                    :name  ident
+                                                    :type 'nombre
+                                                    :value (un-nombre val))))
             (otherwise
              (lse-error "LA VARIABLE ~A N'EST PAS DECLAREE COMME CHAINE." ident)))))))
 
@@ -695,8 +697,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
   (let ((var (find-variable vm ident)))
     (if var
         (case (variable-type var)
-          ((nombre)
-           (setf (variable-value var) (un-nombre (io-read-number *task*))))
+          ((nombre :undefined)
+           (setf (variable-type var) 'nombre
+                 (variable-value var) (un-nombre (io-read-number *task*))))
           ((chaine)
            (setf (variable-value var) (io-read-string *task*)))
           (t
@@ -914,8 +917,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
                           (- init pas)
                           init)))
             (if var
-                (if (equal (variable-type var) 'nombre)
-                    (setf (variable-value var) init)
+                (if (member (variable-type var) '(nombre :undefined))
+                    (setf (variable-type var) 'nombre
+                          (variable-value var) init)
                     (lse-error "LA VARIABLE DE BOUCLE FAIRE ~A EXISTE, MAIS N'EST PAS UNE VARIABLE ARITHMETIQUE" ident))
                 (setf var (add-global-variable vm (make-instance 'lse-variable
                                                       :name  ident
@@ -1242,22 +1246,22 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
 
 (defun retour-en (vm lino)
   (let ((frame (first (vm-local-frame-stack vm))))
-    (cond
-      ((null frame)
-       (lse-error "IL N'Y A PAS D'APPEL DE PROCEDURE EN COURS, RETOUR EN IMPOSSIBLE"))
-      (t
-       ;; When call-type is :function we have an exceptionnal return,
-       ;; but it's the same processing.  The stack unwinding is done
-       ;; in vm-goto, from the saved frame-stack-pointer.
-       (let ((lino (truncate (deref vm lino)))
-             (line (gethash lino (vm-code-vectors vm))))
-         (pop (vm-local-frame-stack vm))
-         (if line
-             (setf (vm-pc.line   vm) lino
-                   (vm-pc.offset vm) 0
-                   (vm-code      vm) (code-vector line)
-                   (fill-pointer (vm-stack vm)) (frame-stack-pointer frame))
-             (error-bad-line lino)))))))
+    (if (null frame)
+        (lse-error "IL N'Y A PAS D'APPEL DE PROCEDURE EN COURS, RETOUR EN IMPOSSIBLE")
+        
+        ;; When call-type is :function we have an exceptionnal return,
+        ;; but it's the same processing.  The stack unwinding is done
+        ;; in vm-goto, from the saved frame-stack-pointer.
+        (let* ((lino (truncate (deref vm lino)))
+               (line (gethash lino (vm-code-vectors vm))))
+          (print (list 'lino lino 'line line))
+          (pop (vm-local-frame-stack vm))
+          (if line
+              (setf (vm-pc.line   vm) lino
+                    (vm-pc.offset vm) 0
+                    (vm-code      vm) (code-vector line)
+                    (fill-pointer (vm-stack vm)) (frame-stack-pointer frame))
+              (error-bad-line lino))))))
 
 (defun result (vm result)
   (let ((frame (first (vm-local-frame-stack vm))))

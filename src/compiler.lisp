@@ -1754,7 +1754,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
           :with pc = 0
           :for listing-line :in listing
           :do (if (and (<= start pc) (< pc end))
-                  (progn (format t "~@[~3D ~]~3D: " line pc)
+                  (progn (format t "~@[~5D ~]~3D: " line pc)
                          (if (member pc labels)
                              (format t "@~6:A " pc)
                              (format t "        "))

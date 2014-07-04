@@ -76,12 +76,12 @@
 (defmethod print-incomparable-error ((err incomparable) stream)
   (format stream "ON NE PEUT PAS COMPARER (~A) UN OBJET DE TYPE ~A (~S) AVEC UN OBJECT DE TYPE ~A (~S)"
           (ecase (incomparable-operator err)
-            (:eg "=")
-            (:ne "#")
-            (:lt "<")
-            (:le "<=")
-            (:gt ">")
-            (:ge ">="))
+            ((:eg) "=")
+            ((:ne) "#")
+            ((:lt) "<")
+            ((:le) "<=")
+            ((:gt) ">")
+            ((:ge) ">="))
           (type-of (incomparable-argument-a err))  (incomparable-argument-a err)
           (type-of (incomparable-argument-b err))  (incomparable-argument-b err)))
 
@@ -161,12 +161,12 @@
 (defun <=/== (a b) (non (<==== a b)))
 
 
-(defmethod eg ((a t)              (b t))              (error 'incomparable :op 'eg :a a :b b))
-(defmethod ne ((a t)              (b t))              (error 'incomparable :op 'ne :a a :b b))
-(defmethod lt ((a t)              (b t))              (error 'incomparable :op 'lt :a a :b b))
-(defmethod le ((a t)              (b t))              (error 'incomparable :op 'le :a a :b b))
-(defmethod ge ((a t)              (b t))              (error 'incomparable :op 'ge :a a :b b))
-(defmethod gt ((a t)              (b t))              (error 'incomparable :op 'gt :a a :b b))
+(defmethod eg ((a t)              (b t))              (error 'incomparable :op :eg :a a :b b))
+(defmethod ne ((a t)              (b t))              (error 'incomparable :op :ne :a a :b b))
+(defmethod lt ((a t)              (b t))              (error 'incomparable :op :lt :a a :b b))
+(defmethod le ((a t)              (b t))              (error 'incomparable :op :le :a a :b b))
+(defmethod ge ((a t)              (b t))              (error 'incomparable :op :ge :a a :b b))
+(defmethod gt ((a t)              (b t))              (error 'incomparable :op :gt :a a :b b))
 
 (defmacro defcompare (class eg ne lt le gt ge)
   `(progn

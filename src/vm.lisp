@@ -381,7 +381,8 @@ RETURN: vm
 (defmethod vm-goto ((vm lse-vm) lino)
   (let* ((lino (truncate (deref vm lino)))
          (line (gethash lino (vm-code-vectors vm))))
-    (if line
+    (if (null line)
+        (error-bad-line lino)
         (let ((frame (or (first (vm-local-frame-stack vm))
                          (vm-global-frame vm))))
           (setf (vm-state     vm) :running
@@ -398,8 +399,7 @@ RETURN: vm
             ;; Furthermore if we are in a procedure, we must print the
             ;; line number of the procedure call.
             ;; To get the PAUSE message
-            (pause vm)))
-        (error-bad-line lino)))
+            (pause vm)))))
   vm)
 
 (defmethod vm-reset-variables ((vm lse-vm))
@@ -904,7 +904,15 @@ NOTE: on ne peut pas liberer un parametre par reference.
             (loop-limit self)))
   self)
 
-
+ 
+(defun jump-to-end-of-line (vm lino)
+  (let* ((code (code-vector (gethash lino (vm-code-vectors vm))))
+         (offset (1- (length code))))
+    (assert (= !next-line (aref code offset)))
+    (setf (vm-pc.line   vm) lino
+          (vm-pc.offset vm) offset
+          (vm-code      vm) code)))
+  
 (defun faire (vm loop-class lino init pas limit ident)
   (let ((line  (gethash lino (vm-code-vectors vm)))
         (var   (find-variable vm ident))
@@ -947,7 +955,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                        (when limit (list :limit limit)))))
       (push loop (loop-stack vm))
       (when limit
-        (test-end-of-loop vm loop)))))
+        (jump-to-end-of-line vm lino)))))
 
 
 (defun faire-jusqu-a (vm lino init pas limit ident)
@@ -965,9 +973,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
           ;; end of loop, we exit it.
           ;; #+debugging (io-format *task* "~&END OF LOOP ~S~&" loop)
           (pop (loop-stack vm))
-          ;; jump to end of loop
-          
-          )
+          (jump-to-end-of-line vm end-line-number))
         ;; loop over:
         (setf (vm-pc.line vm) start-line-number
               (vm-pc.offset vm) start-offset
@@ -991,7 +997,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
           (unless (eql (le-booleen (deref vm test)) vrai)
             ;; end of loop, we exit it.
             (pop (loop-stack vm))
-            (vm-goto vm (following-line vm end-line-number))))
+            (jump-to-end-of-line vm end-line-number)))
         (lse-error "INTERNE: CODE OPERATION TANT-QUE SANS BOUCLE FAIRE ACTIVE."))))
 
 
@@ -1005,7 +1011,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 
 (defun following-line (vm lino)
-  "Return the line number of the line following LINO."
+  "Return the line number of the line at LINO or following."
   (let ((max  (maximum-line-number vm)))
     (loop
       :while (and (<= lino max)

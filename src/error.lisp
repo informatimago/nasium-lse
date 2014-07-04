@@ -198,11 +198,11 @@
                               (io-format task "ERREUR : "))
                             (prog1 22
                               (io-format task "ERREUR EN LIGNE ~3D : " errlino)))))
-    #+debugging (when (and (typep error-condition 'lse-error) (lse-error-backtrace error-condition))
-                  (format *error-output* "ERREUR: ~A~%" error-condition)
-                  (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
-                          (lse-error-backtrace error-condition))
-                  (finish-output *error-output*))
+    #+(and nil debugging) (when (and (typep error-condition 'lse-error) (lse-error-backtrace error-condition))
+                            (format *error-output* "ERREUR: ~A~%" error-condition)
+                            (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
+                                    (lse-error-backtrace error-condition))
+                            (finish-output *error-output*))
     (flet ((format-line (line)
              (do* ((i 0 (1+ pos))
                    (pos (- (+ i line-length) column)  (+ i line-length)))

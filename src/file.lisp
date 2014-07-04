@@ -93,6 +93,10 @@
    (header       :initform nil)
    (record-table :initform nil)))
 
+(defmethod print-object ((self file) stream)
+  (print-unreadable-object (self stream :identity t :type t)
+    (format stream ":PATH ~S" (file-path self))))
+
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defconstant +type-number+ 1)

@@ -459,9 +459,9 @@
             (--> simple
                  (alt
                   (seq tok-SI disjonction tok-ALORS expression tok-SINON expression           :action (list :xi disjonction expression.1 expression.2))
-                  (seq procident (opt (seq tok-pargauche (opt liste-argument :action $1) tok-pardroite :action $2) :action $1)
+                  (seq procident (opt (seq tok-pargauche (opt liste-argument :action $1) tok-pardroite :action $2) :action (list $1))
                        :action (if $2
-                                   (list* :fonction procident $2)
+                                   (list* :fonction procident (first $2))
                                    (list :vval procident)))
                   ;; For the following rule, since disjonction and
                   ;; expression have elements in common in their

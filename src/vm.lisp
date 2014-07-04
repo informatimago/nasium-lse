@@ -456,7 +456,7 @@ RETURN: vm
 
 
 
-;; NOTE: AFFICHER[Fn.m,En.m]VECT,TABL are specific to T1600.
+;; TODO: AFFICHER[Fn.m,En.m]VECT,TABL are specific to T1600.
 ;;       We should have some #+LSE-T1600 arround here…
 
 (defun afficher-with-format (vm ctrl value)
@@ -661,7 +661,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
          (if (and (consp (variable-type var))
                   (eql (first (variable-type var)) 'vecteur))
              (setf (aref (variable-value var) (1- index)) (un-nombre val))
-             (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 1" ident))
+             (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 1))
          (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident)))))
 
 
@@ -678,7 +678,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
           (if (and (consp (variable-type var))
                    (eql (first (variable-type var)) 'tableau))
               (setf (aref (variable-value var) (1- index1) (1- index2)) (un-nombre val))
-              (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
+              (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 2))
           (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident)))))
 
 
@@ -725,7 +725,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                 (let ((val (io-read-number *task*)))
                   (setf (aref (variable-value var) (1- index)) (un-nombre val)))
                 (lse-error "DEPASSEMENT DES BORNES ~A[~A] EST INVALIDE" ident index))
-            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 1" ident))
+            (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 1))
         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
 
 
@@ -744,7 +744,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                 (let ((val (io-read-number *task*)))
                   (setf (aref (variable-value var) (1- index1) (1- index2)) (un-nombre val)))
                 (lse-error "DEPASSEMENT DES BORNES ~A[~A,~A] EST INVALIDE" ident index1 index2))
-            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
+            (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 2))
         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
 
 
@@ -760,7 +760,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
             (if (<= 1 index (array-dimension (variable-value var) 0))
                 (stack-push (aref (variable-value var) (1- index)) (vm-stack vm))
                 (lse-error "DEPASSEMENT DES BORNES ~A[~A] EST INVALIDE" ident index))
-            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 1" ident))
+            (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 1))
         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
 
 
@@ -778,7 +778,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                      (<= 1 index2 (array-dimension (variable-value var) 1)))
                 (stack-push (aref (variable-value var) (1- index1) (1- index2)) (vm-stack vm))
                 (lse-error "DEPASSEMENT DES BORNES ~A[~A,~A] EST INVALIDE" ident index1 index2))
-            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
+            (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 2))
         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
 
 
@@ -797,7 +797,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                           :index index)
                       (vm-stack vm))
                 (lse-error "DEPASSEMENT DES BORNES ~A[~A] EST INVALIDE" ident index))
-            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 1" ident))
+            (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 1))
         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
 
 
@@ -820,7 +820,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
                                            :index2 index2)
                             (vm-stack vm))
                 (lse-error "DEPASSEMENT DES BORNES ~A[~A,~A] EST INVALIDE" ident index1 index2))
-            (lse-error "LA VARIABLE ~A N'EST PAS UN TABLEAU DE RANG 2" ident))
+            (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 2))
         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
 
 
@@ -1188,17 +1188,19 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                   :for argument = (stack-pop (vm-stack vm))
                   :do (ecase passage
                         (:par-valeur
-                         (let ((argument (deref *vm* argument)))
+                         (let* ((argument (deref *vm* argument))
+                                (type (etypecase argument
+                                        ((or integer nombre) 'nombre)
+                                        (chaine              'chaine)
+                                        (vecteur       (cons 'vecteur (array-dimensions argument)))
+                                        (tableau       (cons 'tableau (array-dimensions argument))))))
                            (add-variable frame
                                          (make-instance 'lse-variable
                                                         :name parameter
-                                                        :type (etypecase argument
-                                                                ((or integer nombre) 'nombre)
-                                                                (chaine              'chaine)
-                                                                ((or vecteur tableau)
-                                                                 (lse-error "ARGUMENT NO. ~D DE TYPE TABLEAU PASSE PAR VALEUR AU PARAMETRE ~A DE LA PROCEDURE ~A"
-                                                                            n parameter procident)))
-                                                        :value argument))))
+                                                        :type type
+                                                        :value (if (consp type)
+                                                                   (copy-array argument)
+                                                                   argument)))))
                         (:par-reference
                          (let ((reference (typecase argument
                                             (identificateur
@@ -1266,7 +1268,6 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
         ;; in vm-goto, from the saved frame-stack-pointer.
         (let* ((lino (truncate (deref vm lino)))
                (line (gethash lino (vm-code-vectors vm))))
-          (print (list 'lino lino 'line line))
           (pop (vm-local-frame-stack vm))
           (if line
               (setf (vm-pc.line   vm) lino

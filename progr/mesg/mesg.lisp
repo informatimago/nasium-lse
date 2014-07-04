@@ -33,11 +33,9 @@
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
 
-#||
 (ql:quickload :split-sequence)
 (ql:quickload :md5)
 (ql:quickload :com.informatimago.lse)
-||#
 
 (defpackage "COM.INFORMATIMAGO.LSE.MESG"
   (:use "COMMON-LISP"
@@ -50,8 +48,12 @@
 ;; 1*AUTEUR: PASCAL BOURGUIGNON
 ;; 2*DESCRIPTION: ECHANGE DE MESSAGE ENTRE UTILISATEURS DU SYSTEME LSE
 
-(defvar *user-file-pathname* #P"~/users.don")
-(defvar *mesg-file-pathname* #P"~/mesgs.don")
+(defvar *user-file-pathname* (merge-pathnames #P"users.don"
+                                              (load-time-value (or *compile-file-truename*
+                                                                   *load-truename*))))
+(defvar *mesg-file-pathname* (merge-pathnames #P"mesgs.don"
+                                              (load-time-value (or *compile-file-truename*
+                                                                   *load-truename*))))
 
 (defparameter *us*        (code-char 31))
 (defparameter *max-users* (truncate *MAX-RECORD-TABLEAU-SIZE* 2))
@@ -687,7 +689,7 @@
             (users/insert-user "TOTO" "POPOROPLO" "MAIL")
             (users/insert-user "TITI" "POPOROPLO" "MAIL")
             )
-                              
+          
           (users/delete-user "PJB")
           (users/delete-user "TOTO")
           (users/delete-user "LSE")
@@ -752,17 +754,27 @@ Un 10-40
           (mesgs/query-message 1 3)
           (mesgs/delete-message 1 2)
 
-          (loop :for i :from 1 :to 8 :do (print (read-record *user-file* i)))
-          (loop :for i :from 1
-                :for rec =  (read-record *mesg-file* i)
-                :while rec :do (terpri) (prin1 i) (princ ":") (prin1 rec))
-
-
           (record-for-uid (elt (intlist (read-record *mesg-file* 2)) 2)
                           (intarray (read-record *mesg-file* 3))
                           4)
 
-          (intarray (read-record *mesg-file* 3)))
+          (intarray (read-record *mesg-file* 3))
+
+
+          (defun dump-user-file ()
+            (users/open)
+            (let ((*print-length* 8)
+                  (*print-level*   3))
+              (loop
+                :for i :from 1
+                :for rec = (read-record *user-file* i)
+                :while rec
+                :do (format t "~3D: ~S~%" i rec)))
+            (users/close))
+          (dump-user-file)
+
+          );;end
+
 
 (defun cmd-quit ()
   (throw 'grande-gazongues (values)))

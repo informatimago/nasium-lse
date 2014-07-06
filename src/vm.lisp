@@ -440,7 +440,8 @@ RETURN: vm
   (io-carriage-return *task*))
 
 (defun afficher-space   (vm rep)
-  (let ((rep (round (le-nombre (deref vm rep)))))
+  (check-type rep (or (integer 1) nombre identifier named-slot))
+  (let ((rep (round (deref vm rep))))
     (when (plusp rep)
       (io-format *task* "~VA" rep ""))))
 

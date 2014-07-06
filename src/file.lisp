@@ -95,7 +95,10 @@
 
 (defmethod print-object ((self file) stream)
   (print-unreadable-object (self stream :identity t :type t)
-    (format stream ":PATH ~S" (file-path self))))
+    (format stream ":OPEN ~S :PATH ~S"
+            (lse-data-file-open-p self)
+            (file-path self)))
+  self)
 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)

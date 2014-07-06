@@ -440,7 +440,9 @@ RETURN: vm
   (io-carriage-return *task*))
 
 (defun afficher-space   (vm rep)
-  (io-format *task* "~VA" (deref vm rep) ""))
+  (let ((rep (round (le-nombre (deref vm rep)))))
+    (when (plusp rep)
+      (io-format *task* "~VA" rep ""))))
 
 (defun afficher-newline (vm rep)
   (io-new-line *task* (deref vm rep)))
@@ -965,19 +967,20 @@ NOTE: on ne peut pas liberer un parametre par reference.
 (defmethod test-end-of-loop (vm (loop loop-jusqua))
   "Returns whether the loop goes on (and we've already jumped to the start of the loop)."
   (with-slots (variable step limit start-line-number start-offset end-line-number) loop
-    (incf (variable-value variable) step)
-    (if (if (minusp step)
-                (> limit (variable-value variable))
-                (< limit (variable-value variable)))
-        (progn
-          ;; end of loop, we exit it.
-          ;; #+debugging (io-format *task* "~&END OF LOOP ~S~&" loop)
-          (pop (loop-stack vm))
-          (jump-to-end-of-line vm end-line-number))
-        ;; loop over:
-        (setf (vm-pc.line vm) start-line-number
-              (vm-pc.offset vm) start-offset
-              (vm-code vm) (code-vector (gethash start-line-number (vm-code-vectors vm)))))))
+    (let ((new-value (+ step (variable-value variable))))
+      (if (if (minusp step)
+              (> limit new-value)
+              (< limit new-value))
+          (progn
+            ;; end of loop, we exit it.
+            ;; #+debugging (io-format *task* "~&END OF LOOP ~S~&" loop)
+            (pop (loop-stack vm))
+            (jump-to-end-of-line vm end-line-number))
+          ;; loop over:
+          (setf (variable-value variable) new-value
+                (vm-pc.line vm) start-line-number
+                (vm-pc.offset vm) start-offset
+                (vm-code vm) (code-vector (gethash start-line-number (vm-code-vectors vm))))))))
 
 
 

@@ -442,7 +442,7 @@ the changed lines."
 
 
 (defvar *lse-test-commit*)
-(setq *lse-test-commit* "78953759")
+(setq *lse-test-commit* "e95e1293")
 (defun lse-test-result (success)
   (interactive "p")
   (lse-goto-line 255)

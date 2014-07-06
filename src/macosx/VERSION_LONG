@@ -1,5 +1,5 @@
-1.0.0-0.999843-CCL-DARWIN,
- commit 78953759cf12415e08c0db49a8799545d8dd7189,
- compiled 2014-07-06 22:31:43,
+1.0.0-0.999836-CCL-DARWIN,
+ commit e95e12932e8e39478769537620996e38634d8788,
+ compiled 2014-07-06 23:02:57,
  on larissa.local,
  with features (lse-unix lse-extensions lse-case-insensitive).

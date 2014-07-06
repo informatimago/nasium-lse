@@ -198,14 +198,6 @@ LISTER A PARTIR DE 1
 255*[PAS TESTE SUR EMULSE]
 #+END_SRC
 
-* TODO 00029 pg60 variable locale chaine ou tableau                     :cli:
-
-#+BEGIN_SRC(lse)
-10 PROCEDURE &PERA(I,CH) LOCAL CH,I,J,V,W,N,K
-11 CHAINE V,W
-ERREUR EN LIGNE  11 : LA VARIABLE V EXISTE DEJA ET N'EST PAS UNE CHAINE
-#+END_SRC
-
 * TODO 00028 pg59,pg59b parametre tableau par valeur                    :cli:
 #+BEGIN_SRC(lse)
 APPELER PG59
@@ -656,14 +648,6 @@ For server and historic LSE, we would want to accept uppercase names.
 * TODO 00016 invalid option -> silent exit                              :cli:
 ./lse --mode-modern 
 exits silently instead of reporting an error.
-* TODO 00017 default current working directory                          :cli:
-
-When launching the cli, the directory used by lse (AF, CH, TA) is not
-the original current working directory, but the one saved when
-compiling lse (/home/lse/src/nasium-lse/src/).  By default, it should
-be the cwd of the new process instead. (Unless a LSE_ROOT environment
-variable is given).
-
 * TODO 00008 inetd server displays wrong bindings                       :cli:
 
 cf. inetd/lse.sh 
@@ -976,6 +960,28 @@ instructions
 
 Mentionné: T-1600: $ signifie quelque chose.
 Annoncé: Mitra-15: procédures externes rangées sur disque (Quelle syntaxe? #proc()?)
+
+* DONE 00029 pg60 variable locale chaine ou tableau                     :cli:
+  CLOSED: [2014-07-06 Sun 22:39]
+  - State "DONE"       from "TODO"       [2014-07-06 Sun 22:39] \\
+    Done. commit e95e12932e8e39478769537620996e38634d8788
+
+#+BEGIN_SRC(lse)
+10 PROCEDURE &PERA(I,CH) LOCAL CH,I,J,V,W,N,K
+11 CHAINE V,W
+ERREUR EN LIGNE  11 : LA VARIABLE V EXISTE DEJA ET N'EST PAS UNE CHAINE
+#+END_SRC
+
+* DONE 00017 default current working directory                          :cli:
+  CLOSED: [2014-07-06 Sun 22:38]
+  - State "DONE"       from "TODO"       [2014-07-06 Sun 22:38] \\
+    Done. commit e95e12932e8e39478769537620996e38634d8788
+
+When launching the cli, the directory used by lse (AF, CH, TA) is not
+the original current working directory, but the one saved when
+compiling lse (/home/lse/src/nasium-lse/src/).  By default, it should
+be the cwd of the new process instead. (Unless a LSE_ROOT environment
+variable is given).
 
 * DONE 00014 PG27 TANT QUE N#99 doesn't fail when N is read as 99.      :cli:
   CLOSED: [2014-07-06 Sun 21:55]

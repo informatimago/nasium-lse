@@ -1,5 +1,5 @@
-1.0.0-0.999862-CCL-LINUX,
- commit 71f719929c11b8481beeb16825d02ea7a5c35fda,
- compiled 2014-06-30 22:37:17,
- on kuiper
- with features (lse-unix lse-extensions lse-case-insensitive)
+1.0.0-0.999851-CCL-DARWIN,
+ commit 6a9957fa602b7e3244631fae10fa7083782f5ca1,
+ compiled 2014-07-06 21:53:26,
+ on larissa.local,
+ with features (lse-unix lse-extensions lse-case-insensitive).

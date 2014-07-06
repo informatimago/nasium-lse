@@ -52,10 +52,14 @@
   nil)
 
 (defun lse-error (format-control &rest format-arguments)
-  (error 'lse-error
-         :backtrace (or #+ccl (ccl::backtrace-as-list))
-         :format-control format-control
-         :format-arguments format-arguments))
+  (if (stringp format-control)
+      (error 'lse-error
+             :backtrace (or #+ccl (ccl::backtrace-as-list))
+             :format-control format-control
+             :format-arguments format-arguments)
+      (apply (function error) format-control
+             :backtrace (or #+ccl (ccl::backtrace-as-list))
+             format-arguments)))
 
 (defun error-bad-line (linum)
   (error 'lse-error

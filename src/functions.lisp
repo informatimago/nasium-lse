@@ -109,6 +109,14 @@
           (argument-invalide-reason err)))
 
 
+(define-condition division-par-zero (argument-invalide)
+  ()
+  (:report print-division-par-zero-error))
+
+(defmethod print-division-par-zero-error ((err division-par-zero) stream)
+  (declare (ignorable err))
+  (format stream "DIVISION PAR ZERO"))
+
 
 (defmacro un-nombre  (a)
   `(coerce ,a 'nombre))
@@ -286,13 +294,20 @@ Résultat: Le produit de la multiplication entre A et B."
 
 
 (defunction (div "DIVISE")  (a b)
-  "Quotient de deux nombres"
-  "A/B
+    "Quotient de deux nombres"
+    "A/B
 
 Résultat: Le produit de la multiplication entre A et B.
 
 B doit être non-nul, sinon un erreur est détectée."
-  (/        (un-nombre a) (un-nombre b)))
+  
+  (if (zerop b)
+      (lse-error 'division-par-zero
+                 :op "/"
+                 :index 2
+                 :argument 'b
+                 :reason "LA DIVISION N'EST PAS DEFINIE POUR UN DENOMINATEUR NUL.")
+      (/ (un-nombre a) (un-nombre b))))
 
 
 

@@ -46,7 +46,6 @@
 ;;;;    Boston, MA 02111-1307 USA
 ;;;;****************************************************************************
 
-(require 'pjb-strings)
 (require 'cl)
 
 
@@ -208,6 +207,21 @@
   (run-hooks 'lse-mode-hook))
 
 
+(defun lse-string-trim (character-bag string-designator)
+  "Common-Lisp: returns a substring of string, with all characters in \
+character-bag stripped off the beginning and end.
+"
+  (unless (sequencep character-bag)
+    (signal 'type-error  "Expected a sequence for `character-bag'."))
+  (let* ((string (string* string-designator))
+         (margin (format "[%s]*" (regexp-quote
+                                  (if (stringp character-bag)
+                                      character-bag
+                                      (map 'string 'identity character-bag)))))
+         (trimer (format "\\`%s\\(\\(.\\|\n\\)*?\\)%s\\'" margin margin)))
+    (replace-regexp-in-string  trimer "\\1" string)))
+
+
 (defun lse-newline ()
   "Insert newline and line number incremented with the same step as previously."
   (interactive)
@@ -217,7 +231,7 @@
      (let* ((linum  (1- (string-to-number (match-string 1))))
             (pt     (point))
             (before (buffer-substring (progn (beginning-of-line) (point)) pt)))
-       (if (string= "" (string-trim " " before))
+       (if (string= "" (lse-string-trim " " before))
            ;; nothing before
            (progn
              (delete-region (progn (beginning-of-line) (point)) pt)

@@ -1733,7 +1733,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
 
 ;;  We provide a REPL for LE (repl) command for debugging.
 
-#+debugging
+#+(and lse-unix (or lse-allow-lisp debugging) (not lse-server))
 (defmacro handling-errors (&body body)
   `(HANDLER-CASE (progn ,@body)
      (simple-condition 
@@ -1748,7 +1748,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
        (io-format *task* "~&~A: ~%  ~S~%"
                   (class-name (class-of err)) err))))
 
-#+debugging
+#+(and lse-unix (or lse-allow-lisp debugging) (not lse-server))
 (defun repl ()
   (do ((+eof+ (gensym))
        (hist 1 (1+ hist)))
@@ -1764,7 +1764,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
      (io-format *task* "~& --> ~{~S~^ ;~%     ~}~%" /))))
 
 
-#+debugging
+#+(and lse-unix (or lse-allow-lisp debugging) (not lse-server))
 (defcommand "LE EVALUER UNE EXPRESSION LISP" awake une-ligne (ligne)
   "Commande de déboguage: évaluation d'une expression LISP."
   (io-new-line *task*)
@@ -1781,7 +1781,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                        (setf results nil))))))
     (io-format *task* "~%~A~%~@[=> ~{~S~%~^   ~}~]" output results)))
 
-#+debugging
+#+(and lse-unix (or lse-allow-lisp debugging) (not lse-server))
 (defcommand "LD DESASSEMBLER A PARTIR DE" awake     deux-numeros-optionels (from to)
   "Commande de deboguage: Désassemble les lignes de programme."
   (io-new-line *task*)
@@ -1797,7 +1797,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
              (vm-code-vectors (task-vm *task*)))
     (io-format *task* "~:{~*~A~%~A~%~}" (sort lines '< :key (function first)))))
 
-#+debugging
+#+(and lse-unix (or lse-allow-lisp debugging) (not lse-server))
 (defcommand "LP DEASSEMBLER/PERFORER A PARTIR DE" awake  deux-numeros-optionels (from to)
   "Commande de deboguage: Désassemble les lignes de programme en perforant un ruban."
   (io-new-line *task*)

@@ -282,6 +282,17 @@ SEE ALSO:   SHELL
   #-clisp (not-implemented-here 'run-program))
 
 
+(defun getcwd ()
+  #+ccl (ccl:current-directory)
+  #+clisp (ext:cd)
+  #-(or ccl clisp) (not-implemented-here 'getcwd))
+
+(defun chdir (dir)
+  #+ccl (setf (ccl:current-directory) (namestring dir))
+  #+clisp (ext:cd (namestring dir))
+  #-(or ccl clisp) (not-implemented-here 'chdir))
+
+
 (defun quit (&optional (status 0))
   #+ccl                  (ccl:quit status)
   #+clisp                (ext:quit status)

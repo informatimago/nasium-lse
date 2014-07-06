@@ -43,6 +43,7 @@
    "GETENV" "GETUID"
    "RUN-SHELL-COMMAND"
    "MAKE-FD-STREAM" "FD-STREAM-P" "FD-STREAM-FD"
+   "CHDIR" "GETCWD"
    "SHELL" "RUN-PROGRAM" "QUIT" "ARGUMENTS" "PROGRAM-NAME" 
    "UNAME" "STTY")
   (:documentation "A portability layer for a few OS operators."))

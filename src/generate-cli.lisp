@@ -101,6 +101,7 @@
   (pushnew :lse-server *features*))
 ;; (pushnew :lse-scanner-debug    *features*)
 ;; (pushnew :debugging            *features*)
+(pushnew :lse-allow-lisp       *features*) ; gives access to low level lisp command and functions.
 (pushnew :lse-case-insensitive *features*)
 (pushnew :lse-unix             *features*)
 (pushnew :lse-extensions       *features*)

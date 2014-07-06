@@ -1,5 +1,4 @@
 -*- mode:org; coding:utf-8 -*-
-* TODO 00014 PG27 TANT QUE N#99 doesn't fail when N is read as 99.      :cli:
 * TODO 00025 pg54,pg77 retour en 10                                     :cli:
 
 #+BEGIN_SRC(lse)
@@ -978,6 +977,10 @@ instructions
 Mentionné: T-1600: $ signifie quelque chose.
 Annoncé: Mitra-15: procédures externes rangées sur disque (Quelle syntaxe? #proc()?)
 
+* DONE 00014 PG27 TANT QUE N#99 doesn't fail when N is read as 99.      :cli:
+  CLOSED: [2014-07-06 Sun 21:55]
+  - State "DONE"       from "TODO"       [2014-07-06 Sun 21:55] \\
+    Corrected with commit 78953759cf12415e08c0db49a8799545d8dd7189.
 * DONE 00015 PG28 TANT QUE SCH()#'**' fails.                            :cli:
   CLOSED: [2014-06-30 Mon 19:24]
   - State "DONE"       from "TODO"       [2014-06-30 Mon 19:24] \\

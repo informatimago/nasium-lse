@@ -107,12 +107,18 @@ BONJOUR     ~8A
   (values))
 
 
-(defun set-lse-root (&optional (root (getenv "LSE_ROOT")))
-  (when root
-    (setf *lse-root* (truename (pathname root))
-          *current-directory* *lse-root*
-          *current-shelf*     *lse-root*
-          *default-pathname-defaults* *lse-root*)))
+(defun set-lse-root (&optional root)
+  (let ((env-root (getenv "LSE_ROOT")))
+    (if (or root env-root)
+        (setf *lse-root*                  (truename (pathname (or root env-root)))
+              *current-directory*         *lse-root*
+              *current-shelf*             *lse-root*
+              *default-pathname-defaults* *lse-root*)
+        ;; else interactive command:
+        (setf *lse-root*                  #P"/"
+              *current-directory*         (truename (getcwd))
+              *current-shelf*             *current-directory*
+              *default-pathname-defaults* *lse-root*))))
 
 
 

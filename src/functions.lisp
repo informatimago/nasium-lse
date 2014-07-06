@@ -525,7 +525,7 @@ Résultat le OU exclusif bit-à-bit entre les bits de A et ceux de B."
 
 
 
-;; #+debugging
+#+(and lse-unix (or lse-allow-lisp debugging) (not lse-server))
 (defunction (lisp-eval "LISP") (expr &optional (print 0) (noerr 0))
   "Evaluation d'une expression LISP"
   "LISP(EXPR,PRINT,NOERR)
@@ -674,8 +674,9 @@ nombre A au format U."
   (let ((value (un-nombre value)))  
     (etypecase va
       (lse-variable
-       (if (eql (variable-type va) 'nombre)
-           (setf (variable-value va) value)
+       (if (member (variable-type va) '(nombre :undefined))
+           (setf (variable-type  va) 'nombre
+                 (variable-value va) value)
            (lse-error "LA VARIABLE ~A N'EST PAS UN NOMBRE" va))
        value)
       (null value))))

@@ -1140,7 +1140,8 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                          #+(and lse-unix (not lse-server)) (id::arg   (arg 1 1))
                          #+(and lse-unix (not lse-server)) (id::exec  (exec 1 1))
                          ;; #+debugging
-                         #+(and lse-unix (not lse-server)) (id::lisp (lisp-eval 1 3))
+                         #+(and lse-unix (or lse-allow-lisp debugging) (not lse-server))
+                         (id::lisp (lisp-eval 1 3))
                          )))
 
 

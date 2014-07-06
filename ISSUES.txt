@@ -198,16 +198,6 @@ LISTER A PARTIR DE 1
 255*[PAS TESTE SUR EMULSE]
 #+END_SRC
 
-* TODO 00028 pg59,pg59b parametre tableau par valeur                    :cli:
-#+BEGIN_SRC(lse)
-APPELER PG59
-EXECUTER A PARTIR DE 1
-
-N = 3
-ERREUR EN LIGNE   7 : ARGUMENT NO. 2 DE TYPE TABLEAU PASSE PAR VALEUR AU PARAMETRE A DE
-LA PROCEDURE &PERM
-#+END_SRC
-    
 * TODO 00027 pg55 parametre fonctions                                   :cli:
 
 #+BEGIN_SRC(lse)
@@ -551,6 +541,7 @@ pg42
 
 F2.0 --> ne doit pas afficher le point.
 U string -> doit afficher un espace suffixe.
+U vecteur --> doit afficher sur la meme ligne (pg59b)
 
 Obtenu:
 
@@ -961,6 +952,19 @@ instructions
 Mentionné: T-1600: $ signifie quelque chose.
 Annoncé: Mitra-15: procédures externes rangées sur disque (Quelle syntaxe? #proc()?)
 
+* DONE 00028 pg59,pg59b parametre tableau par valeur                    :cli:
+  CLOSED: [2014-07-06 Sun 23:05]
+  - State "DONE"       from "TODO"       [2014-07-06 Sun 23:05] \\
+    Done. commit 87150b8c6ab38ae76b209c24f5327f1578b8e2ff
+#+BEGIN_SRC(lse)
+APPELER PG59
+EXECUTER A PARTIR DE 1
+
+N = 3
+ERREUR EN LIGNE   7 : ARGUMENT NO. 2 DE TYPE TABLEAU PASSE PAR VALEUR AU PARAMETRE A DE
+LA PROCEDURE &PERM
+#+END_SRC
+    
 * DONE 00029 pg60 variable locale chaine ou tableau                     :cli:
   CLOSED: [2014-07-06 Sun 22:39]
   - State "DONE"       from "TODO"       [2014-07-06 Sun 22:39] \\

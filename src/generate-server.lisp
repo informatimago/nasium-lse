@@ -18,7 +18,7 @@
 ;;;;    
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
 ;;;;    
-;;;    This program is free software: you can redistribute it and/or modify
+;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
@@ -33,155 +33,21 @@
 ;;;;**************************************************************************
 
 (in-package "COMMON-LISP-USER")
-
-#+ccl (setf ccl:*default-external-format*           :unix
-            ccl:*default-file-character-encoding*   :utf-8
-            ccl:*default-line-termination*          :unix
-            ccl:*default-socket-character-encoding* :utf-8)
-
-(load #P"~/quicklisp/setup.lisp")
-
-;;; --------------------------------------------------
-
-(declaim (optimize
-          (speed 0)
-          (space 0)
-          (safety 3)
-          (debug 3)
-          (compilation-speed 0)
-          #+:lispworks (hcl:fixnum-safety 3)))
-
-(defpackage :cl-ppcre (:use :cl))
-
-(defparameter cl-ppcre::*standard-optimize-settings*
-  '(optimize
-    (speed 0)
-    (space 0)
-    (safety 3)
-    (debug 3)
-    (compilation-speed 0)
-    #+:lispworks (hcl:fixnum-safety 3))
-  "Don't fuck with me!")
-
-(defparameter cl-ppcre::*special-optimize-settings*
-  cl-ppcre::*standard-optimize-settings*
-  "Don't fuck with me!")
-
-;;; --------------------------------------------------
-
-(setf *print-right-margin* 80
-      *print-pretty* t
-      *print-case* :downcase)
-
-(defun dirpath  (path) (make-pathname :name nil   :type nil   :version nil :defaults path))
-(defun wildpath (path) (make-pathname :name :wild :type :wild :version nil :defaults path))
-(defun fasldir  (system component)
-  (first (asdf:output-files
-          (make-instance 'asdf:compile-op)
-          (asdf:find-component (asdf:find-system system) component))))
-
-(setf *default-pathname-defaults* (dirpath (or *load-truename*
-                                               *compile-file-truename*)))
-(pushnew *default-pathname-defaults* asdf:*central-registry* :test 'equal)
-(push (truename (merge-pathnames "../dependencies/"
-                                 *default-pathname-defaults*))
-      ql:*local-project-directories*)
-
-
-(defparameter *program-name* "lse-server")
+(defparameter *program-name*    "lse-server")
 (defparameter *program-system*  :com.informatimago.lse.server)
+(defparameter *program-main*    (lambda () (intern "MAIN" "COM.INFORMATIMAGO.LSE.SERVER")))
+(defparameter *program-features*
+  '(:lse-server
+    ;; :lse-scanner-debug    
+    ;; :debugging
+    :lse-allow-lisp      ; gives access to low level lisp command and functions. 
+    :lse-case-insensitive 
+    :lse-unix             
+    :lse-extensions       
+    #-(and) :lse-mitra-15
+    #-(and) :lse-t1600
+    ))
 
-;; (pushnew :debugging            *features*)
-(pushnew :lse-case-insensitive *features*)
-(pushnew :lse-unix             *features*)
-(pushnew :lse-extensions       *features*)
-#-(and) (pushnew :lse-mitra-15             *features*)
-#-(and) (pushnew :lse-t1600                *features*)
+(load "generate-program.lisp")
 
-
-(let ((dir (funcall (function #+windows wildpath #-windows dirpath)
-                    (fasldir :com.informatimago.manifest "manifest"))))
-  (format t "~%~A~%" dir) (finish-output)
-  #+windows (mapc 'delete-file (directory dir))
-  #-windows (asdf:run-shell-command "rm -rf ~S" (namestring dir)))
-
-
-
-(ql:quickload *program-system*)
-(ql:quickload :com.informatimago.manifest)
-(shadow 'date)
-(use-package "COM.INFORMATIMAGO.MANIFEST")
-
-;;;---------------------------------------------------------------------
-;;; Let's run some tests:
-
-(in-package "COM.INFORMATIMAGO.LSE")
-(format t "~2%Running a few tests.~%")
-(finish-output)
-
-(unless (fboundp 'etl)
-  (format t "ETL not bound~% *features* = ~S~%" *features*)
-  (finish-output)
-  #+ccl (ccl:quit))
-
-(setf  ccl:*backtrace-print-level* nil)
-(test/fonctions :silence t)
-
-#+debugging (setf *debug-vm*   '(:error)
-                  *debug-repl* t)
-#-debugging (setf *debug-vm*   '()
-                  *debug-repl* nil)
-
-
-;;;---------------------------------------------------------------------
-;;; Let's generate the target.
-
-(in-package "COMMON-LISP-USER")
-(format t "~%Generating ~A~%" (executable-filename *program-name*))
-(finish-output)
-
-(write-manifest *program-name* *program-system*)
-
-
-#+ccl (progn (princ "ccl:save-application will exit.") (terpri) (finish-output))
-#+ccl (ccl:save-application
-       (executable-filename *program-name*)
-       :toplevel-function (function com.informatimago.lse.server:main)
-       :init-file nil
-       :error-handler :quit-quietly
-       ;; :application-class ccl:lisp-development-system
-       ;; :clear-clos-cache t
-       :purify nil
-       ;; :impurify t
-       :mode #o755
-       :prepend-kernel t
-       ;; :native t
-       ) 
-
-#+clisp (ext:saveinitmem
-         (executable-filename *program-name*)
-         :quiet t
-         :verbose t
-         :norc t
-         :init-function (lambda ()
-                          (ext:exit (handler-case
-                                        (com.informatimago.lse.cli:main)
-                                      (error ()
-                                        1))))
-         :script t
-         :documentation "Système & Interpréteur L.S.E"
-         :start-package "COMMON-LISP-USER"
-         :keep-global-handlers nil
-         :executable t)
-#+clisp (ext:quit)
-
-
-;; (print (list (find :swank *features*) (find-package "SWANK")))
-;; (terpri)
-;; (finish-output)
-
-#|
-    (cd "/home/pjb/src/pjb/nasium-lse/src/")
-    (load "generate-server.lisp")
-|#
 ;;;; THE END ;;;;

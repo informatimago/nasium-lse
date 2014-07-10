@@ -33,221 +33,57 @@
 ;;;;**************************************************************************
 (in-package "COMMON-LISP-USER")
 
-#+ccl (setf ccl:*default-external-format*           :unix
-            ccl:*default-file-character-encoding*   :utf-8
-            ccl:*default-line-termination*          :unix
-            ccl:*default-socket-character-encoding* :utf-8)
-
-(load #P"~/quicklisp/setup.lisp")
-
-
-;;; --------------------------------------------------
-
-(declaim (optimize
-          (speed 0)
-          (space 0)
-          (safety 3)
-          (debug 3)
-          (compilation-speed 0)
-          #+:lispworks (hcl:fixnum-safety 3)))
-
-(defpackage :cl-ppcre (:use :cl))
-
-(defparameter cl-ppcre::*standard-optimize-settings*
-  '(optimize
-    (speed 0)
-    (space 0)
-    (safety 3)
-    (debug 3)
-    (compilation-speed 0)
-    #+:lispworks (hcl:fixnum-safety 3))
-  "Don't fuck with me!")
-
-(defparameter cl-ppcre::*special-optimize-settings*
-  cl-ppcre::*standard-optimize-settings*
-  "Don't fuck with me!")
-
-;;; --------------------------------------------------
-
-(setf *print-right-margin* 80
-      *print-pretty* t
-      *print-case* :downcase)
-
-(defun dirpath  (path) (make-pathname :name nil   :type nil   :version nil :defaults path))
-(defun wildpath (path) (make-pathname :name :wild :type :wild :version nil :defaults path))
-(defun fasldir  (system component)
-  (first (asdf:output-files
-          (make-instance 'asdf:compile-op)
-          (asdf:find-component (asdf:find-system system) component))))
-
-(setf *default-pathname-defaults* (dirpath (or *load-truename*
-                                               *compile-file-truename*)))
-(pushnew *default-pathname-defaults* asdf:*central-registry* :test 'equal)
-(push (truename (merge-pathnames "../dependencies/"
-                                 *default-pathname-defaults*))
-      ql:*local-project-directories*)
-
-
-(defparameter *program-name* "lse")
+(defparameter *program-name*    "lse")
 (defparameter *program-system*  :com.informatimago.lse.cli)
+(defparameter *program-main*    (lambda () (intern "MAIN" "COM.INFORMATIMAGO.LSE.CLI")))
+(defparameter *program-features*
+  '(( "LSE_COMPILE_SERVER" .  :lse-server)
+    ;; :lse-scanner-debug    
+    ;; :debugging
+    :lse-allow-lisp      ; gives access to low level lisp command and functions. 
+    :lse-case-insensitive 
+    :lse-unix             
+    :lse-extensions       
+    #-(and)  :lse-mitra-15
+    #-(and) :lse-t1600
+    ))
 
-(defun boolean-enval (var default)
-  (let ((val (ccl:getenv var)))
-    (if val
-        (not (not (find val '("T" "Y" "TRUE" "YES" "O" "OUI" "1") :test (function string-equal))))
-        default)))
+;; #+debugging (ql:quickload :swank) ;; cannot load swank since cli.lisp would switch to swank-terminal.
 
-(when (boolean-enval "LSE_COMPILE_SERVER" nil)
-  (pushnew :lse-server *features*))
-;; (pushnew :lse-scanner-debug    *features*)
-;; (pushnew :debugging            *features*)
-(pushnew :lse-allow-lisp       *features*) ; gives access to low level lisp command and functions.
-(pushnew :lse-case-insensitive *features*)
-(pushnew :lse-unix             *features*)
-(pushnew :lse-extensions       *features*)
-#-(and) (pushnew :lse-mitra-15             *features*)
-#-(and) (pushnew :lse-t1600                *features*)
-
-
-(let ((dir (funcall (function #+windows wildpath #-windows dirpath)
-                    (fasldir :com.informatimago.manifest "manifest"))))
-  (format t "~%~A~%" dir) (finish-output)
-  #+windows (mapc 'delete-file (directory dir))
-  #-windows (asdf:run-shell-command "rm -rf ~S" (namestring dir)))
-
-;; #+debugging (ql:quickload :swank) ;; cannot load swank since cli.lisp will switch to swank-terminal.
-
-(ql:quickload *program-system*)
+(load "generate-program.lisp")
 
 
-(defparameter *versions* (com.informatimago.lse:versions))
-(loop
-  :for version :in *versions*
-  :for file :in '("macosx/VERSION" "macosx/VERSION_SHORT" "macosx/VERSION_LONG")
-  :do (setf (com.informatimago.common-lisp.cesarum.file:text-file-contents file) version))
 
-(ql:quickload :com.informatimago.manifest)
-(shadow 'date)
-(use-package "COM.INFORMATIMAGO.MANIFEST")
-
-;;;---------------------------------------------------------------------
-;;; Let's run some tests:
-
-(in-package "COM.INFORMATIMAGO.LSE")
-#-(and) (progn
-          (format t "~2%Running a few tests.~%")
+#-(and) (defun test-main ()
+          (let ((bare (com.informatimago.common-lisp.cesarum.stream:bare-stream
+                       *standard-input* :direction :input)))
+            (com.informatimago.common-lisp.interactive.interactive:show
+              (ccl::command-line-arguments)
+              ccl:*command-line-argument-list*
+              ccl:*unprocessed-command-line-arguments*
+              (interactive-stream-p *standard-input*)
+              (typep *standard-input* 'file-stream)
+              bare
+              (type-of *standard-input*)
+              *terminal-io*       
+              *standard-input*    
+              *standard-output*   
+              *error-output*      
+              *trace-output*   
+              *query-io*          
+              *debug-io*
+              (open (first (last ccl:*command-line-argument-list*)))
+              ))
           (finish-output)
-
-          (unless (fboundp 'etl)
-            (format t "ETL not bound~% *features* = ~S~%" *features*)
-            (finish-output)
-            #+ccl (ccl:quit))
-
-          (setf  ccl:*backtrace-print-level* nil)
-          (test/fonctions :silence t))
-
-#+debugging (setf *debug-vm*   '(:error)
-                  *debug-repl* t)
-#-debugging (setf *debug-vm*   '()
-                  *debug-repl* nil)
+          (ccl:quit))
 
 
+#||
+ (print (list (find :swank *features*) (find-package "SWANK")))
+ (terpri)
+ (finish-output)
+ (cd "/home/pjb/src/pjb/nasium-lse/src/")
+ (load "generate-cli.lisp")
+||#
 
-;;;---------------------------------------------------------------------
-;;; Let's generate the target.
-
-(in-package "COMMON-LISP-USER")
-(format t "~%Generating ~A~%" (executable-filename *program-name*))
-(finish-output)
-
-(write-manifest *program-name* *program-system*)
-;; (in-package :ccl)
-;; (defun reopen-user-libraries ()
-;;   (dolist (lib *shared-libraries*)
-;;     (setf (shlib.handle lib) nil
-;;           (shlib.base lib) nil))
-;;   (dolist (lib *shared-libraries*)
-;;     (when  (shlib.soname lib)
-;;       (with-cstrs ((cname (shlib.soname lib)))
-;;         (let* ((handle (ff-call *dlopen-entry*
-;;                                 :address cname
-;;                                 :int (logior #$RTLD_GLOBAL #$RTLD_NOW)
-;;                                 :address)))
-;;           (unless (%null-ptr-p handle)
-;;             (setf (shlib.handle lib) handle)))))))
-;; (in-package "COMMON-LISP-USER")
-
-(defun test-main ()
-  (let ((bare (com.informatimago.common-lisp.cesarum.stream:bare-stream *standard-input* :direction :input)))
-    (com.informatimago.common-lisp.interactive.interactive:show
-     (ccl::command-line-arguments)
-     ccl:*command-line-argument-list*
-     ccl:*unprocessed-command-line-arguments*
-     (interactive-stream-p *standard-input*)
-     (typep *standard-input* 'file-stream)
-     bare
-     (type-of *standard-input*)
-     *terminal-io*       
-     *standard-input*    
-     *standard-output*   
-     *error-output*      
-     *trace-output*   
-     *query-io*          
-     *debug-io*
-     (open (first (last ccl:*command-line-argument-list*)))
-     ))
-  (finish-output)
-  (ccl:quit))
-
-#+ccl (dolist (lib ccl::*shared-libraries* (terpri))
-        (print lib))
-#+ccl (progn (princ "ccl:save-application will exit.") (terpri) (finish-output))
-#+ccl (ccl:save-application
-       (executable-filename *program-name*)
-       :toplevel-function ; (function main) #-(and)
-       (if (com.informatimago.lse.cli::boolean-enval "LSE_USE_EXIT" nil)
-           (lambda ()
-             (#__exit (com.informatimago.lse.cli:main)))
-           (lambda ()
-             (ccl:quit (com.informatimago.lse.cli:main)
-                       :error-handler (lambda (err)
-                                        (declare (ignore err))
-                                        (#__exit -1)))))
-       :init-file nil
-       :error-handler :quit-quietly
-       ;; :application-class ccl:lisp-development-system
-       ;; :clear-clos-cache t
-       :purify nil
-       ;; :impurify t
-       :mode #o755
-       :prepend-kernel t
-       ;; :native t
-       )
-
-#+clisp (ext:saveinitmem
-         (executable-filename *program-name*)
-         :quiet t
-         :verbose t
-         :norc t
-         :init-function (lambda ()
-                          (ext:exit (handler-case
-                                        (com.informatimago.lse.cli:main ext:*args*)
-                                      (error ()
-                                        1))))
-         :script t
-         :documentation "Système & Interpréteur L.S.E"
-         :start-package "COMMON-LISP-USER"
-         :keep-global-handlers nil
-         :executable t)
-#+clisp (ext:quit)
-
-
-;; (print (list (find :swank *features*) (find-package "SWANK")))
-;; (terpri)
-;; (finish-output)
-
-#|
-(cd "/home/pjb/src/pjb/nasium-lse/src/")
-(load "generate-cli.lisp")
-|#
 ;;;; THE END ;;;;

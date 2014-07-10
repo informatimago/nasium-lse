@@ -1,4 +1,8 @@
 -*- mode:org; coding:utf-8 -*-
+* TODO 00041 cca(0)                                                     :cli:
+cca(0) -> '0.0e0' au lieu de '0'
+afficher[f2.0]3 --> ' 3.' au lieu de ' 3'
+
 * TODO 00027 pg55 parametre fonctions                                   :cli:
 
 #+BEGIN_SRC(lse)

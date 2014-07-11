@@ -1,4 +1,21 @@
 -*- mode:org; coding:utf-8 -*-
+* TODO 00044 ligne vide                                                 :cli:
+10 RET          --> supprime la ligne 10
+10 SPC RET      --> insère la ligne 10 comme ligne vide.
+10 SPC *comment --> 10 *comment
+
+* TODO 00043 eqn .65 66. entre point                                    :cli:
+#+BEGIN_SRC(lisp)
+  #+lse_extension -
+#+END_SRC
+EQUIVALENT NUMERIQUE DE CARACTERE QUELCONQUES ENTRE POINTS :
+           .13.  :CARACTERE (RC)
+           .13 10.'A B C'.13 10.   : (RC) (LF) A B C (RC) (LF)
+
+* TODO 00042 xit(n) pas encore implementé                               :cli:
+#+BEGIN_SRC(lisp)
+  #+lse_extension -
+#+END_SRC
 * TODO 00041 cca(0)                                                     :cli:
 cca(0) -> '0.0e0' au lieu de '0'
 afficher[f2.0]3 --> ' 3.' au lieu de ' 3'
@@ -755,7 +772,7 @@ instructions
 
 
 Mentionné: T-1600: $ signifie quelque chose.
-Annoncé: Mitra-15: procédures externes rangées sur disque (Quelle syntaxe? #proc()?)
+Annoncé: Mitra-15: procédures externes rangées sur disque &init(t,l,c,i) &lir(c) &max(t,l,c) &min(t,l,c)
 
 * DONE 00025 pg54,pg77 retour en 10                                     :cli:
   CLOSED: [2014-07-06 Sun 23:55]

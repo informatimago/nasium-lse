@@ -89,6 +89,7 @@ ChangeLog:.git
 
 help::
 	@printf $(HELPFORMAT) cli 'builds the unix cli executable.'
+lse:cli
 cli:
 	-@mkdir -p $(TMPDIR)
 	$(LISP) $(LOAD) generate-cli.lisp | tee $(LOGFILE)
@@ -102,6 +103,7 @@ macosx:cli
 
 help::
 	@printf $(HELPFORMAT) server 'builds the server executable.'
+lse-server:server
 server:
 	-@mkdir -p $(TMPDIR)
 	$(LISP) $(LOAD) generate-server.lisp | tee $(LOGFILE)

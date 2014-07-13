@@ -146,6 +146,7 @@
             (peek32 buffer 4) (header-record-table header))
       (file-position stream +header-position+)
       (write-sequence buffer stream)
+      (force-output stream)
       header)))
 
 
@@ -175,7 +176,8 @@
                       (setf (gethash record-number table) position)))
                 ;; end of file
                 (loop-finish))
-        :finally (return (setf header (make-header :free-list free-list
+        :finally (force-output stream)
+                 (return (setf header (make-header :free-list free-list
                                                    :record-table position)
                                record-table table))))))
 
@@ -224,6 +226,7 @@
                                (loop-finish))))
                    :finally (progn
                               (write-sequence buffer stream)
+                              (force-output stream)
                               (return done))))))))
 
 (define-condition lse-file-error (lse-error file-error)
@@ -300,7 +303,8 @@
           (replace buffer (let ((*newline* ':lf))
                             (ascii-format nil "L.S.E. Data File~%Version: 1.0.1~25%")))
           (file-position stream 0)
-          (write-sequence buffer stream)))
+          (write-sequence buffer stream)
+          (force-output stream)))
       (let ((file (make-instance 'file
                       :path (pathname filespec)
                       :stream stream)))
@@ -438,6 +442,7 @@ RETURN: The data; a status code
       ;; (format t "p=~8D <-- ~S~%" position (subseq buffer 0 40))
       (file-position stream position)
       (write-sequence buffer stream)
+      (force-output stream)
       position)))
 
 
@@ -453,6 +458,7 @@ RETURN: The data; a status code
             (remhash record-number record-table)
             (file-position stream position)
             (write-sequence buffer stream)
+            (force-output stream)
             (values 0 position))
           (values -1 position)))))
 

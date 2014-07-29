@@ -639,8 +639,8 @@ est omis."
 Résultat: une chaîne de 1 caractère dont l'équivalent numérique en
 code ASCII est CO."
   (let* ((co (truncate (un-nombre (deref *vm* co))))
-         (limit #+lse-t1600     256
-                #+lse-mitra-15  128
+         (limit #+lse-t1600     128
+                #+lse-mitra-15  256
                 #-(or lse-t1600 lse-mitra-15)  char-code-limit))
     (if (< -1 co limit)
         (string (code-char co))

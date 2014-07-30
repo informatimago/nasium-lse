@@ -294,6 +294,9 @@ into the interactive REPL.")))
           *tasks*))
   (values))
 
+(defun task-interrupt (&optional (*task* *task*))
+  ;; to interrupt a task from another thread.
+  (setf (vm-state (task-vm *task*)) :idle))
 
 (defun task-count () *task-count*)
 (defun console-task (console) (elt *tasks* console))

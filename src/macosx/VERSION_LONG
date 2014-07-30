@@ -1,5 +1,5 @@
-1.0.0-0.999830-CCL-LINUX,
- commit 952a27b5c0003473c08a78fdf28fad321b9878e1,
- compiled 2014-07-11 02:56:52,
+1.0.0-0.999827-CCL-LINUX,
+ commit d964e85ab3511940130fb8204ca25b87229a2831,
+ compiled 2014-07-29 22:54:55,
  on kuiper,
- with features (lse-unix lse-extensions lse-case-insensitive).
+ with features (lse-unix lse-extensions lse-server lse-case-insensitive).

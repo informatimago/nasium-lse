@@ -95,10 +95,18 @@
         default)))
 
 (dolist (feature *program-features*)
-  (if (symbolp feature)
-      (pushnew feature *features*)
-      (when (boolean-enval (car feature) nil)
-        (pushnew (cdr feature) *features*))))
+  (cond
+    ((symbolp feature)
+     (pushnew feature *features*))
+    ((stringp (car feature))
+     (when (boolean-enval (car feature) nil)
+       (pushnew (cdr feature) *features*)))
+    ((and (consp (car feature))
+          (eq 'not (caar feature)))
+     (unless (boolean-enval (second (car feature)) nil)
+       (pushnew (cdr feature) *features*)))
+    (t
+     (error "Invalid expression: ~S" feature))))
 
 
 

@@ -38,9 +38,9 @@
 (defparameter *program-main*    (lambda () (intern "MAIN" "COM.INFORMATIMAGO.LSE.SERVER")))
 (defparameter *program-features*
   '(:lse-server
+    ;; :lse-allow-lisp ; not in servers ; gives access to low level lisp command and functions. 
     ;; :lse-scanner-debug    
     ;; :debugging
-    :lse-allow-lisp      ; gives access to low level lisp command and functions. 
     :lse-case-insensitive 
     :lse-unix             
     :lse-extensions       

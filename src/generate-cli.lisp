@@ -37,10 +37,10 @@
 (defparameter *program-system*  :com.informatimago.lse.cli)
 (defparameter *program-main*    (lambda () (intern "MAIN" "COM.INFORMATIMAGO.LSE.CLI")))
 (defparameter *program-features*
-  '(( "LSE_COMPILE_SERVER" .  :lse-server)
+  '(("LSE_COMPILE_SERVER"       . :lse-server)
+    ((not "LSE_COMPILE_SERVER") . :lse-allow-lisp) ; gives access to low level lisp command and functions. 
     ;; :lse-scanner-debug    
     ;; :debugging
-    :lse-allow-lisp      ; gives access to low level lisp command and functions. 
     :lse-case-insensitive 
     :lse-unix             
     :lse-extensions       

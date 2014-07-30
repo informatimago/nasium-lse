@@ -1,0 +1,287 @@
+-*- mode:rst;coding:utf-8 -*-
+
+Specifications du serveur LSE
+========================================
+
+
+Un serveur LSE doit permettre à plusieurs utilisateurs de se connecter
+à la même machine virtuelle (ensemble de fichiers communs, et de
+consoles pouvant communiquer entre elles par la commande PRENDRE ETAT
+CONSOLE NO.).
+
+Une machine virtuelle est caractérisée par:
+
+- emulation (Mitra-15, T-1600, moderne/unix).
+- 1 à 16 consoles.
+- 1 à 2 télétypes avec perforateur/lecteur de ruban.
+- fichiers programmes et permanents.
+- fichiers temporaires pour chaque console.
+- configuration de comptes et droit d'accès utilisateurs.
+- ensemble de fichiers initiaux.
+
+On peut à peu de frais gérer dans le même serveur plusieurs machines
+virtuelles.
+
+
+Accès au serveur
+----------------------------------------
+
+- Accès par telnet ou ssh, 1 port par console.
+- Accès par telnet ou ssh, 1 port pour toutes les consoles -> multiplexé
+- Accès par shellinaboxd, 1 port pour toutes les consoles -> multiplexé
+
+- filtrage des accès sur adresse IP (eg. réseau local).
+- filtrage des accès par login
+
+
+
+Multiplexeur
+----------------------------------------
+
+.. comment: (setf comment-start ".")
+
+::
+
+      ..................................
+      . Liste des machines virtuelles: .
+      .                                .
+      .    1) T-1600                   .
+      .    2) Mitra-15                 .
+      .    3) Unix                     .
+      .    4) initiation               .
+      .    5) INRDP                    .
+      .    0) - quitter                .
+      .                                .
+      . Votre choix:                   .
+      ..................................
+
+      ........................................
+      . Bienvenue sur emulateur LSE Mitra-15 .
+      .                                      .
+      . Compte:                              .
+      . Mot de passe:                        .
+      ........................................
+
+
+::
+
+    (define-entity virtual-machine
+      name
+      password
+      model
+      console-count
+      file-system-root
+      shared-file-system-root
+      tape-root
+      initial-root
+      comptes)
+
+    (define-entity account
+      name
+      password
+      default-id)
+
+
+
+FONCTIONNEMENT GENERAL
+======================
+
+
+EMULSE TOURNE DANS UN PROCESSUS UNIX UNIQUE, SIMULANT LE MITRA-15 SOUS
+SYSTEME L.S.E.  CE PROCESSUS PREND COMME ARGUMENT UN NUMERO DE PORT
+SUR LEQUEL IL ATTEND LES CONNEXIONS DES "CONSOLES".
+
+IL Y A UN SCRIPT PERMETTANT DE CONFIGURER UNE FENETRE XTERM AVEC UN
+ASPECT RETRO : CARACTERES VERTS SUR FOND NOIR, BIEN QUE LES CONSOLES
+SINTRA AVAIENT DU PHOSPHORE BLANC SUR FOND NOIR, ET POLICE
+DEC-TERMINAL (QUI COMPORTE DES CARACTERES FLECHES GAUCHE ET HAUT
+UTILISES POUR L'ASSIGNATION ET L'EXPONENTIATION.  LES LIGNES SONT
+"ENVOYEES" A L'UNITE CENTRALE EN TAPANT CONTROLE-S (CODE ASCII X-OFF),
+ET NON RETURN !
+
+ON PEUT AUSSI ACCEDER A UN SYSTEME L.S.E. VIA UNE PAGE WEB A :
+http://nasium-lse.ogamita.com:8117
+UTILISANT shellinaboxd COMME EMULATEUR DE TERMINAL. 
+
+
+*** PAS ENCORE IMPLEMENTE ***
+
+::
+
+      *
+      |
+      |
+      V
+  +--------+  connecter     +----------+   BOnjour     +----------+
+  | Limbo  |--------------->| Sleeping |-------------->| Active   |
+  |        |                |          |  /preparer    |          |
+  |        |                |          |               |          |
+  |        |   ADieux/      |          |               |          |
+  |        |   deconnecter  |          |   AUrevoir    |          |
+  |        |<---------------|          |<--------------|          |
+  +--------+                +----------+  /nettoyer    +----------+
+      ^                                                     |
+      |               etat_cmd_changer(0)                   |
+      +-----------------------------------------------------+
+                       /nettoyer
+
+
+
+
+STOCKAGE DES FICHIERS L.S.E. SUR UNIX
+=====================================
+
+LORS DE LA COMPILATION D'EMULSE, ON PEUT DEFINIR DES MACROS STIPULANT
+LES CHEMINS D'ACCES AUX DIFFERENTS REPERTOIRES DISCUTES CI-APRES.
+VOICI CEPENDANT LA HIERARCHIE ET LA CONFIGURATION DE DROITS D'ACCES
+PRECONISES.
+
+DRTS PRO/GRP CHEMIN                DESCRIPTION
+---- ------- --------------------  ------------------------------------------
+0755 lse.lse $(BASE)
+0755 lse.lse $(BASE)/bin           LES EXECUTABLES UNIX
+4755 lse.lse $(BASE)/bin/lse       L'INTERPRETEUR/ENVIRONNEMENT L.S.E.
+0700 lse.lse $(BASE)/admin         CONFIG, DROITS D'ACCES, COMPTES, ...
+0700 lse.lse $(BASE)/admin/compt   LISTES DES (CLE+COMPTE) ET DROITS D'ACCES
+0700 lse.lse $(BASE)/admin/progr   ASSOCIE FICHIERS PROGRAMMES ET COMPTES
+0700 lse.lse $(BASE)/admin/perma   ASSOCIE FICHIERS PERMANENTS ET COMPTES
+0700 lse.lse $(BASE)/perma         FICHIERS PERMANENTS DE L.S.E.
+0700 lse.lse $(BASE)/tempo         FICHIERS TEMPORAIRES DE L.S.E.
+0700 lse.lse $(BASE)/tempo/00      UN SOUS REPERTOIRE PAR CONSOLE
+0700 lse.lse $(BASE)/tempo/01      (LES FICHIERS TEMPORAIRES SONT LIES 
+0700 lse.lse $(BASE)/tempo/02       A LA CONSOLE PAR LAQUELLE ON ACCEDE
+0700 lse.lse $(BASE)/tempo/03       A L'ENVIRONNEMENT L.S.E.)
+0700 lse.lse $(BASE)/tempo/04      CES FICHIERS SONT PRIVES POUR CHAQUE
+0700 lse.lse $(BASE)/tempo/05      UTILISATEUR, ET SONT SUPPRIMES EN FIN
+0700 lse.lse $(BASE)/tempo/06      DE SESSION.
+0700 lse.lse $(BASE)/tempo/07
+0700 lse.lse $(BASE)/progr         FICHIERS PROGRAMMES ("BINAIRES")
+1755 lse.lse $(BASE)/ruban         BIBLIOTHEQUE DE BANDES PERFOREES VIRTUELLES
+0755 lse.lse $(BASE)/ruban/EXEMP   CONTIENT LES BANDES PERFOREES EXEMPLES.
+
+
+UN COMPTE ET UN GROUPE UNIX NOMMES "LSE" PEUVENT ETRE CREES POUR
+INSTALLER EMULSE.  TOUS LES FICHIERS LSE LEUR APPARTIENDRONT
+
+DANS LA MESURE OU LES FICHIERS L.S.E.  ONT UN FORMAT PROPRE (STRUCTURE
+D'ENREGISTREMENTS), ILS NE SONT INTERPRETABLE QUE PAR LE
+BIBLIOTHECAIRE L.S.E., ET DIFFICILEMENT UTILISABLES PAR LES
+UTILITAIRES UNIX STANDARD.  AUSSI ON PEUT SANS PROBLEME PROHIBER LEUR
+ACCES PAR LE RESTE DU SYSTEME.
+
+D'UN AUTRE COTE, LA STRUCTURE DES BANDES PERFOREES ET TOUT A FAIT
+EXPLOITABLE APR LES UTILITAIRES UNIX [FIN DE LIGNE X-OFF (DC3, 0x13,
+19) AU LIEU DE (LF, 0x0A, 10)], ET PEUT SERVIR DE PASSERELLE POUR
+L'IMPORTATION/EXPORTATION DE DONNEES OU DE SOURCES (COMME LES BANDES
+PERFOREES LE PERMETTAIENT, COMME SUPPORT COMPATIBLE ENTRE MITRA-15 ET
+T-1600 PAR EXEMPLE). AINSI, $(BASE)/ruban EST ACCESSIBLE A TOUS.
+CEPENDANT, PUISQUE LES BANDES PERFOREES ETAIENT UN SUPPORT WORM
+(WRITE-ONCE-READ-MULTIPLE), LES FICHIERS RUBAN SONT AUTOMATIQUEMENT
+MIS EN LECTURE SEULE PAR LSE.
+
+DES SOUS-REPERTIORES DANS $(BASE)/ruban POURRONT ETRE CREES A VOLONTE
+POUR CLASSER LES BANDES.  NOTER QUE LE BIBLIOTHECAIRE L.S.E.  N'A PAS
+DE NOTION DE REPERTOIRE : L'ESPACE DE NOM (1 LETTRE SUIVIT D'AU PLUS 4
+ALPHA-NUMERIQUES) 26*36^4 > 43E6 ETANT LARGEMENT SUFFISANT POUR DES
+DISQUES DUR DE NETTEMENT MOINS D'UN MEGA-OCTETS, OU DES DISQUETTES DE
+MOINS DE 100 KILO-OCTETS.
+
+ATTENTION : L.S.E.  CONVERTI EN MAJUCULE TOUTES LES LETTRES DANS LES
+NOMS DES FICHIERS ET REPERTOIRES SOUS RUBAN.  MIEUX VAUT DONC
+N'UTILISER QUE DES MAJUSCULES AFIN D'EVITER LES COLISIONS DE NOM.
+
+
+
+
+
+GENERATION DU FICHIER COMPT
+===========================
+
+ETANT DONNE L'OBJECTIF PEDAGOGIQUE DE L.S.E., LE SYSTEME IMPOSAIT UN
+MINIMUM DE CONTRAITE POUR L'ACCES AU SYSTEME.  AINSI, IL SUFFIT DE
+TAPER LA COMMANDE "BO" (BONJOUR) POUR POUVOIR COMMENCER A PROGRAMMER
+ET POUR AVOIR ACCES AUX PROGRAMMES PUBLIQUES.  PAR CONTRE, POUR ETRE
+AUTORISE A ENREGISTRER UN PROGRAMME OU UN FICHIER DONNEE PERMANENT, IL
+FAUT S'IDENTIFIER AUPRES DU SYSTEME.  L'IDENTIFICATION COMPORTE  UNE
+CLE SECRETE SUR TROIS CHIFFRES ET UN NUMERO DE COMPTE SUR DEUX
+CHIFFRES.  CHAQUE COMPTE A DES DROITS D'ACCES CONFIGURABLES PAR
+L'ADMINISTRATEUR.
+
+DANS EMULSE, LES CLES SECRETES ET LES DROITS D'ACCES SONT ENREGISTRES
+DAS LE FICHIER $(BASE)/admin/compt, LE FICHIER "COMPT".
+
+CE FICHIER CONTIENT EXACTEMENT 512 OCTETS (2 SECTEURS) FORMATES EN:
+100 LIGNES DE 4 CARACTERES PLUS NEW-LINE : XXXK\N,  COMPLETE
+PAR 12 OCTETS SUPPLEMENTAIRES  POUR UN TOTAL 512 OCTETS.
+
+LES XXX SONT LA CLE SECRETE DE CHAQUE IDENTIFICATEUR.  LE NUMERO DE
+COMPTE CORRESPONDANT AU NUMERO DE LA LIGNE (PARTANT DE 00).
+
+LE CARACTERE K SUIVANT ENCODE LES DROITS D'ACCES.  LES QUATRES BITS DE
+POIDS FAIBLE SONT UTILISES SELON LA TABLE SUIVANTE :
+
+[1 = A: CREATION, MODIFICATION, SUPPRESSION DE PROGRAMMES]
+[2 = B: CREATION, MODIFICATION, SUPPRESSION DE PERMANENTS]
+[4 = C: AUGMENTATION DYNAMIQUE DE L'ESPACE TEMPORAIRE    ]
+[8 = D: ALLOCATION D'UN ESPACE TEMPORAIRE FIXE SUPERIEUR ]
+
+COMBINAISON DE DROITS :  0    A    B    AB   C    AC   BC   ABC  D    BD   ABD
+CODES A UTILISER       
+EN QUATRIEME COLONE :    0    1    2    3    4    5    6    7    8    :     ;
+                 OU :    @    A    B    C    D    E    F    G    H    J     K
+
+DONC, C ET D SONT EXCLUSIFS L'UN DE L'AUTRE, ET A PART CETTE
+CONTRAINTE, TOUTES LES COMBINAISONS SONT POSSIBLES.
+
+PAR DEFAUT NOUS METTONS LES DROITS A ZERO POUR TOUS LES COMPTES, SAUF
+LE 99 QUI EST LE COMPTE AUQUEL SONT ASSIGNES LES "NOUVEAUX" PROGRAMMES
+ET FICHIERS PERMANENTS QUI SONT PLACES DANS LES REPERTOIRES
+$(BASE)/PERMA ET $(BASE)/PROGR PAR D'AUTRES PROGRAMMES QUE EMULSE.
+EMULSE CONSERVE UNE TABLE DES FICHIERS QU'IL GERE EN CORRESPONDANCE
+AVEC LE COMPTE AUQUEL ILS APPARTIENNENT.
+
+
+POUR LE MOMENT, IL FAUT EDITER LE FICHIER COMPT (HORS DE LSE) POUR
+CHANGER LES CLES.  LES DROITS D'ACCES PEUVENT ETRE CONFIGURES A PARTIR
+DE LSE, AVEC LA COMMANDE DR(OITS).
+
+
+
+DIFFERENCES
+===========
+
+EMULSE VEUT "EMULER" L'IMPLEMENTATION L.S.E. DU MITRA-15, AU NIVEAU DE
+L'UTILISATEUR, SANS CHERCHER FORCEMENT A REPRODUIRE LE FONCTIONNEMENT
+INTERNE DU SYSTEME L.S.E.  SUR MITRA-15. (IMPLEMENTATION "COMPATIBLE"
+MITRA-15). CEPENDANT, CERTAINES DIFFERENCES SONT INEVITABLES :
+
+    - JEUX DE PERIFERIQUES DIFFERENTS,
+    - MANQUE DE DOCUMENTATION,
+    - SIMPLICITE ET RAPIDITE D'IMPLEMENTATION,
+    - AJOUT DE FACILITES.
+
+
+
+LES CONSOLES SINTRA FONCTIONNAIENT COMME UNE TELETYPE : LA SAISIE
+(HORS LIGNE) N'ETAIT POSSIBLE QUE SUR LA LIGNE DU BAS.  IL N'Y AVAIT
+PAS DE CURSEUR, LA LIGNE ETAIT REMPLIE DE SOULIGNES QUE LA SAISIE
+COUVRAIT.  L'AFFICHAGE SE FAISAIENT EGALEMENT A PARTIR DU BAS DE
+L'ECRAN ET A LA RECEPTION D'UN SAUT DE LIGNE CA DEFILAIT VERS LE HAUT
+COMME LE PAPIER DE LA TELETYPE ET SANS POSSIBILITE DE REVENIR EN
+ARRIERE.  EMULSE NE SIMULE PAS CETTE LIGNE DE SOULIGNES ET LAISSE
+L'EMULATEUR DE TERMINAL UTILISE AFFICHER UN CURSEUR.
+
+
+
+
+COMMANDES SUPPLEMENTAIRES
+-------------------------
+
+DR(OITS) MOT-DE-PASSE  
+    
+    (HORS-SESSION)
+    PERMET DE DEFINIR LES DROITS D'ACCES DES COMPTES.
+
+    IL EXISTAIT UNE COMMANDE SIMILAIRE, MAIS JE N'EN AI PAS LA
+    DOCUMENTATION, ET NE ME SOUVIENS PLUS DE SON INTERFACE UTILISATEUR.
+

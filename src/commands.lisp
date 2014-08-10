@@ -1410,8 +1410,13 @@ FICHIERS, APPELER, RANGER."
 (defun split-size (string size)
   (loop
     :with len = (length string)
-    :for start :below len :by size
-    :collect (subseq string start (min (+ start size) len))))
+    :with start = 0
+    :for end = (min (+ start size) len)
+    :while (< start len)
+    :do (loop :while (< size (string-size-in-octets string :start start :end end :encoding :utf-8))
+              :do (decf end))
+    :collect (subseq string start end)
+    :do (setf start end)))
 
 
 (defcommand "DECODER" awake un-fichier-et-deux-numeros (fichier &optional (from 1) (to nil))
@@ -1447,6 +1452,7 @@ Voir les commandes ENCODER, APPELER, RANGER, MODIFIER."
                  (loop
                    :for rn :from 1
                    :for chunk :in (split-size buffer *max-record-chaine-size*)
+                   ;; :do (io-format *task* "record ~D length ~D~%" rn (length chunk))
                    :do (write-record file rn chunk))
               (lse-data-file-close file))))
         (lse-error "IL N'Y A PAS DE PROGRAMME A DECODER."))

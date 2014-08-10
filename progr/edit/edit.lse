@@ -39,6 +39,7 @@
 930*      E FILE    EDIT THE FILE.
 931*      Q         QUITS.
 
+932* CMD -> [ADDR [',' ADDR]] CMD [(ADDR|FILE|'/'REGEXP'/'(CMDLIST|REPLACEMENT'/' [(G|N)]))]
 
 1000* DEcoder 
 1001* Le programme est rangé sous forme de chaîne de caractères, chaque ligne 
@@ -256,4 +257,3 @@
 48003 RETOUR
 49001 PROCEDURE &CMDQ()
 49999 &ERROR('COMMANDE ''Q'' PAS ENCORE IMPLEMENTEE');RETOUR
-

@@ -1,25 +1,4 @@
 -*- mode:org; coding:utf-8 -*-
-* TODO 00044 ligne vide                                                 :cli:
-10 RET          --> supprime la ligne 10
-10 SPC RET      --> insère la ligne 10 comme ligne vide.
-10 SPC *comment --> 10 *comment
-
-* TODO 00043 eqn .65 66. entre point                                    :cli:
-#+BEGIN_SRC(lisp)
-  #+lse_extension -
-#+END_SRC
-EQUIVALENT NUMERIQUE DE CARACTERE QUELCONQUES ENTRE POINTS :
-           .13.  :CARACTERE (RC)
-           .13 10.'A B C'.13 10.   : (RC) (LF) A B C (RC) (LF)
-
-* TODO 00042 xit(n) pas encore implementé                               :cli:
-#+BEGIN_SRC(lisp)
-  #+lse_extension -
-#+END_SRC
-* TODO 00041 cca(0)                                                     :cli:
-cca(0) -> '0.0e0' au lieu de '0'
-afficher[f2.0]3 --> ' 3.' au lieu de ' 3'
-
 * TODO 00027 pg55 parametre fonctions                                   :cli:
 
 #+BEGIN_SRC(lse)
@@ -231,17 +210,9 @@ LUNDI-----
 TERMINE EN LIGNE 009
 #+END_SRC
 
-* TODO 00018 case of directories and files                       :cli:server:
-For now, directories and files names are case sensitive.
-
-This is confusing because users may be in uppercase input or mixed
-input, and output may uppercase lowercase names.
-
-For cli or unix scripts, we would want case sensitive (lower case) names.
-For server and historic LSE, we would want to accept uppercase names.
-
---> either use uppercase for directory and file names in server files,
-    or implement case insensitivity.
+* TODO 00041 cca(0)                                                     :cli:
+cca(0) -> '0.0e0' au lieu de '0'
+afficher[f2.0]3 --> ' 3.' au lieu de ' 3'
 
 * TODO 00012 AP 1: Parsing errors in commands fail catastrophically.    :cli:
 
@@ -289,6 +260,22 @@ Calling COM.INFORMATIMAGO.LSE:TERMINAL-FINALIZE on a COM.INFORMATIMAGO.LSE.UNIX-
 * TODO 00016 invalid option -> silent exit                              :cli:
 ./lse --mode-modern 
 exits silently instead of reporting an error.
+* TODO 00042 xit(n) pas encore implementé                               :cli:
+#+BEGIN_SRC(lisp)
+  #+lse_extension -
+#+END_SRC
+* TODO 00018 case of directories and files                       :cli:server:
+For now, directories and files names are case sensitive.
+
+This is confusing because users may be in uppercase input or mixed
+input, and output may uppercase lowercase names.
+
+For cli or unix scripts, we would want case sensitive (lower case) names.
+For server and historic LSE, we would want to accept uppercase names.
+
+--> either use uppercase for directory and file names in server files,
+    or implement case insensitivity.
+
 * TODO 00036 encoder/decoder/fsoup fails                                :cli:
 
 #+BEGIN_SRC(lse)
@@ -659,6 +646,19 @@ LISTER A PARTIR DE 1
 100 PROCEDURE &RAC(ARG,ERRE) LOCAL ARG,ERRE
 101 SI ARG<0 ALORS RETOUR EN ERRE
 102 RESULTAT RAC(ARG)
+
+* TODO 00044 ligne vide                                                 :cli:
+10 RET          --> supprime la ligne 10
+10 SPC RET      --> insère la ligne 10 comme ligne vide.
+10 SPC *comment --> 10 *comment
+
+* TODO 00043 eqn .65 66. entre point                                    :cli:
+#+BEGIN_SRC(lisp)
+  #+lse_extension -
+#+END_SRC
+EQUIVALENT NUMERIQUE DE CARACTERE QUELCONQUES ENTRE POINTS :
+           .13.  :CARACTERE (RC)
+           .13 10.'A B C'.13 10.   : (RC) (LF) A B C (RC) (LF)
 
 * TODO 00033 specificités T-1600 / Mitra-15 / Siris                     :cli:
 

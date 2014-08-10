@@ -404,10 +404,10 @@ RETURN: The data; a status code
 
 (defparameter *max-record-chaine-size*  (truncate (- +block-size+ 6))
   "Maximum number of UTF-8 bytes in a record.")
-(defparameter *max-record-tableau-size* (truncate (- +block-size+ 8) 4)
-  "Maximum number of 2D array slots in a record.")
 (defparameter *max-record-vecteur-size* (truncate (- +block-size+ 6) 4)
   "Maximum number of 1D vector slots in a record.")
+(defparameter *max-record-tableau-size* (truncate (- +block-size+ 8) 4)
+  "Maximum number of 2D array slots in a record.")
 
 (defmethod write-record ((file file) record-number data)
   (check-type data (or nombre vecteur tableau chaine))
@@ -419,14 +419,14 @@ RETURN: The data; a status code
       (etypecase data
         (nombre  (setf (peek8  buffer 3) +type-number+
                        (peek32 buffer 4) (float-32-to-ieee-754 data)))
-        (vecteur (assert (<= (length data) #.(truncate (- +block-size+ 6) 4)))
+        (vecteur (assert (<= (length data) *max-record-vecteur-size*))
                  (setf (peek8  buffer 3) +type-vector+
                        (peek16 buffer 4) (length data))
                  (loop
                    :for i :below (length data)
                    :for j :from 6 :by 4
                    :do (setf (peek32 buffer j) (float-32-to-ieee-754 (aref data i)))))
-        (tableau (assert (<= (array-total-size data) #.(truncate (- +block-size+ 8) 4)))
+        (tableau (assert (<= (array-total-size data) *max-record-tableau-size*))
                  (setf (peek8  buffer 3) +type-array+
                        (peek16 buffer 4) (array-dimension data 0)
                        (peek16 buffer 6) (array-dimension data 1))
@@ -435,7 +435,7 @@ RETURN: The data; a status code
                    :for j :from 8 :by 4
                    :do (setf (peek32 buffer j) (float-32-to-ieee-754 (row-major-aref data i)))))
         (chaine  (let ((octets (string-to-octets data :encoding :utf-8)))
-                   (assert (<= (length octets) #.(truncate (- +block-size+ 6))))
+                   (assert (<= (length octets) *max-record-chaine-size*))
                    (setf (peek8  buffer 3) +type-string+
                          (peek16 buffer 4) (length octets))
                    (replace buffer octets :start1 6))))

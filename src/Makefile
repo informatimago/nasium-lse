@@ -148,6 +148,8 @@ help::
 clean::
 	-rm -f lse{,-server}-{ccl,clisp,sbcl,ecl}-{linux,darwin}-*
 
+help::
+	@printf $(HELPFORMAT) git-clean-version 'Remove version files.'
 git-clean-version:
 	-rm -f VERSION macosx/VERSION macosx/VERSION_LONG macosx/VERSION_SHORT
 	git checkout VERSION macosx/VERSION macosx/VERSION_LONG macosx/VERSION_SHORT

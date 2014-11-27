@@ -546,6 +546,7 @@ http://admi.net/cgi-bin/wiki?LSE
 "Comparaison LSE/Basic "
 Stéphane Berche, Revue française de pédagogie, 1981, Volume 56, Issue 56, pp. 33-46
 http://www.persee.fr/web/revues/home/prescript/article/rfp_0556-7807_1981_num_56_1_1733
+http://ife.ens-lyon.fr/publications/edition-electronique/revue-francaise-de-pedagogie/INRP_RF056_2.pdf
 
 
 "Introduction de l'informatique dans l'enseignement secondaire"

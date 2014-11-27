@@ -6,8 +6,8 @@
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
 ;;;;    
-;;;;    This file defined some slime/swank function to deal with the
-;;;;    slime REPL a little more as a terminal.
+;;;;    This file defines some slime/swank functions to deal with the
+;;;;    slime REPL a little more like a terminal.
 ;;;;    
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>

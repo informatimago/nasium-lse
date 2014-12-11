@@ -647,6 +647,14 @@ LISTER A PARTIR DE 1
 101 SI ARG<0 ALORS RETOUR EN ERRE
 102 RESULTAT RAC(ARG)
 
+* TODO 00045 message d'erreur pour tableaux                             :cli:
+
+ERREUR EN LIGNE 100 : Array index 4 out of bounds for #2A((25.531916 12.765958
+38.297874 23.404255) (0.0 0.0 0.0 0.0) (0.0 0.0 0.0 0.0) (0.0 0.0 0.0 0.0) (0.0
+0.0 0.0 0.0) (0.0 0.0 0.0 0.0)) .
+
+Devrait être: indexes (…) hors limite pour tableau: …
+
 * TODO 00044 ligne vide                                                 :cli:
 10 RET          --> supprime la ligne 10
 10 SPC RET      --> insère la ligne 10 comme ligne vide.
@@ -773,6 +781,35 @@ instructions
 
 Mentionné: T-1600: $ signifie quelque chose.
 Annoncé: Mitra-15: procédures externes rangées sur disque &init(t,l,c,i) &lir(c) &max(t,l,c) &min(t,l,c)
+
+* TODO 00046 ajouter une option --convertir-minuscules-en-majuscules    :cli:
+À l'entrée, les minuscules devraient être converties en majuscules, 
+pour que CHAINE REP;LIRE REP;SI REP='OUI' ALORS AFFICHER 'OK" 
+affiche "OK" même si on tape "oui".
+
+* TODO 00047 implémenter les procédures externes                        :cli:
+LIRE LSE 1979
+
+Quand on appelle une procédure &ABCDE, si elle n'est pas présente dans
+le programme, alors rechercher si on a un fichier programme nommé
+ABCDE qui contient une telle PROCEDURE &ABCDE.  Dans ce cas, charger
+temporairement ce fichier, exécuter la procédure, et revenir au
+programme original.
+
+Note: dans quel répertoire chercher les procédures? On peut chercher
+dans le répertoire courant, ou on pourrait avoir un autre répertoire,
+ou une variable contenant une liste de répertoires.
+CHAINE EPDIR;EPDIR='/progr/mesgs/:/progr:/:.'
+
+* TODO 00048 faire tant que                                             :cli:
+LIRE LSE 1979
+
+Optionaliser la variable de boucle dans: FAIRE 42 TANT QUE A#0
+
+* TODO 00049 UTILISATION DISQUE A PARTIR DE                             :cli:
+LIRE LSE 1979
+
+UTILISATION DISQUE A PARTIR DE [nofic[,(P|D|T)]]
 
 * DONE 00025 pg54,pg77 retour en 10                                     :cli:
   CLOSED: [2014-07-06 Sun 23:55]

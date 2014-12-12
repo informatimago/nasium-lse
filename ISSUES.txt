@@ -8,6 +8,10 @@ ERREUR EN LIGNE 201 : /Users/pjb/src/pjb/lse-progr/inrdp/pg55.lse:201:24:
 
 * TODO 00032 pg74,pg80 afficher[*'I']N                                  :cli:
 
+y_33;afficher[*'--']y
+
+ERREUR : Unknown type specifier: COM.INFORMATIMAGO.LSE::IDENTIFIER
+
 #+BEGIN_SRC(lse)
 AFFICHER[/,*'I---','I',/]4
 I---I---I---I---I
@@ -260,6 +264,51 @@ Calling COM.INFORMATIMAGO.LSE:TERMINAL-FINALIZE on a COM.INFORMATIMAGO.LSE.UNIX-
 * TODO 00016 invalid option -> silent exit                              :cli:
 ./lse --mode-modern 
 exits silently instead of reporting an error.
+* TODO 00045 message d'erreur pour tableaux                             :cli:
+
+ERREUR EN LIGNE 100 : Array index 4 out of bounds for #2A((25.531916 12.765958
+38.297874 23.404255) (0.0 0.0 0.0 0.0) (0.0 0.0 0.0 0.0) (0.0 0.0 0.0 0.0) (0.0
+0.0 0.0 0.0) (0.0 0.0 0.0 0.0)) .
+
+Devrait être: indexes (…) hors limite pour tableau: …
+
+* TODO 00044 ligne vide                                                 :cli:
+10 RET          --> supprime la ligne 10
+10 SPC RET      --> insère la ligne 10 comme ligne vide.
+10 SPC *comment --> 10 *comment
+
+* TODO 00043 eqn .65 66. entre point                                    :cli:
+#+BEGIN_SRC(lisp)
+  #+lse_extension -
+#+END_SRC
+EQUIVALENT NUMERIQUE DE CARACTERE QUELCONQUES ENTRE POINTS :
+           .13.  :CARACTERE (RC)
+           .13 10.'A B C'.13 10.   : (RC) (LF) A B C (RC) (LF)
+
+* TODO 00046 ajouter une option --convertir-minuscules-en-majuscules    :cli:
+À l'entrée, les minuscules devraient être converties en majuscules, 
+pour que CHAINE REP;LIRE REP;SI REP='OUI' ALORS AFFICHER 'OK" 
+affiche "OK" même si on tape "oui".
+
+* TODO 00048 FAIRE TANT QUE                                             :cli:
+LIRE LSE 1979
+
+Optionaliser la variable de boucle dans: FAIRE 42 TANT QUE A#0
+
+* TODO 00047 implémenter les procédures externes                        :cli:
+LIRE LSE 1979
+
+Quand on appelle une procédure &ABCDE, si elle n'est pas présente dans
+le programme, alors rechercher si on a un fichier programme nommé
+ABCDE qui contient une telle PROCEDURE &ABCDE.  Dans ce cas, charger
+temporairement ce fichier, exécuter la procédure, et revenir au
+programme original.
+
+Note: dans quel répertoire chercher les procédures? On peut chercher
+dans le répertoire courant, ou on pourrait avoir un autre répertoire,
+ou une variable contenant une liste de répertoires.
+CHAINE EPDIR;EPDIR='/progr/mesgs/:/progr:/:.'
+
 * TODO 00042 xit(n) pas encore implementé                               :cli:
 #+BEGIN_SRC(lisp)
   #+lse_extension -
@@ -647,27 +696,6 @@ LISTER A PARTIR DE 1
 101 SI ARG<0 ALORS RETOUR EN ERRE
 102 RESULTAT RAC(ARG)
 
-* TODO 00045 message d'erreur pour tableaux                             :cli:
-
-ERREUR EN LIGNE 100 : Array index 4 out of bounds for #2A((25.531916 12.765958
-38.297874 23.404255) (0.0 0.0 0.0 0.0) (0.0 0.0 0.0 0.0) (0.0 0.0 0.0 0.0) (0.0
-0.0 0.0 0.0) (0.0 0.0 0.0 0.0)) .
-
-Devrait être: indexes (…) hors limite pour tableau: …
-
-* TODO 00044 ligne vide                                                 :cli:
-10 RET          --> supprime la ligne 10
-10 SPC RET      --> insère la ligne 10 comme ligne vide.
-10 SPC *comment --> 10 *comment
-
-* TODO 00043 eqn .65 66. entre point                                    :cli:
-#+BEGIN_SRC(lisp)
-  #+lse_extension -
-#+END_SRC
-EQUIVALENT NUMERIQUE DE CARACTERE QUELCONQUES ENTRE POINTS :
-           .13.  :CARACTERE (RC)
-           .13 10.'A B C'.13 10.   : (RC) (LF) A B C (RC) (LF)
-
 * TODO 00033 specificités T-1600 / Mitra-15 / Siris                     :cli:
 
 T-1600:   fonctions SH, CH, TH, SGN, UN et ZER.
@@ -781,30 +809,6 @@ instructions
 
 Mentionné: T-1600: $ signifie quelque chose.
 Annoncé: Mitra-15: procédures externes rangées sur disque &init(t,l,c,i) &lir(c) &max(t,l,c) &min(t,l,c)
-
-* TODO 00046 ajouter une option --convertir-minuscules-en-majuscules    :cli:
-À l'entrée, les minuscules devraient être converties en majuscules, 
-pour que CHAINE REP;LIRE REP;SI REP='OUI' ALORS AFFICHER 'OK" 
-affiche "OK" même si on tape "oui".
-
-* TODO 00047 implémenter les procédures externes                        :cli:
-LIRE LSE 1979
-
-Quand on appelle une procédure &ABCDE, si elle n'est pas présente dans
-le programme, alors rechercher si on a un fichier programme nommé
-ABCDE qui contient une telle PROCEDURE &ABCDE.  Dans ce cas, charger
-temporairement ce fichier, exécuter la procédure, et revenir au
-programme original.
-
-Note: dans quel répertoire chercher les procédures? On peut chercher
-dans le répertoire courant, ou on pourrait avoir un autre répertoire,
-ou une variable contenant une liste de répertoires.
-CHAINE EPDIR;EPDIR='/progr/mesgs/:/progr:/:.'
-
-* TODO 00048 faire tant que                                             :cli:
-LIRE LSE 1979
-
-Optionaliser la variable de boucle dans: FAIRE 42 TANT QUE A#0
 
 * TODO 00049 UTILISATION DISQUE A PARTIR DE                             :cli:
 LIRE LSE 1979

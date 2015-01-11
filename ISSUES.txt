@@ -6,6 +6,39 @@ ERREUR EN LIGNE 201 : /Users/pjb/src/pjb/lse-progr/inrdp/pg55.lse:201:24:
     201 PROCEDURE &COURB(&F,N,X,Y,P) LOCAL P,N,YMI,YMA,I
 #+END_SRC
 
+* TODO 00020 pg42,pg75,pg75b affichage format                           :cli:
+pg42
+
+F2.0 --> ne doit pas afficher le point.
+U string -> doit afficher un espace suffixe.
+U vecteur --> doit afficher sur la meme ligne (pg59b)
+
+Obtenu:
+
+#+BEGIN_SRC(lse)
+EXECUTER A PARTIR DE 1
+
+LUNDI  3. AVRIL1972
+LUNDI 10. AVRIL1972
+LUNDI 17. AVRIL1972
+LUNDI 24. AVRIL1972
+LUNDI 31. AVRIL1972
+TERMINE EN LIGNE 016
+#+END_SRC
+
+Attendu:
+
+#+BEGIN_SRC(lse)
+EXECUTER A PARTIR DE 1
+
+LUNDI  3 AVRIL 1972
+LUNDI 10 AVRIL 1972
+LUNDI 17 AVRIL 1972
+LUNDI 24 AVRIL 1972
+LUNDI 31 AVRIL 1972
+TERMINE EN LIGNE 016
+#+END_SRC
+
 * TODO 00032 pg74,pg80 afficher[*'I']N                                  :cli:
 
 y_33;afficher[*'--']y
@@ -124,39 +157,6 @@ LUNDI
 1  2  3  4  
 5  6  7  8  
 9  10  11  12  =====
-#+END_SRC
-
-* TODO 00020 pg42,pg75,pg75b affichage format                           :cli:
-pg42
-
-F2.0 --> ne doit pas afficher le point.
-U string -> doit afficher un espace suffixe.
-U vecteur --> doit afficher sur la meme ligne (pg59b)
-
-Obtenu:
-
-#+BEGIN_SRC(lse)
-EXECUTER A PARTIR DE 1
-
-LUNDI  3. AVRIL1972
-LUNDI 10. AVRIL1972
-LUNDI 17. AVRIL1972
-LUNDI 24. AVRIL1972
-LUNDI 31. AVRIL1972
-TERMINE EN LIGNE 016
-#+END_SRC
-
-Attendu:
-
-#+BEGIN_SRC(lse)
-EXECUTER A PARTIR DE 1
-
-LUNDI  3 AVRIL 1972
-LUNDI 10 AVRIL 1972
-LUNDI 17 AVRIL 1972
-LUNDI 24 AVRIL 1972
-LUNDI 31 AVRIL 1972
-TERMINE EN LIGNE 016
 #+END_SRC
 
 * TODO 00019 pg37,pg46,pg47,pg76 affichage des matrices                 :cli:

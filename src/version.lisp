@@ -115,9 +115,12 @@ stdout in a string (going thru a file)."
                  :while line :do (write-line line out)))))
       (ignore-errors (delete-file path)))))
 
+(eval-when (:compile-topleve)
+  (warn "BUG: commit works when the current working directory is the git clone directory."))
+
 (defun commit ()
   (string-trim #(#\Newline)
-               (shell-command-to-string "git log -1|sed -n -e 's/^commit //p'")))
+               (shell-command-to-string "(git log -1|sed -n -e 's/^commit //p')")))
 (defvar *commit* (load-time-value (commit)))
 
 (defun long-version ()

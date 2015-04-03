@@ -1,9 +1,25 @@
 -*- mode:org; coding:utf-8 -*-
+
+Check:
+https://gitlab.com/nasium-lse/nasium-lse/issues&sort=created_asc&state=opened
+
 * TODO 00027 pg55 parametre fonctions                                   :cli:
 
 #+BEGIN_SRC(lse)
 ERREUR EN LIGNE 201 : /Users/pjb/src/pjb/lse-progr/inrdp/pg55.lse:201:24: 
     201 PROCEDURE &COURB(&F,N,X,Y,P) LOCAL P,N,YMI,YMA,I
+#+END_SRC
+
+* TODO 00009 Message PRET EN LIGNE 004 when interrupting a program.     :cli:
+
+The message when interrupting a program (at least on T1600)
+should indicate the line number:
+#+BEGIN_SRC(lse)
+PRET EN LIGNE 004
+#+END_SRC
+instead of just:
+#+BEGIN_SRC(lse)
+PRET
 #+END_SRC
 
 * TODO 00012 AP 1: Parsing errors in commands fail catastrophically.    :cli:
@@ -346,18 +362,6 @@ PRET
 This is probably due to some echoing of ESC.
 Occurs on xterm on MacOSX with emulse
 Doesn't occur in MacOSX Terminal.app or Cathode.app with terminal.env
-
-* TODO 00009 Message PRET EN LIGNE 004 when interrupting a program.     :cli:
-
-The message when interrupting a program (at least on T1600)
-should indicate the line number:
-#+BEGIN_SRC(lse)
-PRET EN LIGNE 004
-#+END_SRC
-instead of just:
-#+BEGIN_SRC(lse)
-PRET
-#+END_SRC
 
 * TODO 00011 A single beep per LIRE statement, instead of variable.     :cli:
 * TODO 00035 ERREUR après TERMINER                                      :cli:

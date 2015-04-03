@@ -326,7 +326,7 @@ RETURN: EX-OK
 (defun main (&optional args)
   (handler-case 
       (progn
-        (push #P "/usr/local/lib/" cffi:*foreign-library-directories*)
+        (push #P"/usr/local/lib/" cffi:*foreign-library-directories*)
         (setf *program-name* (or (program-name) *default-program-name*))
         (setf *options* (make-default-options))
         (set-lse-root)
@@ -336,6 +336,9 @@ RETURN: EX-OK
                                    #+swank
                                    (cond
                                      ((typep (stream-output-stream *terminal-io*)
+                                             #+#.(cl:if (cl:find-package "SWANK/GRAY") '(:and) '(:or))
+                                             'swank/gray::slime-output-stream
+                                             #-#.(cl:if (cl:find-package "SWANK/GRAY") '(:and) '(:or))
                                              'swank-backend::slime-output-stream)
                                       'swank-terminal)
                                      ((member (getenv "TERM") '("emacs" "dumb")

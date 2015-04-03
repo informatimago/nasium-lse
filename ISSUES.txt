@@ -6,218 +6,6 @@ ERREUR EN LIGNE 201 : /Users/pjb/src/pjb/lse-progr/inrdp/pg55.lse:201:24:
     201 PROCEDURE &COURB(&F,N,X,Y,P) LOCAL P,N,YMI,YMA,I
 #+END_SRC
 
-* TODO 00032 pg74,pg80 afficher[*'I']N                                  :cli:
-
-y_33;afficher[*'--']y
-
-ERREUR : Unknown type specifier: COM.INFORMATIMAGO.LSE::IDENTIFIER
-
-#+BEGIN_SRC(lse)
-AFFICHER[/,*'I---','I',/]4
-I---I---I---I---I
-
-N_5;AFFICHER[/,*'I---','I',/]N
-ERROR: Unknown type specifier: IDENTIFIER
---------------------------------------------------------------------------------
-(BACKTRACE-AS-LIST :CONTEXT NIL :PROCESS NIL :ORIGIN NIL :COUNT 1152921504606846975 :START-FRAME-NUMBER 0 :PRINT-LEVEL 2 :PRINT-LENGTH 5 :SHOW-INTERNAL-FRAMES NIL)
-(FUNCALL (:INTERNAL REPORT COMMAND-REPL) #<SIMPLE-ERROR #x302004722EFD>)
-(FUNCALL (:INTERNAL DEBUG-ERROR COMMAND-REPL) #<SIMPLE-ERROR #x302004722EFD>)
-(SIGNAL #<SIMPLE-ERROR #x302004722EFD>)
-(%ERROR #<SIMPLE-ERROR #x302004722EFD> NIL 77142635)
-(RUN-STEP #<LSE-VM 1 global variable, 0 local frames, 1 line, current line 0 #x3020045B07CD>)
-(FUNCALL #<STANDARD-METHOD VM-RUN (LSE-VM)> #<LSE-VM 1 global variable, 0 local frames, 1 line, current line 0 #x3020045B07CD>)
-(LSE-COMPILE-AND-EXECUTE #<TASK #x3020045B08AD> "N_4;AFFICHER[/,*'I---','I',/]N")
-(COMMAND-EVAL-LINE #<TASK #x3020045B08AD> "N_4;AFFICHER[/,*'I---','I',/]N")
-(FUNCALL (:INTERNAL DO-IT COMMAND-REPL))
-(COMMAND-REPL #<TASK #x3020045B08AD>)
-(MAIN NIL)
-(CALL-CHECK-REGS COM.INFORMATIMAGO.LSE.CLI:MAIN)
-(CHEAP-EVAL (COM.INFORMATIMAGO.LSE.CLI:MAIN))
-(EVAL-REGION "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-")
-(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
-(TRACK-PACKAGE #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B0F9F>)
-(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
-(CALL-WITH-RETRY-RESTART "Retry SLIME REPL evaluation request." #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B102F>)
-(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
-(FUNCALL #<Anonymous Function #x30200182569F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B106F>)
-(CALL-WITH-SYNTAX-HOOKS #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B106F>)
-(CALL-WITH-BUFFER-SYNTAX NIL #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B106F>)
-(REPL-EVAL "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-")
-(LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-"
-  :WINDOW-WIDTH
-  NIL)
-(CALL-CHECK-REGS
-  SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-")
-(CHEAP-EVAL (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-"))
-(EVAL-FOR-EMACS
-  (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main)
-")
-  "COM.INFORMATIMAGO.LSE"
-  126)
-(PROCESS-REQUESTS NIL)
-(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
-(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
-(FUNCALL SWANK-BACKEND:CALL-WITH-DEBUGGER-HOOK #<Compiled-function SWANK:SWANK-DEBUGGER-HOOK #x3020019AB05F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71EDF>)
-(CALL-WITH-DEBUGGER-HOOK #<Compiled-function SWANK:SWANK-DEBUGGER-HOOK #x3020019AB05F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71EDF>)
-(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
-(CALL-WITH-BINDINGS
-  ((*STANDARD-OUTPUT* . #) (*STANDARD-INPUT* . #) (*TRACE-OUTPUT* . #) (*ERROR-OUTPUT* . #) (*DEBUG-IO* . #<TWO-WAY-STREAM input #, output # #x302001B68EBD>) ...)
-  #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71E8F>)
-(HANDLE-REQUESTS #<MULTITHREADED-CONNECTION #x302001A1CBED> NIL)
-(REPL-LOOP #<MULTITHREADED-CONNECTION #x302001A1CBED>)
-(FUNCALL (:INTERNAL SWANK::SPAWN-REPL-THREAD))
-(CALL-WITH-BINDINGS
-  ((*PRINT-PRETTY*) (*PRINT-LEVEL*) (*PRINT-LENGTH*) (*PRINT-CIRCLE* . T) (*PRINT-CASE* . :DOWNCASE) ...)
-  #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::SPAWN-REPL-THREAD) #x302001B7222F>)
-(FUNCALL (:INTERNAL SWANK::SPAWN-REPL-THREAD))
-(RUN-PROCESS-INITIAL-FORM #<PROCESS repl-thread(14) [Active] #x302001B6015D> (#<CCL:COMPILED-LEXICAL-CLOSURE # #x302001B5FEEF>))
-(FUNCALL (:INTERNAL (CCL::%PROCESS-PRESET-INTERNAL (CCL:PROCESS))) #<PROCESS repl-thread(14) [Active] #x302001B6015D> (#<CCL:COMPILED-LEXICAL-CLOSURE # #x302001B5FEEF>))
-(FUNCALL (:INTERNAL CCL::THREAD-MAKE-STARTUP-FUNCTION))
---------------------------------------------------------------------------------
-#+END_SRC
-
-* TODO 00022 pg44 affichage format                                      :cli:
-cf. page 91.
-Obtenu:
-#+BEGIN_SRC(lse)
-APPELER pg44
-EXECUTER A PARTIR DE 1
-1 2 3 4 5 6 7 8 9 10 11 12
-1 2 3 =====1 2 3 =====
-1 2 3 =====
-  1   2   3 =====
-LA SOMME DES 2 PREMIERS NOMBRES EST : 3 =====
-LA SOMME DES 2 PREMIERS NOMBRES EST3 =====
-LA SOMME DES 2 PREMIERS NOMBRES EST 3 =====
-1    50 
-LUNDI
-1  2  3  4  
-5  6  7  8  
-9  10  11  12  =====
-1    50 
-LUNDI
-1  2  3  4  
-5  6  7  8  
-9  10  11  12  =====
-1    50 
-LUNDI
-
-1  2  3  4  
-5  6  7  8  
-9  10  11  12  =====
-   1    LUNDI   
-1  2  3  4  
-5  6  7  8  
-9  10  11  12  =====
-#+END_SRC
-
-* TODO 00020 pg42,pg75,pg75b affichage format                           :cli:
-pg42
-
-F2.0 --> ne doit pas afficher le point.
-U string -> doit afficher un espace suffixe.
-U vecteur --> doit afficher sur la meme ligne (pg59b)
-
-Obtenu:
-
-#+BEGIN_SRC(lse)
-EXECUTER A PARTIR DE 1
-
-LUNDI  3. AVRIL1972
-LUNDI 10. AVRIL1972
-LUNDI 17. AVRIL1972
-LUNDI 24. AVRIL1972
-LUNDI 31. AVRIL1972
-TERMINE EN LIGNE 016
-#+END_SRC
-
-Attendu:
-
-#+BEGIN_SRC(lse)
-EXECUTER A PARTIR DE 1
-
-LUNDI  3 AVRIL 1972
-LUNDI 10 AVRIL 1972
-LUNDI 17 AVRIL 1972
-LUNDI 24 AVRIL 1972
-LUNDI 31 AVRIL 1972
-TERMINE EN LIGNE 016
-#+END_SRC
-
-* TODO 00019 pg37,pg46,pg47,pg76 affichage des matrices                 :cli:
-pg37:
-
-Obtenu:
-
-#+BEGIN_SRC(lse)
-EXECUTER A PARTIR DE 1
-1 2 1 2 1 2 1 2 1 2 1 2
-
-1  2  1  2  
-1  2  1  2  
-1  2  1  2  -----
-5 
-1  2  1  2  
-1  2  1  2  
-1  2  1  2  -----
-5 
-1  2  1  2  
-1  2  1  2  
-1  2  1  2  LUNDI-----
-5 LUNDI
-1  2  1  2  
-1  2  1  2  
-1  2  1  2  
-TERMINE EN LIGNE 009
-#+END_SRC
-
-Attendu:
-
-#+BEGIN_SRC(lse)
-EXECUTER A PARTIR DE 1
-1 2 1 2 1 2 1 2 1 2 1 2
-
-1  2  1  2  
-1  2  1  2  
-1  2  1  2  
------
-5 
-1  2  1  2  
-1  2  1  2  
-1  2  1  2  
------
-5 
-1  2  1  2  
-1  2  1  2  
-1  2  1  2  
-LUNDI-----
-5 LUNDI
-1  2  1  2  
-1  2  1  2  
-1  2  1  2  
-
-TERMINE EN LIGNE 009
-#+END_SRC
-
-* TODO 00041 cca(0)                                                     :cli:
-cca(0) -> '0.0e0' au lieu de '0'
-afficher[f2.0]3 --> ' 3.' au lieu de ' 3'
-
 * TODO 00012 AP 1: Parsing errors in commands fail catastrophically.    :cli:
 
 Parsing errors in command argument fails catastrophically.
@@ -814,6 +602,242 @@ Annoncé: Mitra-15: procédures externes rangées sur disque &init(t,l,c,i) &lir
 LIRE LSE 1979
 
 UTILISATION DISQUE A PARTIR DE [nofic[,(P|D|T)]]
+
+* DONE 00041 cca(0)                                                     :cli:
+  CLOSED: [2015-04-03 Fri 10:39]
+  - State "DONE"       from "TODO"       [2015-04-03 Fri 10:39] \\
+    Corrected.
+cca(0) -> '0.0e0' au lieu de '0'
+afficher[f2.0]3 --> ' 3.' au lieu de ' 3'
+
+* DONE 00020 pg42,pg75,pg75b affichage format                           :cli:
+  CLOSED: [2015-04-03 Fri 09:17]
+  - State "DONE"       from "TODO"       [2015-04-03 Fri 09:17] \\
+    Note: We don't get the space between 'AVRIL' and '1972' 
+    in:
+
+        AFFICHER[/,U,'1972',/]'AVRIL'
+
+    but I think this is how it should be.  
+    See for example, PG37, which displays LUNDI----- for: 
+
+        CHAINE C;C_'LUNDI';AFFICHER C;AFFICHER[5'-',/]
+
+pg42
+
+F2.0 --> ne doit pas afficher le point.
+U string -> ne doit afficher un espace suffixe.
+U vecteur --> doit afficher sur la meme ligne (pg59b)
+
+Obtenu:
+
+#+BEGIN_SRC(lse)
+APPELER pg42
+EXECUTER A PARTIR DE 1
+
+LUNDI  3 AVRIL1972
+LUNDI 10 AVRIL1972
+LUNDI 17 AVRIL1972
+LUNDI 24 AVRIL1972
+TERMINE EN LIGNE 016
+#+END_SRC
+
+Attendu:
+
+#+BEGIN_SRC(lse)
+APPELER pg42
+EXECUTER A PARTIR DE 1
+
+LUNDI  3 AVRIL 1972
+LUNDI 10 AVRIL 1972
+LUNDI 17 AVRIL 1972
+LUNDI 24 AVRIL 1972
+TERMINE EN LIGNE 016
+#+END_SRC
+
+* DONE 00022 pg44 affichage format                                      :cli:
+  CLOSED: [2015-04-03 Fri 09:19]
+  - State "DONE"       from "TODO"       [2015-04-03 Fri 09:19] \\
+    Corrected.
+cf. page 91.
+Obtenu:
+#+BEGIN_SRC(lse)
+APPELER pg44
+EXECUTER A PARTIR DE 1
+1 2 3 4 5 6 7 8 9 10 11 12
+1 2 3 =====1 2 3 =====
+1 2 3 =====
+  1   2   3 =====
+LA SOMME DES 2 PREMIERS NOMBRES EST : 3 =====
+LA SOMME DES 2 PREMIERS NOMBRES EST3 =====
+LA SOMME DES 2 PREMIERS NOMBRES EST 3 =====
+1    50 
+LUNDI
+1  2  3  4  
+5  6  7  8  
+9  10  11  12  =====
+1    50 
+LUNDI
+1  2  3  4  
+5  6  7  8  
+9  10  11  12  =====
+1    50 
+LUNDI
+
+1  2  3  4  
+5  6  7  8  
+9  10  11  12  =====
+   1    LUNDI   
+1  2  3  4  
+5  6  7  8  
+9  10  11  12  =====
+#+END_SRC
+
+* DONE 00032 pg74,pg80 afficher[*'I']N                                  :cli:
+  CLOSED: [2015-04-03 Fri 09:27]
+  - State "DONE"       from "TODO"       [2015-04-03 Fri 09:27] \\
+    Corrected.
+
+y_33;afficher[*'--']y
+
+ERREUR : Unknown type specifier: COM.INFORMATIMAGO.LSE::IDENTIFIER
+
+#+BEGIN_SRC(lse)
+AFFICHER[/,*'I---','I',/]4
+I---I---I---I---I
+
+N_5;AFFICHER[/,*'I---','I',/]N
+ERROR: Unknown type specifier: IDENTIFIER
+--------------------------------------------------------------------------------
+(BACKTRACE-AS-LIST :CONTEXT NIL :PROCESS NIL :ORIGIN NIL :COUNT 1152921504606846975 :START-FRAME-NUMBER 0 :PRINT-LEVEL 2 :PRINT-LENGTH 5 :SHOW-INTERNAL-FRAMES NIL)
+(FUNCALL (:INTERNAL REPORT COMMAND-REPL) #<SIMPLE-ERROR #x302004722EFD>)
+(FUNCALL (:INTERNAL DEBUG-ERROR COMMAND-REPL) #<SIMPLE-ERROR #x302004722EFD>)
+(SIGNAL #<SIMPLE-ERROR #x302004722EFD>)
+(%ERROR #<SIMPLE-ERROR #x302004722EFD> NIL 77142635)
+(RUN-STEP #<LSE-VM 1 global variable, 0 local frames, 1 line, current line 0 #x3020045B07CD>)
+(FUNCALL #<STANDARD-METHOD VM-RUN (LSE-VM)> #<LSE-VM 1 global variable, 0 local frames, 1 line, current line 0 #x3020045B07CD>)
+(LSE-COMPILE-AND-EXECUTE #<TASK #x3020045B08AD> "N_4;AFFICHER[/,*'I---','I',/]N")
+(COMMAND-EVAL-LINE #<TASK #x3020045B08AD> "N_4;AFFICHER[/,*'I---','I',/]N")
+(FUNCALL (:INTERNAL DO-IT COMMAND-REPL))
+(COMMAND-REPL #<TASK #x3020045B08AD>)
+(MAIN NIL)
+(CALL-CHECK-REGS COM.INFORMATIMAGO.LSE.CLI:MAIN)
+(CHEAP-EVAL (COM.INFORMATIMAGO.LSE.CLI:MAIN))
+(EVAL-REGION "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+")
+(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
+(TRACK-PACKAGE #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B0F9F>)
+(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
+(CALL-WITH-RETRY-RESTART "Retry SLIME REPL evaluation request." #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B102F>)
+(FUNCALL (:INTERNAL SWANK::REPL-EVAL))
+(FUNCALL #<Anonymous Function #x30200182569F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B106F>)
+(CALL-WITH-SYNTAX-HOOKS #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B106F>)
+(CALL-WITH-BUFFER-SYNTAX NIL #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B106F>)
+(REPL-EVAL "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+")
+(LISTENER-EVAL
+  "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+"
+  :WINDOW-WIDTH
+  NIL)
+(CALL-CHECK-REGS
+  SWANK:LISTENER-EVAL
+  "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+")
+(CHEAP-EVAL (SWANK:LISTENER-EVAL
+  "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+"))
+(EVAL-FOR-EMACS
+  (SWANK:LISTENER-EVAL
+  "(in-package :com.informatimago.lse) 
+(com.informatimago.lse.cli:main)
+")
+  "COM.INFORMATIMAGO.LSE"
+  126)
+(PROCESS-REQUESTS NIL)
+(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
+(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
+(FUNCALL SWANK-BACKEND:CALL-WITH-DEBUGGER-HOOK #<Compiled-function SWANK:SWANK-DEBUGGER-HOOK #x3020019AB05F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71EDF>)
+(CALL-WITH-DEBUGGER-HOOK #<Compiled-function SWANK:SWANK-DEBUGGER-HOOK #x3020019AB05F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71EDF>)
+(FUNCALL (:INTERNAL SWANK::HANDLE-REQUESTS))
+(CALL-WITH-BINDINGS
+  ((*STANDARD-OUTPUT* . #) (*STANDARD-INPUT* . #) (*TRACE-OUTPUT* . #) (*ERROR-OUTPUT* . #) (*DEBUG-IO* . #<TWO-WAY-STREAM input #, output # #x302001B68EBD>) ...)
+  #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::HANDLE-REQUESTS) #x302001B71E8F>)
+(HANDLE-REQUESTS #<MULTITHREADED-CONNECTION #x302001A1CBED> NIL)
+(REPL-LOOP #<MULTITHREADED-CONNECTION #x302001A1CBED>)
+(FUNCALL (:INTERNAL SWANK::SPAWN-REPL-THREAD))
+(CALL-WITH-BINDINGS
+  ((*PRINT-PRETTY*) (*PRINT-LEVEL*) (*PRINT-LENGTH*) (*PRINT-CIRCLE* . T) (*PRINT-CASE* . :DOWNCASE) ...)
+  #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::SPAWN-REPL-THREAD) #x302001B7222F>)
+(FUNCALL (:INTERNAL SWANK::SPAWN-REPL-THREAD))
+(RUN-PROCESS-INITIAL-FORM #<PROCESS repl-thread(14) [Active] #x302001B6015D> (#<CCL:COMPILED-LEXICAL-CLOSURE # #x302001B5FEEF>))
+(FUNCALL (:INTERNAL (CCL::%PROCESS-PRESET-INTERNAL (CCL:PROCESS))) #<PROCESS repl-thread(14) [Active] #x302001B6015D> (#<CCL:COMPILED-LEXICAL-CLOSURE # #x302001B5FEEF>))
+(FUNCALL (:INTERNAL CCL::THREAD-MAKE-STARTUP-FUNCTION))
+--------------------------------------------------------------------------------
+#+END_SRC
+
+* DONE 00019 pg37,pg46,pg47,pg76 affichage des matrices                 :cli:
+  CLOSED: [2015-04-03 Fri 09:42]
+  - State "DONE"       from "TODO"       [2015-04-03 Fri 09:42] \\
+    Corrected.
+pg37:
+
+Obtenu:
+
+#+BEGIN_SRC(lse)
+EXECUTER A PARTIR DE 1
+1 2 1 2 1 2 1 2 1 2 1 2
+
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  -----
+5 
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  -----
+5 
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  LUNDI-----
+5 LUNDI
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  
+TERMINE EN LIGNE 009
+#+END_SRC
+
+Attendu:
+
+#+BEGIN_SRC(lse)
+EXECUTER A PARTIR DE 1
+1 2 1 2 1 2 1 2 1 2 1 2
+
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  
+-----
+5 
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  
+-----
+5 
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  
+LUNDI-----
+5 LUNDI
+1  2  1  2  
+1  2  1  2  
+1  2  1  2  
+
+TERMINE EN LIGNE 009
+#+END_SRC
 
 * DONE 00025 pg54,pg77 retour en 10                                     :cli:
   CLOSED: [2014-07-06 Sun 23:55]

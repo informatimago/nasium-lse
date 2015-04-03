@@ -660,14 +660,8 @@ code ASCII est CO."
 Résultat: une chaîne de caractère contenant la représentation du
 nombre A au format U."
   (let* ((ca (deref *vm* ca))
-         (ca (un-nombre ca))
-         (value (abs ca)))
-    (format nil (cond
-                  ((and (<= 1e-3 value) (< value 1e6)) "~A")
-                  (t                                   "~,,2,,,,'EE"))
-            (if (= ca (truncate ca))
-                (truncate ca)
-                ca))))
+         (ca (un-nombre ca)))
+    (format nil "~/COM.INFORMATIMAGO.LSE::FMT-U/" ca)))
 
 
 (defun set-va (va value)

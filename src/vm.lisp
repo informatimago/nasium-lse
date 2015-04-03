@@ -440,7 +440,7 @@ RETURN: vm
   (io-carriage-return *task*))
 
 (defun afficher-space   (vm rep)
-  (check-type rep (or (integer 1) nombre identifier named-slot))
+  (check-type rep (or (integer 1) nombre named-slot))
   (let ((rep (round (deref vm rep))))
     (when (plusp rep)
       (io-format *task* "~VA" rep ""))))
@@ -449,7 +449,7 @@ RETURN: vm
   (io-new-line *task* (deref vm rep)))
 
 (defun afficher-chaine (vm rep val)
-  (check-type rep (or (integer 1) nombre identifier named-slot))
+  (check-type rep (or (integer 1) nombre named-slot))
   (check-type val chaine)
   (io-format *task* "~A" 
              (with-output-to-string (out)
@@ -473,19 +473,18 @@ RETURN: vm
        :for i :below (length value)
        :initially (afficher-newline vm 1)
        :do (if (functionp ctrl)
-               (progn (funcall ctrl vm (aref value i))
-                      (io-format *task* " "))
-               (io-format *task* "~? " ctrl (list (aref value i))))))
+               (funcall ctrl vm (aref value i))
+               (io-format *task* ctrl (aref value i)))))
     (array
      (loop
        :for i :below (array-dimension value 0)
+       :initially (afficher-newline vm 1)
        :do (loop
              :for j :below (array-dimension value 1)
-             :initially (afficher-newline vm 1)
              :do  (if (functionp ctrl)
-                      (progn (funcall ctrl vm (aref value i j))
-                             (io-format *task* " "))
-                      (io-format *task* "~? " ctrl (list (aref value i j)))))))))
+                      (funcall ctrl vm (aref value i j))
+                      (io-format *task* ctrl (aref value i j)))
+             :finally (afficher-newline vm 1))))))
 
 
 (defun afficher-e (vm val e d)
@@ -495,27 +494,56 @@ RETURN: vm
     (afficher-with-format vm ctrl val)))
 
 
+(defun fmt-f (stream value colon atsign &optional (width 0) (decimals 0))
+  "
+    F2.0 -> ~2,0/fmt-f/
+    F3.2 -> ~5,2/fmt-f/
+"
+  (declare (ignore colon atsign))
+  (if (zerop decimals)
+      (format stream "~VD" width (round value))
+      (format stream "~V,VF" width decimals value))
+  (values))
+
+
 (defun afficher-f (vm val e d)
   (let* ((val (deref vm val))
-         (w (+ e 1 d))
-         (ctrl (format nil "~~~A,~AF" w d)))
+         (w (+ e (if (plusp d) 1 0) d))
+         (ctrl (with-standard-io-syntax
+                 (let ((*package* (load-time-value (find-package :keyword))))
+                   (format nil "~~~A,~A/~S/" w d 'fmt-f)))))
     (afficher-with-format vm ctrl val)))
+
+
+(defun fmt-u (stream value colon atsign)
+  "
+    U -> ~/fmt-u/
+"
+  (declare (ignore colon atsign))
+  (etypecase value
+    ((or integer nombre)
+     (let ((mag (abs value)))
+       (format stream (if (or (zerop mag)
+                              (and (<= 1e-3 (abs mag)) (< (abs mag) 1e6)))
+                          "~A"          
+                          "~,,2,,,,'EE")
+               ;; convert to integer when there's no significant decimal digit:
+               (let ((tvalue (truncate value)))
+                 (if (= tvalue value)
+                     tvalue
+                     value)))))
+    (string
+     (format stream "~A" value)))
+  (values))
 
 
 (defun afficher-u (vm value)
   (let ((value (deref vm value)))
     (etypecase value
       ((or integer nombre)
-       (io-format *task* (if (or (zerop value)
-                                 (and (<= 1e-3 (abs value)) (< (abs value) 1e6)))
-                             "~A "          
-                             "~,,2,,,,'EE ")
-                  (let ((tvalue (truncate value)))
-                    (if (= tvalue value)
-                        tvalue
-                        value))))
+       (io-format *task* "~/COM.INFORMATIMAGO.LSE::FMT-U/ " value))
       (chaine
-       (io-format *task*  "~A" value))
+       (io-format *task* "~A" value))
       ((or vector array)
        (afficher-with-format vm (function afficher-u) value)))))
 
@@ -1570,7 +1598,6 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
             (signal condition)))
       
       t)))
-
 
 
 

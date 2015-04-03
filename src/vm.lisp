@@ -1585,8 +1585,6 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
       t)))
 
 
-;; (setf *debug-vm* t)
-
 
 
 #||

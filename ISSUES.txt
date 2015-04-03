@@ -10,8 +10,15 @@ ERREUR EN LIGNE 201 : /Users/pjb/src/pjb/lse-progr/inrdp/pg55.lse:201:24:
   CLOSED: [2015-04-03 Fri 09:17]
   - State "DONE"       from "TODO"       [2015-04-03 Fri 09:17] \\
     Note: We don't get the space between 'AVRIL' and '1972' 
-    in AFFICHER[U,'1972']'AVRIL', but I think this is how it 
-    should be.
+    in:
+
+        AFFICHER[/,U,'1972',/]'AVRIL'
+
+    but I think this is how it should be.  
+    See for example, PG37, which displays LUNDI----- for: 
+
+        CHAINE C;C_'LUNDI';AFFICHER C;AFFICHER[5'-',/]
+
 pg42
 
 F2.0 --> ne doit pas afficher le point.
@@ -170,7 +177,10 @@ ERROR: Unknown type specifier: IDENTIFIER
 --------------------------------------------------------------------------------
 #+END_SRC
 
-* TODO 00019 pg37,pg46,pg47,pg76 affichage des matrices                 :cli:
+* DONE 00019 pg37,pg46,pg47,pg76 affichage des matrices                 :cli:
+  CLOSED: [2015-04-03 Fri 09:42]
+  - State "DONE"       from "TODO"       [2015-04-03 Fri 09:42] \\
+    Corrected.
 pg37:
 
 Obtenu:

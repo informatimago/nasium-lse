@@ -1215,12 +1215,12 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
        ;; known at compilation time.
        
        ;; The format specifiers and the expressions are processed in
-       ;; parallel, threfore the following program:
+       ;; parallel, therefore the following program:
        ;;
-       ;; 10 AFFICHER['(',U,')']&P(42)
+       ;; 10 AFFICHER['(',F0.0,')']&P(42)
        ;; 11 TERMINER
        ;; 100 PROCEDURE &P(X)
-       ;; 101 AFFICHER['[',U,']']X
+       ;; 101 AFFICHER['[',F0.0,']']X
        ;; 102 RESULTAT X
        ;;
        ;; should print:

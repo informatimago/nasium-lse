@@ -515,18 +515,33 @@ RETURN: vm
     (afficher-with-format vm ctrl val)))
 
 
+(defun fmt-u (stream value colon atsign)
+  "
+    U -> ~/fmt-u/
+"
+  (declare (ignore colon atsign))
+  (etypecase value
+    ((or integer nombre)
+     (let ((mag (abs value)))
+       (format stream (if (or (zerop mag)
+                              (and (<= 1e-3 (abs mag)) (< (abs mag) 1e6)))
+                          "~A"          
+                          "~,,2,,,,'EE")
+               ;; convert to integer when there's no significant decimal digit:
+               (let ((tvalue (truncate value)))
+                 (if (= tvalue value)
+                     tvalue
+                     value)))))
+    (string
+     (format stream "~A" value)))
+  (values))
+
+
 (defun afficher-u (vm value)
   (let ((value (deref vm value)))
     (etypecase value
       ((or integer nombre)
-       (io-format *task* (if (or (zerop value)
-                                 (and (<= 1e-3 (abs value)) (< (abs value) 1e6)))
-                             "~A "          
-                             "~,,2,,,,'EE ")
-                  (let ((tvalue (truncate value)))
-                    (if (= tvalue value)
-                        tvalue
-                        value))))
+       (io-format *task* "~/COM.INFORMATIMAGO.LSE::FMT-U/ " value))
       (chaine
        (io-format *task* "~A" value))
       ((or vector array)

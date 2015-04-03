@@ -60,8 +60,9 @@
   cl-ppcre::*standard-optimize-settings*
   "Don't fuck with me!")
 
-;;; --------------------------------------------------
 
+
+;;; --------------------------------------------------
 
 
 (defun quick-reload (&rest systems)
@@ -85,6 +86,13 @@
 (quicklisp-client:register-local-projects)
 
 
+;;; --------------------------------------------------
+
+(ql:quickload '("iolib-grovel" "cffi-grovel"))
+(unless (find "/usr/local/include/" iolib-grovel::*cc-flags* :test (function string=))
+  (setf iolib-grovel::*cc-flags* (append iolib-grovel::*cc-flags* (list "-I" "/usr/local/include/"))))
+(unless (find "/usr/local/include/" cffi-grovel::*cc-flags* :test (function string=))
+  (setf cffi-grovel::*cc-flags*  (append cffi-grovel::*cc-flags*  (list "-I" "/usr/local/include/"))))
 
 ;; (defun delete-package-and-users (package)
 ;;   (mapc 'delete-package-and-users  (package-used-by-list package))

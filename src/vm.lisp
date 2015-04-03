@@ -681,36 +681,78 @@ NOTE: on ne peut pas liberer un parametre par reference.
 
 
 
+
+(defun type-label (type)
+  (case (if (listp type) (first type) type)
+    (:undefined "INDEFINIE")
+    (procedure "UNE PROCEDURE")
+    (nombre "UN NOMBRE")
+    (chaine "UNE CHAINE")
+    (vecteur (format nil "UN TABLEAU A UNE DIMENSION~@[ [~D]~]"
+                     (when (listp type)
+                       (second type))))
+    (tableau (format nil "UN TABLEAU A DEUX DIMENSIONS~@[ [~D,~D]~]"
+                     (when (listp type)
+                       (second type))
+                     (when (listp type)
+                       (third type))))
+    (otherwise nil)))
+
+
+(defun base-type (type)
+  (if (listp type)
+      (first type)
+      type))
+
+
+(defun check-access (type ident var &optional i j)
+  (unless var
+    (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))
+  (let ((rtype (base-type type))
+        (vtype (base-type (variable-type var))))
+    (unless (eql rtype vtype)
+      (lse-error "LA VARIABLE ~A N'EST PAS ~A~@[ MAIS ~A~]"
+                 ident (type-label type) (type-label (variable-type var))))
+    (case rtype
+      (vecteur
+       (let ((maxi (length (variable-value var))))
+         (unless (<= 1 i maxi)
+           (lse-error "INDEX ~D HORS LIMITE POUR LE TABLEAU A UNE DIMENSION ~A[~D]"
+                      i ident maxi))))
+      (tableau
+       (let ((maxi (array-dimension (variable-value var) 0))
+             (maxj (array-dimension (variable-value var) 1)))
+         (unless (<= 1 i maxi)
+           (lse-error "PREMIER INDEX ~D HORS LIMITE POUR LE TABLEAU A DEUX DIMENSIONS ~A[~D,~D]"
+                      i ident maxi maxj))
+         (unless (<= 1 j maxj)
+           (lse-error "DEUXIEME INDEX ~D HORS LIMITE POUR LE TABLEAU A DEUX DIMENSION ~A[~D,~D]"
+                      j ident maxi maxj))))))
+  (values))
+
+
 (defun POP&ASTORE1 (vm val index ident)
   (check-type ident identificateur)
   (let ((val (deref vm val)))
-   (check-type val (or integer nombre))
-   (let ((index (round (deref vm index)))
-         (var (find-variable vm ident)))
-     (check-type index (or integer nombre))
-     (if var
-         (if (and (consp (variable-type var))
-                  (eql (first (variable-type var)) 'vecteur))
-             (setf (aref (variable-value var) (1- index)) (un-nombre val))
-             (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 1))
-         (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident)))))
+    (check-type val (or integer nombre))
+    (let ((index (round (deref vm index)))
+          (var (find-variable vm ident)))
+      (check-type index (or integer nombre))
+      (check-access 'vecteur ident var index)
+      (setf (aref (variable-value var) (1- index)) (un-nombre val)))))
 
 
 (defun POP&ASTORE2 (vm val index1 index2 ident)
   (check-type ident identificateur)
   (let ((val (deref vm val)))
-   (check-type val (or integer nombre))
+    (check-type val (or integer nombre))
     (let ((index1 (round (deref vm index1)))
           (index2 (round (deref vm index2)))
           (var (find-variable vm ident)))
       (check-type index1 (or integer nombre))
       (check-type index2 (or integer nombre))
-      (if var
-          (if (and (consp (variable-type var))
-                   (eql (first (variable-type var)) 'tableau))
-              (setf (aref (variable-value var) (1- index1) (1- index2)) (un-nombre val))
-              (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 2))
-          (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident)))))
+      (check-access 'tableau ident var index1 index2)
+      (setf (aref (variable-value var) (1- index1) (1- index2)) (un-nombre val)))))
 
 
 
@@ -749,15 +791,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
   (let ((index (round (deref vm index)))
         (var (find-variable vm ident)))
     (check-type index (or integer nombre))
-    (if var
-        (if (and (consp (variable-type var))
-                 (eql (first (variable-type var)) 'vecteur))
-            (if (<= 1 index (array-dimension (variable-value var) 0))
-                (let ((val (io-read-number *task*)))
-                  (setf (aref (variable-value var) (1- index)) (un-nombre val)))
-                (lse-error "DEPASSEMENT DES BORNES ~A[~A] EST INVALIDE" ident index))
-            (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 1))
-        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+    (check-access 'vecteur ident var index)
+    (let ((val (io-read-number *task*)))
+      (setf (aref (variable-value var) (1- index)) (un-nombre val)))))
 
 
 (defun lire&astore2 (vm index1 index2 ident)
@@ -767,16 +803,9 @@ NOTE: on ne peut pas liberer un parametre par reference.
         (var (find-variable vm ident)))
     (check-type index1 (or integer nombre))
     (check-type index2 (or integer nombre))
-    (if var
-        (if (and (consp (variable-type var))
-                 (eql (first (variable-type var)) 'tableau))
-            (if (and (<= 1 index1 (array-dimension (variable-value var) 0))
-                     (<= 1 index2 (array-dimension (variable-value var) 1)))
-                (let ((val (io-read-number *task*)))
-                  (setf (aref (variable-value var) (1- index1) (1- index2)) (un-nombre val)))
-                (lse-error "DEPASSEMENT DES BORNES ~A[~A,~A] EST INVALIDE" ident index1 index2))
-            (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 2))
-        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+    (check-access 'tableau ident var index1 index2)
+    (let ((val (io-read-number *task*)))
+      (setf (aref (variable-value var) (1- index1) (1- index2)) (un-nombre val)))))
 
 
 
@@ -785,14 +814,8 @@ NOTE: on ne peut pas liberer un parametre par reference.
   (let ((index (round (deref vm index)))
         (var (find-variable vm ident)))
     (check-type index (or integer nombre))
-    (if var
-        (if (and (consp (variable-type var))
-                 (eql (first (variable-type var)) 'vecteur))
-            (if (<= 1 index (array-dimension (variable-value var) 0))
-                (stack-push (aref (variable-value var) (1- index)) (vm-stack vm))
-                (lse-error "DEPASSEMENT DES BORNES ~A[~A] EST INVALIDE" ident index))
-            (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 1))
-        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+    (check-access 'vecteur ident var index)
+    (stack-push (aref (variable-value var) (1- index)) (vm-stack vm))))
 
 
 (defun AREF2&PUSH-VAL (vm index1 index2 ident)
@@ -802,15 +825,8 @@ NOTE: on ne peut pas liberer un parametre par reference.
         (var (find-variable vm ident)))
     (check-type index1 (or integer nombre))
     (check-type index2 (or integer nombre))
-    (if var
-        (if (and (consp (variable-type var))
-                 (eql (first (variable-type var)) 'tableau))
-            (if (and (<= 1 index1 (array-dimension (variable-value var) 0))
-                     (<= 1 index2 (array-dimension (variable-value var) 1)))
-                (stack-push (aref (variable-value var) (1- index1) (1- index2)) (vm-stack vm))
-                (lse-error "DEPASSEMENT DES BORNES ~A[~A,~A] EST INVALIDE" ident index1 index2))
-            (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 2))
-        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+    (check-access 'tableau ident var index1 index2)
+    (stack-push (aref (variable-value var) (1- index1) (1- index2)) (vm-stack vm))))
 
 
 (defun AREF1&PUSH-REF (vm index ident)
@@ -818,18 +834,12 @@ NOTE: on ne peut pas liberer un parametre par reference.
   (let ((index (round (deref vm index)))
         (var (find-variable vm ident)))
     (check-type index (or integer nombre))
-    (if var
-        (if (and (consp (variable-type var))
-                 (eql (first (variable-type var)) 'vecteur))
-            (if (<= 1 index (array-dimension (variable-value var) 0))
-                (stack-push (make-instance 'vecteur-ref
-                          :name ident
-                          :vecteur (variable-value var)
-                          :index index)
-                      (vm-stack vm))
-                (lse-error "DEPASSEMENT DES BORNES ~A[~A] EST INVALIDE" ident index))
-            (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 1))
-        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+    (check-access 'vecteur ident var index)
+    (stack-push (make-instance 'vecteur-ref
+                               :name ident
+                               :vecteur (variable-value var)
+                               :index index)
+                (vm-stack vm))))
 
 
 (defun AREF2&PUSH-REF (vm index1 index2 ident)
@@ -839,20 +849,13 @@ NOTE: on ne peut pas liberer un parametre par reference.
         (var (find-variable vm ident)))
     (check-type index1 (or integer nombre))
     (check-type index2 (or integer nombre))
-    (if var
-        (if (and (consp (variable-type var))
-                 (eql (first (variable-type var)) 'tableau))
-            (if (and (<= 1 index1 (array-dimension (variable-value var) 0))
-                     (<= 1 index2 (array-dimension (variable-value var) 1)))
-                (stack-push (make-instance 'tableau-ref
-                                           :name ident
-                                           :tableau (variable-value var)
-                                           :index1 index1
-                                           :index2 index2)
-                            (vm-stack vm))
-                (lse-error "DEPASSEMENT DES BORNES ~A[~A,~A] EST INVALIDE" ident index1 index2))
-            (lse-error "LA VARIABLE ~A ~S N'EST PAS UN TABLEAU DE RANG ~D" ident var 2))
-        (lse-error "LA VARIABLE ~A N'EXISTE PAS" ident))))
+    (check-access 'tableau ident var index1 index2)
+    (stack-push (make-instance 'tableau-ref
+                               :name ident
+                               :tableau (variable-value var)
+                               :index1 index1
+                               :index2 index2)
+                (vm-stack vm))))
 
 
 (defun balways (vm offset)
@@ -1235,21 +1238,22 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                                                                    (copy-array argument)
                                                                    argument)))))
                         (:par-reference
-                         (let ((reference (typecase argument
-                                            (identificateur
-                                             (let ((var (find-variable vm argument)))
-                                               (if var
-                                                   var
-                                                   (add-global-variable vm
-                                                                        (make-instance 'lse-variable
-                                                                                       :name argument
-                                                                                       :type 'nombre)))))
-                                            ((or lse-variable vecteur-ref tableau-ref)
-                                             argument)
-                                            (otherwise
-                                             (lse-error
-                                              "L'ARGUMENT NO. ~D PASSE PAR REFERENCE AU PARAMETRE ~A DE LA PROCEDURE ~A DOIT ETRE UNE REFERENCE A UNE VARIABLE OU UN TABLEAU."
-                                              n parameter procident)))))
+                         (let ((reference
+                                 (typecase argument
+                                   (identificateur
+                                    (let ((var (find-variable vm argument)))
+                                      (if var
+                                          var
+                                          (add-global-variable vm
+                                                               (make-instance 'lse-variable
+                                                                              :name argument
+                                                                              :type 'nombre)))))
+                                   ((or lse-variable vecteur-ref tableau-ref)
+                                    argument)
+                                   (otherwise
+                                    (lse-error
+                                     "L'ARGUMENT NO. ~D PASSE PAR REFERENCE AU PARAMETRE ~A DE LA PROCEDURE ~A DOIT ETRE UNE REFERENCE A UNE VARIABLE OU UN TABLEAU."
+                                     n parameter procident)))))
                            (add-variable frame
                                          (make-instance 'reference-parameter
                                                         :name parameter

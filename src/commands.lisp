@@ -1779,11 +1779,12 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
          (output (with-output-to-string (*standard-output*)
                    (handler-case
                        (setf results (multiple-value-list
-                                      (eval (let ((*package* (find-package "COM.INFORMATIMAGO.LSE"))
+                                      (eval (let ((*package* (load-time-value
+                                                              (find-package "COM.INFORMATIMAGO.LSE")))
                                                   (*print-right-margin* 80))
                                               (read-from-string ligne)))))
                      (error (err)
-                       (format t "~%ERROR: ~A~%" err)
+                       (format t "~%ERREUR: ~A~%" err)
                        (setf results nil))))))
     (io-format *task* "~%~A~%~@[=> ~{~S~%~^   ~}~]" output results)))
 

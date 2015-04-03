@@ -68,14 +68,6 @@ Calling COM.INFORMATIMAGO.LSE:TERMINAL-FINALIZE on a COM.INFORMATIMAGO.LSE.UNIX-
 * TODO 00016 invalid option -> silent exit                              :cli:
 ./lse --mode-modern 
 exits silently instead of reporting an error.
-* TODO 00045 message d'erreur pour tableaux                             :cli:
-
-ERREUR EN LIGNE 100 : Array index 4 out of bounds for #2A((25.531916 12.765958
-38.297874 23.404255) (0.0 0.0 0.0 0.0) (0.0 0.0 0.0 0.0) (0.0 0.0 0.0 0.0) (0.0
-0.0 0.0 0.0) (0.0 0.0 0.0 0.0)) .
-
-Devrait être: indexes (…) hors limite pour tableau: …
-
 * TODO 00044 ligne vide                                                 :cli:
 10 RET          --> supprime la ligne 10
 10 SPC RET      --> insère la ligne 10 comme ligne vide.
@@ -606,6 +598,17 @@ Annoncé: Mitra-15: procédures externes rangées sur disque &init(t,l,c,i) &lir
 LIRE LSE 1979
 
 UTILISATION DISQUE A PARTIR DE [nofic[,(P|D|T)]]
+
+* DONE 00045 message d'erreur pour tableaux                             :cli:
+  CLOSED: [2015-04-03 Fri 13:19]
+  - State "DONE"       from "TODO"       [2015-04-03 Fri 13:19] \\
+    fixed.
+
+ERREUR EN LIGNE 100 : Array index 4 out of bounds for #2A((25.531916 12.765958
+38.297874 23.404255) (0.0 0.0 0.0 0.0) (0.0 0.0 0.0 0.0) (0.0 0.0 0.0 0.0) (0.0
+0.0 0.0 0.0) (0.0 0.0 0.0 0.0)) .
+
+Devrait être: indexes (…) hors limite pour tableau: …
 
 * DONE 00041 cca(0)                                                     :cli:
   CLOSED: [2015-04-03 Fri 10:39]

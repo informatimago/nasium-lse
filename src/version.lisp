@@ -105,7 +105,8 @@ DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLv3.
 (defun shell-command-to-string (command)
   "Execute the COMMAND with asdf:run-shell-command and returns its
 stdout in a string (going thru a file)."
-  (let ((path (format nil "out-~36,8,'0R.txt" (random (expt 2 32)))))
+  (let ((path (namestring (merge-pathnames (format nil "out-~36,8,'0R.txt" (random (expt 2 32)))
+                                           (user-homedir-pathname)))))
     (unwind-protect
          (when (zerop (asdf:run-shell-command (format nil "~A > ~S" command path)))
            (with-output-to-string (out)

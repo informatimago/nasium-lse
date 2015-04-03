@@ -488,6 +488,7 @@ RETURN: vm
                       (io-format *task* "~? " ctrl (list (aref value i j)))))))))
 
 
+
 (defun afficher-e (vm val e d)
   (let* ((val (deref vm val))
          (w (+ e 1 d 4))
@@ -495,10 +496,24 @@ RETURN: vm
     (afficher-with-format vm ctrl val)))
 
 
+(defun fmt-f (stream value colon atsign &optional (width 0) (decimals 0))
+  "
+    F2.0 -> ~2,0/fmt-f/
+    F3.2 -> ~5,2/fmt-f/
+"
+  (declare (ignore colon atsign))
+  (if (zerop decimals)
+      (format stream "~VD" width (round value))
+      (format stream "~V,VF" width decimals value))
+  (values))
+
+
 (defun afficher-f (vm val e d)
   (let* ((val (deref vm val))
          (w (+ e 1 d))
-         (ctrl (format nil "~~~A,~AF" w d)))
+         (ctrl (with-standard-io-syntax
+                 (let ((*package* (load-time-value (find-package :keyword))))
+                   (format nil "~~~A,~A/~S/" w d 'fmt-f)))))
     (afficher-with-format vm ctrl val)))
 
 

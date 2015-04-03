@@ -440,7 +440,7 @@ RETURN: vm
   (io-carriage-return *task*))
 
 (defun afficher-space   (vm rep)
-  (check-type rep (or (integer 1) nombre identifier named-slot))
+  (check-type rep (or (integer 1) nombre named-slot))
   (let ((rep (round (deref vm rep))))
     (when (plusp rep)
       (io-format *task* "~VA" rep ""))))
@@ -449,7 +449,7 @@ RETURN: vm
   (io-new-line *task* (deref vm rep)))
 
 (defun afficher-chaine (vm rep val)
-  (check-type rep (or (integer 1) nombre identifier named-slot))
+  (check-type rep (or (integer 1) nombre named-slot))
   (check-type val chaine)
   (io-format *task* "~A" 
              (with-output-to-string (out)
@@ -473,20 +473,18 @@ RETURN: vm
        :for i :below (length value)
        :initially (afficher-newline vm 1)
        :do (if (functionp ctrl)
-               (progn (funcall ctrl vm (aref value i))
-                      (io-format *task* " "))
-               (io-format *task* "~? " ctrl (list (aref value i))))))
+               (funcall ctrl vm (aref value i))
+               (io-format *task* ctrl (aref value i)))))
     (array
      (loop
        :for i :below (array-dimension value 0)
+       :initially (afficher-newline vm 1)
        :do (loop
              :for j :below (array-dimension value 1)
-             :initially (afficher-newline vm 1)
              :do  (if (functionp ctrl)
-                      (progn (funcall ctrl vm (aref value i j))
-                             (io-format *task* " "))
-                      (io-format *task* "~? " ctrl (list (aref value i j)))))))))
-
+                      (funcall ctrl vm (aref value i j))
+                      (io-format *task* ctrl (aref value i j)))
+             :finally (afficher-newline vm 1))))))
 
 
 (defun afficher-e (vm val e d)
@@ -510,7 +508,7 @@ RETURN: vm
 
 (defun afficher-f (vm val e d)
   (let* ((val (deref vm val))
-         (w (+ e 1 d))
+         (w (+ e (if (plusp d) 1 0) d))
          (ctrl (with-standard-io-syntax
                  (let ((*package* (load-time-value (find-package :keyword))))
                    (format nil "~~~A,~A/~S/" w d 'fmt-f)))))
@@ -530,7 +528,7 @@ RETURN: vm
                         tvalue
                         value))))
       (chaine
-       (io-format *task*  "~A" value))
+       (io-format *task* "~A" value))
       ((or vector array)
        (afficher-with-format vm (function afficher-u) value)))))
 
@@ -1587,6 +1585,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
       t)))
 
 
+;; (setf *debug-vm* t)
 
 
 

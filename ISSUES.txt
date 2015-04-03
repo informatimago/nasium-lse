@@ -6,40 +6,86 @@ ERREUR EN LIGNE 201 : /Users/pjb/src/pjb/lse-progr/inrdp/pg55.lse:201:24:
     201 PROCEDURE &COURB(&F,N,X,Y,P) LOCAL P,N,YMI,YMA,I
 #+END_SRC
 
-* TODO 00020 pg42,pg75,pg75b affichage format                           :cli:
+* DONE 00020 pg42,pg75,pg75b affichage format                           :cli:
+  CLOSED: [2015-04-03 Fri 09:17]
+  - State "DONE"       from "TODO"       [2015-04-03 Fri 09:17] \\
+    Note: We don't get the space between 'AVRIL' and '1972' 
+    in AFFICHER[U,'1972']'AVRIL', but I think this is how it 
+    should be.
 pg42
 
 F2.0 --> ne doit pas afficher le point.
-U string -> doit afficher un espace suffixe.
+U string -> ne doit afficher un espace suffixe.
 U vecteur --> doit afficher sur la meme ligne (pg59b)
 
 Obtenu:
 
 #+BEGIN_SRC(lse)
+APPELER pg42
 EXECUTER A PARTIR DE 1
 
-LUNDI  3. AVRIL1972
-LUNDI 10. AVRIL1972
-LUNDI 17. AVRIL1972
-LUNDI 24. AVRIL1972
-LUNDI 31. AVRIL1972
+LUNDI  3 AVRIL1972
+LUNDI 10 AVRIL1972
+LUNDI 17 AVRIL1972
+LUNDI 24 AVRIL1972
 TERMINE EN LIGNE 016
 #+END_SRC
 
 Attendu:
 
 #+BEGIN_SRC(lse)
+APPELER pg42
 EXECUTER A PARTIR DE 1
 
 LUNDI  3 AVRIL 1972
 LUNDI 10 AVRIL 1972
 LUNDI 17 AVRIL 1972
 LUNDI 24 AVRIL 1972
-LUNDI 31 AVRIL 1972
 TERMINE EN LIGNE 016
 #+END_SRC
 
-* TODO 00032 pg74,pg80 afficher[*'I']N                                  :cli:
+* DONE 00022 pg44 affichage format                                      :cli:
+  CLOSED: [2015-04-03 Fri 09:19]
+  - State "DONE"       from "TODO"       [2015-04-03 Fri 09:19] \\
+    Corrected.
+cf. page 91.
+Obtenu:
+#+BEGIN_SRC(lse)
+APPELER pg44
+EXECUTER A PARTIR DE 1
+1 2 3 4 5 6 7 8 9 10 11 12
+1 2 3 =====1 2 3 =====
+1 2 3 =====
+  1   2   3 =====
+LA SOMME DES 2 PREMIERS NOMBRES EST : 3 =====
+LA SOMME DES 2 PREMIERS NOMBRES EST3 =====
+LA SOMME DES 2 PREMIERS NOMBRES EST 3 =====
+1    50 
+LUNDI
+1  2  3  4  
+5  6  7  8  
+9  10  11  12  =====
+1    50 
+LUNDI
+1  2  3  4  
+5  6  7  8  
+9  10  11  12  =====
+1    50 
+LUNDI
+
+1  2  3  4  
+5  6  7  8  
+9  10  11  12  =====
+   1    LUNDI   
+1  2  3  4  
+5  6  7  8  
+9  10  11  12  =====
+#+END_SRC
+
+* DONE 00032 pg74,pg80 afficher[*'I']N                                  :cli:
+  CLOSED: [2015-04-03 Fri 09:27]
+  - State "DONE"       from "TODO"       [2015-04-03 Fri 09:27] \\
+    Corrected.
 
 y_33;afficher[*'--']y
 
@@ -122,41 +168,6 @@ ERROR: Unknown type specifier: IDENTIFIER
 (FUNCALL (:INTERNAL (CCL::%PROCESS-PRESET-INTERNAL (CCL:PROCESS))) #<PROCESS repl-thread(14) [Active] #x302001B6015D> (#<CCL:COMPILED-LEXICAL-CLOSURE # #x302001B5FEEF>))
 (FUNCALL (:INTERNAL CCL::THREAD-MAKE-STARTUP-FUNCTION))
 --------------------------------------------------------------------------------
-#+END_SRC
-
-* TODO 00022 pg44 affichage format                                      :cli:
-cf. page 91.
-Obtenu:
-#+BEGIN_SRC(lse)
-APPELER pg44
-EXECUTER A PARTIR DE 1
-1 2 3 4 5 6 7 8 9 10 11 12
-1 2 3 =====1 2 3 =====
-1 2 3 =====
-  1   2   3 =====
-LA SOMME DES 2 PREMIERS NOMBRES EST : 3 =====
-LA SOMME DES 2 PREMIERS NOMBRES EST3 =====
-LA SOMME DES 2 PREMIERS NOMBRES EST 3 =====
-1    50 
-LUNDI
-1  2  3  4  
-5  6  7  8  
-9  10  11  12  =====
-1    50 
-LUNDI
-1  2  3  4  
-5  6  7  8  
-9  10  11  12  =====
-1    50 
-LUNDI
-
-1  2  3  4  
-5  6  7  8  
-9  10  11  12  =====
-   1    LUNDI   
-1  2  3  4  
-5  6  7  8  
-9  10  11  12  =====
 #+END_SRC
 
 * TODO 00019 pg37,pg46,pg47,pg76 affichage des matrices                 :cli:

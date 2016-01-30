@@ -16,12 +16,14 @@
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
+;;;;    2016-01-30 <PJB> Replaced PRINT-OBJECT by SLOTS-FOR-PRINT
+;;;;                     for subclasses of SLOTED-OBJECT.
 ;;;;    2005-08-21 <PJB> Created
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;    
-;;;;    Copyright Pascal Bourguignon 2005 - 2014
+;;;;    Copyright Pascal Bourguignon 2005 - 2016
 ;;;;    
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -394,9 +396,9 @@
   (setf (scanner-current-token self) (make-eol self))
   self)
 
-(defmethod print-object ((self lse-scanner) out)
-  (print-parseable-object (self out :type t :identity t)
-                          line column current-token source buffer previous-token-kind))
+(defmethod slots-for-print :append ((self lse-scanner))
+  (extract-slots self '(buffer previous-token-kind)))
+
 
 ;; (macroexpand '(print-parseable-object (self out :type t :identity t)
 ;;                           (:line          (scanner-line          self))

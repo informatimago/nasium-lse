@@ -34,7 +34,8 @@
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
-
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (setf *readtable* (copy-readtable nil)))
 (in-package "COM.INFORMATIMAGO.LSE")
 
 
@@ -1831,22 +1832,6 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
               (terminal-keysym-label terminal :attention)
               (terminal-keysym-label terminal :return))))
 
-#+debugging
-(defun initialize-debugging-task ()
-  (setf *command-group* awake
-        *task* (make-instance 'task
-                   :state :active
-                   :case-insensitive t
-                   :upcase-output nil
-                   :dectech nil
-                   :unicode nil
-                   :terminal (make-instance 'standard-terminal
-                                 :input-stream  (stream-input-stream  *terminal-io*)
-                                 :output-stream (stream-output-stream *terminal-io*)))))
-
-
-
-
 
 
 
@@ -1883,7 +1868,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
 (defun command-eval-line (task line)
   (let ((*task* task))
     (cond
-      
+
       ((and (= 2 (length line))
             (alpha-char-p (aref line 0))
             (alpha-char-p (aref line 1)))
@@ -1903,7 +1888,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                                            (subseq (command-name command) 0 2)
                                            (command-name command))))
                (command-call command)))))
-      
+
       ((< 0 (length line))
        ;; soit une instruction, soit une ligne de programme...
        (setf (task-pas-a-pas-first *task*) nil)
@@ -1913,6 +1898,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                       (task-state-label (task-state task)))))
 
       ((task-pas-a-pas-first *task*)       
+       ;; pas à pas:
        (continuer))
       
       #|else empty line, just ignore it.|#)))
@@ -1966,20 +1952,21 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
 
            #+debugging
            (report-and-debug-error  (err) (debug-report-error err) (invoke-debugger err)))
-   (handler-case
-       #-debugging (funcall thunk)
-       #+debugging (if *debug-repl* 
-                       (handler-bind ((lse-error     (function report-and-signal-error))
-                                      (scanner-error (function report-and-signal-error))
-                                      (parser-error  (function report-and-signal-error))
-                                      (file-error    (function report-and-signal-error))
-                                      (error         (function report-and-debug-error)))
-                         (funcall thunk))
-                       (funcall thunk))
+    (handler-case
+        #-debugging (funcall thunk)
+        #+debugging (if *debug-repl* 
+                        (handler-bind
+                            ((lse-error     (function report-and-signal-error))
+                             (scanner-error (function report-and-signal-error))
+                             (parser-error  (function report-and-signal-error))
+                             (file-error    (function report-and-signal-error))
+                             (error         (function report-and-debug-error)))
+                          (funcall thunk))
+                        (funcall thunk))
 
-       (lse-scanner-error-invalid-character (err) (invalid-character-error err))
-       (error                               (err) (report-error err))
-       (user-interrupt                      (cnd) (user-interrupt cnd)))))
+        (lse-scanner-error-invalid-character (err) (invalid-character-error err))
+        (error                               (err) (report-error err))
+        (user-interrupt                      (cnd) (user-interrupt cnd)))))
 
 
 (defmacro with-error-reporting (task &body body)

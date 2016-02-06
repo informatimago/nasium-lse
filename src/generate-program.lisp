@@ -31,9 +31,10 @@
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (setf *readtable* (copy-readtable nil)))
 (in-package "COMMON-LISP-USER")
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defvar *original-readtable* *readtable*)
+  (setf *readtable* (copy-readtable nil)))
 
 #+ccl (setf ccl:*default-external-format*           :unix
             ccl:*default-file-character-encoding*   :utf-8
@@ -185,6 +186,8 @@
 #+ccl (dolist (lib ccl::*shared-libraries* (terpri))
         (print lib))
 #+ccl (progn (princ "ccl:save-application will exit.") (terpri) (finish-output))
+#+ccl (eval-when (:compile-toplevel :execute)
+        (setf *readtable* *original-readtable*))
 #+ccl (ccl:save-application
        (executable-filename *program-name*)
        :toplevel-function (coerce (if (boolean-enval "LSE_USE_EXIT" nil)
@@ -206,7 +209,8 @@
        :prepend-kernel t
        ;; :native t
        )
-
+#+ccl (eval-when (:compile-toplevel :execute)
+        (setf *readtable* (copy-readtable nil)))
 
 #+clisp (ext:saveinitmem
          (executable-filename *program-name*)

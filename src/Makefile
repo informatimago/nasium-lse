@@ -40,7 +40,7 @@ UPLOAD_DIR     = /home/pjb/public_html/sites/com.ogamita.www
 UPLOAD_DOC_DIR = $(UPLOAD_DIR)/nasium-lse/
 DOC_DIR        = ../doc/
 
-BUILD_HOSTS    = kuiper galatea lassell # triton
+BUILD_HOSTS    = kuiper larissa lassell # triton
 
 RMERGE         = rsync -HSWacvxz --progress -e ssh
 RSYNCH         = rsync -HSWacvxz --progress -e ssh --force --delete --delete-after
@@ -80,7 +80,7 @@ all:ChangeLog
 
 help::
 	@printf $(HELPFORMAT) ChangeLog 'extracts the logs from git into the ChangeLog file.'
-ChangeLog:.git
+ChangeLog:../.git
 	git log > ChangeLog
 #ChangeLog:../_FOSSIL_
 #	fossil timeline -n 2000 > ChangeLog

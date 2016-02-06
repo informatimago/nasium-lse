@@ -333,13 +333,9 @@ A end-of-file is also considered an end-of-line.")
   ;; we process lse sources line by line.
   (eolp (scanner-current-token scanner)))
 
-(defmethod accept ((scanner lse-scanner) token)
+(defmethod expect ((scanner lse-scanner) token)
   (if (word-equal (scanner-current-token scanner) token)
-      (prog1 (scanner-current-token scanner)
-        ;; (list (token-kind (scanner-current-token scanner))
-        ;;       (scanner-current-text scanner)
-        ;;       (scanner-column scanner))
-        (scan-next-token scanner))
+      (scanner-current-token scanner)
       (error 'lse-parser-error-unexpected-token
              :backtrace (or #+ccl (ccl::backtrace-as-list))
              :line   (scanner-line scanner)
@@ -360,8 +356,12 @@ A end-of-file is also considered an end-of-line.")
               (token-text (scanner-current-token scanner))
               *non-terminal-stack*
               (clean-up-rule (assoc (first *non-terminal-stack*)
-                                     (grammar-rules (grammar-named 'lse))))))))
+                                    (grammar-rules (grammar-named 'lse))))))))
 
+
+(defmethod accept ((scanner lse-scanner) token)
+  (prog1 (expect scanner token)
+    (scan-next-token scanner)))
 
 (defun clean-up-rule (rule)
   (labels ((clean-up-rhs (rhs)

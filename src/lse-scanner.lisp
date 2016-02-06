@@ -204,16 +204,6 @@
       :column  (scanner-column self)
       :line    (scanner-line   self)))
 
-(defgeneric eolp (token)
-  (:documentation "Returns whether the token is an end-of-line token.
-A end-of-file is also considered an end-of-line.")
-  (:method ((token t))          nil)
-  (:method ((token tok-eol))    t)
-  (:method ((token (eql 'eol))) t)
-  (:method ((token tok-eof))    t)
-  (:method ((token (eql 'eof))) t))
-
-
 (defclass tok-eof (lse-token)
   ())
 
@@ -224,6 +214,15 @@ A end-of-file is also considered an end-of-line.")
                  :column  (scanner-column self)
                  :line    (scanner-line   self)))
 
+
+(defgeneric eolp (token)
+  (:documentation "Returns whether the token is an end-of-line token.
+A end-of-file is also considered an end-of-line.")
+  (:method ((token t))          nil)
+  (:method ((token tok-eol))    t)
+  (:method ((token (eql 'eol))) t)
+  (:method ((token tok-eof))    t)
+  (:method ((token (eql 'eof))) t))
 
 (defgeneric eofp (token)
   (:documentation "Returns whether the token is an end-of-file token")

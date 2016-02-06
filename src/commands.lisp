@@ -54,6 +54,7 @@
     :terminals ((nombre " *[-+]?[0-9]+(.[0-9]+([Ee][-+]?[0-9]+?)?)? *($| .*)"))
     :skip-spaces nil
     :start donnee-lse
+    :eof-symbol eol
     :rules ((--> donnee-lse
                  nombre :action (multiple-value-list
                                  (read-from-string (second $1))))))
@@ -61,6 +62,7 @@
 (defgrammar numero-de-ligne
     :terminals ((tok-numero  "[0-9]+"))
     :start numero-de-ligne
+    :eof-symbol eol
     :rules ((--> numero-de-ligne
                  tok-numero :action (let ((lino (parse-integer (second $1))))
                                       (unless (line-number-valid-p lino)
@@ -70,6 +72,7 @@
 (defgrammar un-numero
     :terminals ((tok-numero  "[0-9]+"))
     :start un-numero
+    :eof-symbol eol
     :rules ((--> un-numero
                  tok-numero
                  :action (list (parse-integer (second $1))))))
@@ -79,6 +82,7 @@
     :terminals ((tok-virgule ",")
                 (tok-numero  "[0-9]+"))
     :start deux-numeros
+    :eof-symbol eol
     :rules ((--> deux-numeros
                  (seq tok-numero tok-virgule tok-numero
                       :action (list (parse-integer (second $1))
@@ -90,6 +94,7 @@
     :terminals ((tok-virgule ",")
                 (tok-numero  "[0-9]+"))
     :start deux-numeros-optionels
+    :eof-symbol eol
     :rules ((--> deux-numeros-optionels
                  (opt (seq tok-numero
                            (opt (seq tok-virgule tok-numero :action (parse-integer (second $2)))
@@ -98,8 +103,8 @@
                                          $2))
                       :action $1)
                  :action (if $1
-                             $1
-                             (list 1 nil)))))
+                           $1
+                           (list 1 nil)))))
 
 
 (defgrammar liste-de-numeros
@@ -108,6 +113,7 @@
                 (tok-a       #-LSE-CASE-INSENSITIVE "A" #+LSE-CASE-INSENSITIVE "[Aa]")
                 (tok-numero  "[0-9]+"))
     :start liste-de-numeros
+    :eof-symbol eol
     :rules (
             (--> liste-de-numeros
                  (alt (seq tok-fois :action (progn :all))
@@ -127,8 +133,8 @@
                                                 :action $2)
                                            (seq :action (progn nil)))
                       :action (if $2
-                                  (cons numero-de-ligne $2)
-                                  numero-de-ligne))
+                                (cons numero-de-ligne $2)
+                                numero-de-ligne))
                  :action $1)
 
             (--> numero-de-ligne
@@ -141,6 +147,7 @@
 (defgrammar un-programme
     :terminals ((tok-identificateur "[A-Za-z][A-Za-z0-9]*"))
     :start un-programme
+    :eof-symbol eol
     :rules (
             (--> un-programme
                  ident
@@ -161,6 +168,7 @@
                 (tok-virgule ",")
                 (tok-identificateur "[A-Za-z][A-Za-z0-9]*"))
     :start arguments-supprimer
+    :eof-symbol eol
     :rules ((--> arguments-supprimer
                  (alt
                   (seq tok-star :action '(*))
@@ -187,6 +195,7 @@
 (defgrammar un-fichier
     :terminals ((tok-identificateur "[A-Za-z][A-Za-z0-9]*"))
     :start un-fichier
+    :eof-symbol eol
     :rules ((--> un-fichier
                  ident
                  :action (list $1))
@@ -205,6 +214,7 @@
     :terminals ((tok-virgule ",")
                 (tok-identificateur "[A-Za-z][A-Za-z0-9]*"))
     :start deux-fichiers
+    :eof-symbol eol
     :rules ((--> deux-fichiers
                  (seq ident tok-virgule ident
                       :action (list $1 $3))
@@ -227,6 +237,7 @@
                  (tok-numero  "[0-9]+")
                  (tok-identificateur "[A-Za-z][A-Za-z0-9]*"))
     :start un-fichier-et-deux-numeros
+    :eof-symbol eol
     :rules (
             (--> un-fichier-et-deux-numeros
                  (seq ident (opt (seq tok-virgule deux-numeros :action deux-numeros)
@@ -254,6 +265,7 @@
 ;; (defgrammar un-chemin
 ;;     :terminals  ((chaine "'(('')?[^']*)*'"))
 ;;     :start un-chemin
+;;  :eof-symbol eol
 ;;     :rules ((--> un-chemin
 ;;                  chaine
 ;;                  :action (list (chaine-valeur (make-instance 'tok-chaine
@@ -285,7 +297,7 @@
 (defmacro generate-advance-line-methods (&rest classes)
   `(progn
      ,@(mapcar (lambda (class)
-                 `(defmethod advance-line ((scanner ,class)) (lse-advance-line scanner)))
+                   `(defmethod advance-line ((scanner ,class)) (lse-advance-line scanner)))
                classes)))
 
 (generate-advance-line-methods numero-de-ligne-scanner
@@ -300,9 +312,9 @@
                                arguments-supprimer-scanner)
 
 #-(and) (mapcar (lambda (s)
-                  (list s
-                        (handler-case (converting-parser-errors (funcall (intern (format nil "~:@(~A-~A~)" 'parse s)) ""))
-                          (error (err) (ignore-errors (string-trim #(#\newline) (princ-to-string err)))))))
+                    (list s
+                     (handler-case (converting-parser-errors (funcall (intern (format nil "~:@(~A-~A~)" 'parse s)) ""))
+                       (error (err) (ignore-errors (string-trim #(#\newline) (princ-to-string err)))))))
                 '(numero-de-ligne             
                   un-numero                   
                   deux-numeros                
@@ -397,23 +409,23 @@
 (defun (setf command-group-named) (command-group name)
   (let ((entry (assoc name *command-groups*)))
     (if entry
-        (setf (cdr entry) command-group)
-        (push (cons name command-group) *command-groups*))))
+      (setf (cdr entry) command-group)
+      (push (cons name command-group) *command-groups*))))
 
 (defgeneric find-command (command group &key in-extenso) 
   (:method ((command command) (group command-group) &key (in-extenso nil))
     (find-command (if in-extenso
-                      (command-name command)
-                      (command-initials command))
+                    (command-name command)
+                    (command-initials command))
                   group :in-extenso in-extenso))
   (:method ((command string) (group command-group) &key (in-extenso nil))
     (or (find command (command-group-commands group)
               :test (function string-equal)
               :key (if in-extenso
-                       (function command-name)
-                       (function command-initials)))
+                     (function command-name)
+                     (function command-initials)))
         (some (lambda (supergroup) (find-command command (symbol-value supergroup)
-                                                 :in-extenso in-extenso))
+                                    :in-extenso in-extenso))
               (command-group-supergroups group)))))
 
 
@@ -434,8 +446,8 @@
   (:method ((command command) (group symbol))
     (let ((the-group  (command-group-named group)))
       (if the-group
-          (add-command-to-group command the-group)
-          (error "There's no command group named ~S" group))))
+        (add-command-to-group command the-group)
+        (error "There's no command group named ~S" group))))
   (:method ((command command) (group command-group))
     (let* ((duplicate (find-command command group)))
       (when (and duplicate
@@ -451,11 +463,11 @@
 
 (defmacro defcommand (name group grammar arguments &body body)
   (let ((oneliner      (if (stringp (first body))
-                           (pop body)
-                           nil))
+                         (pop body)
+                         nil))
         (docstring     (if (stringp (first body))
-                           (pop body)
-                           nil))
+                         (pop body)
+                         nil))
         (fname         (intern (substitute #\- #\space name)
                                "COM.INFORMATIMAGO.LSE"))
         (initials      (subseq name 0 2)))
@@ -477,7 +489,7 @@
          :grammar       ',grammar ;; (when grammar (find-grammar (string grammar)))
          :parser        ,(when grammar
                                `(function ,(intern (with-standard-io-syntax
-                                                     (format nil "PARSE-~A" grammar))
+                                                       (format nil "PARSE-~A" grammar))
                                                    "COM.INFORMATIMAGO.LSE")))
          :arguments     ',arguments
          :oneliner      ,oneliner
@@ -496,8 +508,8 @@ Bound by COMMAND-EVAL-LINE.")
 (defmethod command-call ((command command))
   (let ((arguments (when (command-grammar command)
                      (converting-parser-errors
-                       (funcall (command-parser command)
-                                (io-read-line *task* :beep t))))))
+                      (funcall (command-parser command)
+                               (io-read-line *task* :beep t))))))
     (apply (command-function command) arguments)
     #-(and) (with-pager *task*
               (apply (command-function command) arguments))))
@@ -626,8 +638,8 @@ Voir la commande: AIDER"
                                 3
                                 (length (chapter-category chapter))))
                   (if (stringp (chapter-text chapter))
-                      (write-documentation *task* (chapter-text chapter))
-                      (funcall (chapter-text chapter) chapter))
+                    (write-documentation *task* (chapter-text chapter))
+                    (funcall (chapter-text chapter) chapter))
                   t))
            (cond
              ((null chapters) nil)
@@ -769,37 +781,37 @@ AI)DE                         donne la liste des commandes.")))))))
     :until (string-equal line "FIN")
     :do
     (setf account (if (zerop (length line))
-                      (mod (1+ account) 100)
-                      (parse-integer line :junk-allowed nil)))
+                    (mod (1+ account) 100)
+                    (parse-integer line :junk-allowed nil)))
     (if (<= 0 account 99)
-        (let ((op (account-check-right account :programme))
-              (od (account-check-right account :permanent))
-              (oa (account-check-right account :tempoauto))
-              (of (account-check-right account :tempofixe))
-              np nd na nf)
-          (io-carriage-return *task*)
-          (io-format *task* 
-                     "   ~2,'0D       ~{~[0~;1~]~}     "
-                     account (list op od oa of))
-          (setf line (io-read-line *task*))
-          (if (and (= 4 (length line))
-                   (every (lambda (ch) (position ch "01")) line))
-              (progn
-                (setf np (char= (character "1") (aref line 0))
-                      nd (char= (character "1") (aref line 1))
-                      na (char= (character "1") (aref line 2))
-                      nf (and (not na)
-                              (char= (character "1") (aref line 3))))
-                (account-set-right account :programme np)
-                (account-set-right account :permanent nd)
-                (account-set-right account :tempoauto na)
-                (account-set-right account :tempofixe nf))
-              (setf np op  nd od  na oa  nf of))
-          (io-carriage-return *task*)
-          (io-format *task*
-                     "   ~2,'0D       ~{~[0~;1~]~}      ~{~[0~;1~]~}    "
-                     account (list op od oa of) (list np nd na nf)) )
-        (io-format *task* "NO. DE COMPTE INVALIDE (DOIT ETRE UN NOMBRE ENTRE 00 et 99).~%")))
+      (let ((op (account-check-right account :programme))
+            (od (account-check-right account :permanent))
+            (oa (account-check-right account :tempoauto))
+            (of (account-check-right account :tempofixe))
+            np nd na nf)
+        (io-carriage-return *task*)
+        (io-format *task* 
+                   "   ~2,'0D       ~{~[0~;1~]~}     "
+                   account (list op od oa of))
+        (setf line (io-read-line *task*))
+        (if (and (= 4 (length line))
+                 (every (lambda (ch) (position ch "01")) line))
+          (progn
+            (setf np (char= (character "1") (aref line 0))
+                  nd (char= (character "1") (aref line 1))
+                  na (char= (character "1") (aref line 2))
+                  nf (and (not na)
+                          (char= (character "1") (aref line 3))))
+            (account-set-right account :programme np)
+            (account-set-right account :permanent nd)
+            (account-set-right account :tempoauto na)
+            (account-set-right account :tempofixe nf))
+          (setf np op  nd od  na oa  nf of))
+        (io-carriage-return *task*)
+        (io-format *task*
+                   "   ~2,'0D       ~{~[0~;1~]~}      ~{~[0~;1~]~}    "
+                   account (list op od oa of) (list np nd na nf)) )
+      (io-format *task* "NO. DE COMPTE INVALIDE (DOIT ETRE UN NOMBRE ENTRE 00 et 99).~%")))
   (io-new-line *task*))
 
 
@@ -839,16 +851,16 @@ AI)DE                         donne la liste des commandes.")))))))
 (defun change-directory (root old new)
   ;; 1- merge with old or root depending on whether new is relative or absolute.
   (let ((new (truename (if (eq (first (pathname-directory new)) :relative)
-                            (merge-pathnames new old nil)
-                            (merge-pathnames (make-pathname :directory (cons :relative (rest (pathname-directory new)))
-                                                            :defaults new)
-                                             root nil)))))
+                         (merge-pathnames new old nil)
+                         (merge-pathnames (make-pathname :directory (cons :relative (rest (pathname-directory new)))
+                                                         :defaults new)
+                                          root nil)))))
     ;; 2- check that new doesn't go above root (this can occur with :up or :back, or with symlinks.
     (let ((rd (pathname-directory root))
           (nd (pathname-directory new)))
       (if (= (length rd) (mismatch rd nd :test (function equal)))
-          new
-          root))))
+        new
+        root))))
 
 
 ;; (change-directory #P"/home/pjb/src/git/pjb/nasium-lse/"
@@ -978,17 +990,17 @@ Voir les commandes LISTER A PARTIR DE, NUMERO A PARTIR DE, PERFORER A PARTIR DE.
   (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (if (eql :all liste-de-numeros)
-        (when (minimum-line-number vm)
+      (when (minimum-line-number vm)
+        (loop
+          :for lino :from (minimum-line-number vm)
+          :to (maximum-line-number vm)
+          :do (erase-line-number vm lino)))
+      (dolist (item liste-de-numeros)
+        (if (consp item)
           (loop
-            :for lino :from (minimum-line-number vm)
-            :to (maximum-line-number vm)
-            :do (erase-line-number vm lino)))
-        (dolist (item liste-de-numeros)
-          (if (consp item)
-              (loop
-                :for lino :from (min (car item) (cdr item)) :to (max (car item) (cdr item))
-                :do (erase-line-number vm lino))
-              (erase-line-number vm item))))))
+            :for lino :from (min (car item) (cdr item)) :to (max (car item) (cdr item))
+            :do (erase-line-number vm lino))
+          (erase-line-number vm item))))))
 
 #-(and)
 (defcommand "ELIMINER COMMENTAIRES" awake  nil ()
@@ -1029,8 +1041,8 @@ Voir les commandes LISTER A PARTIR DE, NUMERO A PARTIR DE, PERFORER A PARTIR DE.
 
 
 (defcommand "ETAGERE DE RUBANS" awake  une-ligne (chemin) 
-            "Selectionne une étagère de rubans perforés."
-            "Les rubans perforés sont simulés par des fichiers.  Ils sont
+  "Selectionne une étagère de rubans perforés."
+  "Les rubans perforés sont simulés par des fichiers.  Ils sont
 conservés sur des \"étagère\", c'est à dire, enregistrés dans des répertoires.
 
 Cette commande permet de sélectionner le répertoire où les rubans
@@ -1089,7 +1101,7 @@ Voir les commandes ETAGERE DE RUBAN, SELECTIONNER RUBAN, PERFORER A PARTIR DE, A
                  :repeat 8
                  :for i = 128 :then (ash i -1)
                  :collect (if (zerop (logand i code))
-                              #\space #\o)
+                            #\space #\o)
                  :when (= i 8) :collect #\.)
     :initially (io-format *task* "+~~~~~~~~~~~~~~~~~~+~%")
     :do        (io-format *task* "|~{~A~}|~%" bin)
@@ -1140,18 +1152,18 @@ Voir les commandes ETAGERE DE RUBAN, SELECTIONNER RUBAN, RUBAN, PERFORER A PARTI
                          :if-exists nil
                          :if-does-not-exist :create)
       (if dst
-          (progn
-            (io-format *task* "~&COMMENTAIRE A ECRIRE SUR LE RUBAN AU FEUTRE (UNE LIGNE) :~%")
-            (write-line (io-read-line *task*) dst)
-            (copy-stream src dst)
-            (close src)
-            (setf (task-tape-output *task*) nil)
-            (io-new-line *task*))
-          (error 'lse-file-error
-                 :backtrace (or #+ccl (ccl::backtrace-as-list))
-                 :pathname dst-path
-                 :format-control "IL Y A DEJA UN RUBAN NOMME '~:@(~A~)'."
-                 :format-arguments (list ruban))))))
+        (progn
+          (io-format *task* "~&COMMENTAIRE A ECRIRE SUR LE RUBAN AU FEUTRE (UNE LIGNE) :~%")
+          (write-line (io-read-line *task*) dst)
+          (copy-stream src dst)
+          (close src)
+          (setf (task-tape-output *task*) nil)
+          (io-new-line *task*))
+        (error 'lse-file-error
+               :backtrace (or #+ccl (ccl::backtrace-as-list))
+               :pathname dst-path
+               :format-control "IL Y A DEJA UN RUBAN NOMME '~:@(~A~)'."
+               :format-arguments (list ruban))))))
 
 
 
@@ -1207,8 +1219,8 @@ Voir les commandes PAS A PAS, CONTINUER, REPRENDRE A PARTIR DE, POURSUIVRE JUSQU
 
 
 (defcommand "EXECUTER A PARTIR DE" awake deux-numeros-optionels (from to)
-            "Exécute le programme."
-            "Fait passer la console de l'état «moniteur» à l'état «exécution».
+  "Exécute le programme."
+  "Fait passer la console de l'état «moniteur» à l'état «exécution».
 
 Fait exécuter le programme courant de l'utilisateur à partir de la
 ligne de numéro N1 (si aucune ligne de numéro N1 existe, une erreur
@@ -1229,16 +1241,16 @@ L'exécution se poursuivra jusqu'à ce qu'on arrive :
   l'exécution.
 
 Voir les commandes PAS A PAS, NORMAL, CONTINUER, REPRENDRE A PARTIR DE, POURSUIVRE JUSQU'EN."
-            (io-new-line *task*)
-            (let ((vm (task-vm *task*)))
-              (unless (or (null to) (vm-line-exist-p vm to))
-                (error-bad-line to))
-              (when (vm-line-exist-p vm from)
-                (vm-reset-variables vm))
-              (setf (vm-trap-line vm) to)
-              (catch 'run-step-done (vm-goto vm from))
-              (vm-run vm)
-              (setf (task-pas-a-pas-first *task*) (task-pas-a-pas *task*))))
+  (io-new-line *task*)
+  (let ((vm (task-vm *task*)))
+    (unless (or (null to) (vm-line-exist-p vm to))
+      (error-bad-line to))
+    (when (vm-line-exist-p vm from)
+      (vm-reset-variables vm))
+    (setf (vm-trap-line vm) to)
+    (catch 'run-step-done (vm-goto vm from))
+    (vm-run vm)
+    (setf (task-pas-a-pas-first *task*) (task-pas-a-pas *task*))))
 
 
 (defcommand "CONTINUER" awake             nil ()
@@ -1251,12 +1263,12 @@ Voir les commandes PAS A PAS, NORMAL, EXECUTER A PARTIR DE, REPRENDRE A PARTIR D
   (io-new-line *task*)
   (let ((vm (task-vm *task*)))
     (if (vm-pausedp vm)
-        (progn
-          (setf (vm-trap-line vm) nil)
-          (vm-unpause vm)
-          (vm-run vm)
-          (setf (task-pas-a-pas-first *task*) (task-pas-a-pas *task*)))
-        (lse-error "ON NE PEUT PAS CONTINUER UN PROGRAMME QUI N'EST PAS EN PAUSE."))))
+      (progn
+        (setf (vm-trap-line vm) nil)
+        (vm-unpause vm)
+        (vm-run vm)
+        (setf (task-pas-a-pas-first *task*) (task-pas-a-pas *task*)))
+      (lse-error "ON NE PEUT PAS CONTINUER UN PROGRAMME QUI N'EST PAS EN PAUSE."))))
 
 
 (defcommand "REPRENDRE A PARTIR DE" awake deux-numeros-optionels (from to)
@@ -1295,12 +1307,12 @@ Voir les commandes PAS A PAS, NORMAL, EXECUTER A PARTIR DE, CONTINUER, REPRENDRE
     (unless (or (null linum) (vm-line-exist-p vm linum))
       (error-bad-line linum))
     (if (vm-pausedp vm)
-        (progn
-          (setf (vm-trap-line vm) linum)
-          (vm-unpause vm)
-          (vm-run vm)
-          (setf (task-pas-a-pas-first *task*) (task-pas-a-pas *task*)))
-        (lse-error "ON NE PEUT PAS POURSUIVRE UN PROGRAMME QUI N'EST PAS EN PAUSE."))))
+      (progn
+        (setf (vm-trap-line vm) linum)
+        (vm-unpause vm)
+        (vm-run vm)
+        (setf (task-pas-a-pas-first *task*) (task-pas-a-pas *task*)))
+      (lse-error "ON NE PEUT PAS POURSUIVRE UN PROGRAMME QUI N'EST PAS EN PAUSE."))))
 
 
 #-lse-unix
@@ -1356,20 +1368,20 @@ FICHIERS, APPELER, MODIFIER."
          (vm        (task-vm *task*))
          (source    (get-program vm 1 nil)))
     (if source
-        (with-open-file (stream path
-                                :direction :output
-                                :if-exists nil
-                                :if-does-not-exist :create)
-          (if stream
-              (loop
-                :for line :in source
-                :do (write-line (code-source line) stream))
-              (error 'lse-file-error
-                     :backtrace (or #+ccl (ccl::backtrace-as-list))
-                     :pathname path
-                     :format-control "UN PROGRAMME NOMME '~A' EXISTE DEJA; UTILISEZ LA COMMANDE MODIFIER."
-                     :format-arguments (list pgm))))
-        (lse-error "IL N'Y A PAS DE PROGRAMME A RANGER."))
+      (with-open-file (stream path
+                              :direction :output
+                              :if-exists nil
+                              :if-does-not-exist :create)
+        (if stream
+          (loop
+            :for line :in source
+            :do (write-line (code-source line) stream))
+          (error 'lse-file-error
+                 :backtrace (or #+ccl (ccl::backtrace-as-list))
+                 :pathname path
+                 :format-control "UN PROGRAMME NOMME '~A' EXISTE DEJA; UTILISEZ LA COMMANDE MODIFIER."
+                 :format-arguments (list pgm))))
+      (lse-error "IL N'Y A PAS DE PROGRAMME A RANGER."))
     (values)))
 
 
@@ -1389,14 +1401,14 @@ FICHIERS, APPELER, RANGER."
          (vm        (task-vm *task*))
          (source    (get-program vm 1 nil)))
     (if source
-        (with-open-file (stream path
-                                :direction :output
-                                :if-exists :supersede
-                                :if-does-not-exist :create)
-          (loop
-            :for line :in source
-            :do (write-line (code-source line) stream)))
-        (lse-error "IL N'Y A PAS DE PROGRAMME A MODIFIER."))
+      (with-open-file (stream path
+                              :direction :output
+                              :if-exists :supersede
+                              :if-does-not-exist :create)
+        (loop
+          :for line :in source
+          :do (write-line (code-source line) stream)))
+      (lse-error "IL N'Y A PAS DE PROGRAMME A MODIFIER."))
     (values)))
 
 
@@ -1415,7 +1427,7 @@ FICHIERS, APPELER, RANGER."
     :for end = (min (+ start size) len)
     :while (< start len)
     :do (loop :while (< size (string-size-in-octets string :start start :end end :encoding :utf-8))
-              :do (decf end))
+          :do (decf end))
     :collect (subseq string start end)
     :do (setf start end)))
 
@@ -1441,22 +1453,22 @@ Voir les commandes ENCODER, APPELER, RANGER, MODIFIER."
          (vm        (task-vm *task*))
          (source    (get-program vm from to)))
     (if source
-        (let ((buffer (unsplit-string (mapcar (function code-source) source)
-                                      *xoff*
-                                      :fill-pointer t :size-increment 2)))
-          (vector-push *xoff* buffer)
-          (vector-push *nul*  buffer)
-          (let ((file (lse-data-file-open path
-                                          :if-exists :supersede
-                                          :if-does-not-exist :create)))
-            (unwind-protect
-                 (loop
-                   :for rn :from 1
-                   :for chunk :in (split-size buffer *max-record-chaine-size*)
-                   ;; :do (io-format *task* "record ~D length ~D~%" rn (length chunk))
-                   :do (write-record file rn chunk))
-              (lse-data-file-close file))))
-        (lse-error "IL N'Y A PAS DE PROGRAMME A DECODER."))
+      (let ((buffer (unsplit-string (mapcar (function code-source) source)
+                                    *xoff*
+                                    :fill-pointer t :size-increment 2)))
+        (vector-push *xoff* buffer)
+        (vector-push *nul*  buffer)
+        (let ((file (lse-data-file-open path
+                                        :if-exists :supersede
+                                        :if-does-not-exist :create)))
+          (unwind-protect
+              (loop
+                :for rn :from 1
+                :for chunk :in (split-size buffer *max-record-chaine-size*)
+                ;; :do (io-format *task* "record ~D length ~D~%" rn (length chunk))
+                :do (write-record file rn chunk))
+            (lse-data-file-close file))))
+      (lse-error "IL N'Y A PAS DE PROGRAMME A DECODER."))
     (values)))
 
 
@@ -1486,37 +1498,37 @@ Voir les commandes DECODER, APPELER, RANGER, MODIFIER."
          (vm        (task-vm *task*)))
     (let ((file (lse-data-file-open path :if-does-not-exist nil)))
       (if file
-          (let ((source (nsubstitute-if #\Newline
-                                        (lambda (ch) (or (char= ch *xoff*)
-                                                         (char= ch *nul*)))
-                                        (unsplit-string
-                                         (unwind-protect
-                                              (loop
-                                                :for rn :from 1
-                                                :for chunk = (read-record file rn)
-                                                :collect chunk
-                                                :until (char= (aref chunk (1- (length chunk))) *nul*))
-                                           (lse-data-file-close file))
-                                         ""))))
-            #+debugging (io-format *task* "~2&~A~2&" source)
-            ;; #+lse-mitra-15 (let* ((path      (catalog-pathname pgm :p))
-            ;;                       (vm        (task-vm *task*))
-            ;;                       (new-pgm   (compile-lse-file path pgm)))
-            ;;                  (vm-terminer vm)
-            ;;                  (replace-program vm new-pgm)
-            ;;                  (values))
-            (with-input-from-string (stream source)
-              (dolist (line (compile-lse-stream stream))
-                ;; ENCODER merges the lines on T-1600 and unix.
-                (when (and (<= from (code-line line))
-                           (or (null to)
-                               (<= (code-line line) to)))
-                  (put-line vm (code-line line) line)))))
-          (error 'lse-file-error
-                 :backtrace (or #+ccl (ccl::backtrace-as-list))
-                 :pathname path
-                 :format-control "IL N'Y A PAS DE FICHIER TEMPORAIRE '~A' A ENCODER."
-                 :format-arguments (list fichier))))))
+        (let ((source (nsubstitute-if #\Newline
+                                      (lambda (ch) (or (char= ch *xoff*)
+                                                    (char= ch *nul*)))
+                                      (unsplit-string
+                                       (unwind-protect
+                                           (loop
+                                             :for rn :from 1
+                                             :for chunk = (read-record file rn)
+                                             :collect chunk
+                                             :until (char= (aref chunk (1- (length chunk))) *nul*))
+                                         (lse-data-file-close file))
+                                       ""))))
+          #+debugging (io-format *task* "~2&~A~2&" source)
+          ;; #+lse-mitra-15 (let* ((path      (catalog-pathname pgm :p))
+          ;;                       (vm        (task-vm *task*))
+          ;;                       (new-pgm   (compile-lse-file path pgm)))
+          ;;                  (vm-terminer vm)
+          ;;                  (replace-program vm new-pgm)
+          ;;                  (values))
+          (with-input-from-string (stream source)
+            (dolist (line (compile-lse-stream stream))
+              ;; ENCODER merges the lines on T-1600 and unix.
+              (when (and (<= from (code-line line))
+                         (or (null to)
+                             (<= (code-line line) to)))
+                (put-line vm (code-line line) line)))))
+        (error 'lse-file-error
+               :backtrace (or #+ccl (ccl::backtrace-as-list))
+               :pathname path
+               :format-control "IL N'Y A PAS DE FICHIER TEMPORAIRE '~A' A ENCODER."
+               :format-arguments (list fichier))))))
 
 
 (defcommand "CATALOGUER" awake  deux-fichiers (temporaire permanent)
@@ -1539,23 +1551,23 @@ FICHIERS."
                          :element-type '(unsigned-byte 8)
                          :if-does-not-exist nil)
       (if src
-          (with-open-file (dst dst-path
-                               :direction :output
-                               :element-type '(unsigned-byte 8)
-                               :if-exists nil
-                               :if-does-not-exist :create)
-            (if dst
-                (copy-stream src dst)
-                (error 'lse-file-error
-                       :backtrace (or #+ccl (ccl::backtrace-as-list))
-                       :pathname dst-path
-                       :format-control "IL Y A DEJA UN FICHIER PERMANENT '~A'."
-                       :format-arguments (list permanent))))
-          (error 'lse-file-error
-                 :backtrace (or #+ccl (ccl::backtrace-as-list))
-                 :pathname src-path
-                 :format-control "IL N'Y A PAS DE FICHIER TEMPORAIRE '~A' A CATALOGUER."
-                 :format-arguments (list temporaire))))))
+        (with-open-file (dst dst-path
+                             :direction :output
+                             :element-type '(unsigned-byte 8)
+                             :if-exists nil
+                             :if-does-not-exist :create)
+          (if dst
+            (copy-stream src dst)
+            (error 'lse-file-error
+                   :backtrace (or #+ccl (ccl::backtrace-as-list))
+                   :pathname dst-path
+                   :format-control "IL Y A DEJA UN FICHIER PERMANENT '~A'."
+                   :format-arguments (list permanent))))
+        (error 'lse-file-error
+               :backtrace (or #+ccl (ccl::backtrace-as-list))
+               :pathname src-path
+               :format-control "IL N'Y A PAS DE FICHIER TEMPORAIRE '~A' A CATALOGUER."
+               :format-arguments (list temporaire))))))
 
 
 
@@ -1580,11 +1592,11 @@ ou Temporaire indiqué.
 
 Voir les commandes TABLE DES FICHIERS, UTILISATION DISQUE."
   (if (equal fichier '*)
-      (supprimer-tous-les-fichiers-temporaires)
-      (let ((path (catalog-pathname fichier fictype)))
-        (io-new-line *task*)
-        (delete-file path)
-        (values))))
+    (supprimer-tous-les-fichiers-temporaires)
+    (let ((path (catalog-pathname fichier fictype)))
+      (io-new-line *task*)
+      (delete-file path)
+      (values))))
 
 
 (defcommand "AFFICHER REPERTOIRE" awake nil ()
@@ -1621,26 +1633,26 @@ FILES: A list of (file-name file-type word-size write-date protection)
   (io-format *task* "~%ESPACE TEMPORAIRE(~4D SECT.) OCCUPE A ~3D %~2%"
              temp-space-used-sectors temp-space-used-percentage)
   (loop :for (file-name file-type word-size nil protection) :in files
-        :initially (io-format *task* " NOM       TYPE        LONGUEUR MOTS   PROTECTION~%")
-        :do (io-format *task* "~5A     ~10A      ~6D             ~A~%"
-                       file-name
-                       (case file-type
-                         (:temporary "TEMPORAIRE")
-                         (:data      " DONNEE   ")
-                         (:program   "PROGRAMME "))
-                       word-size
-                       (case protection
-                         (:read  "L")
-                         (:write "E")
-                         (:none  " ")))
-        :finally (io-format *task* "~%")))
+    :initially (io-format *task* " NOM       TYPE        LONGUEUR MOTS   PROTECTION~%")
+    :do (io-format *task* "~5A     ~10A      ~6D             ~A~%"
+                   file-name
+                   (case file-type
+                     (:temporary "TEMPORAIRE")
+                     (:data      " DONNEE   ")
+                     (:program   "PROGRAMME "))
+                   word-size
+                   (case protection
+                     (:read  "L")
+                     (:write "E")
+                     (:none  " ")))
+    :finally (io-format *task* "~%")))
 
 #-(and)
 (defun table-des-fichiers/mitra-15 (files temp-space-used-sectors temp-space-used-percentage)
   "
 FILES: A list of (file-name file-type word-size write-date protection)
 "
-)
+  )
 
 
 
@@ -1667,11 +1679,11 @@ Voir les commandes UTILISATION DISQUE, SUPPRIMER."
                             (task-account *task*)
                             (subseq (formate-date (file-write-date file)) 0 8)
                             (truncate (or (ignore-errors
-                                           (with-open-file (stream file
-                                                                   :direction :input
-                                                                   :element-type '(unsigned-byte 8)
-                                                                   :if-does-not-exist nil)
-                                             (file-length stream)))
+                                            (with-open-file (stream file
+                                                                    :direction :input
+                                                                    :element-type '(unsigned-byte 8)
+                                                                    :if-does-not-exist nil)
+                                              (file-length stream)))
                                           0)
                                       modulo))))))
       
@@ -1744,16 +1756,16 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
 (defmacro handling-errors (&body body)
   `(HANDLER-CASE (progn ,@body)
      (simple-condition 
-         (ERR) 
-       (io-format *task* "~&~A: ~%" (class-name (class-of err)))
-       (apply (function io-format) *task*
-              (simple-condition-format-control   err)
-              (simple-condition-format-arguments err))
-       (io-format *task* "~&"))
+      (ERR) 
+      (io-format *task* "~&~A: ~%" (class-name (class-of err)))
+      (apply (function io-format) *task*
+             (simple-condition-format-control   err)
+             (simple-condition-format-arguments err))
+      (io-format *task* "~&"))
      (condition 
-         (ERR) 
-       (io-format *task* "~&~A: ~%  ~S~%"
-                  (class-name (class-of err)) err))))
+      (ERR) 
+      (io-format *task* "~&~A: ~%  ~S~%"
+                 (class-name (class-of err)) err))))
 
 #+(and lse-unix (or lse-allow-lisp debugging) (not lse-server))
 (defun repl ()
@@ -1785,8 +1797,8 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                                                   (*print-right-margin* 80))
                                               (read-from-string ligne)))))
                      (error (err)
-                       (format t "~%ERREUR: ~A~%" err)
-                       (setf results nil))))))
+                            (format t "~%ERREUR: ~A~%" err)
+                            (setf results nil))))))
     (io-format *task* "~%~A~%~@[=> ~{~S~%~^   ~}~]" output results)))
 
 #+(and lse-unix (or lse-allow-lisp debugging) (not lse-server))
@@ -1795,13 +1807,13 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
   (io-new-line *task*)
   (let ((lines '()))
     (maphash (lambda (lino code)
-               (when (and (<= from lino) (or (null to) (<= lino to)))
-                 (push (list lino
-                             (code-source code)
-                             (with-output-to-string (*standard-output*)
-                               (with-standard-io-syntax
-                                 (disassemble-lse (code-vector code)))))
-                       lines)))
+                 (when (and (<= from lino) (or (null to) (<= lino to)))
+                   (push (list lino
+                               (code-source code)
+                               (with-output-to-string (*standard-output*)
+                                 (with-standard-io-syntax
+                                     (disassemble-lse (code-vector code)))))
+                         lines)))
              (vm-code-vectors (task-vm *task*)))
     (io-format *task* "~:{~*~A~%~A~%~}" (sort lines '< :key (function first)))))
 
@@ -1819,18 +1831,18 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
 (defcommand "TOUCHES" awake nil ()
   "Montre les touches."
   (let ((terminal (task-terminal *task*)))
-   (io-format *task* "
+    (io-format *task* "
 ~@[~15A pour entrer les données.~%~]~
 ~@[~15A pour effacer le caractère précédent.~%~]~
 ~@[~15A pour interrompre.~%~]~
 ~@[~15A pour envoyer le signal d'attention (fonction ATT()).~%~]~
 ~@[~15A pour entrer les données, mais ajoute le code RETOUR aux chaînes.~%~]~
 "
-              (terminal-keysym-label terminal :xoff)
-              (terminal-keysym-label terminal :delete)
-              (terminal-keysym-label terminal :escape)
-              (terminal-keysym-label terminal :attention)
-              (terminal-keysym-label terminal :return))))
+               (terminal-keysym-label terminal :xoff)
+               (terminal-keysym-label terminal :delete)
+               (terminal-keysym-label terminal :escape)
+               (terminal-keysym-label terminal :attention)
+               (terminal-keysym-label terminal :return))))
 
 
 
@@ -1848,20 +1860,20 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
   (let* ((*task* task)
          (code (compile-lse-line line)))
     (if (zerop (code-line code))
-        ;; instruction line
-        (let ((vm (task-vm task)))
-          (unwind-protect
-               (setf (vm-state vm) :running
-                     (gethash 0 (vm-code-vectors vm)) code
-                     (vm-pc.line vm) 0
-                     (vm-pc.offset vm) 0
-                     (vm-code vm) (code-vector code))
-            (vm-run vm))
-          (remhash 0 (vm-code-vectors vm)) code)
-        ;; program line
-        (if (equalp #(!next-line) (code-vector code))
-            (erase-line-number (task-vm task) (code-line code))
-            (put-line (task-vm task) (code-line code) code)))
+      ;; instruction line
+      (let ((vm (task-vm task)))
+        (unwind-protect
+            (setf (vm-state vm) :running
+                  (gethash 0 (vm-code-vectors vm)) code
+                  (vm-pc.line vm) 0
+                  (vm-pc.offset vm) 0
+                  (vm-code vm) (code-vector code))
+          (vm-run vm))
+        (remhash 0 (vm-code-vectors vm)) code)
+      ;; program line
+      (if (equalp #(!next-line) (code-vector code))
+        (erase-line-number (task-vm task) (code-line code))
+        (put-line (task-vm task) (code-line code) code)))
     (io-new-line *task*)))
 
 
@@ -1880,22 +1892,22 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
               (*command-group* command-group)
               (command (find-command line command-group)))
          (if (null command)
-             (lse-error "COMMANDE INCONNUE ~S" line)
-             (progn
-               (unless (task-silence task)
-                 (io-carriage-return task)
-                 (io-format task "~A " (if (task-abreger task)
-                                           (subseq (command-name command) 0 2)
-                                           (command-name command))))
-               (command-call command)))))
+           (lse-error "COMMANDE INCONNUE ~S" line)
+           (progn
+             (unless (task-silence task)
+               (io-carriage-return task)
+               (io-format task "~A " (if (task-abreger task)
+                                       (subseq (command-name command) 0 2)
+                                       (command-name command))))
+             (command-call command)))))
 
       ((< 0 (length line))
        ;; soit une instruction, soit une ligne de programme...
        (setf (task-pas-a-pas-first *task*) nil)
        (if (task-state-awake-p task)
-           (lse-compile-and-execute task line)
-           (lse-error "COMMANDE INVALIDE EN L'ETAT ~A~%ESSAYER LA COMMANDE AI(DE).~%"
-                      (task-state-label (task-state task)))))
+         (lse-compile-and-execute task line)
+         (lse-error "COMMANDE INVALIDE EN L'ETAT ~A~%ESSAYER LA COMMANDE AI(DE).~%"
+                    (task-state-label (task-state task)))))
 
       ((task-pas-a-pas-first *task*)       
        ;; pas à pas:
@@ -1922,8 +1934,8 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
                         (destructuring-bind (ch pos) (scanner-error-format-arguments err)
                           (list
                            (if (<= 32 (char-code ch))
-                               (format nil "'~A'" ch)
-                               (format nil ".~A." (char-code ch)))
+                             (format nil "'~A'" ch)
+                             (format nil ".~A." (char-code ch)))
                            (<= 32 (char-code ch))
                            (char-code ch)
                            pos)))
@@ -1941,9 +1953,9 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
            (debug-report-error (err)
              (format *error-output* "~&~80,,,'-<~>~&~{~A~%~}~80,,,'-<~>~&"
                      (if (typep err 'lse-error)
-                         (or (lse-error-backtrace err)
-                             #+ccl (ccl::backtrace-as-list))
-                         #+ccl (ccl::backtrace-as-list)))
+                       (or (lse-error-backtrace err)
+                           #+ccl (ccl::backtrace-as-list))
+                       #+ccl (ccl::backtrace-as-list)))
              (format *error-output* "COMMAND ERROR: ~A~%" err)
              (finish-output *error-output*))
 
@@ -1955,14 +1967,14 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
     (handler-case
         #-debugging (funcall thunk)
         #+debugging (if *debug-repl* 
-                        (handler-bind
-                            ((lse-error     (function report-and-signal-error))
-                             (scanner-error (function report-and-signal-error))
-                             (parser-error  (function report-and-signal-error))
-                             (file-error    (function report-and-signal-error))
-                             (error         (function report-and-debug-error)))
-                          (funcall thunk))
+                      (handler-bind
+                          ((lse-error     (function report-and-signal-error))
+                           (scanner-error (function report-and-signal-error))
+                           (parser-error  (function report-and-signal-error))
+                           (file-error    (function report-and-signal-error))
+                           (error         (function report-and-debug-error)))
                         (funcall thunk))
+                      (funcall thunk))
 
         (lse-scanner-error-invalid-character (err) (invalid-character-error err))
         (error                               (err) (report-error err))
@@ -2003,7 +2015,7 @@ RETURN: T on success, NIL when the script fails without debugging.
           (unless (task-script-debug *task*)
             (return-from command-run-script NIL)))
       (au-revoir ()
-        (return-from command-run-script T)))
+                 (return-from command-run-script T)))
     (setf (task-script-debug *task*) :debugging)
     (command-repl task)))
 
@@ -2023,14 +2035,14 @@ RETURN: T
              (handler-case
                  (let ((line (io-read-line task :beep (not (task-silence task)))))
                    (if (task-interruption task)
-                       (reset-ready task)
-                       (command-eval-line task line)))
+                     (reset-ready task)
+                     (command-eval-line task line)))
                (end-of-file (err)
-                 (if (and (io-tape-input-p task)
-                          (eql (stream-error-stream err) (task-input task)))
-                     (io-stop-tape-reader task)
-                     ;; end-of-file on input, let's exit:
-                     (signal 'au-revoir))))))
+                            (if (and (io-tape-input-p task)
+                                     (eql (stream-error-stream err) (task-input task)))
+                              (io-stop-tape-reader task)
+                              ;; end-of-file on input, let's exit:
+                              (signal 'au-revoir))))))
 
       (reset-ready task)
       (handler-case                     ; catch au-revoir condition.

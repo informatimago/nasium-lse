@@ -1536,13 +1536,15 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 
 (defun compile-lse-stream (stream)
   (let ((*scanner* (make-instance 'lse-scanner :source stream)))
-    (loop
-      :until (eofp (scanner-current-token *scanner*))
-      :for parse-tree = (lse-parse-one-line *scanner*)
-      :when (print parse-tree)
-      :collect (let ((code (compile-lse-line-parse-tree parse-tree)))
-                 (setf (code-source code) (unparse-slist parse-tree))
-                 code))))
+    (converting-parser-errors      
+      (loop
+        :until (eofp (scanner-current-token *scanner*))
+        :for parse-tree = (prog1 (parse-lse *scanner*)
+                            (expect *scanner* 'eol))
+        :when parse-tree
+          :collect (let ((code (compile-lse-line-parse-tree parse-tree)))
+                     (setf (code-source code) (unparse-slist parse-tree))
+                     code)))))
 
 
 (defun compile-lse-file (source &optional name)

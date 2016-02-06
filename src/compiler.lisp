@@ -34,10 +34,9 @@
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
-
-
-;;----------------------------------------------------------------------
-(cl:in-package "COM.INFORMATIMAGO.LSE")
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (setf *readtable* (copy-readtable nil)))
+(in-package "COM.INFORMATIMAGO.LSE")
 ;;----------------------------------------------------------------------
 (enable-byte-code-reader-macro)
 
@@ -1471,8 +1470,8 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                             :grammar            (parser-error-grammar err)
                             :scanner            (parser-error-scanner err)
                             :non-terminal-stack (parser-error-non-terminal-stack err)
-                            :expected-token (parser-error-expected-token err)
-                            :format-control "~:[FIN DE LIGNE INATTENDUE~3*~;SYMBOLE INATTENDU ~:[~A ~S~;~*~S~]~]~@[; ATTENDU: ~A~]."
+                            :expected-tokens (parser-error-expected-tokens err)
+                            :format-control "~:[FIN DE LIGNE INATTENDUE~3*~;SYMBOLE INATTENDU ~:[~A ~S~;~*~S~]~]~@[; ATTENDU: ~{~A~^ ~}~]."
                             :format-arguments
                             (let ((token (scanner-current-token (parser-error-scanner err))))
                               (list (not (or (eolp token) (eofp token)))
@@ -1480,7 +1479,8 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                                              (token-text token))
                                     (token-kind-label (token-kind token))
                                     (token-text token)
-                                    (token-kind-label (parser-error-expected-token err)))))))
+                                    (mapcar (function token-kind-label)
+                                            (parser-error-expected-tokens err)))))))
                   (parser-error
                    (lambda (err)
                      (error 'lse-parser-error 
@@ -1502,41 +1502,46 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                             ;; :grammar (scanner-error-grammar err)
                             :scanner            (scanner-error-scanner err)
                             ;; :non-terminal-stack (scanner-error-non-terminal-stack err)
-                            :expected-token    (com.informatimago.rdp::unexpected-token-error-expected-token err)
-                            :format-control    "~:[FIN DE LIGNE INATTENDUE~3*~;SYMBOLE INATTENDU ~:[~A ~S~;~*~S~]~]~@[; ATTENDU: ~A~]."
+                            :expected-tokens    (com.informatimago.rdp::unexpected-token-error-expected-tokens err)
+                            :format-control    "~:[FIN DE LIGNE INATTENDUE~3*~;SYMBOLE INATTENDU ~:[~A ~S~;~*~S~]~]~@[; ATTENDU: ~{~A~^, ~}~]."
                             :format-arguments  (let ((token (scanner-current-token (scanner-error-scanner err))))
                                                  (list (not (or (eolp token) (eofp token)))
                                                        (string= (token-kind-label (token-kind token))
                                                                 (token-text token))
                                                        (token-kind-label (token-kind token))
                                                        (token-text token)
-                                                       (token-kind-label (com.informatimago.rdp::unexpected-token-error-expected-token err))))))))
-     ,@body))
+                                                       (mapcar (lambda (token)
+                                                                 (case token
+                                                                   ((nil) "RIEN")
+                                                                   ((eof eol) "FIN DE LIGNE")
+                                                                   (t     (token-kind-label token))))
+                                                               (com.informatimago.rdp::unexpected-token-error-expected-tokens err))))))))
+     ,@body)
+  `(progn ,@body))
 
 
-(defun lse-parser (*scanner*)
+(defun lse-parse-one-line (*scanner*)
   (converting-parser-errors
-   (parse-lse *scanner*)))
-
+    (prog1 (parse-lse *scanner*)
+      (accept *scanner* 'eol))))
 
 
 (defun compile-lse-line (source-line)
   (let* ((*scanner*  (make-instance 'lse-scanner :source source-line))
-         (parse-tree (lse-parser *scanner*))
+         (parse-tree (lse-parse-one-line *scanner*))
          (code       (compile-lse-line-parse-tree parse-tree)))
     (setf (code-source code)  (unparse-slist parse-tree))
     code))
 
 
-
 (defun compile-lse-stream (stream)
   (let ((*scanner* (make-instance 'lse-scanner :source stream)))
     (loop
-      :until (typep (scanner-current-token *scanner*) 'tok-eof)
-      :for parse-tree = (lse-parser *scanner*)
-      :when parse-tree
+      :until (eofp (scanner-current-token *scanner*))
+      :for parse-tree = (lse-parse-one-line *scanner*)
+      :when (print parse-tree)
       :collect (let ((code (compile-lse-line-parse-tree parse-tree)))
-                 (setf (code-source code)  (unparse-slist parse-tree))
+                 (setf (code-source code) (unparse-slist parse-tree))
                  code))))
 
 
@@ -1604,107 +1609,108 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                      (if (member (first line) bc::*branches*)
                          (format t " ; @~A~%"  (+ pc (length line) (second line)))
                          (format t "~%"))
-                     (incf pc (length line))))))
-    #-(and)
-    (loop
-
-      (case
-
-          
-          (cl:defparameter *branches* '(
-                                        BALWAYS ;       BALWAYS offset
-                                        BTRUE   ; test  BTRUE   offset
-                                        BFALSE  ; test  BFALSE  offset
-                                        BNEVER  ;       BNEVER  offset
-                                        ))
-        
-        (cl:defparameter *0* '(
-                               DUP ; arg DUP
-
-                               NON ; arg NON 
-                               OU  ; arg1 arg2 OU
-                               ET  ; arg1 arg2 ET
-
-                               EG  ; arg1 arg2 EG
-                               NE  ; arg1 arg2 NE
-                               LE  ; arg1 arg2 LE
-                               LT  ; arg1 arg2 LT
-                               GE  ; arg1 arg2 GE
-                               GT  ; arg1 arg2 GT
-
-                               CONCAT ; arg1 arg2 CONCAT
-
-                               NEG ; arg NEG
-                               ADD ; arg1 arg2 ADD
-                               SUB ; arg1 arg2 SUB
-                               MUL ; arg1 arg2 MUL
-                               DIV ; arg1 arg2 DIV
-                               POW ; arg1 arg2 POW
+                     (incf pc (length line))))))))
 
 
-                               AFFICHER-E        ; rep e f AFFICHER-E
-                               AFFICHER-F        ; rep e f AFFICHER-F
-                               AFFICHER-CR       ; rep AFFICHER-CR
-                               AFFICHER-CHAINE   ; rep chaine AFFICHER-CHAINE
-                               AFFICHER-NEWLINE  ; rep AFFICHER-NEWLINE
-                               AFFICHER-NL       ; rep AFFICHER-NL
-                               AFFICHER-SPACE    ; rep AFFICHER-SPACE
-                               AFFICHER-U        ; nexpr AFFICHER-U
+#-(and)
+(loop
 
-                               NEXT-LINE  ; NEXT-LINE
-                               RETOUR     ; RETOUR
-                               RETOUR-EN  ; line RETOUR-EN
-                               RESULT     ; arg RESULT
-                               GOTO       ; line GOTO
+  (case x
+    
+    (cl:defparameter *branches* '(
+                                  BALWAYS ;       BALWAYS offset
+                                  BTRUE   ; test  BTRUE   offset
+                                  BFALSE  ; test  BFALSE  offset
+                                  BNEVER  ;       BNEVER  offset
+                                  ))
+    
+    (cl:defparameter *0* '(
+                           DUP      ; arg DUP
 
-                               TANT-QUE                 ; test TANT-QUE
-                               CHARGER                  ; enr fic CHARGER datavar statusvar
-                               SUPPRIMER-ENREGISTREMENT ; enr fic SUPPRIMER-ENREGISTREMENT
-                               SUPPRIMER-FICHIER        ;     fic SUPPRIMER-FICHIER
-                               EXECUTER  ; fic lin EXECUTED
-                               PAUSE     ; PAUSE
-                               TERMINER  ; TERMINER
+                           NON      ; arg NON 
+                           OU       ; arg1 arg2 OU
+                           ET       ; arg1 arg2 ET
 
-                               PROCEDURE
-                               comment ; COMMENT comment
-                               ))
+                           EG       ; arg1 arg2 EG
+                           NE       ; arg1 arg2 NE
+                           LE       ; arg1 arg2 LE
+                           LT       ; arg1 arg2 LT
+                           GE       ; arg1 arg2 GE
+                           GT       ; arg1 arg2 GT
 
-        (cl:defparameter *1* '(
-                               AREF1&PUSH-REF ; idx AREF1&PUSH-REF identifier
-                               AREF1&PUSH-VAL ; idx AREF1&PUSH-VAL identifier
-                               AREF2&PUSH-REF ; idx1 idx2 AREF2&PUSH-REF identifier
-                               AREF2&PUSH-VAL ; idx1 idx2 AREF2&PUSH-VAL identifier
+                           CONCAT   ; arg1 arg2 CONCAT
 
-                               POP&ASTORE1    ; val idx POP&ASTORE1 identifier
-                               POP&ASTORE2    ; val idx1 idx2 POP&ASTORE2 identifier
-                               POP&STORE      ; val POP&STORE identifier
+                           NEG      ; arg NEG
+                           ADD      ; arg1 arg2 ADD
+                           SUB      ; arg1 arg2 SUB
+                           MUL      ; arg1 arg2 MUL
+                           DIV      ; arg1 arg2 DIV
+                           POW      ; arg1 arg2 POW
 
-                               PUSH-REF       ; PUSH-REF identifier
-                               PUSH-VAL       ; PUSH-REF identifier
-                               PUSHI          ; PUSHI immediate-value
 
-                               LIRE&STORE        ; LIRE&STORE ident
-                               LIRE&ASTORE1      ; index LIRE&ASTORE1 ident
-                               LIRE&ASTORE2      ; idx1 idx2 LIRE&ASTORE1 ident
+                           AFFICHER-E  ; rep e f AFFICHER-E
+                           AFFICHER-F  ; rep e f AFFICHER-F
+                           AFFICHER-CR ; rep AFFICHER-CR
+                           AFFICHER-CHAINE ; rep chaine AFFICHER-CHAINE
+                           AFFICHER-NEWLINE ; rep AFFICHER-NEWLINE
+                           AFFICHER-NL      ; rep AFFICHER-NL
+                           AFFICHER-SPACE   ; rep AFFICHER-SPACE
+                           AFFICHER-U       ; nexpr AFFICHER-U
 
-                               CHAINE         ; CHAINE identifier
-                               TABLEAU1       ; dim TABLEAU1 identifier
-                               TABLEAU2       ; dim1 dim2 TABLEAU2 identifier
-                               LIBERER        ; LIBERER identifier
+                           NEXT-LINE ; NEXT-LINE
+                           RETOUR    ; RETOUR
+                           RETOUR-EN ; line RETOUR-EN
+                           RESULT    ; arg RESULT
+                           GOTO      ; line GOTO
 
-                               BALWAYS    ;      BALWAYS offset
-                               BTRUE      ; test BTRUE   offset
-                               BFALSE     ; test BFALSE  offset
-                               BNEVER     ;      BNEVER  offset
+                           TANT-QUE ; test TANT-QUE
+                           CHARGER ; enr fic CHARGER datavar statusvar
+                           SUPPRIMER-ENREGISTREMENT ; enr fic SUPPRIMER-ENREGISTREMENT
+                           SUPPRIMER-FICHIER ;     fic SUPPRIMER-FICHIER
+                           EXECUTER          ; fic lin EXECUTED
+                           PAUSE             ; PAUSE
+                           TERMINER          ; TERMINER
 
-                               FAIRE-JUSQU-A   ; lino init pas jusqua FAIRE-JUSQU-A ident
-                               FAIRE-TANT-QUE  ; lino init pas FAIRE-TANT-QUE ident
+                           PROCEDURE
+                           comment  ; COMMENT comment
+                           ))
+
+    (cl:defparameter *1* '(
+                           AREF1&PUSH-REF ; idx AREF1&PUSH-REF identifier
+                           AREF1&PUSH-VAL ; idx AREF1&PUSH-VAL identifier
+                           AREF2&PUSH-REF ; idx1 idx2 AREF2&PUSH-REF identifier
+                           AREF2&PUSH-VAL ; idx1 idx2 AREF2&PUSH-VAL identifier
+
+                           POP&ASTORE1 ; val idx POP&ASTORE1 identifier
+                           POP&ASTORE2 ; val idx1 idx2 POP&ASTORE2 identifier
+                           POP&STORE   ; val POP&STORE identifier
+
+                           PUSH-REF ; PUSH-REF identifier
+                           PUSH-VAL ; PUSH-REF identifier
+                           PUSHI    ; PUSHI immediate-value
+
+                           LIRE&STORE   ; LIRE&STORE ident
+                           LIRE&ASTORE1 ; index LIRE&ASTORE1 ident
+                           LIRE&ASTORE2 ; idx1 idx2 LIRE&ASTORE1 ident
+
+                           CHAINE   ; CHAINE identifier
+                           TABLEAU1 ; dim TABLEAU1 identifier
+                           TABLEAU2 ; dim1 dim2 TABLEAU2 identifier
+                           LIBERER  ; LIBERER identifier
+
+                           BALWAYS  ;      BALWAYS offset
+                           BTRUE    ; test BTRUE   offset
+                           BFALSE   ; test BFALSE  offset
+                           BNEVER   ;      BNEVER  offset
+
+                           FAIRE-JUSQU-A ; lino init pas jusqua FAIRE-JUSQU-A ident
+                           FAIRE-TANT-QUE ; lino init pas FAIRE-TANT-QUE ident
                                         ; test TANT-QUE
-                               GARER           ; enr fic GARER identificateur
-                               ))
+                           GARER    ; enr fic GARER identificateur
+                           ))
 
-        (cl:defparameter *2* '(CALL            ; CALL identificateur-procedure nombre-d-argument
-                               ))))))
+    (cl:defparameter *2* '(CALL ; CALL identificateur-procedure nombre-d-argument
+                           ))))
 
 
 
@@ -1777,81 +1783,6 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                          (when one-instruction (loop-finish)))
                   (incf pc (length listing-line)))))))
   (values))
-
-
-
-
-;;;---------------------------------------------------------------------
-;;; Test functions
-;;;---------------------------------------------------------------------
-
-(defun test/parse-stream (src)
-  (let ((*scanner* (make-instance 'lse-scanner :source src)))
-   (loop
-     :until (typep (scanner-current-token *scanner*) 'tok-eof)
-     :collect  (lse-parser *scanner*))))
-
-
-(defun test/parse-file (path)
-  (with-open-file (src path)
-    (test/parse-stream src)))
-
-(defun test/parse-string (source)
-  (with-input-from-string (src source)
-    (test/parse-stream src)))
-
-
-(defun test/compile-lse-stream (src)
-  (loop
-    :for line = (read-line src nil nil)
-    :while line
-    :do (terpri) (princ ";; |  ") (write-string line)
-    :do (let ((comp (compile-lse-line line)))
-          (print comp)
-          (print (code-source comp))
-          (print (disassemble-lse (code-vector comp))))
-    :finally (terpri) (finish-output))
-  (values))
-
-(defun test/compile-lse-file (path)
-  (with-open-file (src path)
-    (test/compile-lse-stream src))
-  (values))
-
-(defun test/compile-lse-string (source)
-  (with-input-from-string (src source)
-    (test/compile-lse-stream src))
-  (values))
-
-
-;; (test/parse-file #P"SYNTERR.LSE")
-;; (test/parse-file #P"../BOURG/BOUR.LSE")
-;; (test/parse-string "18*")
-;; (let ((*print-escape* nil) (*print-pretty* t) (*print-right-margin* 80)) (write (test/parse-file "tpars.lse")))
-
-;; (compile-lse-string "95 AFFICHER['Après la pause…',/]")
-;; (compile-lse-string "20 afficher [10/,20x,'Hello',/,20x,5'*',2/]")
-
-
-;; (test/compile-lse-string "4 executer 'tfic'")
-;; (4 #(50 "tfic" 50 1 35 26) "4 EXECUTER 'tfic'")
-
-;; (test/parse-string "6 TABLEAU V[3],M[2,2]")
-;; (test/compile-lse-string "6 TABLEAU V[3],M[2,2]")
-
-
-
-
-
-
-
-
-;; (compile-lse-file #P "../BOURG/BOUR.LSE")
-;; (compile-lse-file #P "TESTCOMP.LSE")
-
-;; (test/compile-lse-file #P "TESTCOMP.LSE")
-;; (test/compile-lse-file "tpars.lse")
-
 
 
 ;; Local Variables:

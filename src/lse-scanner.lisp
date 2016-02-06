@@ -38,6 +38,8 @@
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (setf *readtable* (copy-readtable nil)))
 (in-package "COM.INFORMATIMAGO.LSE")
 
 
@@ -197,18 +199,19 @@
 
 (defmethod make-eol ((self scanner))
   (make-instance 'tok-eol
-      :kind    'tok-eol
+      :kind    'eol
       :text    "<END OF LINE>"
       :column  (scanner-column self)
       :line    (scanner-line   self)))
 
 (defgeneric eolp (token)
-  (:documentation "Returns whether the token is an end-of-line token")
-  (:method ((token t))       nil)
-  (:method ((token tok-eol)) t)
-  (:method ((token (eql 'tok-eol))) t))
-
-
+  (:documentation "Returns whether the token is an end-of-line token.
+A end-of-file is also considered an end-of-line.")
+  (:method ((token t))          nil)
+  (:method ((token tok-eol))    t)
+  (:method ((token (eql 'eol))) t)
+  (:method ((token tok-eof))    t)
+  (:method ((token (eql 'eof))) t))
 
 
 (defclass tok-eof (lse-token)
@@ -216,18 +219,19 @@
 
 (defmethod make-eof ((self scanner))
   (make-instance 'tok-eof
-      :kind    'tok-eof
-      :text    "<END OF FILE>"
-      :column  (scanner-column self)
-      :line    (scanner-line   self)))
+                 :kind    'eof
+                 :text    "<END OF FILE>"
+                 :column  (scanner-column self)
+                 :line    (scanner-line   self)))
+
 
 (defgeneric eofp (token)
   (:documentation "Returns whether the token is an end-of-file token")
-  (:method ((token t))       nil)
-  (:method ((token tok-eof)) t)
-  (:method ((token tok-eol)) t)
-  (:method ((token (eql 'tok-eof))) t)
-  (:method ((token (eql 'tok-eol))) t))
+  (:method ((token t))          nil)
+  (:method ((token tok-eof))    t)
+  (:method ((token (eql 'eof))) t))
+
+
 
 
 
@@ -299,21 +303,21 @@
   ())
 
 (define-condition lse-parser-error-unexpected-token (lse-parser-error)
-  ((expected-token :initarg :expected-tokken
-                   :initform nil
-                   :reader parser-error-expected-token)))
+  ((expected-tokens :initarg :expected-tokkens
+                    :initform '()
+                    :reader parser-error-expected-tokens)))
 
 
 
 
-(defclass lse-scanner (scanner)
+(defclass lse-scanner (buffered-scanner)
   ((buffer
     :accessor scanner-buffer
     :type     (or null string)
     :initform nil)
    (previous-token-kind
     :accessor scanner-previous-token-kind
-    :initform 'tok-eol
+    :initform 'eol
     :documentation "The token kind of the previous token."))
   (:DOCUMENTATION "A scanner for L.S.E."))
 
@@ -326,15 +330,11 @@
 ;;   (token-text (scanner-current-token scanner)))
 
 (defmethod scanner-end-of-source-p ((scanner lse-scanner))
-  (eofp (scanner-current-token scanner)))
-
-(defmethod word-equal ((token lse-token) (kind symbol))
-  (eql (token-kind token) kind))
-(defmethod word-equal ((kind symbol) (token lse-token))
-  (eql (token-kind token) kind))
+  ;; we process lse sources line by line.
+  (eolp (scanner-current-token scanner)))
 
 (defmethod accept ((scanner lse-scanner) token)
-  (if (word-equal token (scanner-current-token scanner))
+  (if (word-equal (scanner-current-token scanner) token)
       (prog1 (scanner-current-token scanner)
         ;; (list (token-kind (scanner-current-token scanner))
         ;;       (scanner-current-text scanner)
@@ -396,7 +396,7 @@
   (setf (scanner-current-token self) (make-eol self))
   self)
 
-(defmethod slots-for-print :append ((self lse-scanner))
+(defmethod slots-for-print append ((self lse-scanner))
   (extract-slots self '(buffer previous-token-kind)))
 
 
@@ -865,13 +865,13 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
 (defun lse-advance-line (scanner)
   "RETURN: The new current token, old next token"
   (cond
-    ((typep (scanner-current-token scanner) 'tok-eof) #|End of File -- don't move.|#)   
+    ((eofp (scanner-current-token scanner)) #|End of File -- don't move.|#)   
     ((setf (scanner-buffer scanner) (readline (slot-value scanner 'stream)))
                                         ; got a line -- advance a token.
      (setf (scanner-column scanner) 1
            (scanner-state  scanner) +maybe-commentaire+)
-     (when (plusp (scanner-line   scanner))
-       (incf (scanner-line   scanner)))
+     (when (plusp (scanner-line scanner))
+       (incf (scanner-line scanner)))
      (setf (scanner-current-token scanner) nil)
      (scan-next-token scanner))
     (t                                  ; Just got EOF
@@ -885,21 +885,16 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
 
 (defmethod scan-next-token ((scanner lse-scanner) &optional parser-data)
   (declare (ignore parser-data))
-  (typecase (scanner-current-token scanner)
-    (tok-eof
+  (cond
+    ((eofp (scanner-current-token scanner))
      #|End of File -- don't move|#)
-    (tok-eol
-     ;; (typecase (advance-line scanner)
-     ;;   (tok-eof #|nothing|#)
-     ;;   (t       (setf (scanner-current-token scanner) (scan-lse-token scanner))))
+    ((eolp (scanner-current-token scanner))
      (advance-line scanner))
     (t
-     (setf (scanner-current-token scanner) (scan-lse-token scanner))
-     ;; (print (slot-value  (scanner-current-token scanner) 'text))
-     ))
+     (setf (scanner-current-token scanner) (scan-lse-token scanner))))
   (case (token-kind (scanner-current-token scanner))
     (tok-numero
-     (when (eq 'tok-eol (scanner-previous-token-kind scanner))
+     (when (eq 'eol (scanner-previous-token-kind scanner))
        (setf (scanner-state scanner) +maybe-commentaire+)))
     (tok-ptvirg
      (setf (scanner-state scanner) +maybe-commentaire+))
@@ -916,46 +911,5 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
   (scanner-current-token scanner))
 
 
-(defun test/scan-stream (src)
-  (loop
-    :with scanner = (make-instance 'lse-scanner :source src :state 0)
-    :initially (progn
-                 (advance-line scanner)
-                 (format t "~2%;; ~A~%;; ~A~%"
-                         (scanner-buffer scanner)
-                         (scanner-current-token scanner)))
-    :do (progn
-          (typecase (scanner-current-token scanner)
-            (tok-eol
-             (advance-line scanner)
-             ;; (scan-next-token scanner)
-             (format t ";; ~A~%" (scanner-buffer scanner)))
-            (t
-             (scan-next-token scanner)))
-          (format t "~&~3A ~20A ~20S ~3A ~3A ~20A ~A~%"
-                  (scanner-state scanner)
-                  (token-kind (scanner-current-token scanner))
-                  (token-text (scanner-current-token scanner))
-                  (eolp (scanner-current-token scanner))
-                  (eofp (scanner-current-token scanner))
-                  (scanner-previous-token-kind scanner)
-                  (type-of (scanner-current-token scanner)))
-          (finish-output))
-    :until (typecase (scanner-current-token scanner)
-             (tok-eof t)
-             (t nil))))
-
-(defun test/scan-file (path)
-  (with-open-file (src path)
-    (test/scan-stream src)))
-
-(defun test/scan-string (source)
-  (with-input-from-string (src source)
-    (test/scan-stream src)))
-
-
-;; (test/scan-file #P"~/src/pjb/nasium-lse/SYNTERR.LSE")
-;; (test/scan-file #P"~/src/pjb/nasium-lse/TESTCOMP.LSE")
-;; (test/scan-string "18*")
 ;;;; THE END ;;;;
 

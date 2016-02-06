@@ -31,8 +31,8 @@
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
-
-
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (setf *readtable* (copy-readtable nil)))
 (DEFPACKAGE "COM.INFORMATIMAGO.LSE.SERVER"
   (:nicknames "LSE-SERVER")
   (:use "COMMON-LISP"

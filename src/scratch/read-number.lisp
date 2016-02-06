@@ -1,3 +1,6 @@
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (setf *readtable* (copy-readtable nil)))
+
 #-(and) "
 
 - un sifflement par instruction LIRE.

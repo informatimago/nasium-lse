@@ -31,10 +31,8 @@
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
-
-
-(in-package "COMMON-LISP-USER")
-
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (setf *readtable* (copy-readtable nil)))
 
 (defpackage "COM.INFORMATIMAGO.LSE.OS"
   (:use "COMMON-LISP")
@@ -48,21 +46,17 @@
    "UNAME" "STTY")
   (:documentation "A portability layer for a few OS operators."))
 
-
-
 (defpackage "COM.INFORMATIMAGO.LSE.BYTE-CODE"
   (:nicknames "BC")
   (:use)
   (:documentation "The package where the byte-code symbols for the LSE VM are interned."))
-
 
 (defpackage "COM.INFORMATIMAGO.LSE.IDENTIFIERS"
   (:nicknames "ID")
   (:use)
   (:documentation "The package where the identifiers for the LSE language are interned."))
 
-
-(DEFPACKAGE "COM.INFORMATIMAGO.LSE"
+(defpackage "COM.INFORMATIMAGO.LSE"
   (:nicknames "LSE")
   (:use "COMMON-LISP"
         "SPLIT-SEQUENCE" "BABEL"
@@ -174,7 +168,6 @@
   
   (:documentation "The LSE language and system implementation."))
 
-
 (defpackage "COM.INFORMATIMAGO.LSE.UNIX-TERMINAL"
   (:use "COMMON-LISP"
         "TRIVIAL-GRAY-STREAMS"
@@ -191,9 +184,7 @@
            "TERMINAL-VINTR" "TERMINAL-VQUIT" "TERMINAL-VSUSP"
            "TERMINAL-VKILL" "TERMINAL-VEOF" "TERMINAL-VEOL"
            "TERMINAL-VEOL2" "TERMINAL-VERASE" "TERMINAL-VWERASE"
-           "TERMINAL-VREPRINT" "TERMINAL-VSTART" "TERMINAL-VSTOP"
-
-           ))
+           "TERMINAL-VREPRINT" "TERMINAL-VSTART" "TERMINAL-VSTOP"))
 
 
 ;;; THE END ;;;;

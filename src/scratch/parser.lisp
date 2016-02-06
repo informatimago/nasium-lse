@@ -1,4 +1,209 @@
 (in-package "COM.INFORMATIMAGO.LSE")
+
+#-(and)
+(let ((*print-circle* nil)
+      (*print-right-margin* 120))
+  (pprint (macroexpand-1 '
+           
+(defgrammar deux-numeros-optionels
+    :terminals ((tok-virgule ",")
+                (tok-numero  "[0-9]+"))
+    :start deux-numeros-optionels
+    :rules ((--> deux-numeros-optionels
+                 (opt (seq tok-numero
+                           (opt (seq tok-virgule tok-numero :action (parse-integer (second $2)))
+                                :action $1)
+                           :action (list (parse-integer (second $1))
+                                         $2))
+                      :action $1)
+                 :action (if $1
+                             $1
+                             (list 1 nil)))))
+
+)))
+
+
+(let ((com.informatimago.rdp::*eof-symbol* '#:eof))
+  (register-grammar
+   (com.informatimago.rdp::make-normalized-grammar
+    :name
+    'deux-numeros-optionels
+    :terminals
+    '((tok-virgule ",") (tok-numero "[0-9]+"))
+    :start
+    'deux-numeros-optionels
+    :rules
+    '((deux-numeros-optionels
+       (seq
+        ((opt
+          ((seq
+            ((seq (tok-numero (opt ((seq ((seq (tok-virgule tok-numero) ((parse-integer (second $2))))) ($1)))))
+                  ((list (parse-integer (second $1)) $2))))
+            ($1)))))
+        ((if $1 $1 (list 1 nil))))))
+    :scanner
+    't
+    :skip-spaces
+    't))
+  nil
+  (progn (progn (defclass deux-numeros-optionels-scanner (buffered-scanner)
+                  nil
+                  (:default-initargs :spaces " 
+	"
+                                     :token-kind-package (load-time-value (find-package "COM.INFORMATIMAGO.LSE")) :token-symbol-package
+                   (load-time-value (find-package "COM.INFORMATIMAGO.LSE"))))
+                (defmethod scan-next-token ((scanner deux-numeros-optionels-scanner) &optional
+                                                                                       com.informatimago.common-lisp.parser.scanner::parser-data)
+                  "RETURN: (scanner-current-token scanner)"
+                  (declare (ignore com.informatimago.common-lisp.parser.scanner::parser-data))
+                  (let (com.informatimago.common-lisp.parser.scanner::match)
+                    (setf com.informatimago.common-lisp.parser.scanner::match
+                          (com.informatimago.common-lisp.regexp.regexp:string-match (format
+                                                                                     nil
+                                                                                     "^([~A]+)"
+                                                                                     (coerce
+                                                                                      (scanner-spaces scanner)
+                                                                                      'string))
+                                                                                    (scanner-buffer scanner)
+                                                                                    :start
+                                                                                    (1- (scanner-column scanner))))
+                    (when com.informatimago.common-lisp.parser.scanner::match
+                      (setf (scanner-column scanner)
+                            (1+ (com.informatimago.common-lisp.regexp.regexp:match-end 1
+                                                                                       com.informatimago.common-lisp.parser.scanner::match))))
+                    (let ((com.informatimago.common-lisp.parser.scanner::pos (1- (scanner-column scanner))))
+                      (cond ((scanner-end-of-source-p scanner)
+                             (setf (scanner-column scanner) (1+ (length (scanner-buffer scanner)))
+                                   (scanner-current-text scanner) "<END OF SOURCE>"
+                                   (scanner-current-token scanner)
+                                   'com.informatimago.common-lisp.parser.scanner::<END\ OF\ SOURCE>))
+                            ((scanner-end-of-line-p scanner) (advance-line scanner))
+                            ((setf com.informatimago.common-lisp.parser.scanner::match
+                                   (com.informatimago.common-lisp.regexp.regexp:string-match '"^(,)"
+                                                                                             (scanner-buffer scanner)
+                                                                                             :start
+                                                                                             com.informatimago.common-lisp.parser.scanner::pos))
+                             (setf (scanner-column scanner)
+                                   (1+ (com.informatimago.common-lisp.regexp.regexp:match-end 1
+                                                                                              com.informatimago.common-lisp.parser.scanner::match))
+                                   (scanner-current-text scanner)
+                                   (com.informatimago.common-lisp.regexp.regexp:match-string 1
+                                                                                             (scanner-buffer scanner)
+                                                                                             com.informatimago.common-lisp.parser.scanner::match)
+                                   (scanner-current-token scanner) 'tok-virgule))
+                            ((setf com.informatimago.common-lisp.parser.scanner::match
+                                   (com.informatimago.common-lisp.regexp.regexp:string-match '"^([0-9]+)"
+                                                                                             (scanner-buffer scanner)
+                                                                                             :start
+                                                                                             com.informatimago.common-lisp.parser.scanner::pos))
+                             (setf (scanner-column scanner)
+                                   (1+ (com.informatimago.common-lisp.regexp.regexp:match-end 1
+                                                                                              com.informatimago.common-lisp.parser.scanner::match))
+                                   (scanner-current-text scanner)
+                                   (com.informatimago.common-lisp.regexp.regexp:match-string 1
+                                                                                             (scanner-buffer scanner)
+                                                                                             com.informatimago.common-lisp.parser.scanner::match)
+                                   (scanner-current-token scanner) 'tok-numero))
+                            (t
+                             (error 'scanner-error-invalid-character
+                                    :file
+                                    (scanner-file scanner)
+                                    :line
+                                    (scanner-line scanner)
+                                    :column
+                                    (scanner-column scanner)
+                                    :state
+                                    (scanner-state scanner)
+                                    :current-token
+                                    (scanner-current-token scanner)
+                                    :scanner
+                                    scanner
+                                    :invalid-character
+                                    (aref (scanner-buffer scanner) com.informatimago.common-lisp.parser.scanner::pos)
+                                    :format-control
+                                    "Invalid character ~S at position: ~D~%"
+                                    :format-arguments
+                                    (list (aref (scanner-buffer scanner)
+                                                com.informatimago.common-lisp.parser.scanner::pos)
+                                          (scanner-column scanner)))))))
+                  (setf (scanner-current-token scanner) (make-current-token scanner))))
+         (setf (com.informatimago.rdp::grammar-scanner (grammar-named 'deux-numeros-optionels))
+               'deux-numeros-optionels-scanner)
+         'deux-numeros-optionels-scanner)
+  (progn (fmakunbound 'deux-numeros-optionels/parse-deux-numeros-optionels-1)
+         (defun deux-numeros-optionels/parse-deux-numeros-optionels-1 (scanner)
+           "(--> deux-numeros-optionels-1 (alt ((seq (tok-numero deux-numeros-optionels-1-1-1) ((list (parse-integer (second $1)) $2))) (seq nil ('nil)))))"
+           (com.informatimago.rdp::with-non-terminal
+               (deux-numeros-optionels-1 scanner)
+             (cond ((word-equal (scanner-current-token scanner) 'tok-numero)
+                    (let* (($1 (accept scanner 'tok-numero))
+                           (tok-numero $1)
+                           (tok-numero.1 $1)
+                           ($2 (deux-numeros-optionels/parse-deux-numeros-optionels-1-1-1 scanner))
+                           ($0 (list $1 $2)))
+                      (declare (ignorable $0 tok-numero.1 tok-numero $1 $2))
+                      (list (parse-integer (second $1)) $2)))))))
+  (progn (fmakunbound 'deux-numeros-optionels/parse-deux-numeros-optionels-1-1-1)
+         (defun deux-numeros-optionels/parse-deux-numeros-optionels-1-1-1 (scanner)
+           "(--> deux-numeros-optionels-1-1-1 (alt ((seq (tok-virgule tok-numero) ((parse-integer (second $2)))) (seq nil ('nil)))))"
+           (com.informatimago.rdp::with-non-terminal
+               (deux-numeros-optionels-1-1-1 scanner)
+             (cond ((word-equal (scanner-current-token scanner) 'tok-virgule)
+                    (let* (($1 (accept scanner 'tok-virgule))
+                           (tok-virgule $1)
+                           (tok-virgule.1 $1)
+                           ($2 (accept scanner 'tok-numero))
+                           (tok-numero $2)
+                           (tok-numero.1 $2)
+                           ($0 (list $1 $2)))
+                      (declare (ignorable $0 tok-numero.1 tok-numero tok-virgule.1 tok-virgule $1 $2))
+                      (parse-integer (second $2))))))))
+  (progn (fmakunbound 'deux-numeros-optionels/parse-deux-numeros-optionels)
+         (defun deux-numeros-optionels/parse-deux-numeros-optionels (scanner)
+           "(--> deux-numeros-optionels (seq (deux-numeros-optionels-1) ((if $1 $1 (list 1 nil)))))"
+           (com.informatimago.rdp::with-non-terminal
+               (deux-numeros-optionels scanner)
+             (cond ((member (scanner-current-token scanner) '(tok-numero nil #:eof) :test #'word-equal)
+                    (let* (($1 (deux-numeros-optionels/parse-deux-numeros-optionels-1 scanner)) ($0 (list $1)))
+                      (declare (ignorable $0 $1))
+                      (if $1 $1 (list 1 nil))))
+                   (t
+                    (com.informatimago.rdp::error-unexpected-token
+                     scanner
+                     '(tok-numero nil #:eof)
+                     '(--> deux-numeros-optionels
+                       (alt (seq (deux-numeros-optionels-1) ((if $1 $1 (list 1 nil))))))))))))
+  (progn (fmakunbound 'parse-deux-numeros-optionels)
+         (defun parse-deux-numeros-optionels (com.informatimago.rdp::source)
+           "
+SOURCE: When the grammar has a scanner generated, or a scanner class
+        name, SOURCE can be either a string, or a stream that will be
+        scanned with the generated scanner.  Otherwise, it should be a
+        SCANNER instance.
+"
+           (let ((scanner (make-instance 'deux-numeros-optionels-scanner :source com.informatimago.rdp::source)))
+             (advance-line scanner)
+             (com.informatimago.rdp::with-non-terminal
+                 (deux-numeros-optionels scanner)
+               (prog1 (deux-numeros-optionels/parse-deux-numeros-optionels scanner)
+                 (unless (scanner-end-of-source-p scanner)
+                   (cerror "Continue"
+                           'parser-end-of-source-not-reached
+                           :file
+                           (scanner-file scanner)
+                           :line
+                           (scanner-line scanner)
+                           :column
+                           (scanner-column scanner)
+                           :grammar
+                           (grammar-named 'deux-numeros-optionels)
+                           :scanner
+                           scanner
+                           :non-terminal-stack
+                           (copy-list *non-terminal-stack*))))))))
+  'deux-numeros-optionels)
+
+
 #-(and)
 (let ((*print-circle* nil)
       (*print-right-margin* 120))

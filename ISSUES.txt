@@ -1,17 +1,35 @@
 -*- mode:org; coding:utf-8 -*-
-
+* TODO Nasium LSE Project                                               :lse:
 Check:
 https://gitlab.com/nasium-lse/nasium-lse/issues&sort=created_asc&state=opened
 
-* TODO 00027 pg55 parametre fonctions                                   :cli:
+LSE2000: https://sites.google.com/site/phoenixlse2000/
+
+** TODO [#A] Move nasium-lse/manifest.lisp to com.informatimago 
+
+It's copied, but we'd need to use now the tools/manifest.lisp instead
+of nasium-lse/manifest.lisp
+
+** TODO [#A] Tests / Debug
+** TODO [#B] complete telnet and options
+   - State "TODO"       from "TODO"       [2012-12-12 Wed 23:56]
+** TODO [#B] paypal / download?
+** TODO [#B] CLI MacOSX
+** TODO [#B] CLI Linux
+** TODO [#B] CLI MS-Windows
+** TODO [#B] Server Linux
+** TODO [#B] Server MacOSX
+** TODO [#B] GUI MacOSX
+
+** TODO 00027 pg55 parametre fonctions                                  :cli:
 
 #+BEGIN_SRC(lse)
 ERREUR EN LIGNE 201 : /Users/pjb/src/pjb/lse-progr/inrdp/pg55.lse:201:24: 
     201 PROCEDURE &COURB(&F,N,X,Y,P) LOCAL P,N,YMI,YMA,I
 #+END_SRC
 
-* TODO 00009 Message PRET EN LIGNE 004 when interrupting a program.     :cli:
-
+** TODO 00009 Message when interrupting a program.                      :cli:
+Message PRET EN LIGNE 004 when interrupting a program.
 The message when interrupting a program (at least on T1600)
 should indicate the line number:
 #+BEGIN_SRC(lse)
@@ -22,7 +40,8 @@ instead of just:
 PRET
 #+END_SRC
 
-* TODO 00012 AP 1: Parsing errors in commands fail catastrophically.    :cli:
+** TODO 00012 AP 1: parsing commands errors fails.                      :cli:
+AP 1: Parsing errors in commands fail catastrophically.
 
 Parsing errors in command argument fails catastrophically.
 
@@ -65,15 +84,15 @@ Calling COM.INFORMATIMAGO.LSE:TERMINAL-FINALIZE on a COM.INFORMATIMAGO.LSE.UNIX-
 [pjb@larissa :0.0 src]$ 
 #+END_SRC
 
-* TODO 00016 invalid option -> silent exit                              :cli:
+** TODO 00016 invalid option -> silent exit                             :cli:
 ./lse --mode-modern 
 exits silently instead of reporting an error.
-* TODO 00044 ligne vide                                                 :cli:
+** TODO 00044 ligne vide                                                :cli:
 10 RET          --> supprime la ligne 10
 10 SPC RET      --> insère la ligne 10 comme ligne vide.
 10 SPC *comment --> 10 *comment
 
-* TODO 00043 eqn .65 66. entre point                                    :cli:
+** TODO 00043 eqn .65 66. entre point                                   :cli:
 #+BEGIN_SRC(lisp)
   #+lse_extension -
 #+END_SRC
@@ -81,17 +100,19 @@ EQUIVALENT NUMERIQUE DE CARACTERE QUELCONQUES ENTRE POINTS :
            .13.  :CARACTERE (RC)
            .13 10.'A B C'.13 10.   : (RC) (LF) A B C (RC) (LF)
 
-* TODO 00046 ajouter une option --convertir-minuscules-en-majuscules    :cli:
+** TODO 00046 ajouter une option minusc->majusc                         :cli:
+--convertir-minuscules-en-majuscules
+
 À l'entrée, les minuscules devraient être converties en majuscules, 
 pour que CHAINE REP;LIRE REP;SI REP='OUI' ALORS AFFICHER 'OK" 
 affiche "OK" même si on tape "oui".
 
-* TODO 00048 FAIRE TANT QUE                                             :cli:
+** TODO 00048 FAIRE TANT QUE                                            :cli:
 LIRE LSE 1979
 
 Optionaliser la variable de boucle dans: FAIRE 42 TANT QUE A#0
 
-* TODO 00047 implémenter les procédures externes                        :cli:
+** TODO 00047 implémenter les procédures externes                       :cli:
 LIRE LSE 1979
 
 Quand on appelle une procédure &ABCDE, si elle n'est pas présente dans
@@ -105,11 +126,11 @@ dans le répertoire courant, ou on pourrait avoir un autre répertoire,
 ou une variable contenant une liste de répertoires.
 CHAINE EPDIR;EPDIR='/progr/mesgs/:/progr:/:.'
 
-* TODO 00042 xit(n) pas encore implementé                               :cli:
+** TODO 00042 xit(n) pas encore implementé                              :cli:
 #+BEGIN_SRC(lisp)
   #+lse_extension -
 #+END_SRC
-* TODO 00018 case of directories and files                       :cli:server:
+** TODO 00018 case of directories and files                      :server:cli:
 For now, directories and files names are case sensitive.
 
 This is confusing because users may be in uppercase input or mixed
@@ -121,7 +142,7 @@ For server and historic LSE, we would want to accept uppercase names.
 --> either use uppercase for directory and file names in server files,
     or implement case insensitivity.
 
-* TODO 00036 encoder/decoder/fsoup fails                                :cli:
+** TODO 00036 encoder/decoder/fsoup fails                               :cli:
 
 #+BEGIN_SRC(lse)
 CHANGER REPERTOIRE /inrdp
@@ -144,7 +165,7 @@ ERREUR EN LIGNE  15 : THE VALUE NIL IS NOT OF THE EXPECTED TYPE CHARACTER.
 PRET
 #+END_SRC
 
-* TODO 00024 lecture fin de ruban                                       :cli:
+** TODO 00024 lecture fin de ruban                                      :cli:
 
 When reaching the end of the tape while reading commands (and perhaps
 also inside a program):
@@ -293,7 +314,7 @@ CCL::BASIC-FILE-CHARACTER-INPUT-STREAM): NIL of type NULL
     
 PRET
 
-* TODO 00008 inetd server displays wrong bindings                       :cli:
+** TODO 00008 inetd server displays wrong bindings                      :cli:
 
 cf. inetd/lse.sh 
 
@@ -350,13 +371,15 @@ BONJOUR     09:48:50
 PRET
 #+END_SRC
 
-* TODO 00006 The PRET message is eaten (displays only RET) when ESC     :cli:
+** TODO 00006 The PRET message is eaten                                 :cli:
+The PRET message is eaten (displays only RET) when ESC
 This is probably due to some echoing of ESC.
 Occurs on xterm on MacOSX with emulse
 Doesn't occur in MacOSX Terminal.app or Cathode.app with terminal.env
 
-* TODO 00011 A single beep per LIRE statement, instead of variable.     :cli:
-* TODO 00035 ERREUR après TERMINER                                      :cli:
+** TODO 00011 A single beep per LIRE statement,                         :cli:
+A single beep per LIRE statement, instead of per variable.
+** TODO 00035 ERREUR après TERMINER                                     :cli:
 
 Les erreurs survenant après terminer ne devraient pas donner le numéro de ligne:
 
@@ -366,11 +389,12 @@ TERMINE EN LIGNE 019
 ERREUR EN LIGNE  19 : The value NIL is not of the expected type CHARACTER.
 #+END_SRC
 
-* TODO 00004 restore the terminal on restarts                           :cli:
+** TODO 00004 restore the terminal on restarts                          :cli:
 The *debugger-hook* resets the terminal for the debugger.
 When we use a restart to continue into LSE, we should reconfigure the LSE terminal.
 
-* TODO 00002 add a timeout and disconnect if no input occurs         :server:
+** TODO 00002 add a timeout                                          :server:
+ and disconnect if no input occurs
 
 Well for the cli too when we use it thru inetd…
 
@@ -459,12 +483,15 @@ anything, and keeping the ports open indefinitely.  For example:
 
 #+END_SRC
 
-* TODO 00040 vérifier SI 1=1 ALORS SINON AFFICHER 'NON';;               :cli:
+** TODO 00040 vérifier SI 1=1                                           :cli:
+SI 1=1 ALORS SINON AFFICHER 'NON';;
 
 Sur Siris, l'instruction vide existe, alors ;; et ALORS SINON sont possible.
 
-* TODO 00039 vérifier page 28 paramètres et déclarations manuel siris   :cli:
-* TODO 00038 vérifier RETOUR EN = RETOUR + ALLER EN vs. FAIRE POUR      :cli:
+** TODO 00039 vérifier siris                                            :cli:
+page 28 paramètres et déclarations manuel siris
+** TODO 00038 vérifier RETOUR EN                                        :cli:
+RETOUR EN = RETOUR + ALLER EN vs. FAIRE POUR     
 et tester:
 
 ERREUR EN LIGNE  20 : NUMERO DE LIGNE INEXISTANT 20
@@ -480,7 +507,7 @@ LISTER A PARTIR DE 1
 101 SI ARG<0 ALORS RETOUR EN ERRE
 102 RESULTAT RAC(ARG)
 
-* TODO 00033 specificités T-1600 / Mitra-15 / Siris                     :cli:
+** TODO 00033 specificités T-1600 / Mitra-15 / Siris                    :cli:
 
 T-1600:   fonctions SH, CH, TH, SGN, UN et ZER.
 
@@ -594,12 +621,12 @@ instructions
 Mentionné: T-1600: $ signifie quelque chose.
 Annoncé: Mitra-15: procédures externes rangées sur disque &init(t,l,c,i) &lir(c) &max(t,l,c) &min(t,l,c)
 
-* TODO 00049 UTILISATION DISQUE A PARTIR DE                             :cli:
+** TODO 00049 UTILISATION DISQUE A PARTIR DE                            :cli:
 LIRE LSE 1979
 
 UTILISATION DISQUE A PARTIR DE [nofic[,(P|D|T)]]
 
-* DONE 00045 message d'erreur pour tableaux                             :cli:
+** DONE 00045 message d'erreur pour tableaux                            :cli:
   CLOSED: [2015-04-03 Fri 13:19]
   - State "DONE"       from "TODO"       [2015-04-03 Fri 13:19] \\
     fixed.
@@ -610,14 +637,14 @@ ERREUR EN LIGNE 100 : Array index 4 out of bounds for #2A((25.531916 12.765958
 
 Devrait être: indexes (…) hors limite pour tableau: …
 
-* DONE 00041 cca(0)                                                     :cli:
+** DONE 00041 cca(0)                                                    :cli:
   CLOSED: [2015-04-03 Fri 10:39]
   - State "DONE"       from "TODO"       [2015-04-03 Fri 10:39] \\
     Corrected.
 cca(0) -> '0.0e0' au lieu de '0'
 afficher[f2.0]3 --> ' 3.' au lieu de ' 3'
 
-* DONE 00020 pg42,pg75,pg75b affichage format                           :cli:
+** DONE 00020 pg42,pg75,pg75b affichage format                          :cli:
   CLOSED: [2015-04-03 Fri 09:17]
   - State "DONE"       from "TODO"       [2015-04-03 Fri 09:17] \\
     Note: We don't get the space between 'AVRIL' and '1972' 
@@ -662,7 +689,7 @@ LUNDI 24 AVRIL 1972
 TERMINE EN LIGNE 016
 #+END_SRC
 
-* DONE 00022 pg44 affichage format                                      :cli:
+** DONE 00022 pg44 affichage format                                     :cli:
   CLOSED: [2015-04-03 Fri 09:19]
   - State "DONE"       from "TODO"       [2015-04-03 Fri 09:19] \\
     Corrected.
@@ -700,7 +727,7 @@ LUNDI
 9  10  11  12  =====
 #+END_SRC
 
-* DONE 00032 pg74,pg80 afficher[*'I']N                                  :cli:
+** DONE 00032 pg74,pg80 afficher[*'I']N                                 :cli:
   CLOSED: [2015-04-03 Fri 09:27]
   - State "DONE"       from "TODO"       [2015-04-03 Fri 09:27] \\
     Corrected.
@@ -788,7 +815,7 @@ ERROR: Unknown type specifier: IDENTIFIER
 --------------------------------------------------------------------------------
 #+END_SRC
 
-* DONE 00019 pg37,pg46,pg47,pg76 affichage des matrices                 :cli:
+** DONE 00019 pg37,pg46,pg47,pg76 affichage des matrices                :cli:
   CLOSED: [2015-04-03 Fri 09:42]
   - State "DONE"       from "TODO"       [2015-04-03 Fri 09:42] \\
     Corrected.
@@ -846,7 +873,7 @@ LUNDI-----
 TERMINE EN LIGNE 009
 #+END_SRC
 
-* DONE 00025 pg54,pg77 retour en 10                                     :cli:
+** DONE 00025 pg54,pg77 retour en 10                                    :cli:
   CLOSED: [2014-07-06 Sun 23:55]
   - State "DONE"       from "TODO"       [2014-07-06 Sun 23:55] \\
     Done. commit f6ec51ef74d22354e494a7bc5cd2b55e886b722a
@@ -1048,7 +1075,7 @@ LISTER A PARTIR DE 1
 255*[PAS TESTE SUR EMULSE]
 #+END_SRC
 
-* DONE 00028 pg59,pg59b parametre tableau par valeur                    :cli:
+** DONE 00028 pg59,pg59b parametre tableau par valeur                   :cli:
   CLOSED: [2014-07-06 Sun 23:05]
   - State "DONE"       from "TODO"       [2014-07-06 Sun 23:05] \\
     Done. commit 87150b8c6ab38ae76b209c24f5327f1578b8e2ff
@@ -1061,7 +1088,7 @@ ERREUR EN LIGNE   7 : ARGUMENT NO. 2 DE TYPE TABLEAU PASSE PAR VALEUR AU PARAMET
 LA PROCEDURE &PERM
 #+END_SRC
     
-* DONE 00029 pg60 variable locale chaine ou tableau                     :cli:
+** DONE 00029 pg60 variable locale chaine ou tableau                    :cli:
   CLOSED: [2014-07-06 Sun 22:39]
   - State "DONE"       from "TODO"       [2014-07-06 Sun 22:39] \\
     Done. commit e95e12932e8e39478769537620996e38634d8788
@@ -1072,7 +1099,7 @@ LA PROCEDURE &PERM
 ERREUR EN LIGNE  11 : LA VARIABLE V EXISTE DEJA ET N'EST PAS UNE CHAINE
 #+END_SRC
 
-* DONE 00017 default current working directory                          :cli:
+** DONE 00017 default current working directory                         :cli:
   CLOSED: [2014-07-06 Sun 22:38]
   - State "DONE"       from "TODO"       [2014-07-06 Sun 22:38] \\
     Done. commit e95e12932e8e39478769537620996e38634d8788
@@ -1083,11 +1110,11 @@ compiling lse (/home/lse/src/nasium-lse/src/).  By default, it should
 be the cwd of the new process instead. (Unless a LSE_ROOT environment
 variable is given).
 
-* DONE 00014 PG27 TANT QUE N#99 doesn't fail when N is read as 99.      :cli:
+** DONE 00014 PG27 TANT QUE N#99 doesn't fail when N is read as 99.     :cli:
   CLOSED: [2014-07-06 Sun 21:55]
   - State "DONE"       from "TODO"       [2014-07-06 Sun 21:55] \\
     Corrected with commit 78953759cf12415e08c0db49a8799545d8dd7189.
-* DONE 00015 PG28 TANT QUE SCH()#'**' fails.                            :cli:
+** DONE 00015 PG28 TANT QUE SCH()#'**' fails.                           :cli:
   CLOSED: [2014-06-30 Mon 19:24]
   - State "DONE"       from "TODO"       [2014-06-30 Mon 19:24] \\
     Corrected by issue 00021 correction.
@@ -1126,7 +1153,7 @@ ERREUR : FILL POINTER OF #() IS 0 .
 PRET 
 
 #+END_SRC
-* DONE 00021 pg43,46,47,51,76  faire enchevetree                        :cli:
+** DONE 00021 pg43,46,47,51,76  faire enchevetree                       :cli:
   CLOSED: [2014-06-29 Sun 18:51]
   - State "DONE"       from "TODO"       [2014-06-29 Sun 18:51] \\
     Corrected. commit 255df182ede7286902a657958a494868ae178e36
@@ -1136,11 +1163,11 @@ ERREUR EN LIGNE   2 : BOUCLE FAIRE 2 POUR J ENCHEVETREE AVEC LA BOUCHE FAIRE 2 P
 
 Il ne devrait pas y avoir d'erreur dans ce cas.
 
-* DONE 00037 pg71 fails                                                 :cli:
+** DONE 00037 pg71 fails                                                :cli:
   CLOSED: [2014-06-29 Sun 17:43]
   - State "DONE"       from "TODO"       [2014-06-29 Sun 17:43] \\
     Actually passes the tests: FIN must be added to EACH input line.
-* DONE 00034 sequence d'instructions en mode machine de bureau          :cli:
+** DONE 00034 sequence d'instructions en mode machine de bureau         :cli:
   CLOSED: [2014-06-29 Sun 15:47]
   - State "DONE"       from "TODO"       [2014-06-29 Sun 15:47] \\
     Allowed ?a;?b and mixing a_1;?a etc.
@@ -1154,7 +1181,7 @@ ERREUR EN LIGNE   2 : COLONNE 7 :
     ?NOMP;?LIGR?NOMF;?NBENR;?LIBEL
 #+END_SRC
 
-* DONE 00023 pg49,pg49b,pg71 SCH LO=0                                   :cli:
+** DONE 00023 pg49,pg49b,pg71 SCH LO=0                                  :cli:
   CLOSED: [2014-06-26 Thu 20:10]
   - State "DONE"       from "TODO"       [2014-06-26 Thu 20:10] \\
     Corrected, commit 9baa2c66cad53705de989477ce348e5edbb3bc0d
@@ -1190,7 +1217,7 @@ ENTIER SUPERIEUR OU EGAL A 1 (OU BIEN UNE CHAINE).
 255*[PAS TESTE SUR EMULSE]
 #+END_SRC
 
-* DONE 00031 encoder                                                    :cli:
+** DONE 00031 encoder                                                   :cli:
   CLOSED: [2014-06-26 Thu 18:39]
   - State "DONE"       from "TODO"       [2014-06-26 Thu 18:39] \\
     Corrected. commit 99e1b6cd46d5b3a7970aca1b14ee8ca0a2490857
@@ -1293,7 +1320,7 @@ ERROR: The value #S(CODE :LINE 100 :VECTOR #(39 26)
 --------------------------------------------------------------------------------
 #+END_SRC
 
-* DONE 00026 pg63,pg64,pg641,pg642,pg65,pg65s,fsoup,pgpp problem with variables: :cli:
+** DONE 00026 pg63,pg64,pg641,pg642,pg65,pg65s,fsoup,pgpp problem with variables: :cli:
   CLOSED: [2014-06-26 Thu 17:30]
   - State "DONE"       from "TODO"       [2014-06-26 Thu 17:30] \\
     Corrected. commit 1423e2aa79d8388ac77148377bff04b5858972b3
@@ -1308,7 +1335,7 @@ when called with arguments:
   (3 NIL)
 #+END_SRC
 
-* DONE 00030 declaration & charger                                      :cli:
+** DONE 00030 declaration & charger                                     :cli:
   CLOSED: [2014-06-26 Thu 17:30]
   - State "DONE"       from "TODO"       [2014-06-26 Thu 17:30] \\
     Corrected. commit 1423e2aa79d8388ac77148377bff04b5858972b3
@@ -1316,7 +1343,7 @@ when called with arguments:
 Une déclaration avant CHARGER doit être sans effet.
 LIBERER V;LIBERER V devrait être accepté aussi.
 
-* DONE 00005 telnet inetd lse.sh cli reads C-s instead of RET           :cli:
+** DONE 00005 telnet inetd lse.sh cli reads C-s instead of RET          :cli:
   CLOSED: [2014-06-08 Sun 09:48]
   - State "DONE"       from ""           [2014-06-08 Sun 09:48] \\
     Not anymore.
@@ -1339,7 +1366,7 @@ exec /home/lse/bin/lse \
     --montrer-touches 
 #+END_SRC
 
-* DONE 00001 segfault on exit                                           :cli:
+** DONE 00001 segfault on exit                                          :cli:
   CLOSED: [2014-06-08 Sun 09:37]
   - State "DONE"       from ""           [2014-06-08 Sun 09:37] \\
     This occured on debian 6.0.9; corrected by adding a LSE_USE_EXIT
@@ -1362,7 +1389,7 @@ exec /home/lse/bin/lse \
         ;;;
 #+END_SRC
  
-* DONE 00007 Something's fishy in CEFAK                                 :cli:
+** DONE 00007 Something's fishy in CEFAK                                :cli:
   CLOSED: [2014-06-08 Sun 09:36]
   - State "DONE"       from ""           [2014-06-08 Sun 09:36] \\
     Corrected the bug: find-variable searched globals before locals.
@@ -1370,7 +1397,7 @@ exec /home/lse/bin/lse \
 The input seems to be read correctly, but the variable C, F and K
 don't seem to be updated, so the first data is always output.
 
-* DONE 00003 FAIRE n POUR I_1 JUSQUA 100 doesn't work.                  :cli:
+** DONE 00003 FAIRE n POUR I_1 JUSQUA 100 doesn't work.                 :cli:
   CLOSED: [2014-05-13 Tue 04:11]
   - State "DONE"       from ""           [2014-05-13 Tue 04:11] \\
     Corrected bug in GOTO that would pop loops at the wrong time.
@@ -1390,7 +1417,7 @@ EXECUTER A PARTIR DE 1
 1 .                 
 TERMINE EN LIGNE 020
 #+END_SRC
-* DONE 00010 PG08: ALLER EN I fails: Variables are not dereferenced enough. :cli:
+** DONE 00010 PG08: ALLER EN I fails: Variables are not dereferenced enough. :cli:
   CLOSED: [2014-06-09 Mon 17:24]
   - State "DONE"       from ""           [2014-06-09 Mon 17:24] \\
     Corrected by calling deref on all VM instruction parameters.
@@ -1401,7 +1428,7 @@ TAPEZ LE NUMERO DE L'OPERATION A EFFECTUER : 10
 The value #<lse-variable i = 10.0 of type nombre #x302003B1E4AD> is not of the expected type number.
 #+END_SRC
 
-* DONE 00013 PG24,25,26: fail: Variables are not dereferenced enough.   :cli:
+** DONE 00013 PG24,25,26: fail: Variables are not dereferenced enough.  :cli:
   CLOSED: [2014-06-09 Mon 17:24]
   - State "DONE"       from ""           [2014-06-09 Mon 17:24] \\
     Corrected by calling deref on all VM instruction parameters.

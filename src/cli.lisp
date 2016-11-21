@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Command Line Interface.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -146,7 +146,7 @@ DO:               Parse a script file at the given PATH.
 
         Scripts should contain:
 
-            - the shebang line with the bare path to the 
+            - the shebang line with the bare path to the
               interpreter,
 
             - zero or more lines containing options or comments
@@ -260,7 +260,7 @@ RETURN:    A list of remaining command line arguments to be parsed by
           (progn
             (setf (options-script-stream    *options*) script
                   (options-script-arguments *options*) arguments)
-            
+
             new-arguments)
           (error "arguments invalides : ~S" (cons argument remaining))))))
 
@@ -314,7 +314,7 @@ RETURN: EX-OK
   (with-terminal terminal
     (unwind-protect
          (progn
-           (with-pager task  
+           (with-pager task
              (io-format task "~A" *tape-banner*)
              (io-format task "~?" *title-banner* (list (long-version) *copyright*))
              (io-format task "~?" *cli-banner*   (list (subseq (dat) 9))))
@@ -325,7 +325,7 @@ RETURN: EX-OK
 
 
 (defun main (&optional args)
-  (handler-case 
+  (handler-case
       (progn
         (push #P"/usr/local/lib/" cffi:*foreign-library-directories*)
         (setf *program-name* (or (program-name) *default-program-name*))
@@ -364,7 +364,7 @@ RETURN: EX-OK
                                           :unicode (eql encoding :utf-8)
                                           :arrows  (if (eql encoding :utf-8)
                                                        :unicode-halfwidth
-                                                       :ascii) 
+                                                       :ascii)
                                           :terminal terminal))
                  #-(and) (*trace-output* (make-broadcast-stream)))
             (setf *task* task) ; to help debugging, we keep the task in the global binding.
@@ -393,12 +393,12 @@ RETURN: EX-OK
     (io-format task "________________________________________")
     (io-carriage-return task)
     (io-format task "Hello 2: ")
-    
+
     (let ((line (terminal-read-string (task-terminal task))))
       (io-format task "Lu 1: ~S~%" line))
 
     (io-format task "~%")
-    
+
     (io-format task "________________________________________")
     (io-carriage-return task)
     (io-format task "Hello 3: ")
@@ -412,7 +412,7 @@ RETURN: EX-OK
 
     ;; (let ((line (terminal-read-string (task-terminal task))))
     ;;   (io-format task "Lu 21: ~S~%" line))
-    
+
     (let ((line (io-read-line task :beep t)))
       (io-format task "Lu 22: ~S~%" line))
     ))
@@ -452,7 +452,7 @@ RETURN: EX-OK
                          :unicode (eql encoding :utf-8)
                          :arrows  (if (eql encoding :utf-8)
                                       :unicode-halfwidth
-                                      :ascii) 
+                                      :ascii)
                          :terminal terminal)))
       (setf *task* task) ; to help debugging, we keep the task in the global binding.
       (or (parse-options (or args (arguments)) nil nil nil)

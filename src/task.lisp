@@ -5,12 +5,12 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    EMULSE : L.S.E. [ EMULATION MITRA-15 ]
-;;;;    
-;;;;    An emulator of the CII MITRA-15 L.S.E. System 
+;;;;
+;;;;    An emulator of the CII MITRA-15 L.S.E. System
 ;;;;    and programming language interpreter.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -19,19 +19,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2000 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;****************************************************************************
@@ -109,7 +109,7 @@ NIL: no paging. T: paging performed on terminal height.  (integer 2): paging per
                          :accessor task-case-insensitive
                          :initform nil
                          :type boolean
-                         :documentation "whether the input should be case insensitive.") 
+                         :documentation "whether the input should be case insensitive.")
    (arrows               :initarg :arrows
                          :accessor task-arrows
                          :initform :ascii
@@ -138,7 +138,7 @@ NIL: no paging. T: paging performed on terminal height.  (integer 2): paging per
    (abreger              :accessor task-abreger          :initform nil :type boolean
                          :documentation "AB)REGER - le système ne complète pas les commandes.")
    (silence              :reader task-silence            :initform nil :type boolean
-                         :documentation "SI)LENCE - suppression de l'echo (utilisateur, ruban).") 
+                         :documentation "SI)LENCE - suppression de l'echo (utilisateur, ruban).")
    (pas-a-pas            :accessor task-pas-a-pas        :initform nil :type boolean
                          :documentation "PA)S A PAS - execution pas à pas.")
    (pas-a-pas-first      :accessor task-pas-a-pas-first
@@ -153,7 +153,7 @@ so that if next command is ine, we continue automatically.")
                          :accessor task-echo
                          :initform nil
                          :type boolean
-                         :documentation "parameter io-read-line.")   
+                         :documentation "parameter io-read-line.")
    (random-state         :accessor task-random-state
                          :initform (make-random-state t) :type random-state)
    (environment          :accessor task-environment :initform nil :type (or null environment))
@@ -187,7 +187,7 @@ into the interactive REPL.")))
 
 (defmethod task-input ((task task))
   (with-slots (input) task
-    (when (null input) 
+    (when (null input)
       (setf input (terminal-input-stream (task-terminal task))))
     input))
 
@@ -196,7 +196,7 @@ into the interactive REPL.")))
 
 (defmethod task-output ((task task))
   (with-slots (output) task
-    (when (null output) 
+    (when (null output)
       (setf output (terminal-output-stream (task-terminal task))))
     output))
 
@@ -288,7 +288,7 @@ into the interactive REPL.")))
 (defun task-initialize (task-count)
   "Appeler une seule fois dans le programme."
   ;; pthread_mutex_init(&mutex,NULL);
-  (setf *task-count* task-count 
+  (setf *task-count* task-count
         *tasks*      nil)
   (dotimes (i *task-count*)
     (push (make-instance 'task :console (1- (- *task-count* i)))
@@ -370,7 +370,7 @@ switched to the :to-connect state.
                               &(task->mutex_terminal));
             pthread_mutex_unlock(&(task->mutex_terminal));
             pthread_cond_signal(&(task->condi_principal));
-            
+
             lse_es_terminal(task);
         }
         return(0);
@@ -416,7 +416,7 @@ switched to the :to-connect state.
         task->sortie_terminal=-1;
         task->entree_ruban=-1;
         task->sortie_ruban=-1;
-        task->environnement=0;  
+        task->environnement=0;
 
         pthread_mutex_init(&(task->mutex_principal),0);
         pthread_cond_init(&(task->condi_principal),0);
@@ -428,7 +428,7 @@ switched to the :to-connect state.
         task->tampon_entree=0;    /* parametre de lse_es_lire_ligne */
         task->terminateurs=mXOFF; /*    "                 "         */
         task->echo=1;             /*    "                 "         */
-        
+
         task->scanner_source=0;
         task->scanner_position=0;
         task->scanner_colonne=0;
@@ -463,7 +463,7 @@ switched to the :to-connect state.
 
 
 
- 
+
 #||
     void lse_task_connecter(lse_task_t* task,int entree,int sortie)
     {
@@ -474,7 +474,7 @@ switched to the :to-connect state.
         lse_task_etat_changer(task,lse_task_etat_dormant);
 
         pthread_cond_signal(&(task->condi_terminal));
-       
+
         lse_ecrire_format(task,"\ec\r\n");
         lse_ecrire_format(task,"\n\n\n\n\n\n\n\n");
         lse_ecrire_format(task,"\n\n\n\n\n\n\n\n");

@@ -67,7 +67,7 @@
                "com.informatimago.common-lisp.unix"
                "com.informatimago.lse"
                )
-  
+
   :components (
                (:file "environment")
                ;;---------------------

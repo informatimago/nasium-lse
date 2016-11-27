@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    This file exports a dynamic environment for clients.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -62,8 +62,8 @@ are configured specifically.
                       (cons '*LOAD-PATHNAME* nil)
                       (cons '*LOAD-TRUENAME* nil)
                       (cons '*PRINT-RIGHT-MARGIN* 80)
-                      (capture '(#+ecl SI:*PRINT-PACKAGE*  
-                                 #+ecl SI:*PRINT-STRUCTURE*  
+                      (capture '(#+ecl SI:*PRINT-PACKAGE*
+                                 #+ecl SI:*PRINT-STRUCTURE*
                                  * ** ***
                                  + ++ +++
                                  -
@@ -92,7 +92,7 @@ are configured specifically.
                                  *PRINT-PPRINT-DISPATCH*
                                  *PRINT-PRETTY*
                                  *PRINT-RADIX*
-                                 *PRINT-READABLY*                      
+                                 *PRINT-READABLY*
                                  *READ-BASE*
                                  *READ-DEFAULT-FLOAT-FORMAT*
                                  *READ-EVAL*

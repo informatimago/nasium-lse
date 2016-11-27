@@ -5,12 +5,12 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    EMULSE : L.S.E. [ EMULATION MITRA-15 ]
-;;;;    
-;;;;    An emultator of the CII MITRA-15 L.S.E. System 
+;;;;
+;;;;    An emultator of the CII MITRA-15 L.S.E. System
 ;;;;    and programming language interpreter.
-;;;;    
+;;;;
 ;;;;    This is the L.S.E. I/O module.
 ;;;;
 ;;;;AUTHORS
@@ -21,19 +21,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2000 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
@@ -441,7 +441,7 @@ DO:         Reads a string.
 
 read characters until RET or C-s or ESC or string full.
 ESC is interrupt.
-string full is an error condition, 
+string full is an error condition,
 RET is included in the string, C-s not.  (It's virtual RET/C-s, real RET can be mapped to C-s).
 
 ECHO: Whether this input must be done echoing the characters (default T).
@@ -498,7 +498,7 @@ DO:         Reads a number.
 skip spaces as many as you want.
 read characters until RET or C-s or spaces or ESC or buffer full.
 ESC is interrupt.
-string full is an error condition, 
+string full is an error condition,
 parse the buffer and return the number or signal an error.
 
 ECHO: Whether this input must be done echoing the characters (default T).

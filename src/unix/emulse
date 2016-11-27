@@ -2,7 +2,7 @@
 
 ## xterm options:
 
-font='-dec-terminal-bold-r-normal--14-0-75-75-c-*-dec-dectech' 
+font='-dec-terminal-bold-r-normal--14-0-75-75-c-*-dec-dectech'
 font='-dec-terminal-bold-r-normal-*-14-*-*-*-*-*-dec-dectech'
 font="fixed"
 
@@ -87,7 +87,7 @@ if [ "$second" -ne 0 ] ; then
         eol2   0x00 \
         rprnt  0x00 \
         werase 0x00 \
-        lnext  0x00 
+        lnext  0x00
 
     "$lse" 2> /tmp/lse.trace
 

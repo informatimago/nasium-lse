@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    XXX
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal Bourguignon 2005 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
@@ -131,7 +131,7 @@ CONFIGURER     Configure le server EMULSE.
     (setf *server* (start-server
                     (make-instance 'tcp-ipv4-end-point :interface #(127 0 0 1) :port port)
                     :name "test"
-                    ;; :data-received-callback (lambda (data server client) 
+                    ;; :data-received-callback (lambda (data server client)
                     ;;                           (logger :data-received-callback :debug
                     ;;                                   "Received data ~S from ~A~%" data client))
                     :client-class 'lse-console-client
@@ -197,7 +197,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
            (nreverse
             (mapcar (lambda (byte)
                       (multiple-value-bind (val eaten) (read-from-string byte)
-                        (if (and (= eaten (length byte)) (integerp val) 
+                        (if (and (= eaten (length byte)) (integerp val)
                                  (<= 0 val 255))
                           val
                           (return-from :convert nil))))
@@ -222,11 +222,11 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 ;;         (let* ((ich (read-char (iotask-stream task)))
 ;;                (ch  #+clisp (system::input-character-char ich)
 ;;                     #-clisp ich))
-;;           (cond 
+;;           (cond
 ;;            ((null ch))
 ;;            ((= (char-code ch) +cr+)
 ;;             (terpri)
-;;             (funcall process-input 
+;;             (funcall process-input
 ;;                      task (subseq buffer 0 (fill-pointer buffer)))
 ;;             (setf (fill-pointer buffer) 0))
 ;;            ((or (= (char-code ch) +bs+) (= (char-code ch) +del+))
@@ -248,7 +248,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 ;;     (configuration-repl-input line)))
 
 
-;; (defun server-main (&key display) 
+;; (defun server-main (&key display)
 ;;   (if (or display (find-package "SWANK"))
 ;;     (let* ((xterm-io (make-xterm-io-stream :display display))
 ;;            (*standard-output* xterm-io)
@@ -264,13 +264,13 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 ;;       (iotask-poll-loop))
 ;;     #+clisp (ext:with-keyboard
 ;;                 (let ((*standard-input* ext:*keyboard-input*))
-;;                   (iotask-enqueue ext:*keyboard-input* 
+;;                   (iotask-enqueue ext:*keyboard-input*
 ;;                                   (make-keyboard-discipline (function server-input))
 ;;                                   "keyboard")
 ;;                   (configuration-repl-start)
 ;;                   (iotask-poll-loop)))
 ;;     #-clisp (progn
-;;               (iotask-enqueue *standard-input* 
+;;               (iotask-enqueue *standard-input*
 ;;                               (make-keyboard-discipline (function server-input))
 ;;                               "keyboard")
 ;;               (configuration-repl-start)
@@ -278,8 +278,8 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 
 
 
-                                       
-   
+
+
 (defun make-xterm-io-stream (&key display)
   #+clisp
   (let* ((pipe (with-open-stream (s (ext:make-pipe-input-stream
@@ -291,7 +291,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
          (font "-*-console-medium-r-normal-*-16-*-*-*-*-*-*-*")
          ;; "-dec-terminal-bold-r-normal-*-14-*-*-*-*-*-dec-dectech"
          )
-    (ext:shell  (format nil "rm -f ~S; mknod ~S p; xterm ~:[~;~:*-display ~S~] -fg green -bg black -fn '~A' -n ~S -T ~S -e 'tty >> ~S ; cat ~S' &" 
+    (ext:shell  (format nil "rm -f ~S; mknod ~S p; xterm ~:[~;~:*-display ~S~] -fg green -bg black -fn '~A' -n ~S -T ~S -e 'tty >> ~S ; cat ~S' &"
          pipe pipe display font title title pipe pipe))
     (setq tty-name (with-open-file (s pipe :direction :input) (read-line s))
           xio (make-two-way-stream
@@ -313,7 +313,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 
 
 (defvar *external-format*
-  #+clisp (ext:make-encoding 
+  #+clisp (ext:make-encoding
            :charset 'charset:iso-8859-1
            :line-terminator :unix)
   #-clisp :iso-8859-1)
@@ -334,7 +334,7 @@ in clisp, we do it with a socket."
   ;;                                      :timeout 5))
   ;;   (if (lse-sock:socket-wait lsock 5)
   ;;     (progn
-  ;;       (setf bsock (lse-sock:socket-accept lsock 
+  ;;       (setf bsock (lse-sock:socket-accept lsock
   ;;                                         :element-type 'character
   ;;                                         :external-format *external-format*
   ;;                                         :buffered nil
@@ -355,7 +355,7 @@ in clisp, we do it with a socket."
   ;;        (when (lse-sock:socket-wait lsock 0)
   ;;          (let ((remote (lse-sock:socket-accept lsock
   ;;                                              :element-type 'character
-  ;;                                              ;; :external-format 
+  ;;                                              ;; :external-format
   ;;                                              :buffered t
   ;;                                              :timeout 1)))
   ;;            (when remote

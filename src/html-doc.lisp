@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Generate HTML L.S.E. documentation from the in-line documentation.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -265,7 +265,7 @@ NOTE: Unclassified chapters are in the category NIL."
                        (if (char= #\| (aref word 0))
                            (generate-html-word (subseq word 1))
                            (generate-html-word word))))))
-            
+
             ;; References.
             ((prefixp "Voir" (first para))
              (let ((sep nil))
@@ -447,7 +447,7 @@ NOTE: Unclassified chapters are in the category NIL."
             (html:link (:rel "icon"          :href "http://www.ogamita.com/favicon.ico" :type "image/vnd.microsoft.icon"))
             (html:link (:rel "icon"          :href "http://www.ogamita.com/favicon.png" :type "image/png"))
             (html:link (:rel "stylesheet"    :href "http://www.ogamita.com/default.css" :type "text/css"))
-            
+
             (html:meta (:http-equiv "Content-Type"   :content "text/html; charset=utf-8"))
             (html:meta (:name "author"               :content "Pascal J. Bourguignon"))
             (html:meta (:name "Reply-To"             :content "pjb@informatimago.com"))

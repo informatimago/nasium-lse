@@ -4,7 +4,7 @@
 (let ((*print-circle* nil)
       (*print-right-margin* 120))
   (pprint (macroexpand-1 '
-           
+
 (defgrammar deux-numeros-optionels
     :terminals ((tok-virgule ",")
                 (tok-numero  "[0-9]+"))
@@ -48,7 +48,7 @@
   nil
   (progn (progn (defclass deux-numeros-optionels-scanner (buffered-scanner)
                   nil
-                  (:default-initargs :spaces " 
+                  (:default-initargs :spaces "
 	"
                                      :token-kind-package (load-time-value (find-package "COM.INFORMATIMAGO.LSE")) :token-symbol-package
                    (load-time-value (find-package "COM.INFORMATIMAGO.LSE"))))
@@ -208,7 +208,7 @@ SOURCE: When the grammar has a scanner generated, or a scanner class
 (let ((*print-circle* nil)
       (*print-right-margin* 120))
   (pprint (macroexpand-1 '
-           
+
 (defgrammar lse
   :scanner nil            ; so that we can pass the scanner ourselves.
   :trace nil
@@ -246,7 +246,7 @@ SOURCE: When the grammar has a scanner generated, or a scanner class
               (tok-TABLEAU   "TABLEAU")
               (tok-TANT      "TANT")
               (tok-TERMINER  "TERMINER")
-              ;; keyword or identifier:            
+              ;; keyword or identifier:
               (tok-x         "X")
               (tok-C         "C")
               (tok-L         "L")
@@ -284,10 +284,10 @@ SOURCE: When the grammar has a scanner generated, or a scanner class
               ;; chaine : ' { caractere_sauf_quote | '' } ' .
               ;; ident : [ '&' ] lettre { lettre | chiffre } .
               ;; commentaire    : '*' { car } tok-EOL .
-                
+
               ;; nombre must come first to match the longest first.
               (tok-nombre         "[-+]?[0-9]+\\.[0-9]+[Ee][-+]?[0-9]+?")
-              (tok-numero         "[0-9]+") 
+              (tok-numero         "[0-9]+")
               ;; "[0-9]+\\(\\.[0-9]*\\)?\\(E[-+]?[0-9]+\\)?")
               (tok-litchaine      "'(('')?[^']*)*'")
               ;; "\\('[^']*'\\)\\('[^']*'\\)*")
@@ -302,7 +302,7 @@ SOURCE: When the grammar has a scanner generated, or a scanner class
   ;; The LSE language is line based.  We parse sources line by line.
   ;; Program files (tapes) can contain both lines and commands.
   ;; The LSE compiler worked on punch cards, line by line too.
- 
+
   :start debut
   :rules (
 
@@ -354,7 +354,7 @@ SOURCE: When the grammar has a scanner generated, or a scanner class
           (--> decl
                (alt decl-chaine decl-tableau)
                :action $1)
-            
+
           (--> decl-chaine
                (seq tok-CHAINE liste-identificateur  :action (cons :chaine $2))
                :action $1)
@@ -372,25 +372,25 @@ SOURCE: When the grammar has a scanner generated, or a scanner class
                     :action (list* :adecl $1 expression $4))
                :action $1)
 
-            
+
           (--> instruction
                (alt
-                liberation      
-                affectation     
-                appel           
-                lire            
-                afficher        
-                aller-en        
-                si-alors-sinon  
-                terminer        
-                pause           
-                debut-fin       
+                liberation
+                affectation
+                appel
+                lire
+                afficher
+                aller-en
+                si-alors-sinon
+                terminer
+                pause
+                debut-fin
                 faire
-                retour          
-                resultat        
-                garer           
-                charger         
-                supprimer       
+                retour
+                resultat
+                garer
+                charger
+                supprimer
                 executer)
                :action $1)
 
@@ -425,7 +425,7 @@ SOURCE: When the grammar has a scanner generated, or a scanner class
                                   (seq             liste-expression  :action (list* :afficher nil $1)))
                     :action $2)
                :action $1)
-            
+
           (--> format
                (seq tok-crogauche liste-spec tok-crodroite :action $2)
                :action $1)
@@ -489,13 +489,13 @@ SOURCE: When the grammar has a scanner generated, or a scanner class
                                 (list :si $2 $4 $5)
                                 (list :si $2 $4)))
                :action $1)
-            
+
           (--> terminer
                tok-TERMINER :action (list :terminer))
-            
+
           (--> pause
                tok-PAUSE    :action (list :pause))
-            
+
           (--> debut-fin
                (seq tok-DEBUT liste-inst-ou-decl tok-FIN :action (cons :debut $2))
                :action $1)
@@ -513,7 +513,7 @@ SOURCE: When the grammar has a scanner generated, or a scanner class
                                                         :line (token-line $6)))
                                   (second $8)))
                :action $1)
-            
+
           (--> retour
                (alt
                 (seq tok-RETOUR (opt tok-EN expression :action expression)
@@ -548,12 +548,12 @@ SOURCE: When the grammar has a scanner generated, or a scanner class
                     :action  (list* :executer $2 $3))
                :action $1)
 
-            
+
           ;; We cannot distinguish references from
           ;; right-references in function arguments because they
           ;; have the same form, and both are possible. &F(A,B), so
           ;; we must keep references, and also for other expressions.
-            
+
           (--> expression
                (seq terme-signe (rep (alt (seq tok-moins  terme :action (list :moins  terme))
                                           (seq tok-plus   terme :action (list :plus   terme))
@@ -572,7 +572,7 @@ SOURCE: When the grammar has a scanner generated, or a scanner class
                                 (list :neg terme)
                                 terme))
                :action $1)
-            
+
           (--> terme
                (seq facteur (rep (alt (seq tok-fois    facteur :action (list :fois   facteur))
                                       (seq tok-divise  facteur :action (list :divise facteur)))
@@ -582,7 +582,7 @@ SOURCE: When the grammar has a scanner generated, or a scanner class
                                 facteur))
                :action $1)
 
-            
+
           (--> facteur
                (seq simple (rep (seq tok-puissance simple :action (list :puissance simple))
                                 :action $1)
@@ -652,7 +652,7 @@ SOURCE: When the grammar has a scanner generated, or a scanner class
                                            (seq tok-GT :action :gt)
                                            (seq tok-GE :action :ge))
                                       expression
-                                      :action (list $1 expression)) 
+                                      :action (list $1 expression))
                      :action (if $2
                                  (list (first $2) expression (second $2))
                                  expression)))

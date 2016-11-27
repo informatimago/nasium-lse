@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Compiles the grammars.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -124,14 +124,14 @@ Used by the DEFINE-GRAMMAR macro in command.lisp")
                      :if-does-not-exist :create)
       (print `(:name ,(string name)
                      :package  ,(string (if packagep package (package-name *package*)))
-                     :identifier-start-chars     ,identifier-start-chars    
-                     :identifier-continue-chars  ,identifier-continue-chars 
-                     :intern-identifier          ,intern-identifier         
-                     :string-delimiter           ,string-delimiter          
-                     :symbol-delimiter           ,symbol-delimiter          
-                     :case-sensitive             ,case-sensitive            
-                     :grammar                    ,grammar                   
-                     :domain                     ,domain                    
+                     :identifier-start-chars     ,identifier-start-chars
+                     :identifier-continue-chars  ,identifier-continue-chars
+                     :intern-identifier          ,intern-identifier
+                     :string-delimiter           ,string-delimiter
+                     :symbol-delimiter           ,symbol-delimiter
+                     :case-sensitive             ,case-sensitive
+                     :grammar                    ,grammar
+                     :domain                     ,domain
                      :domain-file ,(if domain-file-p
                                        domain-file
                                        (format nil "~(~A~)-domain" name))

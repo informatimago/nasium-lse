@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Defines a message class for iolib-server and iolib-client.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -66,7 +66,7 @@
 ;;; This implementation moves eaten bytes down the vector, assuming
 ;;; there won't be a lot of remaining bytes to move.  If this
 ;;; assumption reveals false, then another implementation, cord-like,
-;;; could be written.  
+;;; could be written.
 
 (defun make-buffer (initial-size)
   (make-array initial-size
@@ -193,7 +193,7 @@ Return the number of bytes read, and whether the message is complete.
 ;;; LINE-MESSAGE
 ;;;
 ;;; A line message is one line of text, encoded in UTF-8, terminated with CR LF.
-;;;  
+;;;
 
 (defun xor (a b) (or (and a (not b)) (and (not a) b)))
 (defun imply (p q) (or (not p) q))

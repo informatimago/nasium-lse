@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    ASD file to load the com.informatimago.lse program.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -47,32 +47,32 @@
                  ((#:albert #:docbook #:textcolor) . "black"))
 
     #+asdf-unicode :encoding #+asdf-unicode :utf-8
-    
+
     :depends-on (
                  "split-sequence"
                  "alexandria"
                  "babel"
-                 
+
                  "com.informatimago.common-lisp"
                  "com.informatimago.rdp"
-                 
+
                  )
-    
+
     :components (
                  ;; Some generic utility
                  (:file "logger")
                  (:file "signal")
                  (:file "environment")
 
-                 ;;---------------------                                                              
-                 
-                 ;; LSE language                                                                      
+                 ;;---------------------
+
+                 ;; LSE language
                  (:file "packages"            :depends-on ("signal" "logger"))
-                 
+
                  (:file "os"                  :depends-on ("packages"))
                  (:file "version"             :depends-on ("packages"))
                  (:file "configuration"       :depends-on ("packages"))
-                 (:file "error"               :depends-on ("packages"))                               
+                 (:file "error"               :depends-on ("packages"))
 
                  (:file "file"                :depends-on ("packages"
                                                            "configuration" "error"
@@ -80,17 +80,17 @@
 
                  (:file "documentation"       :depends-on ("packages" "terminal"))
                  (:file "chapters"            :depends-on ("packages" "version" "documentation"))
-                 
+
                  (:file "catalog"             :depends-on ("packages" "configuration"))
                  (:file "variables"           :depends-on ("packages"))
                  (:file "functions"           :depends-on ("packages"
                                                            "error"
                                                            "documentation"
                                                            "variables"))
-                 
+
                  (:file "lse-scanner"         :depends-on ("packages" "error"))
-                 (:file "lse-parser"          :depends-on ("packages" "lse-scanner"))                 
-                 (:file "byte-code"           :depends-on ("packages"))                               
+                 (:file "lse-parser"          :depends-on ("packages" "lse-scanner"))
+                 (:file "byte-code"           :depends-on ("packages"))
                  (:file "compiler"            :depends-on ("packages"
                                                            "version"
                                                            "lse-scanner" "lse-parser" "byte-code"))
@@ -105,7 +105,7 @@
                                                            "error" "version"
                                                            "documentation"
                                                            "catalog" "functions"
-                                                           "os" "io" "compiler" "task")) 
+                                                           "os" "io" "compiler" "task"))
 
                  ))
 

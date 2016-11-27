@@ -35,7 +35,7 @@ reading strings:
 
 read characters until RET or C-s or ESC or string full.
 ESC is interrupt.
-string full is an error condition, 
+string full is an error condition,
 RET is included in the string, C-s not.  (It's virtual RET/C-s, real RET can be mapped to C-s).
 
 
@@ -44,7 +44,7 @@ reading numbers:
 skip spaces as many as you want.
 read characters until RET or C-s or spaces or ESC or buffer full.
 ESC is interrupt.
-string full is an error condition, 
+string full is an error condition,
 parse the buffer and return the number or signal an error.
 
 Now the problem is that reading can be buffered already, so we may get a (unfinished) line.
@@ -57,11 +57,11 @@ Interrupts (ESC, C-a) are processed by the low level I/O.
 
 
 
-;; Le thread principal peut lire directement le ruban, 
+;; Le thread principal peut lire directement le ruban,
 ;; mais pour le terminal, il doit prendre les caracteres dans tampon_entree,
 ;; et attendre sur le thread terminal.
 ;;
-;; Le thread terminal lit chaque caractere venant du terminal et 
+;; Le thread terminal lit chaque caractere venant du terminal et
 ;; les aiguille :
 ;;     - interuption (ESC),
 ;;     - signal (CTRL-A),
@@ -78,31 +78,31 @@ Interrupts (ESC, C-a) are processed by the low level I/O.
 
 
 ;; (ext:with-keyboard
-;;     (loop 
+;;     (loop
 ;;        for ch = (read-char-no-hang ext:*keyboard-input*)
 ;;        until (equalp ch #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C))
 ;;        do (when ch (print ch))))
-;; 
-;; 
+;;
+;;
 ;; NIL or:
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\f :BITS 0 :FONT 0 :KEY NIL) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\s :BITS 0 :FONT 0 :KEY NIL) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\c :BITS 0 :FONT 0 :KEY NIL) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\s :BITS 0 :FONT 0 :KEY NIL) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\x :BITS 0 :FONT 0 :KEY NIL) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\S) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\S) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\q :BITS 0 :FONT 0 :KEY NIL) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\Q) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\Q) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\Z) 
-;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\Escape :BITS 0 :FONT 0 :KEY NIL) 
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\f :BITS 0 :FONT 0 :KEY NIL)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\s :BITS 0 :FONT 0 :KEY NIL)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\c :BITS 0 :FONT 0 :KEY NIL)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\s :BITS 0 :FONT 0 :KEY NIL)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\x :BITS 0 :FONT 0 :KEY NIL)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\S)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\S)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\q :BITS 0 :FONT 0 :KEY NIL)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\Q)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\Q)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\C)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR NIL :BITS 1 :FONT 0 :KEY #\Z)
+;; #S(SYSTEM::INPUT-CHARACTER :CHAR #\Escape :BITS 0 :FONT 0 :KEY NIL)
 
 
 ;; (defun io-valid-tape-name-p (name)
@@ -127,8 +127,8 @@ Interrupts (ESC, C-a) are processed by the low level I/O.
 ;;            (setf i (1+ i) state :first))
 ;;           (t
 ;;            (return-from io-valid-tape-name-p nil))))))
-;; 
-;; 
+;;
+;;
 ;; (defmethod io-redirect-input-from-tape ((task t) tape-name)
 ;;   "
 ;; RETURN: The task-tape-input or nil.
@@ -145,8 +145,8 @@ Interrupts (ESC, C-a) are processed by the low level I/O.
 ;;             (error 'file-error-file-is-inaccessible :pathname path))
 ;;         (error 'file-error-file-does-not-exist :pathname path)))
 ;;   (task-tape-input task))
-;; 
-;; 
+;;
+;;
 ;; (defmethod io-redirect-output-to-tape ((task t) tape-name)
 ;;   "
 ;; RETURN: The task-tape-output or nil.

@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    XXX
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -125,7 +125,7 @@
 
 (in-package :com.informatimago.lse.server)
 (setf *print-escape* nil)
-*server* 
+*server*
 (server-name *server*)
 (read-from-string (babel:octets-to-string (slot-value (first (server-clients *server*)) ' COM.INFORMATIMAGO.IOLIB.SERVER::INPUT-BUFFER) :encoding :utf-8))
 (slot-value (first (server-clients *server*)) ' COM.INFORMATIMAGO.IOLIB.SERVER::OUTPUT-BUFFER)
@@ -347,13 +347,13 @@ EMULSE LIMBO> "
      :tostop  t   ; sends SIGTTOU to processes who writes to this terminal.
      :pendin  nil ; (not POSIX, not linux) input queue is reprinted when next char is read.
      :iexten  nil ; disable Enable implementation-defined input-processing. To enable EOL2, LNEXT, REPRINT, WERASE, and IUCLC.
-     
+
      :vintr   #x01     ; C-a ; SIGINT                                    needs :isig t
      :vquit   #x1b     ; ESC ; SIGQUIT                                   needs :isig t
      :verase  0              ; erase character                           needs :icanon t
      :vkill   0              ; erase line                                needs :icanon t
      :veof    0              ; send input buffer (= eof when empty)      needs :icanon t
-     :vmin    0              ; minimum number of characters for noncanonical read       
+     :vmin    0              ; minimum number of characters for noncanonical read
      :veol    #x13     ; C-s ; additionnal end of line character         needs :icanon t
      :vtime   0              ; timeout in decisecond for noncanonical read
      :veol2   0              ; yet additionnal end of line character     needs :icanon t (not POSIX)

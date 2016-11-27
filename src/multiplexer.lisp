@@ -50,7 +50,7 @@
                                          :default-id 10)))))
 
 (defun create-virtual-machine (virtual-machine)
-  
+
   )
 
 (defun initialize-virtual-machine-paths (vm)

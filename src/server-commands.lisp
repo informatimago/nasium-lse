@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Defines the server commands.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -85,7 +85,7 @@
 
 
 (defun configuration-add-statement (configuration statement)
-  (setf (configuration-statements configuration) 
+  (setf (configuration-statements configuration)
         (nconc (configuration-statements configuration)  (list statement))))
 
 
@@ -127,7 +127,7 @@
                               result)))
                     ((?x) (aget bindings (second item) item)))))
             pattern))
-  
+
   (defun make-command-function (pattern body)
     (let ((vbindings (gensym)))
       `(lambda (,vbindings)
@@ -135,18 +135,18 @@
                  ,@(mapcar (lambda (var) `(,var (cdr (assoc ',var ,vbindings))))
                            (collect-variables pattern)))
              ,@body))))
-  
+
   );;eval-when
 
 
 
 (defmacro defcommand (pattern &body body)
   ;; Note: we keep the *commands* in the order of defcommands.
-  `(let ((command (find ',pattern *commands* 
+  `(let ((command (find ',pattern *commands*
                         :key (function command-pattern)
                         :test (function equal)))
          (cfunction ,(make-command-function pattern body)))
-     
+
      (if command
        (setf (command-function command) cfunction)
        (setf *commands* (nconc *commands* (list (make-command :pattern ',pattern
@@ -168,8 +168,8 @@
 
 
 ;; (defvar *debugging* nil)
-;; 
-;; 
+;;
+;;
 ;; (defun configuration-repl (&key (debugging *debugging*))
 ;;   (catch :configuration-repl-exit
 ;;     (loop
@@ -184,10 +184,10 @@
 ;;                            (simple-condition-format-control err)
 ;;                            (simple-condition-format-arguments err)))))
 ;;          (throw :configuration-repl-exit nil))))))
-;; 
-;; 
+;;
+;;
 ;; (defun configuration-repl-start ()
-;;   (format t "~&~A " *prompt*) 
+;;   (format t "~&~A " *prompt*)
 ;;   (finish-output))
 
 
@@ -260,14 +260,14 @@
 
 (defcommand (filter (?x cmd) (?x dir) all)
   (unless (member cmd '(insert append delete))
-    (error "Invalid filter command: ~S (expected one of: insert append delete)" 
+    (error "Invalid filter command: ~S (expected one of: insert append delete)"
            cmd))
   (unless (member dir '(allow deny))
     (error "Invalid filter direction: ~S (expected one of: allow deny)" dir))
   (case cmd
-    ((insert) 
+    ((insert)
      (push (list dir 'all) (configuration-filters *configuration*)))
-    ((append) 
+    ((append)
      (setf (configuration-filters *configuration*)
            (nconc (configuration-filters *configuration*)
                   (list (list dir 'all)))))
@@ -281,7 +281,7 @@
 (defcommand (filter (?x cmd) (?x dir) (?x ip) (?? (?x bits)))
   (setf bits (or bits 32))
   (unless (member cmd '(insert append delete))
-    (error "Invalid filter command: ~S (expected one of: insert append delete)" 
+    (error "Invalid filter command: ~S (expected one of: insert append delete)"
            cmd))
   (unless (member dir '(allow deny))
     (error "Invalid filter direction: ~S (expected one of: allow deny)" dir))
@@ -290,12 +290,12 @@
            ip))
   (unless (and (integerp bits) (<= 0 bits 32))
     (error
-     "Invalid network mask bits: ~S (expected an integer between 0 and 32)" 
+     "Invalid network mask bits: ~S (expected an integer between 0 and 32)"
      bits))
   (case cmd
-    ((insert) 
+    ((insert)
      (push (list dir ip bits) (configuration-filters *configuration*)))
-    ((append) 
+    ((append)
      (setf (configuration-filters *configuration*)
            (nconc (configuration-filters *configuration*)
                   (list (list dir ip bits)))))
@@ -314,7 +314,7 @@
 (defcommand (filter list (?? (?x dir)))
   (setf dir (or dir 'all))
   (unless (member dir '(all deny allow))
-    (error "Invalid filter direction: ~S (expected one of: all allow deny)" 
+    (error "Invalid filter direction: ~S (expected one of: all allow deny)"
            dir))
   (dolist (filter (configuration-filters *configuration*))
     (when (or (eq dir 'all) (eq dir (first filter)))
@@ -325,7 +325,7 @@
 (defcommand (console kill all (?? (?x cclass)))
   (setf cclass (or cclass 'all))
   (unless (member cclass '(all xterm socket))
-    (error "Invalid console class: ~S (expected one of: all xterm socket)" 
+    (error "Invalid console class: ~S (expected one of: all xterm socket)"
            cclass))
   (server-kill-console-class cclass)
   (store))
@@ -351,7 +351,7 @@
 (defcommand (console list (?? (?x cclass)))
   (setf cclass (or cclass 'all))
   (unless (member cclass '(all xterm socket))
-    (error "Invalid console class: ~S (expected one of: all xterm socket)" 
+    (error "Invalid console class: ~S (expected one of: all xterm socket)"
            cclass))
   (dolist (console (server-console-list cclass))
     (when (or (eq 'all cclass) (eq cclass (console-class console)))
@@ -393,7 +393,7 @@
    (if file
      (progn
        (ensure-directories-exist file)
-       (with-open-stream (stream (open file :direction :output 
+       (with-open-stream (stream (open file :direction :output
                                        :if-does-not-exist :create
                                        :if-exists :supersede))
          (dolist (statement (configuration-statements *configuration*))

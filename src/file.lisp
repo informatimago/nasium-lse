@@ -5,13 +5,13 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Implements L.S.E. data files.
 ;;;;
 ;;;;    L.S.E data files are record based, and may store a number, a
 ;;;;    vector of numbers, an array of numbers or a string into each
 ;;;;    record.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -25,19 +25,19 @@
 ;;;;
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -117,7 +117,7 @@
   ;; we're not prepared to read files from any block size (to be able
   ;; to exchange files).
   (defconstant +block-size+       1024)
-  
+
   (defconstant +header-position+  (- +block-size+ 8)))
 
 (defun make-block () (make-array +block-size+ :element-type '(unsigned-byte 8) :initial-element 0))
@@ -165,7 +165,7 @@
         :do (if (read-block buffer stream position)
                 (let ((record-number (peek24 buffer 0)))
                   (if (or (zerop record-number)
-                          (not (valid-type-p (peek8 buffer 3)))) 
+                          (not (valid-type-p (peek8 buffer 3))))
                       (progn ; deleted or invalid record, add it to the free-list.
                         (setf (peek32 buffer 0) 0
                               (peek32 buffer 4) free-list
@@ -212,7 +212,7 @@
     (let ((buffer (make-block)))
       (file-position stream (header-record-table header))
       (with-hash-table-iterator (next record-table)
-        (loop 
+        (loop
           :until (loop
                    :with done = nil
                    :for i :below +block-size+ :by 8
@@ -333,7 +333,7 @@
   ;; Thanks to ivan4th (~ivan_iv@nat-msk-01.ti.ru) for correcting an off-by-1
   `(progn
      (defun ,(intern (with-standard-io-syntax (format nil "~A-TO-IEEE-754" name)) (symbol-package name))  (float)
-       (multiple-value-bind (mantissa exponent sign) 
+       (multiple-value-bind (mantissa exponent sign)
            (integer-decode-float float)
          (dpb (if (minusp sign) 1 0)
               (byte 1 ,(1- (+ exponent-bits mantissa-bits)))
@@ -350,7 +350,7 @@
                               (ldb (byte ,(1- mantissa-bits) 0) ieee))
                          ,type)
                         (- (ldb (byte ,exponent-bits ,(1- mantissa-bits))
-                                ieee) 
+                                ieee)
                            ,(1- (expt 2 (1- exponent-bits)))
                            ,(1- mantissa-bits)))))
              (if (zerop (ldb (byte 1 ,(1- (+ exponent-bits mantissa-bits))) ieee))
@@ -540,7 +540,7 @@ RETURN: The data; a status code
                :for position :from +block-size+ :by +block-size+
                :while (or (zerop (header-record-table header))
                           (< position (header-record-table header)))
-               :do (if (read-block buffer stream position) 
+               :do (if (read-block buffer stream position)
                        (let ((record-number (peek24 buffer 0)))
                          (if (zerop record-number)
                              (progn
@@ -672,7 +672,7 @@ RETURN: The data; a status code
                      (write-record file nr (format nil "Record ~D: contenu: ~D" nr nr))
                      (when (zerop (mod nr 3))
                        (delete-record file (- nr 1))))))
-        
+
         (lse-data-file-close file))))
   (dump-lse-file  "/tmp/test.don"))
 

@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    This defines the server package.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -49,7 +49,7 @@
         "COM.INFORMATIMAGO.LSE"
         "COM.INFORMATIMAGO.LSE.OS"
         "COM.INFORMATIMAGO.LSE.UNIX-TERMINAL"
-        
+
         "COM.INFORMATIMAGO.LOGGER"
         "COM.INFORMATIMAGO.IOLIB.UTILS"
         "COM.INFORMATIMAGO.IOLIB.END-POINT"
@@ -68,11 +68,11 @@
 ;;         ;; From IOLIB:
 ;;         #-clisp "IOMUX"
 ;;         #-clisp "SOCKETS")
-;;   (:export "SOCKET-ACCEPT" "SOCKET-CONNECT" "SOCKET-OPTIONS" 
-;;            "SOCKET-SERVER" "SOCKET-SERVER-CLOSE" "SOCKET-SERVER-HOST" 
-;;            "SOCKET-SERVER-PORT" "SOCKET-SERVICE-PORT" "SOCKET-STATUS" 
-;;            "SOCKET-STREAM-HOST" "SOCKET-STREAM-LOCAL" 
-;;            "SOCKET-STREAM-PEER" "SOCKET-STREAM-PORT" 
+;;   (:export "SOCKET-ACCEPT" "SOCKET-CONNECT" "SOCKET-OPTIONS"
+;;            "SOCKET-SERVER" "SOCKET-SERVER-CLOSE" "SOCKET-SERVER-HOST"
+;;            "SOCKET-SERVER-PORT" "SOCKET-SERVICE-PORT" "SOCKET-STATUS"
+;;            "SOCKET-STREAM-HOST" "SOCKET-STREAM-LOCAL"
+;;            "SOCKET-STREAM-PEER" "SOCKET-STREAM-PORT"
 ;;            "SOCKET-STREAM-SHUTDOWN" "SOCKET-WAIT" "STREAM-HANDLES"))
 
 

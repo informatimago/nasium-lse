@@ -41,12 +41,12 @@
 (defparameter *program-main*    (lambda () (intern "MAIN" "COM.INFORMATIMAGO.LSE.CLI")))
 (defparameter *program-features*
   '(("LSE_COMPILE_SERVER"       . :lse-server)
-    ((not "LSE_COMPILE_SERVER") . :lse-allow-lisp) ; gives access to low level lisp command and functions. 
-    ;; :lse-scanner-debug    
+    ((not "LSE_COMPILE_SERVER") . :lse-allow-lisp) ; gives access to low level lisp command and functions.
+    ;; :lse-scanner-debug
     ;; :debugging
-    :lse-case-insensitive 
-    :lse-unix             
-    :lse-extensions       
+    :lse-case-insensitive
+    :lse-unix
+    :lse-extensions
     #-(and)  :lse-mitra-15
     #-(and) :lse-t1600
     ))
@@ -68,12 +68,12 @@
               (typep *standard-input* 'file-stream)
               bare
               (type-of *standard-input*)
-              *terminal-io*       
-              *standard-input*    
-              *standard-output*   
-              *error-output*      
-              *trace-output*   
-              *query-io*          
+              *terminal-io*
+              *standard-input*
+              *standard-output*
+              *error-output*
+              *trace-output*
+              *query-io*
               *debug-io*
               (open (first (last ccl:*command-line-argument-list*)))
               ))

@@ -65,7 +65,7 @@
 (defparameter *password*    "MAYER")
 
 (defparameter *header*      "EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]")
-(defparameter *copyright*   "COPYRIGHT 1984 - 2014 PASCAL BOURGUIGNON")
+(defparameter *copyright*   "COPYRIGHT 1984 - 2017 PASCAL BOURGUIGNON")
 
 
 ;; (map nil (function ensure-directories-exist)

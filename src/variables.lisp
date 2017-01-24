@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    This file defines LSE variables.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
@@ -56,18 +56,18 @@
 ;; 100 PROCEDURE P () LOCAL A
 ;; 105 A_0
 ;; 110 ALLER EN 20
-;; 
+;;
 ;; should produce:
-;; 
+;;
 ;; 1 0
-;; 
+;;
 ;; which shows that AFFICHER A refered first the global variable, and then the LOCAL variable of P.
 
 
 ;; Furthermore, procedures may have parameters by reference or parameters
 ;; by value.  Parameters by value are basically the same as local
 ;; variables (only they're initialized from procedure arguments).
-;; 
+;;
 ;; However, parameters by references mean that we need a way to reference
 ;; variables in their scope:
 

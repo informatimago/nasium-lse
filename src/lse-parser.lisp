@@ -5,14 +5,14 @@
 ;;;;SYSTEM:             POSIX
 ;;;;USER-INTERFACE:     POSIX
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    EMULSE : L.S.E. [ EMULATION MITRA-15 ]
-;;;;    
-;;;;    An emultator of the CII MITRA-15 L.S.E. System 
+;;;;
+;;;;    An emultator of the CII MITRA-15 L.S.E. System
 ;;;;    and programming language interpreter.
-;;;;    
+;;;;
 ;;;;    This file describes the syntax and grammar of the L.S.E. language.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon
 ;;;;MODIFICATIONS
@@ -23,19 +23,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2000 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;*****************************************************************************
@@ -63,8 +63,8 @@
 ;;                  (alt (seq ident numb  :action (list :in $1 $2))
 ;;                       (seq ident ident :action (list :ii $1 $2))))))
 ;; (parse-test "hello world") --> expected numb.
-;; 
-;; 
+;;
+;;
 ;; (defgrammar test
 ;;     :terminals ((ident "[A-Za-z][A-Za-z0-9]+")
 ;;                 (numb "[0-9]+"))
@@ -74,7 +74,7 @@
 ;;                                  (seq ident :action (list :ii $1)))
 ;;                       :action (list (first $2) $1 (second $2)))
 ;;                  :action $1)))
-;; 
+;;
 ;; (parse-test "hello world") --> (:II (IDENT "hello" 0) (IDENT "world" 6))
 
 
@@ -125,7 +125,7 @@
               (tok-TABLEAU   "TABLEAU")
               (tok-TANT      "TANT")
               (tok-TERMINER  "TERMINER")
-              ;; keyword or identifier:            
+              ;; keyword or identifier:
               (tok-x         "X")
               (tok-C         "C")
               (tok-L         "L")
@@ -163,10 +163,10 @@
               ;; chaine : ' { caractere_sauf_quote | '' } ' .
               ;; ident : [ '&' ] lettre { lettre | chiffre } .
               ;; commentaire    : '*' { car } tok-EOL .
-                
+
               ;; nombre must come first to match the longest first.
               (tok-nombre         "[-+]?[0-9]+\\.[0-9]+[Ee][-+]?[0-9]+?")
-              (tok-numero         "[0-9]+") 
+              (tok-numero         "[0-9]+")
               ;; "[0-9]+\\(\\.[0-9]*\\)?\\(E[-+]?[0-9]+\\)?")
               (tok-litchaine      "'(('')?[^']*)*'")
               ;; "\\('[^']*'\\)\\('[^']*'\\)*")
@@ -181,7 +181,7 @@
   ;; The LSE language is line based.  We parse sources line by line.
   ;; Program files (tapes) can contain both lines and commands.
   ;; The LSE compiler worked on punch cards, line by line too.
- 
+
   :start debut
   :rules (
 
@@ -233,7 +233,7 @@
           (--> decl
                (alt decl-chaine decl-tableau)
                :action $1)
-            
+
           (--> decl-chaine
                (seq tok-CHAINE liste-identificateur  :action (cons :chaine $2))
                :action $1)
@@ -251,25 +251,25 @@
                     :action (list* :adecl $1 expression $4))
                :action $1)
 
-            
+
           (--> instruction
                (alt
-                liberation      
-                affectation     
-                appel           
-                lire            
-                afficher        
-                aller-en        
-                si-alors-sinon  
-                terminer        
-                pause           
-                debut-fin       
+                liberation
+                affectation
+                appel
+                lire
+                afficher
+                aller-en
+                si-alors-sinon
+                terminer
+                pause
+                debut-fin
                 faire
-                retour          
-                resultat        
-                garer           
-                charger         
-                supprimer       
+                retour
+                resultat
+                garer
+                charger
+                supprimer
                 executer)
                :action $1)
 
@@ -304,7 +304,7 @@
                                   (seq             liste-expression  :action (list* :afficher nil $1)))
                     :action $2)
                :action $1)
-            
+
           (--> format
                (seq tok-crogauche liste-spec tok-crodroite :action $2)
                :action $1)
@@ -368,13 +368,13 @@
                                 (list :si $2 $4 $5)
                                 (list :si $2 $4)))
                :action $1)
-            
+
           (--> terminer
                tok-TERMINER :action (list :terminer))
-            
+
           (--> pause
                tok-PAUSE    :action (list :pause))
-            
+
           (--> debut-fin
                (seq tok-DEBUT liste-inst-ou-decl tok-FIN :action (cons :debut $2))
                :action $1)
@@ -392,7 +392,7 @@
                                                         :line (token-line $6)))
                                   (second $8)))
                :action $1)
-            
+
           (--> retour
                (alt
                 (seq tok-RETOUR (opt tok-EN expression :action expression)
@@ -427,12 +427,12 @@
                     :action  (list* :executer $2 $3))
                :action $1)
 
-            
+
           ;; We cannot distinguish references from
           ;; right-references in function arguments because they
           ;; have the same form, and both are possible. &F(A,B), so
           ;; we must keep references, and also for other expressions.
-            
+
           (--> expression
                (seq terme-signe (rep (alt (seq tok-moins  terme :action (list :moins  terme))
                                           (seq tok-plus   terme :action (list :plus   terme))
@@ -451,7 +451,7 @@
                                 (list :neg terme)
                                 terme))
                :action $1)
-            
+
           (--> terme
                (seq facteur (rep (alt (seq tok-fois    facteur :action (list :fois   facteur))
                                       (seq tok-divise  facteur :action (list :divise facteur)))
@@ -461,7 +461,7 @@
                                 facteur))
                :action $1)
 
-            
+
           (--> facteur
                (seq simple
                     (rep (seq tok-puissance simple :action (list :puissance simple))
@@ -534,7 +534,7 @@
                                            (seq tok-GT :action :gt)
                                            (seq tok-GE :action :ge))
                                       expression
-                                      :action (list $1 expression)) 
+                                      :action (list $1 expression))
                      :action (if $2
                                  (list (first $2) expression (second $2))
                                  expression)))

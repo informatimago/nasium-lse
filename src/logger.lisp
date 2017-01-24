@@ -5,11 +5,11 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION:
-;;;;    
+;;;;
 ;;;;    Logger.
 ;;;;    The current implementation trivially writes to *trace-output*.
 ;;;;    Will have to be reimplemented using syslog.
-;;;;    
+;;;;
 ;;;;AUTHORS:
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -17,19 +17,19 @@
 ;;;;BUGS:
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**********************************************************************
@@ -153,7 +153,7 @@ builds the corresponding call to the SGR* function (with numerical arguments)."
 
 
 (defvar *use-color* nil ; doesn't work in slime
-  "Whether the logs should be written with colors matching the level.") 
+  "Whether the logs should be written with colors matching the level.")
 ;; (setf *use-color* nil)
 
 
@@ -195,7 +195,7 @@ builds the corresponding call to the SGR* function (with numerical arguments)."
 Writes a message to the log, on behalf of the MODULE.  The message has
 an importance given by the LEVEL and is built by formating the
 CONTROL-STRING with the ARGUMENTS.
-The message is written 
+The message is written
 "
   (unless (or (member module *ignore-modules*)
               (level< level *minimum-log-level*))

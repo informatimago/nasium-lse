@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Defines the abstract TERMINAL class and the concrete STANDARD-TERMINAL class.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2013 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
@@ -60,7 +60,7 @@
   (:method (terminal character)
     (declare (ignorable terminal))
     (case character
-      
+
       #+has-ascii-code
       ((#.(code-char SOH))      :attention)
 
@@ -68,7 +68,7 @@
          (or (not has-ascii-code)
              #.(cl:if (cl:char= (cl:code-char COM.INFORMATIMAGO.LSE::ESC) #\Escape) '(:and) '(:or))))
       ((#\Escape)               :escape)
-      
+
       #+(and has-ascii-code
          (or (not has-escape)
              #.(cl:if (cl:char/= (cl:code-char COM.INFORMATIMAGO.LSE::ESC) #\Escape) '(:and) '(:or))))
@@ -84,7 +84,7 @@
          (or (not has-return)
              #.(cl:if (cl:char/= (cl:code-char COM.INFORMATIMAGO.LSE::CR) #\Return) '(:and) '(:or))))
       ((#.(code-char CR))       :return)
-            
+
 
       #+has-ascii-code ((#.(code-char XOFF))     :xoff)
       ((#\Newline)                               :xoff)
@@ -92,7 +92,7 @@
       #+has-backspace  ((#\Backspace)            :delete)
       #+has-rubout     ((#\Rubout)               :delete)
       ((#\\)                                     :delete)
-      
+
       (otherwise                                 character))))
 
 (defgeneric terminal-keysym-character (terminal keysym)

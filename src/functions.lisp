@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    LSE functions.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal Bourguignon 2005 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
@@ -301,7 +301,7 @@ Résultat: Le produit de la multiplication entre A et B."
 Résultat: Le produit de la multiplication entre A et B.
 
 B doit être non-nul, sinon un erreur est détectée."
-  
+
   (if (zerop b)
       (lse-error 'division-par-zero
                  :op "/"
@@ -354,7 +354,7 @@ Résultat: L'opposé de A."
   "Valeur absolue"
   "ABS(A)
 
-Résultat: La valeur absolue de A."  
+Résultat: La valeur absolue de A."
   (let ((a (deref *vm* a))) (abs      (un-nombre a))))
 
 
@@ -494,7 +494,7 @@ Résultat: le ET logique bit-à-bit entre les bits de A et ceux de B."
 ;;    (format t "~S" (macroexpand '(defunction etl (a b)
 ;;                                  "ET logique bit-à-bit"
 ;;                                  "ETL(A,B)
-;; 
+;;
 ;; Résultat: le ET logique bit-à-bit entre les bits de A et ceux de B."
 ;;                                  (un-nombre (logand (truncate (un-nombre (deref *vm* a)))
 ;;                                              (truncate (un-nombre (deref *vm* b))))))
@@ -569,7 +569,7 @@ Cette fonction évalue l'expression Common Lisp EXPR.
           (typecase (first results)
             ((or integer nombre chaine) (first results))
             (t (prin1-to-string (first results)))))
-      
+
       (error (err)
         (if (plusp noerr)
             0.0 ; TODO: we should return '' when a string is expected.
@@ -616,7 +616,7 @@ DE doit être un nombre entier supérieur ou égal à 1."
     (if (< (length (la-chaine ch)) (+ debut (length (la-chaine sc))))
         0.0
         (+ 1.0 (or (search sc ch :start2 debut) -1.0)))))
-           
+
 
 (defunction eqn (ch &optional po)
   "Équivalent numérique"
@@ -666,7 +666,7 @@ nombre A au format U."
 
 
 (defun set-va (va value)
-  (let ((value (un-nombre value)))  
+  (let ((value (un-nombre value)))
     (etypecase va
       (lse-variable
        (if (member (variable-type va) '(nombre :undefined))
@@ -697,7 +697,7 @@ utilisé dans la représentation."
              :backtrace (or #+ccl (ccl::backtrace-as-list))
              :op "CNB"
              :index 2
-             :argument de             
+             :argument de
              :reason "L'ARGUMENT DEBUT DOIT ETRE UN NOMBRE ENTIER ENTRE 1 ET LA LONGUEUR DE LA CHAINE."))
     (labels ((skip-spaces (pos)
                (position (character " ") ch :start pos :test (function char/=)))
@@ -735,7 +735,7 @@ utilisé dans la représentation."
         (when (digit? fin)
           (setf fin (skip-digits fin))))
       (eos! fin))))
-        
+
 
 
 (defunction sch (ch de lo-or-ch &optional va)
@@ -862,7 +862,7 @@ sous-chaîne est le dernier caractère de la chaîne."
          (de (deref *vm* de))
          (debut (1- (truncate (un-nombre de))))
          (chlen (length (la-chaine ch))))
-    (when (or (< debut 0) (/= (1+ debut) de) (<= chlen debut)) 
+    (when (or (< debut 0) (/= (1+ debut) de) (<= chlen debut))
       (error 'argument-invalide
              :backtrace (or #+ccl (ccl::backtrace-as-list))
              :op "GRL"
@@ -936,7 +936,7 @@ Exemple: ARG(1) --> '--help'
 "
   (let* ((i (round (un-nombre (deref *vm* i))))
          (val (if (zerop i)
-                  (or (task-script-path *task*) (program-name)) 
+                  (or (task-script-path *task*) (program-name))
                   (nth (1- i)  (if (task-script-path *task*)
                                    (task-script-arguments *task*)
                                    (arguments))))))
@@ -1096,7 +1096,7 @@ Exemple: EXEC(\"ls -l\") --> 0
              (assert (let ((ch  (format nil "~C" (code-char (+ i 32)))))
                        (string= ch (eqc (eqn ch))))))
            (format t "CNB~%")
-           (map nil (lambda (i res) 
+           (map nil (lambda (i res)
                       (assert (and (equal res (ignore-errors
                                                 (multiple-value-list
                                                  (cnb "123456789" (un-nombre i)))))
@@ -1116,7 +1116,7 @@ Exemple: EXEC(\"ls -l\") --> 0
              :for res :in '(NIL (0.0 1.0) (0.0 2.0) (0.0 4.0) (0.0 4.0) (0.0 5.0)
                             (0.0 6.0) (0.0 7.0) (0.0 8.0) (0.0 9.0) (421.0 14.0)
                             (421.0 14.0) (21.0 14.0) (1.0 14.0) (0.0 14.0) nil NIL)
-             :for i :to 16 
+             :for i :to 16
              :do (assert (equal res (ignore-errors
                                       (multiple-value-list
                                        (cnb "Le nombre 421%" (un-nombre i)))))
@@ -1128,7 +1128,7 @@ Exemple: EXEC(\"ls -l\") --> 0
                          '(ignore-errors
                            (multiple-value-list
                             (cnb "Le nombre 421%" (un-nombre i))))))
-           (format t "SCH ~A~%" (dat)) 
+           (format t "SCH ~A~%" (dat))
            (let ((expected '(NIL  NIL  NIL ("" 1.0)  NIL  NIL  NIL  NIL  ("a" 2.0)
                              ("a"  2.0)  NIL ("" 2.0)  ("" 2.0)  NIL  NIL  NIL  NIL  NIL  NIL
                              NIL NIL  NIL  NIL NIL  NIL  NIL  ("J" 2.0)  ("Ja" 3.0)  ("Jab" 4.0)
@@ -1179,10 +1179,10 @@ Exemple: EXEC(\"ls -l\") --> 0
                              test (un-nombre de) (un-nombre le)))))))
            (let ((expected '(NIL  NIL  NIL
                              ("" 1.0)  ("" 1.0)  ("" 1.0)
-                             NIL  NIL  NIL                 ; "a" 0.0 
+                             NIL  NIL  NIL                 ; "a" 0.0
                              ("a" 2.0)  ("a" 2.0) ("" 1.0) ; "a" 1.0
                              (""  2.0)  ("" 2.0)  ("" 2.0) ; "a" 2.0
-                             NIL  NIL NIL                  ; "a" 3.0 
+                             NIL  NIL NIL                  ; "a" 3.0
                              ("Jaberwocky" 11.0)  ("Jaberwocky" 11.0)  ("J" 2.0) ; 1
                              ("aberwocky" 11.0)   ("aberwocky" 11.0)   ("" 2.0)  ; 2
                              ("berwocky" 11.0)    ("berwocky" 11.0)    ("" 3.0)  ; 3

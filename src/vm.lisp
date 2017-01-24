@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    LSE Virtual Machine
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal Bourguignon 2005 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;****************************************************************************
@@ -38,10 +38,10 @@
 
 ;; 10 ALLER EN 20
 ;; 20 ALLER EN 10+I
-;; 
+;;
 ;; #HASH( (10 => #((PUSHI 20)(POP&GO)))
 ;;        (20 => #((PUSHI 10)(PUSHV I)(ADD)(POP&GO)) )
-       
+
 
 
 
@@ -81,7 +81,7 @@
    (pc.offset         :accessor vm-pc.offset
                       :initform 0
                       :type (integer 0))
-   (code              :accessor vm-code 
+   (code              :accessor vm-code
                       :initform  #(!next-line)
                       :type vector
                       :documentation "The current code vector.")
@@ -232,90 +232,90 @@ RETURN: vm
 
 
 ;; EXECUTER A PARTIR DE debut[,fin]
-;; 
+;;
 ;;     Fait exécuter le programme courant de l'utilisateur à partir de la
 ;;     ligne de numéro 'debut' (si aucune ligne n'est numéroté 'debut',
 ;;     une erreur sera détectée).
-;; 
+;;
 ;;     L'exécution se poursuivra jusqu'à ce qu'on arrive :
-;; 
+;;
 ;;         - soit à la ligne de numéro 'fin' ; cette ligne ne sera pas
 ;;           exécutée, la console repassera dans l'état «moniteur» et
 ;;           affichera 'fin'.
-;; 
+;;
 ;;         - soit à une des instructions LSE: PAUSE ou TERMINER ou à une
 ;;           erreur.  La console repassera dans l'état «moniteur» et
 ;;           affichera un message indiquant la cause de l'arrêt et le
 ;;           numéro de la ligne où il s'est produit.  Eventuellement, en
 ;;           cas d'arrêt dans une procédure, le numéro de la ligne où
 ;;           l'on avait appelé cette procédure.
-;; 
+;;
 ;;         - L'utilisation de la touche ESC arrête également l'exécution.
-;; 
-;; 
+;;
+;;
 ;; REPRENDRE A PARTIR DE debut[,fin]
-;; 
+;;
 ;;     Permet de reprendre l'exécution sur une ligne différente de celle
 ;;     où elle fut interrompue.
-;; 
+;;
 ;;     Les paramètres 'debut' et 'fin' ont la même signification que ceux
 ;;     de la commande EXECUTER, mais la commande REPRENDRE ne change pas
 ;;     l'affectation des identificateurs.  Toutes les valeurs antérieures
 ;;     a l'interruption sont conservée.
-;; 
+;;
 ;;     L'exécution du programme est toujours reprise au niveau principal
 ;;     (même si le programme avait été interrompu dans une procédure).
-;; 
-;;     
+;;
+;;
 ;; CONTINUER
-;; 
+;;
 ;;     Permet de relancer l'exécution d'un programme momentanément
 ;;     interrompu par l'instruction PAUSE ou la touche d'interruption ESC.
-;; 
+;;
 ;;     L'exécution reprend à l'endroit où elle fut arrêtée.
-;; 
-;; 
+;;
+;;
 ;; POURSUIVRE JUSQU'EN fin
-;; 
+;;
 ;;     Relance l'exécution comme CONTINUER mais avec arrêt en ligne 'fin'.
-;; 
-;; 
-;; 
-;; 
+;;
+;;
+;;
+;;
 ;; T-1600:
 ;; TERMINE EN LIGNE ###
 ;; PAUSE EN LIGNE ###
-;; 
+;;
 ;; Mitra-15:
 ;; TERMINE
 ;; PAUSE
-;; 
-;; 
+;;
+;;
 ;; Arrêt sur point d'arrêt (début de ligne).
 ;;   (EXECUTER A PARTIR DE debut[,fin])
 ;;   (REPRENDRE A PARTIR DE debut[,fin])
 ;;   (POURSUIVRE JUSQU'EN fin)
 ;;    Il n'y a qu'un seul point d'arrêt ('fin') au maximum.
-;; 
+;;
 ;; Arrêt sur PAUSE
-;; 
+;;
 ;; Arrêt sur TERMINER
-;; 
+;;
 ;; Arrêt sur ESC
 ;;   Implémenté avec la condition USER-INTERRUPT signalée par YIELD-SIGNALS.
-;; 
+;;
 ;; CONTINUER
 ;; POURSUIVRE JUSQU'EN fin
 ;;   Sur PAUSE ou ESC.
 ;;   Continue là où on en était.
 ;;   Poursuivre donne un point d'arrêt.
-;; 
-;; 
+;;
+;;
 ;; EXECUTER A PARTIR DE debut[,fin]
 ;;   Reprend au niveau principal.
 ;;   Efface la pile des procédures.
 ;;   Efface pas les variables globales.
-;; 
+;;
 ;; REPRENDRE A PARTIR DE debut[,fin]
 ;;   Reprend au niveau principal.
 ;;   Efface la pile des procédures.
@@ -330,7 +330,7 @@ RETURN: vm
 (defmethod vm-pause ((vm lse-vm))
   (when (eql (vm-state vm) :running)
     (setf (vm-state vm) :idle
-          (slot-value vm 'paused.pc.line)   (vm-pc.line vm)  
+          (slot-value vm 'paused.pc.line)   (vm-pc.line vm)
           (slot-value vm 'paused.pc.offset) (vm-pc.offset vm)
           (slot-value vm 'paused.code)      (vm-code vm)))
   vm)
@@ -338,7 +338,7 @@ RETURN: vm
 (defmethod vm-unpause ((vm lse-vm))
   (when (vm-pausedp vm)
     (setf (vm-state vm) :running
-          (vm-pc.line   vm) (slot-value vm 'paused.pc.line)  
+          (vm-pc.line   vm) (slot-value vm 'paused.pc.line)
           (vm-pc.offset vm) (slot-value vm 'paused.pc.offset)
           (vm-code      vm) (slot-value vm 'paused.code)
           (slot-value vm 'paused.pc.line)   nil
@@ -452,7 +452,7 @@ RETURN: vm
 (defun afficher-chaine (vm rep val)
   (check-type rep (or (integer 1) nombre named-slot))
   (check-type val chaine)
-  (io-format *task* "~A" 
+  (io-format *task* "~A"
              (with-output-to-string (out)
                (loop
                  :repeat (round (deref vm rep))
@@ -526,7 +526,7 @@ RETURN: vm
      (let ((mag (abs value)))
        (format stream (if (or (zerop mag)
                               (and (<= 1e-3 (abs mag)) (< (abs mag) 1e6)))
-                          "~A"          
+                          "~A"
                           "~,,2,,,,'EE")
                ;; convert to integer when there's no significant decimal digit:
                (let ((tvalue (truncate value)))
@@ -881,7 +881,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
     ((eq t val))
     ((null val)
      (incf (vm-pc.offset vm) offset))
-    (t    
+    (t
      (lse-error "LE TEST N'EST PAS UN BOOLEEN MAIS ~A" val))))
 
 (defun bnever (vm offset)
@@ -939,7 +939,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
             (loop-limit self)))
   self)
 
- 
+
 (defun jump-to-end-of-line (vm lino)
   (let* ((code (code-vector (gethash lino (vm-code-vectors vm))))
          (offset (1- (length code))))
@@ -947,7 +947,7 @@ NOTE: on ne peut pas liberer un parametre par reference.
     (setf (vm-pc.line   vm) lino
           (vm-pc.offset vm) offset
           (vm-code      vm) code)))
-  
+
 (defun faire (vm loop-class lino init pas limit ident)
   (let ((line  (gethash lino (vm-code-vectors vm)))
         (var   (find-variable vm ident))
@@ -1300,7 +1300,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
   (let ((frame (first (vm-local-frame-stack vm))))
     (if (null frame)
         (lse-error "IL N'Y A PAS D'APPEL DE PROCEDURE EN COURS, RETOUR EN IMPOSSIBLE")
-        
+
         ;; When call-type is :function we have an exceptionnal return,
         ;; but it's the same processing.  The stack unwinding is done
         ;; in vm-goto, from the saved frame-stack-pointer.
@@ -1440,7 +1440,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
     (vm-reset-variables vm)
     (vm-goto vm lino)))
 
-                  
+
 
 (defun comment (vm comment)
   (declare (ignore vm comment))
@@ -1497,7 +1497,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                      (force-output)))
                  (let ((cop (pfetch)))
                    (case cop
-                     
+
                      (!non    (op-1* non))
                      (!et     (op-2* et))
                      (!ou     (op-2* ou))
@@ -1526,7 +1526,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                      (!afficher-newline (op-1 afficher-newline))
                      (!afficher-chaine  (op-2 afficher-chaine))
                      (!afficher-u       (op-1 afficher-u))
-                     
+
                      (!beep             (op-0 beep))
                      (!LIRE&STORE       (op-0/1 LIRE&STORE))
                      (!LIRE&ASTORE1     (op-1/1 LIRE&ASTORE1))
@@ -1543,18 +1543,18 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                      (!supprimer-enregistrement  (op-2 supprimer-enregistrement))
                      (!supprimer-fichier         (op-1 supprimer-fichier))
                      (!executer                  (op-2 executer))
-                     
+
                      (!pause          (op-0 pause))
                      (!terminer       (op-0 terminer))
                      (!stop           (op-0 stop))
-                     
+
                      (!AREF1&PUSH-REF (op-1/1 AREF1&PUSH-REF))
                      (!AREF1&PUSH-VAL (op-1/1 AREF1&PUSH-VAL))
                      (!AREF2&PUSH-REF (op-2/1 AREF2&PUSH-REF))
                      (!AREF2&PUSH-VAL (op-2/1 AREF2&PUSH-VAL))
 
                      (!dup            (let ((a (spop))) (spush a) (spush a)))
-                     (!pop            (spop))                           
+                     (!pop            (spop))
                      (!POP&ASTORE1    (op-2/1 POP&ASTORE1))
                      (!POP&ASTORE2    (op-3/1 POP&ASTORE2))
                      (!POP&STORE      (op-1/1 POP&STORE))
@@ -1568,7 +1568,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                      (!tableau2       (op-2/1 declare-tableau2))
                      (!liberer        (op-0/1 declare-liberer))
 
-                     
+
                      (!balways        (op-0/1 balways))
                      (!btrue          (op-1/1 btrue))
                      (!bfalse         (op-1/1 bfalse))
@@ -1588,7 +1588,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
 
     (catch 'run-step-done
       (handler-case
-          
+
           #-debugging (run)
           #+debugging (if (or (eq t *debug-vm*) (member :error *debug-vm*))
                           (handler-bind ((error #'invoke-debugger)) (run))
@@ -1597,11 +1597,11 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
           (error (err)
             (vm-pause vm) ; no message
             (error err))
-          
+
           (user-interrupt (condition)
             (vm-pause vm) ; no message
             (signal condition)))
-      
+
       t)))
 
 
@@ -1655,7 +1655,7 @@ va references are :pop&store'd
         sf        <-- next-sf
         :pop-sf
         :pop-n argcnt
-                      
+
     :push  result              --                 --
     pc <-- return-pc       OR  pc <-- goto     or pc <-- return-pc
 

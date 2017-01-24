@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Tests the LSE scanner.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2016
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
@@ -74,7 +74,7 @@
         (if (eolp current-token)
             (progn
               (format t ";; Found new line~%")
-              (advance-line scanner))  
+              (advance-line scanner))
             (scan-next-token scanner))
         (finish-output)
     :until (eofp (scanner-current-token scanner))))
@@ -131,7 +131,7 @@
 32 AFFICHER[X,':'];LIRE TEM;LIRE UNIT
 34 SI UNIT#='C' ALORS &CFK(TEM)
 36 SI UNIT=>'F' ALORS &FCK(TEM)
-38 SI UNIT=<'K' ALORS &KCF(TEM) 
+38 SI UNIT=<'K' ALORS &KCF(TEM)
 40 SI UNIT='FIN' ALORS ALLER EN 44 ALORS ALLER EN 22
 42 ALLER EN 30
 44 AFFICHER[C,79X,C];TERMINER

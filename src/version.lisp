@@ -5,10 +5,10 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    This file defines contains the *version* variable,
 ;;;;    and the VERSION function.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -17,19 +17,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
@@ -76,7 +76,7 @@ DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLv3.
 
 
 (defun system-release ()
-  ;; TODO: 
+  ;; TODO:
   "")
 
 (defvar *actual-version* nil)
@@ -130,7 +130,7 @@ stdout in a string (going thru a file)."
     (format nil "~A,~% commit ~A,~% compiled ~4,'0D-~2,'0D-~2,'0D ~2,'0D:~2,'0D:~2,'0D,~% ~
                  on ~A,~% with features ~A."
             (version) *commit* ye mo da ho mi se
-            (machine-instance) 
+            (machine-instance)
             (list #+:lse-mitra-15 :lse-mitra-15
                   #+:lse-t1600 :lse-t1600
                   #+:lse-unix :lse-unix

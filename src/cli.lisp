@@ -329,7 +329,7 @@ RETURN: EX-OK
       (progn
         (push #P"/usr/local/lib/" cffi:*foreign-library-directories*)
         (setf *program-name* (or (program-name) *default-program-name*))
-        (setf *options* (make-default-options))
+        (print (setf *options* (make-default-options)))
         (set-lse-root)
         (let ((encoding (locale-terminal-encoding)))
           (set-terminal-encoding encoding)

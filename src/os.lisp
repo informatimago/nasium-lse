@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    This file contains some OS function that are implementation dependant.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -152,7 +152,7 @@ output to *VERBOSE-OUT*.  Returns the shell's exit code."
   (assert (or input output) () "At least one of INPUT or OUTPUT must be true.")
   (let ((output-buffering (or output-buffering :none)))
     #+ccl  (declare (ignorable output-buffering))
-    
+
     #+ccl  (let ((stream (ccl::make-fd-stream
                           fd
                           :direction (cond
@@ -187,7 +187,7 @@ output to *VERBOSE-OUT*.  Returns the shell's exit code."
                           )))
              (setf (ccl::stream-external-format stream) external-format)
              stream)
-    
+
     #+clisp (ext:make-stream fd
                              :direction (cond
                                           ((and input output) :io)
@@ -196,7 +196,7 @@ output to *VERBOSE-OUT*.  Returns the shell's exit code."
                              :element-type element-type
                              :external-format external-format
                              :buffered output-buffering)
-    
+
     #+cmu   (system:make-fd-stream fd
                                    :input input
                                    :output output
@@ -256,7 +256,7 @@ PRE: (fd-stream-p stream)"
 
 
 ;;;-----------------------------------------------------------
-;;; 
+;;;
 
 (defun not-implemented-here (function-name)
   (error "How to implement ~S in ~S"

@@ -2,14 +2,14 @@
 
 
 --------------------------------------
-NASIUM LSE - NOTES D'IMPLEMENTATION   
+NASIUM LSE - NOTES D'IMPLEMENTATION
 --------------------------------------
 
 DONE
 ====
 
 - In cli, allow CR to work just like C-s
-  --> option: --entree-comme-xoff | --return-is-xoff  
+  --> option: --entree-comme-xoff | --return-is-xoff
 
 TODO
 ====
@@ -30,7 +30,7 @@ TODO
 
 - Write server documentation chapters.
 
-- Voir si on ajoute un token <- pour _. 
+- Voir si on ajoute un token <- pour _.
 
 - server iolib-util: the write handler should be activated only when
   we have something to write, and it should be deactivated when we're
@@ -136,7 +136,7 @@ LSE Grammar
 
 
     numero ::= chiffre {chiffre} .
-    nombre ::= chiffre {chiffre} [ . {chiffre} ] 
+    nombre ::= chiffre {chiffre} [ . {chiffre} ]
                 [ 'E' ['+'|'-'] chiffre {chiffre} ] .
 
     chaine ::= "'" { caractere_sauf_quote | "''" } "'" .
@@ -181,22 +181,22 @@ LSE Grammar
 
     declaration     ::= declaration_chaine | declaration_tableau .
     instruction     ::= liberation
-                    | lire | afficher | alleren | sialors | sialorssinon 
-                    | terminer | pause | debutfin | fairejusqua | fairetantque 
-                    | retour | resultat | appel 
+                    | lire | afficher | alleren | sialors | sialorssinon
+                    | terminer | pause | debutfin | fairejusqua | fairetantque
+                    | retour | resultat | appel
                     | garer | charger | supprimer | executer .
 
 
 
     declaration_chaine ::= 'CHAINE' identificateur { ',' identificateur } .
 
-    declaration_tableau ::= 'TABLEAU' 
-                            identificateur '[' expression [ ',' expression ] ']' 
+    declaration_tableau ::= 'TABLEAU'
+                            identificateur '[' expression [ ',' expression ] ']'
                      { ','  identificateur '[' expression [ ',' expression ] ']' } .
 
     liberation  ::= 'LIBERER' identificateur .
 
-    declaration_procedure ::= 'PROCEDURE' identificateur 
+    declaration_procedure ::= 'PROCEDURE' identificateur
                                 '(' [ identificateur { ',' identificateur } ] ')'
                                 [ 'LOCAL' identificateur { ',' identificateur } ] .
 
@@ -207,9 +207,9 @@ LSE Grammar
     lire            ::= 'LIRE' identificateur { ',' identificateur } .
     afficher        ::= 'AFFICHER'          expression { ',' expression } .
     afficher        ::= 'AFFICHER' format [ expression { ',' expression } ] .
-    format          ::= '[' specification { ',' specification } ']' 
+    format          ::= '[' specification { ',' specification } ']'
     specification   ::= [ numero | '*' ] '/' | 'X' | 'C' | 'L' | chaine .
-    specification   ::= [ numero ] 'F' numero '.' numero | 'E' numero '.' numero 
+    specification   ::= [ numero ] 'F' numero '.' numero | 'E' numero '.' numero
                                    | 'U' .
     alleren         ::= 'ALLER' 'EN' expression .
     sialors         ::= 'SI' disjonction 'ALORS' instruction .
@@ -217,9 +217,9 @@ LSE Grammar
     terminer        ::= 'TERMINER' .
     pause           ::= 'PAUSE' .
     debutfin        ::= 'DEBUT' instruction { ',' instruction } 'FIN' .
-    fairejusqua     ::= 'FAIRE' numero 'POUR' identificateur '_' expression 
+    fairejusqua     ::= 'FAIRE' numero 'POUR' identificateur '_' expression
                             [ 'PAS' expression ] 'JUSQUA' expression .
-    fairetantque    ::= 'FAIRE' numero 'POUR' identificateur '_' expression 
+    fairetantque    ::= 'FAIRE' numero 'POUR' identificateur '_' expression
                             [ 'PAS' expression ] 'TANT' 'QUE' disjonction .
     retour          ::= 'RETOUR' .
     retour          ::= 'RETOUR' 'EN' expression .
@@ -227,7 +227,7 @@ LSE Grammar
     appel           ::= identificateur '(' [ expression { ',' expression } ] ')' .
 
     garer           ::= 'GARER'   identificateur ',' expression ',' expression .
-    charger         ::= 'CHARGER' identificateur ',' expression ',' expression 
+    charger         ::= 'CHARGER' identificateur ',' expression ',' expression
                             [ ',' identificateur ] .
     supprimer       ::= 'SUPPRIMER' expression [ ',' expression ] .
     executer        ::= 'EXECUTER' expression [ ',' expression ] .
@@ -239,11 +239,11 @@ COMMON-LISP Implementation
 ==========================
 
     We'll minimize the  CL implementation  specific  dependencies.
-    
+
     Each task will be implemented in its own UNIX process.
-    A server process will listen to the socket, 
+    A server process will listen to the socket,
     and will fork a new console process of each incoming session.
-    
+
     A pipe between the server process and the console process will be
     established to allow for the transfer of state (PRENDRE ETAT CONSOLE)
     between the consoles.
@@ -262,9 +262,9 @@ Terminal I/O
 ------------
 
     Since we don't have several threads, we must do polling I/O.
-    
+
     clisp provide extension functions for raw keyboard input.
-    
+
     ESC --> stop current processing and revert to top-level repl
             (note: execution of a running program could be continued with
             the CONTINUE or ALLER A commands).
@@ -275,7 +275,7 @@ Terminal I/O
     The only way to implement BOTH these features portably on unix
     without threads seems to be with the use of an embedded virtual
     machine where we could implement virtual threads or at least:
-        
+
         (loop
           (process-input (read-char-no-hang))
           (execute-one-instruction))
@@ -288,7 +288,7 @@ Terminal I/O
 
     (catch :exit
       (let ((*status* :out) (counter 1)) (declare (special *status*))
-           (handler-bind 
+           (handler-bind
             ((system::simple-interrupt-condition
               (lambda (condition)
                 (print (list :interupted *status* counter))
@@ -297,9 +297,9 @@ Terminal I/O
                 nil)))
             (let ((*status* :in)) (declare (special *status*)) (loop)))))
 
-    --> (:INTERUPTED :IN 1) 
-    
-    
+    --> (:INTERUPTED :IN 1)
+
+
     (catch :exit
       (let ((*status* :out) (counter 1)) (declare (special *status*))
         (handler-case (let ((*status* :in)) (declare (special *status*)) (loop))
@@ -309,10 +309,10 @@ Terminal I/O
            (decf counter)
            (when (zerop counter) (throw :exit nil))))))
 
-    --> (:INTERUPTED :OUT 1) 
+    --> (:INTERUPTED :OUT 1)
 
 
-    Conclusion:  Implement ESC with stty -intr ESC  
+    Conclusion:  Implement ESC with stty -intr ESC
                  and don't implement Ctrl-A/ATT().
 
 
@@ -403,7 +403,7 @@ Gestion des consoles en Common Lisp
 
     Comme clisp ne fourni pas de threads, on a deux solutions pour
     implémenter les consoles:
-    
+
         - forked un processus par console, et implémenter un IPC entre
           un processus maîtres et les processus consoles avec
           transmission de l'état (commande PR), et des commandes (le
@@ -411,7 +411,7 @@ Gestion des consoles en Common Lisp
           utilisateurs).
 
         - implementer une machine virtuelle multi-threads dans un seul
-          processus clisp.  
+          processus clisp.
 
     Dans les deux cas la gestion des E/S est critique (utilisation de
     SOCKET:SOCKET-STATUS, avec gestion des flots d'E/S dans tous les
@@ -455,10 +455,10 @@ Gestion des consoles en C (OBSOLETE)
     pty) pour la  console principale, soit via un  socket sur un xterm
     ou un autre émulateur de terminal configuré spécialement pour LSE.
 
-    # We need a font with an up arrow instead of the caret (^), 
+    # We need a font with an up arrow instead of the caret (^),
     # and with a left arrow instead of the underline (_).
     # This dec font has these arrow characters, but mapped on 0xfc and 0xfb.
-    font='-dec-terminal-bold-r-normal-*-14-*-*-*-*-*-dec-dectech' 
+    font='-dec-terminal-bold-r-normal-*-14-*-*-*-*-*-dec-dectech'
 
 
     # We reset the terminal to function as a LSE console.
@@ -480,7 +480,7 @@ Gestion des consoles en C (OBSOLETE)
         eol2   0x00 \
         rprnt  0x00 \
         werase 0x00 \
-        lnext  0x00 
+        lnext  0x00
 
 
 Interpretation (Obsolete)
@@ -488,7 +488,7 @@ Interpretation (Obsolete)
 
 Conclusion :
 
-    
+
     Implémenter une machine virtuelle et générer un bytecode est plus
     simple que cette génération au vol du CPF avec la manipulation des
     piles.
@@ -498,7 +498,7 @@ SI EXPRESSION ! A_SI B>0 ALORS 1 SINON 2
 
 Objectifs :
 
-    - Interpréter "directement" l'arbre syntaxique, 
+    - Interpréter "directement" l'arbre syntaxique,
       sans générer de code postfixé.
 
     - Ne pas utiliser la  pile d'exécution du langage d'implémentation
@@ -507,7 +507,7 @@ Objectifs :
       RETOUR EN ; appels  récursifs des fonctions d'interprétation des
       instructions et d'évaluation des expressions).
 
-Solution : 
+Solution :
 
     - Si on  veut éviter une implémentation récursive,  le parcours de
       l'arbre   syntaxique  (qui  se   fait  forcément   d'une  manière
@@ -530,8 +530,8 @@ Solution :
        instruction_suivante
 
        ligne_courante=ligne_debut
-       si ligne_courante n'existe pas alors 
-          erreur 
+       si ligne_courante n'existe pas alors
+          erreur
        fsi
        instruction_courante=premiere instruction de la ligne_courante
        arret=(ligne_courante==ligne_arret)
@@ -542,7 +542,7 @@ Solution :
 
           cas ligne_suivante :
 
-          quand arreter alors 
+          quand arreter alors
              arret=vrai
 
           quand suivant alors
@@ -568,7 +568,7 @@ Solution :
 
           ligne_courante=ligne_suivante
           instruction_courante=instruction_suivante
-          arret=arret ou (ligne_courante==ligne_arret) 
+          arret=arret ou (ligne_courante==ligne_arret)
        fait
 
 
@@ -592,7 +592,7 @@ instructions!  en cours d'évaluation qui avaient appelé la fonction.
     30 AFFICHER 'ANNULE';TERMINER
     50 PROCEDURE &F(X) LOCAL X
     55 SI 1+X=0 ALORS RETOUR EN 30;RESULTAT -2
-    
+
 Voici le travail, arrivé en 55: ::
 
       ligne_courante       = 55
@@ -610,13 +610,13 @@ Voici le travail, arrivé en 55: ::
         20,=2
         20,si2(afficher('OUI'),afficher('NON'))
         0,marqueur
-       -------------------------------------------        
+       -------------------------------------------
       pile_e:
         1
         50,marqueur
         2
         0,marqueur
-       -------------------------------------------        
+       -------------------------------------------
 
 On ne peut exécuter qu'une seule  ligne à la fois par procédure alors,
 on n'a besoin que d'un type de marqueur, empilé en entrée de programme
@@ -653,12 +653,12 @@ REPRENDRE EN N1,N2  fait comme si des RETOUR EN * / ALLER EN après la PAUSE,
           (l,i)=executer (l,i);
        fsi
     fboucle
-   
 
-             alleren 
+
+             alleren
              faire -
              si - alors - sinon -
-             fonction - 
+             fonction -
              procedure -
              - ; -
 
@@ -677,12 +677,12 @@ REPRENDRE EN N1,N2  fait comme si des RETOUR EN * / ALLER EN après la PAUSE,
 
 
     ligneN, si c_expr i_alors i_sinon :
-         empiler_i ligneN, si i_alors i_sinon 
+         empiler_i ligneN, si i_alors i_sinon
          --> ligneN, c_expr
 
     ligneN, si i_alors i_sinon
          depiler_e c
-         si c alors 
+         si c alors
              --> ligneN i_alors
          sinon
              --> ligneN i_sinon
@@ -727,7 +727,7 @@ REPRENDRE EN N1,N2  fait comme si des RETOUR EN * / ALLER EN après la PAUSE,
           (l,i)=executer (l,i);
        fsi
     fboucle
- 
+
 
 ::
 

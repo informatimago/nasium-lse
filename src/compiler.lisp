@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    The LSE line compiler.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -18,19 +18,19 @@
 ;;;;    NON est une extension; voir comment le rendre optionel.
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal Bourguignon 2005 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
@@ -42,35 +42,35 @@
 
 
 ;; The compiler module provides three features:
-;; 
+;;
 ;; 1- unparse the syntactic tree produced by the parser into a LSE source
 ;;    text.  This is used by the DECODE command.  We could as well use
 ;;    the original source text, but this allows us to produce a nicely
 ;;    formated (ie. without extraneous spaces or parentheses) code.
-;; 
+;;
 ;;    UNPARSE-SLIST
-;; 
+;;
 ;; 2- compiles the LSE source code to byte-code vectors.
 ;;    The scanner and parser are provided by lse-scanner.lisp
-;;    and lse-parser.lisp. 
-;; 
+;;    and lse-parser.lisp.
+;;
 ;;    GENERATE-EXPRESSION
 ;;    GENERATE-STATEMENT
-;; 
+;;
 ;;    COMPILE-LSE-LINE-PARSE-TREE
 ;;    COMPILE-LSE-LINE
 ;;    COMPILE-LSE-STREAM
 ;;    COMPILE-LSE-FILE
-;; 
+;;
 ;;    DECOMPILE-LSE-LINE
-;; 
+;;
 ;;    We don't decompile the byte-code, so that we may implement
 ;;    "optimizations".  Already,  the code generated for AFFICHER would
 ;;    produce sometimes a different source if decompiled.
-;; 
+;;
 ;; 3- disassemble the byte-code vectors.  This is used for debugging and
 ;;    pedagogical purposes.
-;; 
+;;
 ;;    DISASSEMBLE-LSE
 ;;
 ;;
@@ -228,10 +228,10 @@
                (princ "(") (unparse-expression (third expr)) (princ ")"))
              (with-parens (expr (third expr))
                (third expr))))
-        
+
         ((:plus :concat
-                :fois 
-                :puissance 
+                :fois
+                :puissance
                 :lt :le :gt :ge :eg :ne)
          (with-parens (expr (second expr))
            (second expr))
@@ -314,7 +314,7 @@
                 :vval :vref
                 :fonction :appel)
           (unparse-expression expr))
-         
+
          ((:commentaire :terminer :pause :aller-en :retour :retour-en :resultat
                         :liberer :chaine :tableau
                         :lire :garer :charger :supprimer :executer)
@@ -340,7 +340,7 @@
                                       (rest expr))
                                 ",")
             (unparse-tree item)))
-         
+
          (:decl-procedure
           (princ "PROCEDURE ")
           (princ (identificateur-nom (second expr)))
@@ -484,9 +484,9 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;      (cons (car items) (apply (function gen) (cdr items))))
 ;;     (t
 ;;      (generate-statement (car items) (apply (function gen) (cdr items))))))
-;; 
-;; 
-;; 
+;;
+;;
+;;
 ;; (defun generate-statement (stat next)
 ;;   (etypecase stat
 ;;     ((or integer nombre symbol)
@@ -500,7 +500,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;        (tok-commentaire    (gen !comment (token-text stat) next))))
 ;;     (cons
 ;;      (ecase (first stat)
-;; 
+;;
 ;;        ((:neg :non)
 ;;         (gen (second stat) (case (first stat)
 ;;                              (:neg !neg)
@@ -535,10 +535,10 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;                                        (:ou !ou)
 ;;                                        (:et !et)) suite))
 ;;            :finally (return (gen (second stat) suite))))
-;; 
+;;
 ;;        (:commentaire
 ;;         (gen (second stat) next))
-;;        
+;;
 ;;        ((:liberer :chaine)
 ;;         (loop
 ;;            :with suite = next
@@ -559,7 +559,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;                  (identificateur-nom (second stat)) next)
 ;;             (gen (third stat) (fourth stat) !tableau2
 ;;                  (identificateur-nom (second stat)) next)))
-;;        
+;;
 ;;        ((:aval :aref)
 ;;         (if (null (cdddr stat))
 ;;             (gen (third stat)
@@ -577,7 +577,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;                (:vval !push-val)
 ;;                (:vref !push-ref))
 ;;              (identificateur-nom (second stat)) next))
-;; 
+;;
 ;;        ((:fonction :appel)
 ;;         (loop
 ;;            :with suite = (gen !call (identificateur-nom (second stat))
@@ -585,8 +585,8 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;            :for item :in (reverse (cddr stat))
 ;;            :do (setf suite (gen item suite))
 ;;            :finally (return suite)))
-;; 
-;;        
+;;
+;;
 ;;        ;; (:decl-procedure ident nil       nil)
 ;;        ;; (:decl-procedure ident (fpid...) nil)
 ;;        ;; (:decl-procedure ident nil       (locid...))
@@ -595,20 +595,20 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;        ;; ==> fpid inter locid == arguments par valeur  ==> copier
 ;;        ;; ==> fpid diff  locid == arguments par reference
 ;;        ;; ==> locid diff fpid  == variable locales --> table variable locale pour la proc.
-;; 
+;;
 ;;        ;; Parameters by reference
 ;;        ;; Parameters by value       = Local variables
 ;;        ;; Global Variables
 ;;        ;; Local Variables
-;; 
-;;        
+;;
+;;
 ;;     ;; - Appel de  PROCEDURE
-;;     ;; 
+;;     ;;
 ;;     ;;   We cannot generate vref or vval for parameters of PROCEDUREs
 ;;     ;;   before knowing what parameters are by reference and what are by
 ;;     ;;   value, therefore before having seen the PROCEDURE declaration in
 ;;     ;;   the source.
-;;     ;; 
+;;     ;;
 ;;     ;;   ⚠ Therefore we can generate the code only globally, just before we
 ;;     ;;     run the program.  Chaining or loading parts of the program while
 ;;     ;;     running means we need to recompile it.
@@ -627,27 +627,27 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;                           :local-variables (local-variables (set-difference locals params))
 ;;                           :line line
 ;;                           :offset ))
-;;         
+;;
 ;;         (gen !procedure next))
-;;        
+;;
 ;;        (:resultat   (gen (second stat) !result next))
 ;;        (:retour-en  (gen (second stat) !retour-en next))
 ;;        (:retour     (gen !retour next))
-;; 
+;;
 ;;        ;; :result             OR  :retour-en      OR   :retour
 ;;        ;; -------------------     ---------------     ------------
 ;;        ;; result    <-- :pop  OR  goto <-- :pop   OR   nothing
-;;        ;; 
+;;        ;;
 ;;        ;; return-pc <-- sf.return-pc
 ;;        ;; next-sf   <-- sf.next-sf
 ;;        ;; argcnt    <-- sf.argcnt
 ;;        ;; sf        <-- next-sf
 ;;        ;; :pop-sf
 ;;        ;; :pop-n argcnt
-;;        ;;                
+;;        ;;
 ;;        ;; :push  result              --                 --
 ;;        ;; pc <-- return-pc       OR  pc <-- goto     or pc <-- return-pc
-;; 
+;;
 ;;        (:affectation
 ;;         ;; (:vref ident) expression) --> expression :pop&store ident
 ;;         ;; (:aref ident expr) expression) --> expression expr :pop&astore1 ident
@@ -661,14 +661,14 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;           (4  (gen (third stat) (third (second stat))
 ;;                    (fourth (second stat))
 ;;                    !pop&astore2  next))))
-;; 
+;;
 ;;        (:lire
 ;;         ;; (:vref ident) --> :lire&store ident
 ;;         ;; (:aref ident expr) -->  expr :lire&astore1 ident
 ;;         ;; (:aref ident expr.1 expr.2) -->  expr.1 expr.2 :lire&astore2 ident
 ;;         (loop
 ;;            :for item :in (reverse (rest stat))
-;;            :do (setf next 
+;;            :do (setf next
 ;;                      (case (length item)
 ;;                        (2  (gen !lire&store
 ;;                                 (identificateur-nom (second item)) next))
@@ -677,51 +677,51 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;                        (4  (gen (third item) (fourth item) !lire&astore2
 ;;                                 (identificateur-nom (second item)) next))))
 ;;            :finally (return (gen !beep next))))
-;; 
+;;
 ;;        (:rep-1     (gen !pushi 1 next))
 ;;        (:rep       (gen !pushi (numero-valeur (second stat)) next))
 ;;        (:rep-var   (gen !push-val 'id::$index !dup !pushi 1 !add
 ;;                         !pop&store 'id::$index !aref1&push-val 'id::$vals
 ;;                         next))
-;; 
-;; 
+;;
+;;
 ;;        ;; AFFICHER expr…
 ;;        ;; --> (:afficher nil expr…)
 ;;        ;;
 ;;        ;; AFFICHER [spec…] expr…
-;;        ;; --> (:afficher (spec…) expr…)                 
-;; 
+;;        ;; --> (:afficher (spec…) expr…)
+;;
 ;;        ;; First, the expr… are evaluated and stored in a TABLEAU $VALS[number of expr…]
 ;;        ;; Then $INDEX is set to 1,
 ;;        ;; and finally the :afficher-* codops are generated.
 ;;        ;; Each :afficher-* operation should use $VALS[$INDEX] and up, incrementing $INDEX.
-;;        
+;;
 ;;        ;; ['litchaine']
 ;;        ;; --> spec ::= (:spec-chaine (:rep-1) litchaine)    ==> (rep litchaine :afficher-u)
 ;;        ;; [42'litchaine']
 ;;        ;; --> spec ::= (:spec-chaine (:rep 42) litchaine)   ==> (rep litchaine :afficher-u)
 ;;        ;; [*'litchaine']
 ;;        ;; --> spec ::= (:spec-chaine (:rep-var) litchaine)  ==> (rep litchaine :afficher-u)
-;; 
+;;
 ;;        ;; [/]
 ;;        ;; --> spec ::= (:spec-slash (:rep-1))      ==> (rep :afficher-newline)
 ;;        ;; [42/]
 ;;        ;; --> spec ::= (:spec-slash (:rep 42))     ==> (rep :afficher-newline)
 ;;        ;; [*/]
 ;;        ;; --> spec ::= (:spec-slash (:rep-var))    ==> (rep :afficher-newline)
-;; 
+;;
 ;;        ;; X --> :spec-space    ==> (rep :afficher-space)
 ;;        ;; C --> :spec-cr       ==> (rep :afficher-cr)
 ;;        ;; L --> :spec-nl       ==> (rep :afficher-nl)
-;; 
+;;
 ;;        ;; For the following specifiers, only fixed repeatitions are allowed: :rep-1 and (:rep n)
 ;;        ;; U --> :spec-u        ==> (rep :afficher-u)
 ;;        ;; Fe.d --> (:spec-f rep e d) ==> (rep e d :afficher-f)
 ;;        ;; Ee.d --> (:spec-d rep e d) ==> (rep e d :afficher-e)
-;;        
+;;
 ;;        ;; This rules means that the number of expressions processed is
 ;;        ;; known at compilation time.
-;;        
+;;
 ;;        ;; The format specifiers and the expressions are processed in
 ;;        ;; parallel, threfore the following program:
 ;;        ;;
@@ -734,12 +734,12 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;        ;; should print:
 ;;        ;;
 ;;        ;; ([42]42)
-;; 
+;;
 ;;        (:afficher
 ;;         ;; (:afficher nil expr...)      --> :pushi n expr... :afficher-u
 ;;         ;; (:afficher (form...) expr...)
 ;;         ;; (:afficher (form...))
-;; 
+;;
 ;;         ;; TODO: the $INDEX and $VALS variables should be "local"
 ;;         ;; (gen  !LIBERER 'ID::$VALS next)
 ;;         (let ((result '())
@@ -812,36 +812,36 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;                           (collect (generate-statement expr nil))
 ;;                           (collect (gen !afficher-u nil)))))))
 ;;           (nconc result next)))
-;; 
-;;        
+;;
+;;
 ;;        ;; (setf next (gen !pushi (length (cddr stat)) !pop&store 'id::$valscnt next))
 ;;        ;; (setf next (gen !pushi 1 !pop&store 'id::$index next))
 ;;        ;; (4) set $index to 1
 ;;        ;; to avoid too much stack usage, we evalute each expression
 ;;        ;; and store it into $vals in turn.
 ;;        ;; (3) pop one expression and store them in $vals[$index]
-;;        ;; (2) push one expression 
+;;        ;; (2) push one expression
 ;;        ;; (loop
 ;;        ;;    :for expr :in (reverse (cddr stat))
-;;        ;;    :for i :from (length (cddr stat)) :downto 1 
+;;        ;;    :for i :from (length (cddr stat)) :downto 1
 ;;        ;;    :do (setf next (gen  !pushi i !pop&astore1 'id::$vals next))
 ;;        ;;    :do (setf next (generate-statement expr next)))
 ;;        ;; (1) declare the tableau $vals[n]
 ;;        ;; (gen  !pushi (length (cddr stat)) !tableau1 'id::$vals next)
-;; 
-;; 
-;;        ;; rep :affiche-u -- 
-;;        ;; 
+;;
+;;
+;;        ;; rep :affiche-u --
+;;        ;;
 ;;        ;; @loop: dup pushi 0 eg btrue @end
 ;;        ;; dup pushi 1 add swap pushi 1 swap
 ;;        ;; aref1&push $vals :afficher-u branch @loop
 ;;        ;; @end: pop
-;; 
-;; 
-;; 
+;;
+;;
+;;
 ;;        (:aller-en (gen (second stat) !goto next))
 ;;        (:si
-;;         ;;(:si test then)       --> test :bfalse offset.t then  
+;;         ;;(:si test then)       --> test :bfalse offset.t then
 ;;         ;;(:si test then else)  --> test :bfalse offset.t then  :balways offset.e else
 ;;         (if (cdddr stat)
 ;;             ;; same as :xi
@@ -853,28 +853,28 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;             (let* ((then (gen (third stat) next))
 ;;                    (offset.t (cons-position next then)))
 ;;               (gen (second stat) !bfalse offset.t then))))
-;; 
+;;
 ;;        (:terminer (gen !terminer next))
 ;;        (:pause    (gen !pause    next))
-;; 
+;;
 ;;        (:faire-jusqu-a ;; lino ident init pas jusqua)
 ;;         ;; --> lino init pas jusqua :faire-jusqu-a ident
 ;;         (gen (second stat) (fourth stat) (fifth stat) (sixth stat)
 ;;              !faire-jusqu-a (third stat) next))
-;; 
+;;
 ;;        (:faire-tant-que ;; lino ident init pas test)
 ;;         ;; --> lino init pas :faire-tant-que ident test
-;;         (gen (second stat) (fourth stat) (fifth stat) 
+;;         (gen (second stat) (fourth stat) (fifth stat)
 ;;              !faire-tant-que (third stat)
 ;;              (sixth stat) !tant-que next))
-;; 
+;;
 ;;        ;; ==> create a faire bloc. When we reach the end of each line, we must
 ;;        ;;     check for loop blocks available for this line. (kind of come from...).
-;; 
-;; 
+;;
+;;
 ;;        (:garer ;; var enr fic) --> enr fic :garer var
 ;;         (gen (third stat) (fourth stat) !garer (identificateur-nom (second stat)) next))
-;;        
+;;
 ;;        (:charger
 ;;         ;;(:charger  var enr fic)         --> enr fic :charger var nil
 ;;         ;;(:charger  var enr fic varstat) --> enr fic :charger var varstat
@@ -887,17 +887,17 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 ;;                  (identificateur-nom (second stat))
 ;;                  nil
 ;;                  next)))
-;;        
+;;
 ;;        (:supprimer
 ;;         (if (third stat)
 ;;             (gen (second stat) (third stat) !supprimer-enregistrement next)
 ;;             (gen (second stat) !supprimer-fichier next)))
-;;        
+;;
 ;;        (:executer
 ;;         (if (third stat)
 ;;             (gen (second stat) (third stat)  !executer next)
 ;;             (gen (second stat) !pushi 1      !executer next)))
-;; 
+;;
 ;;        (:debut
 ;;         (loop
 ;;            :for i :in (reverse (cdr stat))
@@ -988,7 +988,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
             (let ((index.f (code-offset code)))
               (setf (aref (code-vector code) index.t) (- index.e index.t)
                     (aref (code-vector code) index.e) (- index.f index.e 1))))))
-       
+
        ((:ou :et)
         (generate-expression code (second expression))
         (loop
@@ -999,7 +999,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
           :do (progn
                 (generate-expression code item)
                 (gen-code code operator))))
-    
+
        ((:aval :aref)
         (if (null (cdddr expression))
             (progn
@@ -1012,7 +1012,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
             (progn
               (generate-expression code (third  expression))
               (generate-expression code (fourth expression))
-              (gen-code code 
+              (gen-code code
                         (case (first expression)
                           (:aval !aref2&push-val)
                           (:aref !aref2&push-ref))
@@ -1044,7 +1044,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
      (case (first statement)
 
        (:commentaire
-        (generate-expression code (second statement)))       
+        (generate-expression code (second statement)))
 
        ((:liberer :chaine)
         (loop
@@ -1076,7 +1076,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                              (identificateur-nom (second statement))
                              (length (cddr statement)))))
 
-       
+
        ;; (:decl-procedure ident nil       nil)
        ;; (:decl-procedure ident (fpid...) nil)
        ;; (:decl-procedure ident nil       (locid...))
@@ -1091,30 +1091,30 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
        ;; Global Variables
        ;; Local Variables
 
-       
+
        ;; - Appel de  PROCEDURE
-       ;; 
+       ;;
        ;;   We cannot generate vref or vval for parameters of PROCEDUREs
        ;;   before knowing what parameters are by reference and what are by
        ;;   value, therefore before having seen the PROCEDURE declaration in
        ;;   the source.
-       ;; 
+       ;;
        ;;   ⚠ Therefore we can generate the code only globally, just before we
        ;;     run the program.  Chaining or loading parts of the program while
        ;;     running means we need to recompile it.
-       
+
 
        ;; :result             OR  :retour-en      OR   :retour
        ;; -------------------     ---------------     ------------
        ;; result    <-- :pop  OR  goto <-- :pop   OR   nothing
-       ;; 
+       ;;
        ;; return-pc <-- sf.return-pc
        ;;-sf   <-- sf.next-sf
        ;; argcnt    <-- sf.argcnt
        ;; sf        <---sf
        ;; :pop-sf
        ;; :pop-n argcnt
-       ;;                
+       ;;
        ;; :push  result              --                 --
        ;; pc <-- return-pc       OR  pc <-- goto     or pc <-- return-pc
 
@@ -1129,7 +1129,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
            (setf (code-procedure code)
                  (make-procedure :name (identificateur-nom name)
                                  :parameters (nreverse
-                                              (mapcar (lambda (param)   
+                                              (mapcar (lambda (param)
                                                         (if (member param locals)
                                                             `(:par-valeur    ,param)
                                                             `(:par-reference ,param)))
@@ -1137,7 +1137,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                                  :local-variables (set-difference locals params)
                                  :line (code-line code)
                                  :offset (code-offset code))))))
-       
+
        (:resultat   (generate-expression code (second statement))
                     (gen-code code !result))
        (:retour-en  (generate-expression code (second statement))
@@ -1162,10 +1162,10 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
         ;; (:vref ident) --> :lire&store ident
         ;; (:aref ident expr) -->  expr :lire&astore1 ident
         ;; (:aref ident expr.1 expr.2) -->  expr.1 expr.2 :lire&astore2 ident
-        (gen-code code !beep) 
+        (gen-code code !beep)
         (loop
           :for item :in (rest statement)
-          :do (progn 
+          :do (progn
                 (ecase (length item)
                   (2  (gen-code code !lire&store))
                   (3  (generate-expression code (third  item))
@@ -1180,13 +1180,13 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
        ;; --> (:afficher nil expr…)
        ;;
        ;; AFFICHER [spec…] expr…
-       ;; --> (:afficher (spec…) expr…)                 
+       ;; --> (:afficher (spec…) expr…)
 
        ;; First, the expr… are evaluated and stored in a TABLEAU $VALS[number of expr…]
        ;; Then $INDEX is set to 1,
        ;; and finally the :afficher-* codops are generated.
        ;; Each :afficher-* operation should use $VALS[$INDEX] and up, incrementing $INDEX.
-       
+
        ;; ['litchaine']
        ;; --> spec ::= (:spec-chaine (:rep-1) litchaine)    ==> (rep litchaine :afficher-u)
        ;; [42'litchaine']
@@ -1209,10 +1209,10 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
        ;; U --> :spec-u        ==> (rep :afficher-u)
        ;; Fe.d --> (:spec-f rep e d) ==> (rep e d :afficher-f)
        ;; Ee.d --> (:spec-d rep e d) ==> (rep e d :afficher-e)
-       
+
        ;; This rules means that the number of expressions processed is
        ;; known at compilation time.
-       
+
        ;; The format specifiers and the expressions are processed in
        ;; parallel, therefore the following program:
        ;;
@@ -1300,13 +1300,13 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                           (generate-expression code expr)
                           (gen-code code !afficher-u))))))))
 
-       
+
 
        (:aller-en (generate-expression code (second statement))
                   (gen-code code !goto))
 
        (:si
-        ;;(:si test then)       --> test :bfalse offset.t then  
+        ;;(:si test then)       --> test :bfalse offset.t then
         ;;(:si test then else)  --> test :bfalse offset.t then  :balways offset.e else
         (generate-expression code (second statement))
         (gen-code code !bfalse)
@@ -1353,7 +1353,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
         (generate-expression code (third statement))
         (generate-expression code (fourth statement))
         (gen-code code !garer (identificateur-nom (second statement))))
-       
+
        (:charger
         ;;(:charger  var enr fic)         --> enr fic :charger var nil
         ;;(:charger  var enr fic varstat) --> enr fic :charger var varstat
@@ -1366,7 +1366,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
             (gen-code code !charger
                       (identificateur-nom (second statement))
                       nil)))
-       
+
        (:supprimer
         (generate-expression code (second statement))
         (if (third statement)
@@ -1374,7 +1374,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
               (generate-expression code (third statement))
               (gen-code code !supprimer-enregistrement))
             (gen-code code !supprimer-fichier)))
-       
+
        (:executer
         (generate-expression code (second statement))
         (if (third statement)
@@ -1483,7 +1483,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                                             (parser-error-expected-tokens err)))))))
                   (parser-error
                    (lambda (err)
-                     (error 'lse-parser-error 
+                     (error 'lse-parser-error
                             :backtrace          (or #+ccl (ccl::backtrace-as-list))
                             :line               (parser-error-line err)
                             :column             (parser-error-column err)
@@ -1492,7 +1492,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                             :non-terminal-stack (parser-error-non-terminal-stack err)
                             :format-control     (parser-error-format-control   err)
                             :format-arguments   (parser-error-format-arguments err))))
-                  
+
                   (unexpected-token-error
                    (lambda (err)
                      (error 'lse-parser-error-unexpected-token
@@ -1536,7 +1536,7 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 
 (defun compile-lse-stream (stream)
   (let ((*scanner* (make-instance 'lse-scanner :source stream)))
-    (converting-parser-errors      
+    (converting-parser-errors
       (loop
         :until (eofp (scanner-current-token *scanner*))
         :for parse-tree = (prog1 (parse-lse *scanner*)
@@ -1618,18 +1618,18 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
 (loop
 
   (case x
-    
+
     (cl:defparameter *branches* '(
                                   BALWAYS ;       BALWAYS offset
                                   BTRUE   ; test  BTRUE   offset
                                   BFALSE  ; test  BFALSE  offset
                                   BNEVER  ;       BNEVER  offset
                                   ))
-    
+
     (cl:defparameter *0* '(
                            DUP      ; arg DUP
 
-                           NON      ; arg NON 
+                           NON      ; arg NON
                            OU       ; arg1 arg2 OU
                            ET       ; arg1 arg2 ET
 

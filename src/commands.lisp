@@ -1930,15 +1930,9 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
 (defun call-with-error-reporting (task thunk)
   (labels ((invalid-character-error (err)
              (io-format task "~%ERREUR: ~?~%"
-                        "CARACTÈRE INVALIDE ~A~:[~*~; (~D~)~] EN POSITION ~D"
-                        (destructuring-bind (ch pos) (scanner-error-format-arguments err)
-                          (list
-                           (if (<= 32 (char-code ch))
-                             (format nil "'~A'" ch)
-                             (format nil ".~A." (char-code ch)))
-                           (<= 32 (char-code ch))
-                           (char-code ch)
-                           pos)))
+                        "CARACTÈRE INVALIDE ~A~:[~*~; (~D)~] EN POSITION ~D"
+                        (scanner-error-format-arguments err)
+                        (scanner-error-column           err))
              (pret task))
 
            (report-error (err)

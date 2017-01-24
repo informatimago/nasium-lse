@@ -51,6 +51,7 @@ LOGFILE        = $(TMPDIR)/lse-build.log
 SYMLINK_CLI    = awk '/Generating/{print $$2}' < $(LOGFILE) | ( read executable ; rm -f lse ; ln -sf $$executable lse )
 SYMLINK_SERVER = awk '/Generating/{print $$2}' < $(LOGFILE) | ( read executable ; rm -f lse-server ; ln -sf $$executable lse-server )
 
+LINE           = '================================================================'
 
 CCL            = ccl --no-init
 CCL_EVAL       =  --eval
@@ -154,6 +155,14 @@ git-clean-version:
 	-rm -f VERSION macosx/VERSION macosx/VERSION_LONG macosx/VERSION_SHORT
 	git checkout VERSION macosx/VERSION macosx/VERSION_LONG macosx/VERSION_SHORT
 
-.PHONY: cli server html-doc help install macosx
+.PHONY: cli server html-doc help install macosx fuzz
+
+
+fuzz:cli
+	radamsa --recursive ../progr --count 10 --output /tmp/fuzz-%n.lse
+	for f in /tmp/fuzz-*.lse ; do \
+		echo "$(LINE)" ; echo "$$f" ; echo "$(LINE)" ;\
+		(echo '' ; cat $$f ) | ./lse  --modern-mode --sans-bip ;\
+	done
 
 #### THE END ####

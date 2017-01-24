@@ -5,7 +5,7 @@ https://gitlab.com/nasium-lse/nasium-lse/issues&sort=created_asc&state=opened
 
 LSE2000: https://sites.google.com/site/phoenixlse2000/
 
-** TODO [#A] Move nasium-lse/manifest.lisp to com.informatimago 
+** TODO [#A] Move nasium-lse/manifest.lisp to com.informatimago
 
 It's copied, but we'd need to use now the tools/manifest.lisp instead
 of nasium-lse/manifest.lisp
@@ -24,7 +24,7 @@ of nasium-lse/manifest.lisp
 ** TODO 00027 pg55 parametre fonctions                                  :cli:
 
 #+BEGIN_SRC(lse)
-ERREUR EN LIGNE 201 : /Users/pjb/src/pjb/lse-progr/inrdp/pg55.lse:201:24: 
+ERREUR EN LIGNE 201 : /Users/pjb/src/pjb/lse-progr/inrdp/pg55.lse:201:24:
     201 PROCEDURE &COURB(&F,N,X,Y,P) LOCAL P,N,YMI,YMA,I
 #+END_SRC
 
@@ -47,7 +47,7 @@ Parsing errors in command argument fails catastrophically.
 
 #+BEGIN_SRC(lse)
 APPELER 1
-ERROR: 
+ERROR:
 0:1: CARACT?RE INVALIDE '1' (49)
 
 --------------------------------------------------------------------------------
@@ -81,11 +81,11 @@ UN-PROGRAMME --> (COM.INFORMATIMAGO.RDP:SEQ (COM.INFORMATIMAGO.LSE::IDENT) ((LIS
 (FUNCALL (:INTERNAL CCL::THREAD-MAKE-STARTUP-FUNCTION))
 --------------------------------------------------------------------------------
 Calling COM.INFORMATIMAGO.LSE:TERMINAL-FINALIZE on a COM.INFORMATIMAGO.LSE.UNIX-TERMINAL:UNIX-TERMINAL not initialized.
-[pjb@larissa :0.0 src]$ 
+[pjb@larissa :0.0 src]$
 #+END_SRC
 
 ** TODO 00016 invalid option -> silent exit                             :cli:
-./lse --mode-modern 
+./lse --mode-modern
 exits silently instead of reporting an error.
 ** TODO 00044 ligne vide                                                :cli:
 10 RET          --> supprime la ligne 10
@@ -103,8 +103,8 @@ EQUIVALENT NUMERIQUE DE CARACTERE QUELCONQUES ENTRE POINTS :
 ** TODO 00046 ajouter une option minusc->majusc                         :cli:
 --convertir-minuscules-en-majuscules
 
-À l'entrée, les minuscules devraient être converties en majuscules, 
-pour que CHAINE REP;LIRE REP;SI REP='OUI' ALORS AFFICHER 'OK" 
+À l'entrée, les minuscules devraient être converties en majuscules,
+pour que CHAINE REP;LIRE REP;SI REP='OUI' ALORS AFFICHER 'OK"
 affiche "OK" même si on tape "oui".
 
 ** TODO 00048 FAIRE TANT QUE                                            :cli:
@@ -159,7 +159,7 @@ ENCODEZ LE FICHIER PP
 TERMINE EN LIGNE 015
 EFFACER LIGNES *
 ENCODER pp
-li      
+li
 ERREUR EN LIGNE  15 : THE VALUE NIL IS NOT OF THE EXPECTED TYPE CHARACTER.
 
 PRET
@@ -183,7 +183,7 @@ ERROR: ERREUR INTERNE: VALEUR INATTENDUE DE (IO-READ-STRING CCL::BASIC-FILE-CHAR
 (MAIN NIL)
 (CALL-CHECK-REGS COM.INFORMATIMAGO.LSE.CLI:MAIN)
 (CHEAP-EVAL (COM.INFORMATIMAGO.LSE.CLI:MAIN))
-(EVAL-REGION "(in-package :com.informatimago.lse) 
+(EVAL-REGION "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (FUNCALL (:INTERNAL SWANK::REPL-EVAL))
@@ -194,27 +194,27 @@ ERROR: ERREUR INTERNE: VALEUR INATTENDUE DE (IO-READ-STRING CCL::BASIC-FILE-CHAR
 (FUNCALL #<Anonymous Function #x30200182569F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200315A4AF>)
 (CALL-WITH-SYNTAX-HOOKS #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200315A4AF>)
 (CALL-WITH-BUFFER-SYNTAX NIL #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200315A4AF>)
-(REPL-EVAL "(in-package :com.informatimago.lse) 
+(REPL-EVAL "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 "
   :WINDOW-WIDTH
   NIL)
 (CALL-CHECK-REGS
   SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (CHEAP-EVAL (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 "))
 (EVAL-FOR-EMACS
   (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
   "COM.INFORMATIMAGO.LSE"
@@ -253,7 +253,7 @@ ERREUR: ERREUR INTERNE: VALEUR INATTENDUE DE (IO-READ-STRING CCL::BASIC-FILE-CHA
 (MAIN NIL)
 (CALL-CHECK-REGS COM.INFORMATIMAGO.LSE.CLI:MAIN)
 (CHEAP-EVAL (COM.INFORMATIMAGO.LSE.CLI:MAIN))
-(EVAL-REGION "(in-package :com.informatimago.lse) 
+(EVAL-REGION "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (FUNCALL (:INTERNAL SWANK::REPL-EVAL))
@@ -264,27 +264,27 @@ ERREUR: ERREUR INTERNE: VALEUR INATTENDUE DE (IO-READ-STRING CCL::BASIC-FILE-CHA
 (FUNCALL #<Anonymous Function #x30200182569F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200315A4AF>)
 (CALL-WITH-SYNTAX-HOOKS #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200315A4AF>)
 (CALL-WITH-BUFFER-SYNTAX NIL #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200315A4AF>)
-(REPL-EVAL "(in-package :com.informatimago.lse) 
+(REPL-EVAL "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 "
   :WINDOW-WIDTH
   NIL)
 (CALL-CHECK-REGS
   SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (CHEAP-EVAL (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 "))
 (EVAL-FOR-EMACS
   (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
   "COM.INFORMATIMAGO.LSE"
@@ -311,12 +311,12 @@ ERREUR: ERREUR INTERNE: VALEUR INATTENDUE DE (IO-READ-STRING CCL::BASIC-FILE-CHA
 --------------------------------------------------------------------------------
 ERREUR EN LIGNE  19 : ERREUR INTERNE: VALEUR INATTENDUE DE (IO-READ-STRING
 CCL::BASIC-FILE-CHARACTER-INPUT-STREAM): NIL of type NULL
-    
+
 PRET
 
 ** TODO 00008 inetd server displays wrong bindings                      :cli:
 
-cf. inetd/lse.sh 
+cf. inetd/lse.sh
 
 The binding displayed show CONTROLE-S, but this isn't taken into
 account and we have to type RETURN instead.
@@ -367,7 +367,7 @@ TAPEZ AI POUR AVOIR DE L'AIDE.
 
 BONJOUR     09:48:50
 
-    
+
 PRET
 #+END_SRC
 
@@ -401,7 +401,7 @@ Well for the cli too when we use it thru inetd…
 Add a timeout and disconnect if no input occurs after that delay.
 
 There seem to be scanners who connect to ports without sending
-anything, and keeping the ports open indefinitely.  For example: 
+anything, and keeping the ports open indefinitely.  For example:
 
 #+BEGIN_SRC(lse)
 
@@ -491,11 +491,11 @@ Sur Siris, l'instruction vide existe, alors ;; et ALORS SINON sont possible.
 ** TODO 00039 vérifier siris                                            :cli:
 page 28 paramètres et déclarations manuel siris
 ** TODO 00038 vérifier RETOUR EN                                        :cli:
-RETOUR EN = RETOUR + ALLER EN vs. FAIRE POUR     
+RETOUR EN = RETOUR + ALLER EN vs. FAIRE POUR
 et tester:
 
 ERREUR EN LIGNE  20 : NUMERO DE LIGNE INEXISTANT 20
-    
+
 PRET
 LISTER A PARTIR DE 1
 1 Y_&RAC(3,20);AFFICHER Y
@@ -532,7 +532,7 @@ Différence lexicales:
     [ ---> (/
     ] ---> /)
 
-1 à 4 cartes; 
+1 à 4 cartes;
 colonnes 1-4 pour le numéro de ligne,
 colonnes 5-80 pour le texte de la ligne,
 jusqu'à 3 cartes continuation sans rien dans les colonnes 1-4.
@@ -614,7 +614,7 @@ instructions
                                                                              FAIRE POUR DEBUT FIN
                                                                              instruction vide.
                                                                              format P pour page.
-                                                                             
+
 ------------------------  -----------------  --------------  --------------  --------------
 
 
@@ -647,13 +647,13 @@ afficher[f2.0]3 --> ' 3.' au lieu de ' 3'
 ** DONE 00020 pg42,pg75,pg75b affichage format                          :cli:
   CLOSED: [2015-04-03 Fri 09:17]
   - State "DONE"       from "TODO"       [2015-04-03 Fri 09:17] \\
-    Note: We don't get the space between 'AVRIL' and '1972' 
+    Note: We don't get the space between 'AVRIL' and '1972'
     in:
 
         AFFICHER[/,U,'1972',/]'AVRIL'
 
-    but I think this is how it should be.  
-    See for example, PG37, which displays LUNDI----- for: 
+    but I think this is how it should be.
+    See for example, PG37, which displays LUNDI----- for:
 
         CHAINE C;C_'LUNDI';AFFICHER C;AFFICHER[5'-',/]
 
@@ -705,25 +705,25 @@ EXECUTER A PARTIR DE 1
 LA SOMME DES 2 PREMIERS NOMBRES EST : 3 =====
 LA SOMME DES 2 PREMIERS NOMBRES EST3 =====
 LA SOMME DES 2 PREMIERS NOMBRES EST 3 =====
-1    50 
+1    50
 LUNDI
-1  2  3  4  
-5  6  7  8  
+1  2  3  4
+5  6  7  8
 9  10  11  12  =====
-1    50 
+1    50
 LUNDI
-1  2  3  4  
-5  6  7  8  
+1  2  3  4
+5  6  7  8
 9  10  11  12  =====
-1    50 
+1    50
 LUNDI
 
-1  2  3  4  
-5  6  7  8  
+1  2  3  4
+5  6  7  8
 9  10  11  12  =====
-   1    LUNDI   
-1  2  3  4  
-5  6  7  8  
+   1    LUNDI
+1  2  3  4
+5  6  7  8
 9  10  11  12  =====
 #+END_SRC
 
@@ -757,7 +757,7 @@ ERROR: Unknown type specifier: IDENTIFIER
 (MAIN NIL)
 (CALL-CHECK-REGS COM.INFORMATIMAGO.LSE.CLI:MAIN)
 (CHEAP-EVAL (COM.INFORMATIMAGO.LSE.CLI:MAIN))
-(EVAL-REGION "(in-package :com.informatimago.lse) 
+(EVAL-REGION "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (FUNCALL (:INTERNAL SWANK::REPL-EVAL))
@@ -768,27 +768,27 @@ ERROR: Unknown type specifier: IDENTIFIER
 (FUNCALL #<Anonymous Function #x30200182569F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B106F>)
 (CALL-WITH-SYNTAX-HOOKS #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B106F>)
 (CALL-WITH-BUFFER-SYNTAX NIL #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020045B106F>)
-(REPL-EVAL "(in-package :com.informatimago.lse) 
+(REPL-EVAL "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 "
   :WINDOW-WIDTH
   NIL)
 (CALL-CHECK-REGS
   SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (CHEAP-EVAL (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 "))
 (EVAL-FOR-EMACS
   (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
   "COM.INFORMATIMAGO.LSE"
@@ -827,21 +827,21 @@ Obtenu:
 EXECUTER A PARTIR DE 1
 1 2 1 2 1 2 1 2 1 2 1 2
 
-1  2  1  2  
-1  2  1  2  
+1  2  1  2
+1  2  1  2
 1  2  1  2  -----
-5 
-1  2  1  2  
-1  2  1  2  
+5
+1  2  1  2
+1  2  1  2
 1  2  1  2  -----
-5 
-1  2  1  2  
-1  2  1  2  
+5
+1  2  1  2
+1  2  1  2
 1  2  1  2  LUNDI-----
 5 LUNDI
-1  2  1  2  
-1  2  1  2  
-1  2  1  2  
+1  2  1  2
+1  2  1  2
+1  2  1  2
 TERMINE EN LIGNE 009
 #+END_SRC
 
@@ -851,24 +851,24 @@ Attendu:
 EXECUTER A PARTIR DE 1
 1 2 1 2 1 2 1 2 1 2 1 2
 
-1  2  1  2  
-1  2  1  2  
-1  2  1  2  
+1  2  1  2
+1  2  1  2
+1  2  1  2
 -----
-5 
-1  2  1  2  
-1  2  1  2  
-1  2  1  2  
+5
+1  2  1  2
+1  2  1  2
+1  2  1  2
 -----
-5 
-1  2  1  2  
-1  2  1  2  
-1  2  1  2  
+5
+1  2  1  2
+1  2  1  2
+1  2  1  2
 LUNDI-----
 5 LUNDI
-1  2  1  2  
-1  2  1  2  
-1  2  1  2  
+1  2  1  2
+1  2  1  2
+1  2  1  2
 
 TERMINE EN LIGNE 009
 #+END_SRC
@@ -898,7 +898,7 @@ ERROR: NUMERO DE LIGNE INEXISTANT 10
 (MAIN NIL)
 (CALL-CHECK-REGS COM.INFORMATIMAGO.LSE.CLI:MAIN)
 (CHEAP-EVAL (COM.INFORMATIMAGO.LSE.CLI:MAIN))
-(EVAL-REGION "(in-package :com.informatimago.lse) 
+(EVAL-REGION "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (FUNCALL (:INTERNAL SWANK::REPL-EVAL))
@@ -909,27 +909,27 @@ ERROR: NUMERO DE LIGNE INEXISTANT 10
 (FUNCALL #<Anonymous Function #x30200182569F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x302004076E7F>)
 (CALL-WITH-SYNTAX-HOOKS #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x302004076E7F>)
 (CALL-WITH-BUFFER-SYNTAX NIL #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x302004076E7F>)
-(REPL-EVAL "(in-package :com.informatimago.lse) 
+(REPL-EVAL "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 "
   :WINDOW-WIDTH
   NIL)
 (CALL-CHECK-REGS
   SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (CHEAP-EVAL (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 "))
 (EVAL-FOR-EMACS
   (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
   "COM.INFORMATIMAGO.LSE"
@@ -971,7 +971,7 @@ ERREUR: NUMERO DE LIGNE INEXISTANT 10
 (MAIN NIL)
 (CALL-CHECK-REGS COM.INFORMATIMAGO.LSE.CLI:MAIN)
 (CHEAP-EVAL (COM.INFORMATIMAGO.LSE.CLI:MAIN))
-(EVAL-REGION "(in-package :com.informatimago.lse) 
+(EVAL-REGION "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (FUNCALL (:INTERNAL SWANK::REPL-EVAL))
@@ -982,27 +982,27 @@ ERREUR: NUMERO DE LIGNE INEXISTANT 10
 (FUNCALL #<Anonymous Function #x30200182569F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x302004076E7F>)
 (CALL-WITH-SYNTAX-HOOKS #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x302004076E7F>)
 (CALL-WITH-BUFFER-SYNTAX NIL #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x302004076E7F>)
-(REPL-EVAL "(in-package :com.informatimago.lse) 
+(REPL-EVAL "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 "
   :WINDOW-WIDTH
   NIL)
 (CALL-CHECK-REGS
   SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (CHEAP-EVAL (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 "))
 (EVAL-FOR-EMACS
   (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
   "COM.INFORMATIMAGO.LSE"
@@ -1028,7 +1028,7 @@ ERREUR: NUMERO DE LIGNE INEXISTANT 10
 (FUNCALL (:INTERNAL CCL::THREAD-MAKE-STARTUP-FUNCTION))
 --------------------------------------------------------------------------------
 ERREUR EN LIGNE  10 : NUMERO DE LIGNE INEXISTANT 10
-    
+
 PRET
 LISTER A PARTIR DE 1
 1* TRADUCTION D'UNE DATE DE FRANCAIS EN ANGLAIS
@@ -1087,7 +1087,7 @@ N = 3
 ERREUR EN LIGNE   7 : ARGUMENT NO. 2 DE TYPE TABLEAU PASSE PAR VALEUR AU PARAMETRE A DE
 LA PROCEDURE &PERM
 #+END_SRC
-    
+
 ** DONE 00029 pg60 variable locale chaine ou tableau                    :cli:
   CLOSED: [2014-07-06 Sun 22:39]
   - State "DONE"       from "TODO"       [2014-07-06 Sun 22:39] \\
@@ -1150,7 +1150,7 @@ I_1
 H
 CONTINUER
 ERREUR : FILL POINTER OF #() IS 0 .
-PRET 
+PRET
 
 #+END_SRC
 ** DONE 00021 pg43,46,47,51,76  faire enchevetree                       :cli:
@@ -1177,7 +1177,7 @@ On doit pouvoir saisir et executer une séquence d'instructions en mode machine 
 
 #+BEGIN_SRC(lse)
 ?NOMP;?LIGR?NOMF;?NBENR;?LIBEL
-ERREUR EN LIGNE   2 : COLONNE 7 : 
+ERREUR EN LIGNE   2 : COLONNE 7 :
     ?NOMP;?LIGR?NOMF;?NBENR;?LIBEL
 #+END_SRC
 
@@ -1262,7 +1262,7 @@ ERROR: The value #S(CODE :LINE 100 :VECTOR #(39 26)
 (MAIN NIL)
 (CALL-CHECK-REGS COM.INFORMATIMAGO.LSE.CLI:MAIN)
 (CHEAP-EVAL (COM.INFORMATIMAGO.LSE.CLI:MAIN))
-(EVAL-REGION "(in-package :com.informatimago.lse) 
+(EVAL-REGION "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (FUNCALL (:INTERNAL SWANK::REPL-EVAL))
@@ -1273,27 +1273,27 @@ ERROR: The value #S(CODE :LINE 100 :VECTOR #(39 26)
 (FUNCALL #<Anonymous Function #x30200182569F> #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200443F97F>)
 (CALL-WITH-SYNTAX-HOOKS #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200443F97F>)
 (CALL-WITH-BUFFER-SYNTAX NIL #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x30200443F97F>)
-(REPL-EVAL "(in-package :com.informatimago.lse) 
+(REPL-EVAL "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 "
   :WINDOW-WIDTH
   NIL)
 (CALL-CHECK-REGS
   SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
 (CHEAP-EVAL (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 "))
 (EVAL-FOR-EMACS
   (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
+  "(in-package :com.informatimago.lse)
 (com.informatimago.lse.cli:main)
 ")
   "COM.INFORMATIMAGO.LSE"
@@ -1363,7 +1363,7 @@ exec /home/lse/bin/lse \
     --afficher-sans-accent \
     --afficher-en-majuscules \
     --accepter-minuscules \
-    --montrer-touches 
+    --montrer-touches
 #+END_SRC
 
 ** DONE 00001 segfault on exit                                          :cli:
@@ -1388,7 +1388,7 @@ exec /home/lse/bin/lse \
         ;;; Type (:y 0) to yield control to this thread.
         ;;;
 #+END_SRC
- 
+
 ** DONE 00007 Something's fishy in CEFAK                                :cli:
   CLOSED: [2014-06-08 Sun 09:36]
   - State "DONE"       from ""           [2014-06-08 Sun 09:36] \\
@@ -1414,7 +1414,7 @@ don't seem to be updated, so the first data is always output.
 
 #+BEGIN_SRC(lse)
 EXECUTER A PARTIR DE 1
-1 .                 
+1 .
 TERMINE EN LIGNE 020
 #+END_SRC
 ** DONE 00010 PG08: ALLER EN I fails: Variables are not dereferenced enough. :cli:
@@ -1470,29 +1470,29 @@ ERROR: The value #<LSE-VARIABLE T = 12.0 of type NOMBRE #x3020033ED55D> is not o
 (MAIN NIL)
 (CALL-CHECK-REGS COM.INFORMATIMAGO.LSE.CLI:MAIN)
 (CHEAP-EVAL (COM.INFORMATIMAGO.LSE.CLI:MAIN))
-(EVAL-REGION "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main) 
+(EVAL-REGION "(in-package :com.informatimago.lse)
+(com.informatimago.lse.cli:main)
 ")
 (FUNCALL (:INTERNAL SWANK::REPL-EVAL))
 (TRACK-PACKAGE #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020033BE60F>)
 (CALL-WITH-RETRY-RESTART "Retry SLIME REPL evaluation request." #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020033BE68F>)
 (CALL-WITH-BUFFER-SYNTAX NIL #<CCL:COMPILED-LEXICAL-CLOSURE (:INTERNAL SWANK::REPL-EVAL) #x3020033BE6CF>)
-(REPL-EVAL "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main) 
+(REPL-EVAL "(in-package :com.informatimago.lse)
+(com.informatimago.lse.cli:main)
 ")
 (CALL-CHECK-REGS
   SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main) 
+  "(in-package :com.informatimago.lse)
+(com.informatimago.lse.cli:main)
 ")
 (CHEAP-EVAL (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main) 
+  "(in-package :com.informatimago.lse)
+(com.informatimago.lse.cli:main)
 "))
 (EVAL-FOR-EMACS
   (SWANK:LISTENER-EVAL
-  "(in-package :com.informatimago.lse) 
-(com.informatimago.lse.cli:main) 
+  "(in-package :com.informatimago.lse)
+(com.informatimago.lse.cli:main)
 ")
   "COM.INFORMATIMAGO.LSE"
   66)
@@ -1513,6 +1513,5 @@ ERROR: The value #<LSE-VARIABLE T = 12.0 of type NOMBRE #x3020033ED55D> is not o
 --------------------------------------------------------------------------------
 
 My advice: exit after debugging.
-TAPEZ LES NOTES : 
+TAPEZ LES NOTES :
 #+END_SRC
-

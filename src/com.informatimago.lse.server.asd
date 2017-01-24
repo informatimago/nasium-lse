@@ -36,7 +36,7 @@
 (asdf:defsystem :com.informatimago.lse.server
   :description  "A server for the L.S.E. interpreter."
   :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
-  :version "1.2.0"
+  :version "1.3.0"
   :licence "AGPL3"
   :properties ((#:author-email                   . "pjb@informatimago.com")
                (#:date                           . "Winter 2012")
@@ -53,9 +53,9 @@
                "babel"
 
                #+(and unix (not clisp)) "iolib"
-               ;; #+(and unix (not clisp)) "iolib.base"
-               ;; #+(and unix (not clisp)) "iolib.os"
-               ;; #+(and unix (not clisp)) "iolib.syscalls"
+               ;; #+(and unix (not clisp)) "iolib/base"
+               ;; #+(and unix (not clisp)) "iolib/os"
+               ;; #+(and unix (not clisp)) "iolib/syscalls"
                ;; #+(and unix (not clisp)) "iolib"
 
                "trivial-gray-streams"

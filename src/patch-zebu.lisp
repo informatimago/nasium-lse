@@ -105,7 +105,7 @@
                           (undef-action-error input-symbol-instantiation
                                               input-symbol-index
                                               action-table-top
-                                              grammar)))))	
+                                              grammar)))))
          ;; there should always be a non null action-entry !!
          (let ((ae-cdr (cdr (the cons action-entry))))
            (case (car (the cons ae-cdr))

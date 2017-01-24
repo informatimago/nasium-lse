@@ -27,11 +27,11 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
        http://cliki.net/ for a list of CL implementations and other hints.
 
        Development has been done with Clozure CL, so let's install CLozure CL.
-       See: http://ccl.clozure.com/download.html 
+       See: http://ccl.clozure.com/download.html
        ::
 
            # set TARGET to one of darwinx86, linuxx86, freebsdx86,
-           # solarisx86, windows, linuxppc, or linuxarm. 
+           # solarisx86, windows, linuxppc, or linuxarm.
            TARGET=linuxx86
            cd /usr/local/src
            svn co http://svn.clozure.com/publicsvn/openmcl/release/1.9/$TARGET/ccl
@@ -45,7 +45,7 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
        See: http://www.quicklisp.org/
        ::
 
-           cd 
+           cd
            wget http://beta.quicklisp.org/quicklisp.lisp
            ccl -load quicklisp.lisp
 
@@ -59,7 +59,7 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
     3- Get the sources of nasium: ::
 
            cd ~/src/
-           git clone https://git.gitorious.org/nasium-lse/nasium-lse.git
+           git clone https://framagit.org/nasium-lse/nasium-lse.git
            cd nasium-lse
            NASIUM_LSE="$(pwd)"
 
@@ -85,10 +85,10 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
        in quicklisp are up-to-date (quicklisp updates monthly).
        However, sometimes we need more recent versions are necessary.
        In that case, they may be installed in
-       ~/quicklisp/local-projects/.  :: 
+       ~/quicklisp/local-projects/.  ::
 
            cd ~/quicklisp/local-projects/
-           git clone https://git.gitorious.org/com-informatimago/com-informatimago.git
+           git clone https://framagit.org/com-informatimago/com-informatimago.git
 
        There's a bug in the current quicklisp, so we need to remove
        system-index.txt and rebuild it from $HOME. ::
@@ -110,7 +110,7 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
            rm -rf ~/quicklisp/local-projects/com-informatimago
 
 
-    6- Compile the executables.  
+    6- Compile the executables.
 
     6.1- On some `debian` system (eg. 6.0.9), `ccl` has a problem
          while quitting `lse`: ::
@@ -130,7 +130,7 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
 
          If that happens to you, add this environment variable, to
          exit more brutally, using exit(2): ::
-            
+
             export LSE_USE_EXIT=T
 
      6.2- Compile: ::
@@ -150,8 +150,8 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
         -rwxr-xr-x 1 lse lse 59400208 Mar 22 13:44 lse-server-ccl-linux-debian-6.0.4-i686
         -rw-r--r-- 1 lse lse     3034 Mar 22 13:44 lse-server-ccl-linux-debian-6.0.4-i686.manifest
         $ ./lse --help
-        
-        
+
+
     8- Further questions may be addressed at mailto:pjb@informatimago.com
        or bug reports may be posted at http://fossil.nasium-lse.ogamita.com/nasium-lse/reportlist
 
@@ -173,7 +173,7 @@ following line in bash: ::
     eval $( lse --bash-completion-function )
 
 Then, typing in bash: ::
-  
+
     lse TAB
 
 will display the options, and: ::

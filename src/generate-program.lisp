@@ -89,6 +89,10 @@
 (push (truename (merge-pathnames "../dependencies/"
                                  *default-pathname-defaults*))
       ql:*local-project-directories*)
+;; NOT YET:
+;; (push (truename (merge-pathnames "../dependencies/com-informatimago/"
+;;                                  *default-pathname-defaults*))
+;;       ql:*local-project-directories*)
 
 
 (defun boolean-enval (var default)

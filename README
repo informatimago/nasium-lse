@@ -16,7 +16,7 @@ dependencies/       Dependencies.  (For now, we use quicklisp for
 
 src/                Sources of the LSE interpreter and system.
 
-progr/              Example programs (unix cli format: with LF).         
+progr/              Example programs (unix cli format: with LF).
 
 tapes-xoff/         Example programs (LSE tape format: with X-OFF).
 

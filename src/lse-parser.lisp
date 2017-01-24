@@ -82,6 +82,26 @@
 (defmethod word-equal ((token tok-eof) (other (eql 'eol))) t)
 (defmethod word-equal ((token tok-eof) (other (eql 'eof))) t)
 
+(defmethod word-equal ((other (eql 'eol)) (token tok-eol)) t)
+(defmethod word-equal ((other (eql 'eol)) (token tok-eof)) t)
+(defmethod word-equal ((other (eql 'eof)) (token tok-eof)) t)
+
+;; TODO: this is an ugly hack (com.informatimago.rdp::*eof-symbol* defined at compilation time vs. run-time in the grammar?).
+(defun eof-symbol-p (other)
+  (or (eql com.informatimago.rdp::*eof-symbol* other)
+      (and (symbolp other)
+           (null (symbol-package other))
+           (string= "EOF" other))))
+
+(defmethod word-equal ((token tok-eol) (other t)) (eof-symbol-p other))
+(defmethod word-equal ((token tok-eof) (other t)) (eof-symbol-p other))
+
+(defmethod word-equal ((other t) (token tok-eol)) (eof-symbol-p other))
+(defmethod word-equal ((other t) (token tok-eof)) (eof-symbol-p other))
+
+;; (defmethod word-equal ((token tok-eol) (other t)) (token-end-of-source-p other))
+;; (defmethod word-equal ((token tok-eof) (other t)) (token-end-of-source-p other))
+
 ;; (list (word-equal (make-instance 'tok-eol) 'eol)
 ;;       (word-equal (make-instance 'tok-eol) 'eof)
 ;;       (word-equal (make-instance 'tok-eof) 'eol)

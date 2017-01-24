@@ -36,7 +36,7 @@
 (asdf:defsystem :com.informatimago.lse.cli
     :description  "This system defines the Command Line Interface L.S.E. interpreter."
     :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
-    :version "1.2.2"
+    :version "1.3.0"
     :licence "AGPL3"
     :properties ((#:author-email                   . "pjb@informatimago.com")
                  (#:date                           . "Winter 2012")
@@ -57,10 +57,10 @@
                  "trivial-gray-streams"
                  "split-sequence"
 
-		 #+(and unix (not clisp)) "iolib"
-                 ;; #+(and unix (not clisp)) "iolib.base"
-                 ;; #+(and unix (not clisp)) "iolib.os"
-                 ;; #+(and unix (not clisp)) "iolib.syscalls"
+                 #+(and unix (not clisp)) "iolib"
+                 ;; #+(and unix (not clisp)) "iolib/base"
+                 ;; #+(and unix (not clisp)) "iolib/os"
+                 ;; #+(and unix (not clisp)) "iolib/syscalls"
                  #+(and unix (not clisp)) "iolib.termios"
 
                  "com.informatimago.common-lisp.unix"

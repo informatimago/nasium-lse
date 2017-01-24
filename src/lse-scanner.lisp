@@ -218,6 +218,7 @@
 (defgeneric eolp (token)
   (:documentation "Returns whether the token is an end-of-line token.
 A end-of-file is also considered an end-of-line.")
+  ;; (:method ((token t))          (token-end-of-source-p token))
   (:method ((token t))          nil)
   (:method ((token tok-eol))    t)
   (:method ((token (eql 'eol))) t)
@@ -226,6 +227,7 @@ A end-of-file is also considered an end-of-line.")
 
 (defgeneric eofp (token)
   (:documentation "Returns whether the token is an end-of-file token")
+  ;; (:method ((token t))          (token-end-of-source-p token))
   (:method ((token t))          nil)
   (:method ((token tok-eof))    t)
   (:method ((token (eql 'eof))) t))
@@ -911,4 +913,3 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
 
 
 ;;;; THE END ;;;;
-

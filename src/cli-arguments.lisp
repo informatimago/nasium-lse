@@ -131,7 +131,9 @@ RETURN: A new OPTIONS structure instance.
       (setf (terminal-modern-mode terminal) (or (member (getenv "TERM") '("emacs" "dumb")
                                                         :test (function string-equal))
                                                 (options-modern-mode options))
-            (terminal-cr-as-xoff terminal) (options-return-is-xoff options)))
+            ;; option-modern-mode implies terminal-cr-as-xoff
+            (terminal-cr-as-xoff terminal) (or (options-return-is-xoff options)
+                                               (options-modern-mode options))))
     task))
 
 

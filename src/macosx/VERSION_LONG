@@ -1,5 +1,5 @@
-1.0.0-0.999767-CCL-DARWIN,
- commit 9bbdae30f875eeb1d27e3b6ec2269cebaa2962d7,
- compiled 2017-01-24 23:38:07,
- on despina.home,
+1.0.0-0.999763-CCL-LINUX,
+ commit 250e2e1bea022d409f2fc7c5b08345fcdba0bb80,
+ compiled 2017-01-25 00:33:09,
+ on kuiper,
  with features (lse-unix lse-extensions lse-case-insensitive).

@@ -59,7 +59,7 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
     3- Get the sources of nasium: ::
 
            cd ~/src/
-           git clone https://git.gitorious.org/nasium-lse/nasium-lse.git
+           git clone https://framagit.org/nasium-lse/nasium-lse.git
            cd nasium-lse
            NASIUM_LSE="$(pwd)"
 
@@ -88,7 +88,7 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
        ~/quicklisp/local-projects/.  ::
 
            cd ~/quicklisp/local-projects/
-           git clone https://git.gitorious.org/com-informatimago/com-informatimago.git
+           git clone https://framagit.org/com-informatimago/com-informatimago.git
 
        There's a bug in the current quicklisp, so we need to remove
        system-index.txt and rebuild it from $HOME. ::

@@ -77,7 +77,8 @@
 (defun wildpath (path) (make-pathname :name :wild :type :wild :version nil :defaults path))
 (defun fasldir  (system component)
   (first (asdf:output-files
-          (make-instance 'asdf:compile-op)
+          #-asdf3 (make-instance 'asdf:compile-op)
+          #+asdf3 (asdf/operation:make-operation 'asdf:compile-op)
           (asdf:find-component (asdf:find-system system) component))))
 
 (setf *default-pathname-defaults* (dirpath (or *load-truename*
@@ -90,11 +91,11 @@
 
 ;;; --------------------------------------------------
 
-(ql:quickload '("iolib-grovel" "cffi-grovel"))
-(unless (find "/usr/local/include/" iolib-grovel::*cc-flags* :test (function string=))
-  (setf iolib-grovel::*cc-flags* (append iolib-grovel::*cc-flags* (list "-I" "/usr/local/include/"))))
-(unless (find "/usr/local/include/" cffi-grovel::*cc-flags* :test (function string=))
-  (setf cffi-grovel::*cc-flags*  (append cffi-grovel::*cc-flags*  (list "-I" "/usr/local/include/"))))
+#-(and) (ql:quickload '("iolib-grovel" "cffi-grovel"))
+#-(and)(unless (find "/usr/local/include/" iolib-grovel::*cc-flags* :test (function string=))
+         (setf iolib-grovel::*cc-flags* (append iolib-grovel::*cc-flags* (list "-I" "/usr/local/include/"))))
+#-(and)(unless (find "/usr/local/include/" cffi-grovel::*cc-flags* :test (function string=))
+         (setf cffi-grovel::*cc-flags*  (append cffi-grovel::*cc-flags*  (list "-I" "/usr/local/include/"))))
 
 ;; (defun delete-package-and-users (package)
 ;;   (mapc 'delete-package-and-users  (package-used-by-list package))
@@ -173,4 +174,3 @@
 |#
 
 ;;;; THE END ;;;;
-

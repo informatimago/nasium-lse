@@ -5,12 +5,12 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    EMULSE : L.S.E. [ EMULATION MITRA-15 ]
-;;;;    
-;;;;    An emultator of the CII MITRA-15 L.S.E. System 
+;;;;
+;;;;    An emultator of the CII MITRA-15 L.S.E. System
 ;;;;    and programming language interpreter.
-;;;;    
+;;;;
 ;;;;    This is the error management module.
 ;;;;
 ;;;;AUTHORS
@@ -22,19 +22,19 @@
 ;;;;    Needs some more work to convert error handling to lisp condition system.
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2000 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
@@ -135,7 +135,7 @@
     ( :cataloguage-fichier
       "CATALOGUAGE FICHIER" )
     ( :suppression-fichier
-      "SUPPRESSION FICHIER" )    
+      "SUPPRESSION FICHIER" )
     ( :type-de-fichier-attendu
       "TYPE DE FICHIER ATTENDU" )
     ( :type-de-fichier-invalide
@@ -237,8 +237,8 @@
 ;;                          (apply (function format) nil format-str args)
 ;;                          (io-new-line-string)
 ;;                          (io-new-line-string))))
-;;     ;; Trouver tous les travail, et envoyer le message 
-;;     ;; sur tous les terminal-sortie 
+;;     ;; Trouver tous les travail, et envoyer le message
+;;     ;; sur tous les terminal-sortie
 ;;     (format *error-output* "~A" message)
 ;;     (dolist (task *tasks*)
 ;;       (when (task-state-awake-p task)

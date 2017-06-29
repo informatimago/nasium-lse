@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    The commands of the LSE system.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -18,19 +18,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
@@ -127,7 +127,7 @@
                                                 (seq :action (list nil)))
                       :action (cons intervale-de-numeros $2))
                  :action $1)
-            
+
             (--> intervale-de-numeros
                  (seq numero-de-ligne (alt (seq tok-a numero-de-ligne
                                                 :action $2)
@@ -199,7 +199,7 @@
     :rules ((--> un-fichier
                  ident
                  :action (list $1))
-            
+
             (--> ident
                  (seq tok-identificateur
                       ;; :action (let ((text (second $1)))
@@ -219,7 +219,7 @@
                  (seq ident tok-virgule ident
                       :action (list $1 $3))
                  :action $1)
-            
+
             (--> ident
                  (seq tok-identificateur
                       ;; :action (let ((text (second $1)))
@@ -315,17 +315,17 @@
                     (list s
                      (handler-case (converting-parser-errors (funcall (intern (format nil "~:@(~A-~A~)" 'parse s)) ""))
                        (error (err) (ignore-errors (string-trim #(#\newline) (princ-to-string err)))))))
-                '(numero-de-ligne             
-                  un-numero                   
-                  deux-numeros                
-                  deux-numeros-optionels      
-                  liste-de-numeros            
-                  un-programme                
-                  un-fichier                  
-                  deux-fichiers               
-                  un-fichier-et-deux-numeros  
-                  une-ligne                   
-                  arguments-supprimer         
+                '(numero-de-ligne
+                  un-numero
+                  deux-numeros
+                  deux-numeros-optionels
+                  liste-de-numeros
+                  un-programme
+                  un-fichier
+                  deux-fichiers
+                  un-fichier-et-deux-numeros
+                  une-ligne
+                  arguments-supprimer
                   ))
 
 
@@ -356,7 +356,7 @@
   (assert (equal '("A")     (parse-un-programme "A")))
   (assert (equal '("BOUR")  (parse-un-programme "BOUR")))
   (assert (equal '("C1564") (parse-un-programme "C1564")))
-  
+
   (assert (equal '("ABCD") (parse-un-fichier-et-deux-numeros "ABCD")))
   (assert (equal '("ABCD" 100) (parse-un-fichier-et-deux-numeros "ABCD,100")))
   (assert (equal '("ABCD" 100 200) (parse-un-fichier-et-deux-numeros "ABCD,100,200")))
@@ -412,7 +412,7 @@
       (setf (cdr entry) command-group)
       (push (cons name command-group) *command-groups*))))
 
-(defgeneric find-command (command group &key in-extenso) 
+(defgeneric find-command (command group &key in-extenso)
   (:method ((command command) (group command-group) &key (in-extenso nil))
     (find-command (if in-extenso
                     (command-name command)
@@ -540,21 +540,21 @@ Bound by COMMAND-EVAL-LINE.")
 ;;                             ---------------------
 ;;                              taille_mot : entier
 ;;                             ---------------------
-;; 
+;;
 ;;              ----------------------
 ;;               Fichier Temporaire
 ;;              ----------------------
 ;;               num_console : entier
 ;;              ----------------------
-;; 
-;; 
-;; 
+;;
+;;
+;;
 ;; -----------------
 ;;  Console
 ;; -----------------      [ il y a un espace de nom de temporaire par console ]
 ;;  numero : entier
 ;; -----------------
-;; 
+;;
 ;; ---------------------
 ;;  Compte
 ;; ---------------------
@@ -564,8 +564,8 @@ Bound by COMMAND-EVAL-LINE.")
 ;;  droit_tau : bool    ----[c:augmentation dynamique de l'espace temporaire]
 ;;  droit_tfi : bool  ----[d:allocation d'un espace temporaire fixe superieur]
 ;; --------------------
-;; 
-;; 
+;;
+;;
 ;;  [a: creation, modification, suppression de programmes]
 ;;  [b: creation, modification, suppression de permanents]
 ;;  [c: augmentation dynamique de l'espace temporaire]
@@ -677,47 +677,47 @@ AI)DE                         donne la liste des commandes.")))))))
   ;;         int identification;
   ;;         int disponible=lse_fichiers_temporaire_disponible();
   ;;         int requis=9999; /* SEE Ajouter requis au fichier compt */
-  ;; 
+  ;;
   ;;         lse_chaine_initialiser(&ligne);
   ;;         lse_ecrire_format(travail," \a");
-  ;;         lse_lire_ligne(travail,&ligne,0,mXOFF); 
-  ;;         lse_cmd_arg_initialiser(&parser,&ligne); 
+  ;;         lse_lire_ligne(travail,&ligne,0,mXOFF);
+  ;;         lse_cmd_arg_initialiser(&parser,&ligne);
   ;;         erreur=lse_cmd_analyser_un_numero(&parser,&identification);
   ;;         if(erreur!=lse_ok){
   ;;             /* mais que dit il ? on ne change pas de compte */
   ;;             lse_ecrire_format(travail,"\r\n???");
   ;;             return;
   ;;         }
-  ;;         
+  ;;
   ;;         /*
   ;;             SEE: check that we're not wargamed.
-  ;;             
-  ;; 
+  ;;
+  ;;
   ;;             if(id_locked_for_address(identification,remote_address)){
   ;;                 (* on ne change pas de compte *)
   ;;                 lse_ecrire_format(travail,"\r\n???");
   ;;                 return;
   ;;             }
-  ;; 
-  ;;             we need to keep for each id the list 
+  ;;
+  ;;             we need to keep for each id the list
   ;;             of (remote_address,number of invalid try)
-  ;; 
+  ;;
   ;;             number of invalid try is reset to 0 once a good id is given.
-  ;; 
-  ;; 
+  ;;
+  ;;
   ;;             maxtry=3
-  ;;             once maxtry unsuccessfull ID has been issued for a given 
-  ;;             account from a given remote_address, lock the account for 
+  ;;             once maxtry unsuccessfull ID has been issued for a given
+  ;;             account from a given remote_address, lock the account for
   ;;             this address.
-  ;;             
+  ;;
   ;;         */
-  ;; 
+  ;;
   ;;         if(!lse_compte_verifier_identification(identification)){
   ;;             /* on ne change pas de compte */
   ;;             lse_ecrire_format(travail,"\r\n???");
   ;;             return;
   ;;         }
-  ;; 
+  ;;
   ;;         lse_fichier_terminer(travail->compte,-1);
   ;;         travail->compte=identification%100;
   ;;         /* SEE requis=lse_compte_espace_temporaire_requis(identification); */
@@ -728,7 +728,7 @@ AI)DE                         donne la liste des commandes.")))))))
   ;;                               disponible);
   ;;             lse_ecrire_format(travail,"\r\nESPACE TEMPORAIRE DESIRE     :");
   ;;             lse_cmd_lire_ligne(travail,&ligne);
-  ;;             lse_cmd_arg_initialiser(&parser,&ligne); 
+  ;;             lse_cmd_arg_initialiser(&parser,&ligne);
   ;;             erreur=lse_cmd_analyser_un_numero(&parser,&desire);
   ;;             if((erreur==lse_ok)&&(0<desire)&&(desire<=disponible)){
   ;;                 erreur=lse_fichier_allouer_temporaire(travail->console,desire);
@@ -790,7 +790,7 @@ AI)DE                         donne la liste des commandes.")))))))
             (of (account-check-right account :tempofixe))
             np nd na nf)
         (io-carriage-return *task*)
-        (io-format *task* 
+        (io-format *task*
                    "   ~2,'0D       ~{~[0~;1~]~}     "
                    account (list op od oa of))
         (setf line (io-read-line *task*))
@@ -819,7 +819,7 @@ AI)DE                         donne la liste des commandes.")))))))
 (defcommand "BONJOUR" sleeping nil ()
   "Activation du mode de travail."
   (io-new-line *task* 2)
-  (io-format *task* "LSE-M15  CONSOLE NO.~2D  ~A" 
+  (io-format *task* "LSE-M15  CONSOLE NO.~2D  ~A"
              (task-console *task*) (dat))
   (setf (task-state *task*) :active))
 
@@ -1040,7 +1040,7 @@ Voir les commandes LISTER A PARTIR DE, NUMERO A PARTIR DE, PERFORER A PARTIR DE.
     (io-new-line *task*)))
 
 
-(defcommand "ETAGERE DE RUBANS" awake  une-ligne (chemin) 
+(defcommand "ETAGERE DE RUBANS" awake  une-ligne (chemin)
   "Selectionne une étagère de rubans perforés."
   "Les rubans perforés sont simulés par des fichiers.  Ils sont
 conservés sur des \"étagère\", c'est à dire, enregistrés dans des répertoires.
@@ -1395,7 +1395,7 @@ préalablement, et il est mis à jour par le nouveau programme.
 
 Voir les commandes AFFICHER REPERTOIRE, CHANGER REPERTOIRE, TABLE DES
 FICHIERS, APPELER, RANGER."
-  
+
   (io-new-line *task*)
   (let* ((path      (catalog-pathname pgm :p))
          (vm        (task-vm *task*))
@@ -1484,7 +1484,7 @@ fichier à décoder et à les compiler.
 Voir les commandes DECODER, APPELER, RANGER, MODIFIER."
 
   ;; TODO:
-  
+
   ;; Sur Mitra-15, fonctionne comme APpeler: le programme courant est
   ;; effacé et remplacé par le programme chargé.
 
@@ -1492,7 +1492,7 @@ Voir les commandes DECODER, APPELER, RANGER, MODIFIER."
   ;; reste du programme courant.
 
   ;; On s'arrête à la première erreur.
-  
+
   (io-new-line *task*)
   (let* ((path      (catalog-pathname fichier :T))
          (vm        (task-vm *task*)))
@@ -1686,7 +1686,7 @@ Voir les commandes UTILISATION DISQUE, SUPPRIMER."
                                               (file-length stream)))
                                           0)
                                       modulo))))))
-      
+
       (io-format *task* "~%FICHIERS-PROGRAMMES~
                      ~%*******************~
                      ~2% NOM NO.COMPTE  DATE  NB.MOTS~
@@ -1755,15 +1755,15 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
 #+(and lse-unix (or lse-allow-lisp debugging) (not lse-server))
 (defmacro handling-errors (&body body)
   `(HANDLER-CASE (progn ,@body)
-     (simple-condition 
-      (ERR) 
+     (simple-condition
+      (ERR)
       (io-format *task* "~&~A: ~%" (class-name (class-of err)))
       (apply (function io-format) *task*
              (simple-condition-format-control   err)
              (simple-condition-format-arguments err))
       (io-format *task* "~&"))
-     (condition 
-      (ERR) 
+     (condition
+      (ERR)
       (io-format *task* "~&~A: ~%  ~S~%"
                  (class-name (class-of err)) err))))
 
@@ -1909,10 +1909,10 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
          (lse-error "COMMANDE INVALIDE EN L'ETAT ~A~%ESSAYER LA COMMANDE AI(DE).~%"
                     (task-state-label (task-state task)))))
 
-      ((task-pas-a-pas-first *task*)       
+      ((task-pas-a-pas-first *task*)
        ;; pas à pas:
        (continuer))
-      
+
       #|else empty line, just ignore it.|#)))
 
 
@@ -1930,23 +1930,17 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
 (defun call-with-error-reporting (task thunk)
   (labels ((invalid-character-error (err)
              (io-format task "~%ERREUR: ~?~%"
-                        "CARACTÈRE INVALIDE ~A~:[~*~; (~D~)~] EN POSITION ~D"
-                        (destructuring-bind (ch pos) (scanner-error-format-arguments err)
-                          (list
-                           (if (<= 32 (char-code ch))
-                             (format nil "'~A'" ch)
-                             (format nil ".~A." (char-code ch)))
-                           (<= 32 (char-code ch))
-                           (char-code ch)
-                           pos)))
+                        "CARACTÈRE INVALIDE ~A~:[~*~; (~D)~] EN POSITION ~D"
+                        (scanner-error-format-arguments err)
+                        (scanner-error-column           err))
              (pret task))
-           
+
            (report-error (err)
              (error-format task err)
              (pret task))
-           
+
            (user-interrupt (condition)
-             #+debugging (io-format task "~%-Condition: ~A~%" condition) 
+             #+debugging (io-format task "~%-Condition: ~A~%" condition)
              (reset-ready task))
 
            #+debugging
@@ -1966,7 +1960,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
            (report-and-debug-error  (err) (debug-report-error err) (invoke-debugger err)))
     (handler-case
         #-debugging (funcall thunk)
-        #+debugging (if *debug-repl* 
+        #+debugging (if *debug-repl*
                       (handler-bind
                           ((lse-error     (function report-and-signal-error))
                            (scanner-error (function report-and-signal-error))

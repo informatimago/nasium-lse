@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Loads the LSE interpreter and environment emulator.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal Bourguignon 2005 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
@@ -77,7 +77,8 @@
 (defun wildpath (path) (make-pathname :name :wild :type :wild :version nil :defaults path))
 (defun fasldir  (system component)
   (first (asdf:output-files
-          (make-instance 'asdf:compile-op)
+          #-asdf3 (make-instance 'asdf:compile-op)
+          #+asdf3 (asdf/operation:make-operation 'asdf:compile-op)
           (asdf:find-component (asdf:find-system system) component))))
 
 (setf *default-pathname-defaults* (dirpath (or *load-truename*
@@ -90,11 +91,11 @@
 
 ;;; --------------------------------------------------
 
-(ql:quickload '("iolib-grovel" "cffi-grovel"))
-(unless (find "/usr/local/include/" iolib-grovel::*cc-flags* :test (function string=))
-  (setf iolib-grovel::*cc-flags* (append iolib-grovel::*cc-flags* (list "-I" "/usr/local/include/"))))
-(unless (find "/usr/local/include/" cffi-grovel::*cc-flags* :test (function string=))
-  (setf cffi-grovel::*cc-flags*  (append cffi-grovel::*cc-flags*  (list "-I" "/usr/local/include/"))))
+#-(and) (ql:quickload '("iolib-grovel" "cffi-grovel"))
+#-(and)(unless (find "/usr/local/include/" iolib-grovel::*cc-flags* :test (function string=))
+         (setf iolib-grovel::*cc-flags* (append iolib-grovel::*cc-flags* (list "-I" "/usr/local/include/"))))
+#-(and)(unless (find "/usr/local/include/" cffi-grovel::*cc-flags* :test (function string=))
+         (setf cffi-grovel::*cc-flags*  (append cffi-grovel::*cc-flags*  (list "-I" "/usr/local/include/"))))
 
 ;; (defun delete-package-and-users (package)
 ;;   (mapc 'delete-package-and-users  (package-used-by-list package))
@@ -102,18 +103,18 @@
 ;;                                 (find-package "COMMON-LISP-USER")))
 ;;     (princ "Deleting ") (princ (package-name package)) (terpri) (finish-output)
 ;;     (ignore-errors (delete-package package))))
-;; 
+;;
 ;; (progn (ignore-errors (delete-package-and-users :com.informatimago.rdp))
 ;;        (delete-package-and-users :com.informatimago.common-lisp.parser.scanner)
 ;;        (delete-package-and-users :com.informatimago.common-lisp.cesarum.list))
-;; 
-;; 
+;;
+;;
 ;; (pushnew #P "/home/pjb/src/public/lisp/common-lisp/cesarum/" asdf:*central-registry*)
 ;; (quick-reload :com.informatimago.common-lisp.cesarum)
-;; 
+;;
 ;; (pushnew #P "/home/pjb/src/public/lisp/common-lisp/parser/"  asdf:*central-registry*)
 ;; (quick-reload :com.informatimago.common-lisp.parser)
-;; 
+;;
 ;; (pushnew #P "/home/pjb/src/public/rdp/"                      asdf:*central-registry*)
 ;; (quick-reload :com.informatimago.rdp)
 
@@ -158,7 +159,7 @@
 (com.informatimago.common-lisp.cesarum.package:add-nickname
  :COM.INFORMATIMAGO.LSE.IDENTIFIERS :id)
 (in-package   :com.informatimago.lse)
-(print '(in-package   :com.informatimago.lse)) 
+(print '(in-package   :com.informatimago.lse))
 (print '(com.informatimago.lse.cli:main))
 (print '(com.informatimago.lse.server:main))
 (terpri) (finish-output)
@@ -173,4 +174,3 @@
 |#
 
 ;;;; THE END ;;;;
-

@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    This file define a generic server using IOLIB.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -49,7 +49,7 @@
   (:export "ENQUEUE-MESSAGE"
            "+CLIENT-INPUT-BUFFER-SIZE+"
            "CLIENT" "CLIENT-SERVER" "CLIENT-STATE" "CLIENT-SOCKET" "CLIENT-LOCAL-END-POINT"
-           "CLIENT-REMOTE-END-POINT" 
+           "CLIENT-REMOTE-END-POINT"
            "CLIENT-RESPONSE-QUEUE-LENGTH"
            "CLIENT-RECEIVE-MESSAGE"
            "RECEIVE-BYTES"
@@ -91,13 +91,13 @@
     :initarg :server
     :reader client-server
     :documentation "The server of this client.")
-   
+
    (state
     :initform :open
     :reader client-state
     :type (member :open :closed)
     :documentation "Indicates whether the client is closed.")
-   
+
    (socket
     :initarg :socket
     :accessor client-socket
@@ -116,14 +116,14 @@
     :initform 0
     :type (unsigned-byte 16)
     :documentation "The index of the last message sent.")
-   
+
    (output-buffer
     :initform nil
     :documentation "The packet currently being sent.")
    (output-index
     :initform 0
     :documentation "The index of the next byte in the packet to send.")
-   
+
    (receptor)
 
    (input-buffer
@@ -131,7 +131,7 @@
                           :element-type '(unsigned-byte 8)
                           :initial-element 0)
     :documentation "The socket input buffer."))
-  
+
   (:documentation "Represents a client in the server."))
 
 
@@ -279,9 +279,9 @@
     :reader server-state
     :type (member :listening :closed)
     :documentation "A keyword indicating the state of the server.")
-   
+
    (socket
-    :accessor server-socket 
+    :accessor server-socket
     :documentation "The IOLib passive (listening) socket of the server.")
 
    (clients
@@ -299,7 +299,7 @@
     :initform nil
     :initarg :data-received-callback
     :documentation "A function called when data is received."))
-  
+
   (:documentation "An server listens for incoming connections
 and then receive data messages from clients, and sends answers to them."))
 
@@ -366,10 +366,10 @@ NOTE:                   The CLIENT-RECEIVE-MESSAGE method is called
 
       (set-io-handler *event-base*
                       (socket-os-fd socket)
-                      :read  
+                      :read
                       (make-listener-handler
                        socket
-                       
+
                        (lambda (client-socket)      ; acceptor ; must return the client, or nil.
                          (let ((client (make-instance client-class
                                            :server server
@@ -385,7 +385,7 @@ NOTE:                   The CLIENT-RECEIVE-MESSAGE method is called
                           (logger :com.informatimago.iolib.server :notice "Closing connection to ~A~%"
                                   (client-remote-end-point client))
                           (server-remove-client server client)))
-                       
+
                        (make-reader-maker
                         (lambda (client client-socket disconnector)
                           (declare (ignore client-socket disconnector))
@@ -397,7 +397,7 @@ NOTE:                   The CLIENT-RECEIVE-MESSAGE method is called
                           (declare (ignore client-socket disconnector))
                           (send-bytes client)
                           ;; If we see we're out of data to write
-                          ;; then close the connection, we're done. 
+                          ;; then close the connection, we're done.
                           ;; (when (eql :eof (queue-first-element (client-output-queue client)))
                           ;;   (funcall disconnector
                           ;;            (remote-host client-socket)
@@ -437,8 +437,8 @@ NOTE:                   The CLIENT-RECEIVE-MESSAGE method is called
 ;;         (values nil nil nil)
 ;;         (destructuring-bind (client data) (queue-dequeue data-input-queue)
 ;;           (values data client t)))))
-;; 
-;; 
+;;
+;;
 ;; (defmethod receive-command ((server server))
 ;;   (with-slots (command-input-queue) server
 ;;     (if (queue-empty-p command-input-queue)
@@ -461,7 +461,7 @@ NOTE:                   The CLIENT-RECEIVE-MESSAGE method is called
 ;;   ;; (with-slots (response-sender last-index) client
 ;;   ;;   (enqueue-message response-sender
 ;;   ;;                    (make-instance 'line-message
-;;   ;;                        :text 
+;;   ;;                        :text
 ;;   ;;                        :index (incf last-index)
 ;;   ;;                        :message-sent (lambda (message)
 ;;   ;;                                        (declare (ignore message))

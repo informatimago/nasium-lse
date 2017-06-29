@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    IOLib utilities.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -89,7 +89,7 @@ Run the event dispatch loop.
                                         (setf *backtrace* (backtrace))
                                         (invoke-debugger condi)
                                         (signal condi))))
-                        (event-dispatch *event-base*)) 
+                        (event-dispatch *event-base*))
 
           #-debugging (event-dispatch *event-base*)) ; keep accepting connections forever.
 
@@ -101,13 +101,13 @@ Run the event dispatch loop.
 
       (end-of-file ()
         (logger :com.informatimago.iolib.util :error "Caught unexpected end-of-file!  Client closed connection on read!~%"))
-      
+
       (error (err)
         (logger :com.informatimago.iolib.util :error "Exiting for ~A~%" err))
 
       (condition (condi)
         (logger :com.informatimago.iolib.util :warn "Exiting for ~A~%" condi)))))
-  
+
   (finish-output *error-output*)
   (finish-output *trace-output*)
   (finish-output *standard-output*)

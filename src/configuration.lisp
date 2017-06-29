@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Defines the configuration of the lisp system.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal Bourguignon 2005 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
@@ -46,7 +46,7 @@
            ("LSE:**;*.*"   ,(make-pathname :defaults (user-homedir-pathname)
                                            :directory dir :name :wild :type :wild))
            ("LSE:**;*.*.*" ,(make-pathname :defaults (user-homedir-pathname)
-                                           :directory dir :name :wild :type :wild 
+                                           :directory dir :name :wild :type :wild
                                            :version :wild))))))
 
 (defparameter *lse-rep-admin*    #p"LSE:ADMIN;")
@@ -65,11 +65,11 @@
 (defparameter *password*    "MAYER")
 
 (defparameter *header*      "EMULSE :  L.S.E.  [ EMULATION MITRA-15 ]")
-(defparameter *copyright*   "COPYRIGHT 1984 - 2014 PASCAL BOURGUIGNON")
+(defparameter *copyright*   "COPYRIGHT 1984 - 2017 PASCAL BOURGUIGNON")
 
 
 ;; (map nil (function ensure-directories-exist)
-;;      (list *lse-rep-admin*  *lse-rep-progr*  *lse-rep-perma* 
+;;      (list *lse-rep-admin*  *lse-rep-progr*  *lse-rep-perma*
 ;;            *lse-rep-tempo*  *lse-rep-ruban*))
 
 

@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Implements a simple server.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
@@ -93,18 +93,18 @@ EXAMPLE: (list-insert-separator '(a b (d e f)  c) 'x)
 
 
 (defun pjb-unsplit-string (string-list &rest separator)
-  "Does the inverse than pjb-split-string. If no separator is provided 
+  "Does the inverse than pjb-split-string. If no separator is provided
 then a simple space is used."
   (cond
    ((null separator)         (setq separator " "))
-   ((/= 1 (length separator)) 
+   ((/= 1 (length separator))
     (error "pjb-unsplit-string: Too many separator arguments."))
    ((not (char-or-string-p (car separator)))
     (error "pjb-unsplit-string: separator must be a string or a char."))
    (t (setq separator (car separator))))
   (apply 'concatenate 'string
          (mapcar (lambda (object)
-                   (if (stringp object) 
+                   (if (stringp object)
                      object
                      (format nil "~A" object)))
                  (list-insert-separator string-list separator))))
@@ -143,7 +143,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
            (nreverse
             (mapcar (lambda (byte)
                       (multiple-value-bind (val eaten) (read-from-string byte)
-                        (if (and (= eaten (length byte)) (integerp val) 
+                        (if (and (= eaten (length byte)) (integerp val)
                                  (<= 0 val 255))
                           val
                           (return-from :convert nil))))
@@ -174,9 +174,9 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 
 
 (defun configuration-add-statement (configuration statement)
-  (setf (configuration-statements configuration) 
+  (setf (configuration-statements configuration)
         (nconc (configuration-statements configuration)  (list statement))))
-        
+
 
 (defparameter *configuration* (make-configuration)
   "The current EMULSE SYSTEM configuration")
@@ -186,7 +186,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 
 
 (defmacro defcommand (pattern &body body)
-  `(let ((command (find ',pattern *commands* 
+  `(let ((command (find ',pattern *commands*
                         :key (function car)
                         :test (function equal))))
      (if command
@@ -210,7 +210,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
   (setf (configuration-max-number *configuration*) n)
   (store));;connections
 
-    
+
 (defcommand (connections enable)
   (unless (configuration-connection-enabled *configuration*)
     (server-start-listening))
@@ -247,14 +247,14 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 
 (defcommand (filter (?x cmd) (?x dir) all)
   (unless (member cmd '(insert append delete))
-    (error "Invalid filter command: ~S (expected one of: insert append delete)" 
+    (error "Invalid filter command: ~S (expected one of: insert append delete)"
            cmd))
   (unless (member dir '(allow deny))
     (error "Invalid filter direction: ~S (expected one of: allow deny)" dir))
   (case cmd
-    ((insert) 
+    ((insert)
      (push (list dir 'all) (configuration-filters *configuration*)))
-    ((append) 
+    ((append)
      (setf (configuration-filters *configuration*)
            (nconc (configuration-filters *configuration*)
                   (list (list dir 'all)))))
@@ -268,7 +268,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 (defcommand (filter (?x cmd) (?x dir) (?x ip) (?? (?x bits)))
   (setf bits (or bits 32))
   (unless (member cmd '(insert append delete))
-    (error "Invalid filter command: ~S (expected one of: insert append delete)" 
+    (error "Invalid filter command: ~S (expected one of: insert append delete)"
            cmd))
   (unless (member dir '(allow deny))
     (error "Invalid filter direction: ~S (expected one of: allow deny)" dir))
@@ -277,12 +277,12 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
            ip))
   (unless (and (integerp bits) (<= 0 bits 32))
     (error
-     "Invalid network mask bits: ~S (expected an integer between 0 and 32)" 
+     "Invalid network mask bits: ~S (expected an integer between 0 and 32)"
      bits))
   (case cmd
-    ((insert) 
+    ((insert)
      (push (list dir ip bits) (configuration-filters *configuration*)))
-    ((append) 
+    ((append)
      (setf (configuration-filters *configuration*)
            (nconc (configuration-filters *configuration*)
                   (list (list dir ip bits)))))
@@ -301,7 +301,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 (defcommand (filter list (?? (?x dir)))
   (setf dir (or dir 'all))
   (unless (member dir '(all deny allow))
-    (error "Invalid filter direction: ~S (expected one of: all allow deny)" 
+    (error "Invalid filter direction: ~S (expected one of: all allow deny)"
            dir))
   (dolist (filter (configuration-filters *configuration*))
     (when (or (eq dir 'all) (eq dir (first filter)))
@@ -312,7 +312,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 (defcommand (console kill all (?? (?x cclass)))
   (setf cclass (or cclass 'all))
   (unless (member cclass '(all xterm socket))
-    (error "Invalid console class: ~S (expected one of: all xterm socket)" 
+    (error "Invalid console class: ~S (expected one of: all xterm socket)"
            cclass))
   (server-kill-consoles cclass)
   (store));;console
@@ -338,7 +338,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 (defcommand (console list (?? (?x cclass)))
   (setf cclass (or cclass 'all))
   (unless (member cclass '(all xterm socket))
-    (error "Invalid console class: ~S (expected one of: all xterm socket)" 
+    (error "Invalid console class: ~S (expected one of: all xterm socket)"
            cclass))
   (dolist (console (server-console-list cclass))
     (when (or (eq 'all cclass) (eq cclass (console-class console)))
@@ -360,7 +360,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
   (if file
     (progn
       (ensure-directories-exist file)
-      (with-open-stream (stream (open file :direction :output 
+      (with-open-stream (stream (open file :direction :output
                                       :if-does-not-exist :create
                                       :if-exists :supersede))
         (dolist (statement (configuration-statements *configuration*))
@@ -400,7 +400,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
       (nil)
     (format t "~%~A[~D]> " (package-name *package*) hist)
     (handling-errors
-     (setf +++ ++   ++ +   + -   - (read *standard-input* nil +eof+))  
+     (setf +++ ++   ++ +   + -   - (read *standard-input* nil +eof+))
      (when (or (member - '((quit)(exit)(continue)) :test (function equal)))
        (return-from server-repl))
      (setf /// //   // /   / (multiple-value-list (eval -)))
@@ -421,7 +421,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
   (throw :configuration-repl-exit nil))
 
 
-(defun parse-one-command (command)  
+(defun parse-one-command (command)
   "This must be after all the DEFCOMMAND to gather them!"
   (parse-command command))
 
@@ -445,7 +445,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 
 
 (defun configuration-repl-start ()
-  (format t "~&~A " *prompt*) 
+  (format t "~&~A " *prompt*)
   (finish-output))
 
 
@@ -460,7 +460,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
                         (simple-condition-format-control err)
                         (simple-condition-format-arguments err)))))
       (configuration-repl-start))));;configuration-repl-input
-  
+
 
 (when nil
   (load "loader.lisp")
@@ -512,12 +512,12 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 (defparameter *iotasks*   '())
 (defparameter *bon-grain* '()
   "Sublist of *iotask* which can be handled by socket:socket-wait.")
-(defparameter *ivray*     '() 
+(defparameter *ivray*     '()
   "Sublist of *iotask* which cannot be handled by socket:socket-wait.")
 
 
 (defun iotask-enqueue (stream process-event &optional name)
-  (let ((task (make-iotask :stream stream 
+  (let ((task (make-iotask :stream stream
                            :process-event process-event
                            :name name)))
     (push task *iotasks*)
@@ -537,14 +537,14 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
 (defun iotask-poll-loop ()
   (loop ;; each 0.1 seconds, see second argument of socket-status.
    (when (null *iotasks*) (return))
-   (map nil 
+   (map nil
         (lambda (task status)
           (when status (funcall (iotask-process-event task) task status)))
         *ivray*
         (mapcar (lambda (task)
                   (let ((stream (iotask-stream task)))
                     (cond
-                     ((input-stream-p stream)  
+                     ((input-stream-p stream)
                       (if (listen stream)
                         :input
                         (if (output-stream-p stream) :output nil)))
@@ -572,11 +572,11 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
       (when (eq :input event)
         (let* ((ich (read-char (iotask-stream task)))
                (ch  (system::input-character-char ich)))
-          (cond 
+          (cond
            ((null ch))
            ((= (char-code ch) +CR+)
             (terpri)
-            (funcall process-input 
+            (funcall process-input
                      task (subseq buffer 0 (fill-pointer buffer)))
             (setf (fill-pointer buffer) 0))
            ((or (= (char-code ch) +BS+) (= (char-code ch) +DEL+))
@@ -608,7 +608,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
          (font "-*-console-medium-r-normal-*-16-*-*-*-*-*-*-*")
          ;; "-dec-terminal-bold-r-normal-*-14-*-*-*-*-*-dec-dectech"
          )
-    (ext:shell  (format nil "rm -f ~S; mknod ~S p; xterm ~:[~;~:*-display ~S~] -fg green -bg black -fn '~A' -n ~S -T ~S -e 'tty >> ~S ; cat ~S' &" 
+    (ext:shell  (format nil "rm -f ~S; mknod ~S p; xterm ~:[~;~:*-display ~S~] -fg green -bg black -fn '~A' -n ~S -T ~S -e 'tty >> ~S ; cat ~S' &"
          pipe pipe display font title title pipe pipe))
     (setq tty-name (with-open-file (s pipe :direction :input) (read-line s))
           xio (make-two-way-stream
@@ -626,7 +626,7 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
     xio));;make-xterm-io-stream
 
 
-(defun server-main (&key display) 
+(defun server-main (&key display)
   (if (or display (find-package "SWANK"))
     (let* ((xterm-io (make-xterm-io-stream :display display))
            (*standard-output* xterm-io)
@@ -642,14 +642,14 @@ RETURN:  Whether ADDRESS as the aaa.bbb.ccc.ddd IPv4 address format.
       (iotask-poll-loop))
     (ext:with-keyboard
      (let ((*standard-input* ext:*keyboard-input*))
-       (iotask-enqueue ext:*keyboard-input* 
+       (iotask-enqueue ext:*keyboard-input*
                        (make-keyboard-discipline (function server-input))
                        "keyboard")
        (configuration-repl-start)
        (iotask-poll-loop)))));;server-main
-  
 
-(defvar *external-format* (ext:make-encoding 
+
+(defvar *external-format* (ext:make-encoding
                            :charset 'charset:iso-8859-1
                            :line-terminator :unix))
 
@@ -669,7 +669,7 @@ in clisp, we do it with a socket."
                                        :TIMEOUT 5))
     (if (socket:socket-wait lsock 5)
       (progn
-        (setf bsock (socket:socket-accept lsock 
+        (setf bsock (socket:socket-accept lsock
                                           :ELEMENT-TYPE 'character
                                           :EXTERNAL-FORMAT *external-format*
                                           :BUFFERED nil
@@ -678,8 +678,8 @@ in clisp, we do it with a socket."
           (values asock bsock)
           (values nil nil)))
       (values nil nil))));;make-pipe
-                                       
-   
+
+
 
 (defparameter +server-port+ 15000)
 
@@ -690,7 +690,7 @@ in clisp, we do it with a socket."
          (when (socket:socket-wait lsock 0)
            (let ((remote (socket:socket-accept lsock
                                                :element-type 'character
-                                               ;; :external-format 
+                                               ;; :external-format
                                                :buffered t
                                                :timeout 1)))
              (when remote
@@ -718,9 +718,9 @@ in clisp, we do it with a socket."
 
 
 #||
-(progn (ext:with-keyboard 
-        (socket:socket-status (list ext:*keyboard-input*) nil) 
-        (unread-char  (system::input-character-char 
+(progn (ext:with-keyboard
+        (socket:socket-status (list ext:*keyboard-input*) nil)
+        (unread-char  (system::input-character-char
                        (read-char ext:*keyboard-input*))
                       *standard-input*))
        (print (read-line)))

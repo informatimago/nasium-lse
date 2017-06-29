@@ -5,12 +5,12 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    EMULSE : L.S.E. [ EMULATION MITRA-15 ]
-;;;;    
-;;;;    An emultator of the CII MITRA-15 L.S.E. System 
+;;;;
+;;;;    An emultator of the CII MITRA-15 L.S.E. System
 ;;;;    and programming language interpreter.
-;;;;    
+;;;;
 ;;;;    This is the L.S.E. Librarian (Cataloger).
 ;;;;
 ;;;;AUTHORS
@@ -21,19 +21,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2000 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
@@ -63,14 +63,14 @@
   ())
 
 
-(deftype catalog-type () 
+(deftype catalog-type ()
   '(member :program :permanent :temporary :tape :shelf))
 
 
 (defclass catalog-entry ()
   ((name    :initarg :name
             :accessor catalog-entry-name
-            :type string         
+            :type string
             :documentation "Catalog name, 1-5 alphanum.")
    (day     :initarg :day
             :accessor catalog-entry-day
@@ -107,7 +107,7 @@
   ((owner   :initarg :owner
             :accessor catalog-entry-owner
             :initform 0
-            :type (integer 0 99) 
+            :type (integer 0 99)
             :documentation "Owner of the permanent file.")))
 
 (defclass tape-entry (catalog-entry)
@@ -124,7 +124,7 @@
   ((type    :initform :program :accessor catalog-type)
    (count   :initform 0 :accessor catalog-count)
    (entries :initarg :entries :initform '()  :accessor catalog-entries
-            :documentation "list of catalog-entry"))) 
+            :documentation "list of catalog-entry")))
 
 
 
@@ -151,7 +151,7 @@
 ;; (defun catalog-entry-path (entry)
 ;;   "Returns the path of the catalog entry ENTRY."
 ;;   (case (catalog-entry-type entry)
-;;     ((:program :permanent) 
+;;     ((:program :permanent)
 ;;      (format nil "~A;~A"
 ;;              (catalog-data-dirpath (catalog-data (catalog-entry-type entry)))
 ;;              (catalog-entry-name entry)))
@@ -174,7 +174,7 @@
   (let* ((path (catalog-entry-path entry))
          (result nil)
          (flen (with-open-file (f path
-                                  :direction :input 
+                                  :direction :input
                                   :if-does-not-exist nil)
                  (if f (progn (setf result t) (file-length f)) 0))))
     (multiple-value-bind (s m h day month year)
@@ -193,8 +193,8 @@
   (values))
 
 
-;; (defun catalog-find-name (catalog name)    
-;;   (find name (catalog-entries catalog) 
+;; (defun catalog-find-name (catalog name)
+;;   (find name (catalog-entries catalog)
 ;;         :test (lambda (name entry)
 ;;                 (if (member (catalog-type catalog) '(:tape :shelf))
 ;;                     (and (string-equal (catalog-entry-name entry) name)
@@ -202,13 +202,13 @@
 ;;                 (function catalog-entry-name))))
 
 (defun catalog-find-name-console (catalog name &optional (console *current-console-number*))
-  "Finds in the CATALOG the entry belonging to the CONSOLE that has the NAME." 
+  "Finds in the CATALOG the entry belonging to the CONSOLE that has the NAME."
   (find (cons name console) (catalog-entries catalog)
         :test (lambda (no entry)
                 (and (= (cdr no) (catalog-entry-console entry))
                      (string-equal (car no) (catalog-entry-name entry))))))
-    
-    
+
+
 (defun catalog-valid-name-p (name)
   (and (<= 1 (length name) 5)
        (alpha-char-p (char name 0))
@@ -216,7 +216,7 @@
 
 
 (defun catalog-add-entry-type (catalog type name &key (console *current-console-number*) (owner *current-user-number*))
-  (let ((entry (make-instance 'catalog-entry 
+  (let ((entry (make-instance 'catalog-entry
                 :console (or console 0)
                 :owner   (or owner 0)
                 :type type
@@ -233,7 +233,7 @@
                           :console console :owner owner))
 
 
-(defun catalog-add-entries (catalog names &key (console *current-console-number*) (owner *current-user-number*))   
+(defun catalog-add-entries (catalog names &key (console *current-console-number*) (owner *current-user-number*))
   (dolist (name names)
     (catalog-add-entry catalog name :console console :owner owner)))
 
@@ -241,7 +241,7 @@
 (defun catalog-delete (catalog entry)
   (setf (catalog-entries catalog) (delete  entry (catalog-entries catalog))))
 
-    
+
 #||
 ;; this is used with scandir.  We may do otherwise.
 
@@ -326,7 +326,7 @@
            (pdir      (pathname-directory base-path))
            (plen      (length pdir)))
      (dotimes (depth max-depth catalog)
-       (let* ((pmat  (make-pathname 
+       (let* ((pmat  (make-pathname
                       :directory (append pdir (make-list depth :initial-element :wild))
                       :name :wild :type nil :version :newest :defaults base-path))
               (files (mapcan
@@ -334,7 +334,7 @@
                         (let ((d (pathname-directory path)))
                           (when (equal (subseq d 0 plen) pdir)
                             ;; no truename skipping, let's assume type and version NIL.
-                            (list (make-pathname 
+                            (list (make-pathname
                                    :directory (cons :relative (subseq d plen))
                                    :name (pathname-name path) :type nil :version :newest
                                    :defaults pmat)))))
@@ -355,7 +355,7 @@
 ;;   (let ((d (pathname-directory path)))
 ;;     (when (equal (subseq d 0 plen) pdir)
 ;;       ;; no truename skipping, let's assume type and version NIL.
-;;       (list (make-pathname 
+;;       (list (make-pathname
 ;;              :directory (list :relative (subseq d plen))
 ;;              :name (pathname-name path) :type nil :version :newest
 ;;              :defaults pmat)))))
@@ -417,7 +417,7 @@
                 }
                 nom_entree[0]='\0';
             }
-            if(entrees!=0){ 
+            if(entrees!=0){
                 free_dirent_pp(entrees,nombre_entrees);
                 entrees=0;
             }
@@ -445,7 +445,7 @@
                     nom_entree[0]='\0';
                     total+=nombre_entrees;
                 }
-                for(i=0;i<nombre_entrees;i++){  
+                for(i=0;i<nombre_entrees;i++){
                     sprintf(nom_entree,"%s",entrees[i]->d_name);
                     total+=lse_catalogue_chercher_ruban(ceci,
                                                         chemin_racine,
@@ -454,7 +454,7 @@
                                                         profondeur_max);
                 }
             }
-            if(entrees!=0){ 
+            if(entrees!=0){
                 free_dirent_pp(entrees,nombre_entrees);
                 entrees=0;
             }
@@ -474,7 +474,7 @@
             int total=0;
             int console;
             for(console=0;console<100;console++){
-                char chemin[4096];  
+                char chemin[4096];
                 int taille=sprintf(chemin,"%s/%02d",
                                    chemins_des_repertoires[ceci->type],
                                    console);
@@ -482,7 +482,7 @@
                     lse_paniquer("UN TAMPON A DEBORDE DANS LSE_CATALOGUE ! "
                                  "J'ARRETE TOUT !");
                 }
-                
+
                 selectionner_catalogue=ceci;
                 selectionner_numero=console;
                 nombre_entrees=scandir(chemin,
@@ -522,8 +522,8 @@
             return(nombre_entrees);
         }
     }/*lse_catalogue_obtenir_nouvelles_entrees*/
-    
-    
+
+
     static void lse_catalogue_charger(lse_catalogue_t* ceci)
     {
         FILE* fichier;
@@ -585,7 +585,7 @@
         fclose(fichier);
     }/*lse_catalogue_garer*/
 
-    
+
 
     void lse_catalogue_initialiser(void)
     {
@@ -601,7 +601,7 @@
 
     void lse_catalogue_synchroniser(void)
 extern void lse_catalogue_synchroniser(void);
-/* charge les création/suppression de fichier du disque, et 
+/* charge les création/suppression de fichier du disque, et
    enregistre le catalogue mémoire sur disque, */
 
     {
@@ -741,7 +741,7 @@ extern void lse_catalogue_synchroniser(void);
 PRE:    (eql type :temporary) ==> console must be provided.
 RETURN: A pathname for the file named NAME in the catalog of type TYPE.
 "
-  
+
   );;catalog-make-path
 
 
@@ -775,7 +775,7 @@ RETURN: A pathname for the file named NAME in the catalog of type TYPE.
         if(taille>=taille_chemin){
             lse_paniquer("UN TAMPON A DEBORDE DANS LSE_CATALOGUE ! "
                          "J'ARRETE TOUT !");
-        }   
+        }
     }/*lse_catalogue_construire_chemin*/
 
 
@@ -790,7 +790,7 @@ RETURN: A pathname for the file named NAME in the catalog of type TYPE.
            ||!lse_catalogue_nom_valide(permanent)){
             return(lse_erreur_nom_de_fichier_invalide);
         }
-        
+
         if(0<=lse_catalogue_chercher_nom(catalogue_permanent,permanent)){
             return(lse_erreur_nom_de_fichier_deja_pris);
         }
@@ -848,12 +848,12 @@ RETURN: A pathname for the file named NAME in the catalog of type TYPE.
   "
 PRE:  (eql TYPE :temporary) ==> console must be provided.
       (member TYPE '(:program :permanent) ==> user must be provided.
-DO:   if (member type '(:program :permanent :temporary)) 
+DO:   if (member type '(:program :permanent :temporary))
       then delete the file
       else panic.
 "
   (let ((catalog (case type
-                   ((:program)   *catalog-program*) 
+                   ((:program)   *catalog-program*)
                    ((:permanent) *catalog-permanent*)
                    ((:temporary) nil)
                    (otherwise
@@ -884,7 +884,7 @@ DO:   if (member type '(:program :permanent :temporary))
 ||#
 
 (defun catalog-delete-temporaries (console)
-  (dolist (file (directory 
+  (dolist (file (directory
                  (merge-pathnames
                   (make-pathname
                    :directory (list :relative (format nil "~2,'0D" console))

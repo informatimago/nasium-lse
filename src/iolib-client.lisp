@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    This file define a generic client using IOLIB.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -72,13 +72,13 @@
    (lo-dfa
     :reader session-lo-dfa
     :documentation "The low-level client DFA.")
-   
+
    (remote-end-point
     :initarg :remote-end-point
     :accessor session-remote-end-point)
    (socket
     :initform nil
-    :documentation "The IOLib active socket of the session.") 
+    :documentation "The IOLib active socket of the session.")
 
    ;; Sending:
    (sender)
@@ -94,14 +94,14 @@
     :initform 0
     :type (unsigned-byte 16)
     :documentation "The index of the last message sent.")
-   
+
    (unacknowledged-messages
     :initform (make-queue)
     :documentation "The messages sent but not acknowledged yet.")
 
    ;; Receiving:
    (receptor)
-   
+
    (input-buffer
     :initform (make-array +session-input-buffer-size+
                           :element-type '(unsigned-byte 8)
@@ -117,7 +117,7 @@
     :accessor session-response-received-callback
     :initform nil
     :documentation "A (FUNCTION data session) called when a response is received from the server."))
-  
+
   (:documentation "
 A session allows a client to connect to a server and send data
 and receive answers.
@@ -188,7 +188,7 @@ and receive answers.
                                        :start output-index
                                        :end (length output-buffer))
                    ;; (handler-case
-                   ;;     
+                   ;;
                    ;;   #+ecl
                    ;;   (ext:UNIX-SIGNAL-RECEIVED (err)
                    ;;     (error (make-condition 'isys:epipe
@@ -203,7 +203,7 @@ and receive answers.
                      wrote-bytes
                      (session-remote-end-point session))
              (incf output-index wrote-bytes))
-          
+
            (progn
              (setf output-buffer nil)
              (send-bytes session)))))))
@@ -363,7 +363,7 @@ and receive answers.
 
 
 (defmethod close-session ((session session))
-  (session-close (session-lo-dfa session)) 
+  (session-close (session-lo-dfa session))
   (values))
 
 

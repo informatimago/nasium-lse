@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Documentation.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -119,7 +119,7 @@ Veuillez envoyer vos commentaires, rapports de bogues, suggestions à :
 Pascal Bourguignon
 mailto:pjb@ogamita.com
 "
-              #+lse-unix "LSE" #-lse-unix "EMULSE" 
+              #+lse-unix "LSE" #-lse-unix "EMULSE"
               #+lse-unix "Avec cependant quelques modifications afin
 de l'adapter à l'environnement unix."  #-lse-unix ""))
 
@@ -163,7 +163,7 @@ d'édition de la ligne de saisie).  On peut cependant commander la
 suppression du ou des caractères précédement saissis en tapant un ou
 plusieurs caractères contre-cotice :
 
-Taper :                BON\\\\\\SALE\\UT! 
+Taper :                BON\\\\\\SALE\\UT!
 
 Équivaut à taper :     SALUT!
 
@@ -206,34 +206,34 @@ et la touche d'entrée (CONTRÔLE-S ou ENTRÉE selon la configuration),
 lse complétant:  B O [XOFF] --> BONJOUR.
 
 |   || = LIGNE AFFICHEE PAR LE SYSTEME.
-|   
+|
 |   >| = LES DEUX PREMIERS CARACTÈRES SONT TAPES PAR L'UTILISATEUR, SUIVIT
 |        DE [XOFF] (ET ÉVENTUELLEMENT LE PARAMÈTRE DE LA COMMANDE).
-|   
+|
 |   >> = TOUTE LA LIGNE EST TAPÉE PAR L'UTILISATEUR, TERMINÉE PAR [ENTRÉE]
-|   
+|
 |   |> = AFFICHAGE D'UN MESSAGE PAR LE SYSTÈME, SUIVIT D'UNE SAISIE PAR
 |        L'UTILISATEUR TEMINÉE PAR [XOFF].
-|   
-|   
+|
+|
 |   ||  NASIUM L.S.E.
 |   ||  LANGAGE SYMBOLIQUE D'ENSEIGNEMENT
 |   ||  VERSION 1.0.0-0.272-CL-UNIX
 |   ||  COPYRIGHT 1984 - 2014 PASCAL BOURGUIGNON
-|   ||  
+|   ||
 |   ||  DISTRIBUE SELON LES TERMES DE LA LICENCE AGPLv3.
-|   ||  
+|   ||
 |   ||  Ce programme est livré avec ABSOLUMENT AUCUNE GARANTIE; pour plus de
 |   ||  détails utilisez la commande DO GARANTIE.  Ce logiciel est libre, et
 |   ||  vous êtes les bienvenus pour redistribuer sous certaines conditions;
 |   ||  utilisez la commande DO LICENSE pour plus de détails.
-|   ||  
+|   ||
 |   ||  Tapez AI pour avoir de l'aide.
-|   ||  
+|   ||
 |   ||  BONJOUR     21:15:40
-|   ||  
+|   ||
 |   ||  PRET
-|   ||  
+|   ||
 |   >>  1*TEST
 |   >>  10 AFFICHER 'QUI EST\\ TU ? '
 |   >>  20 CHAINE NOM;LIRE NOM
@@ -259,18 +259,18 @@ lse complétant:  B O [XOFF] --> BONJOUR.
 |   |>  QUI ES TU ? PASCAL
 |   ||  ENCHANTE PASCAL !
 |   |>  PASCAL, DONNE MOI UN NOMBRE, S'IL TE PLAIT : 12
-|   ||  12  * 12  = 144 
+|   ||  12  * 12  = 144
 |   >|  AU REVOIR, PASCAL
 |   ||  TERMINE
-|   ||  
+|   ||
 |   >|  AU REVOIR  04:09:21
 "
-              
+
               #+lse-unix "Au lancement de la commande lse, on entre
 directement dans l'état actif, et la commande AU)REVOIR fait quiter le
 programme lse et revenir à la coquille (au \"shell\")."
               #-(and) "Voir le document 'SYSTEMES.TXT'."
-              
+
               #-lse-unix "La console est d'abord en état dormant.
 Pour passer à l'état actif, il faut utiliser la commande BO)NJOUR.
 Pour revenir à l'état dormant (ce qui efface la mémoire de travail),
@@ -278,9 +278,9 @@ utiliser la commande AU)REVOIR.
 
 La commande spécifique à emulse AD)IEUX permet d'arrêter le système
 L.S.E."
-              
+
               "lse"
-              
+
               #+lse-unix "
 Cependant, on peut sélectionner le mode moderne, dans lequel les
 touches utilisées sont celles configurées par stty(1), normalement:
@@ -388,7 +388,7 @@ DRTS PRO/GRP CHEMIN                DESCRIPTION
 0700 lse.lse $(BASE)/perma         FICHIERS PERMANENTS DE L.S.E.
 0700 lse.lse $(BASE)/tempo         FICHIERS TEMPORAIRES DE L.S.E.
 0700 lse.lse $(BASE)/tempo/00      UN SOUS REPERTOIRE PAR CONSOLE
-0700 lse.lse $(BASE)/tempo/01      (LES FICHIERS TEMPORAIRES SONT LIES 
+0700 lse.lse $(BASE)/tempo/01      (LES FICHIERS TEMPORAIRES SONT LIES
 0700 lse.lse $(BASE)/tempo/02       A LA CONSOLE PAR LAQUELLE ON ACCEDE
 0700 lse.lse $(BASE)/tempo/03       A L'ENVIRONNEMENT L.S.E.)
 0700 lse.lse $(BASE)/tempo/04      CES FICHIERS SONT PRIVES POUR CHAQUE
@@ -466,7 +466,7 @@ POIDS FAIBLE SONT UTILISES SELON LA TABLE SUIVANTE :
 [8 = D: ALLOCATION D'UN ESPACE TEMPORAIRE FIXE SUPERIEUR ]
 
 COMBINAISON DE DROITS :  0    A    B    AB   C    AC   BC   ABC  D    BD   ABD
-CODES A UTILISER       
+CODES A UTILISER
 EN QUATRIEME COLONE :    0    1    2    3    4    5    6    7    8    :     ;
                  OU :    @    A    B    C    D    E    F    G    H    J     K
 
@@ -509,8 +509,8 @@ MITRA-15). CEPENDANT, CERTAINES DIFFERENCES SONT INEVITABLES :
 COMMANDES SUPPLEMENTAIRES
 -------------------------
 
-DR(OITS) MOT-DE-PASSE  
-    
+DR(OITS) MOT-DE-PASSE
+
     (HORS-SESSION)
     PERMET DE DEFINIR LES DROITS D'ACCES DES COMPTES.
 
@@ -519,7 +519,7 @@ DR(OITS) MOT-DE-PASSE
 
 
 AI(DE)
-    
+
     DONNE LA LISTE DES COMMANDES DISPONIBLES.
 
 
@@ -631,9 +631,9 @@ http://www.epi.asso.fr/revue/54/b54p216.htm
 
 | \"LSE83\"
 | Jacques Arsac
-| Bulletin de l'EPI n° 38   
+| Bulletin de l'EPI n° 38
 
-http://archive-edutice.ccsd.cnrs.fr/docs/00/03/06/74/PDF/b38p116.pdf 
+http://archive-edutice.ccsd.cnrs.fr/docs/00/03/06/74/PDF/b38p116.pdf
 
 
 Article Wikipedia sur le L.S.E. :
@@ -748,7 +748,7 @@ Description de la syntaxe des arguments:
 - <NOMFI>[,<N1>[,<N2>]] : un nom de fichier, suivit de deux numéros de
   lignes optionnels.
 
-- <TEXTE> : une ligne de texte.  
+- <TEXTE> : une ligne de texte.
 
 - * | <NOMFI>,P|D|T : soit une étoile signifiant tous les fichiers
   temporaires, soit un nom de fichier, suivit d'une virgule et d'une
@@ -863,9 +863,9 @@ variable: une lettre suivie d'au plus quatre lettres ou chiffres, ou
 une référence de tableau: un identificateur de tableau, suivi d'un
 crochet ouvrant, d'une ou deux expressions index séparées par une
 virgule, et un crochet fermant.  L'identificateur ne peut pas être un
-mot réservé du langage L.S.E.  
+mot réservé du langage L.S.E.
 
-Exemples: I  PRNOM  C12  V[2]  V[I+1]  M[1,3]  M[I,J] 
+Exemples: I  PRNOM  C12  V[2]  V[I+1]  M[1,3]  M[I,J]
 
 L'expression est une expression arithmétique ou une expression chaîne.
 
@@ -1332,13 +1332,13 @@ Les règles de grammaire ont la forme :
 
 La partie droite peut être (a et b sont des parties droites) :
 
-- une séquence : a b 
+- une séquence : a b
 
-- une alternative (éventuellement entre parenthèse pour éviter les ambiguités) : a | b 
+- une alternative (éventuellement entre parenthèse pour éviter les ambiguités) : a | b
 
-- une optionelle (0 ou 1) : [ a ] 
+- une optionelle (0 ou 1) : [ a ]
 
-- une répetitive (0 ou plus) : { a } 
+- une répetitive (0 ou plus) : { a }
 
 - un symbole non-terminal ;
 
@@ -1356,7 +1356,7 @@ nil représente le vide.
 
 (defchapter "INSTRUCTIONS"
   (write-documentation *task*
-                       "Voici la liste des instructions disponibles.  
+                       "Voici la liste des instructions disponibles.
 
 Taper DO)CUMENTATION <instruction> pour avoir la documentation de
 chaque instruction:
@@ -1375,7 +1375,7 @@ chaque instruction:
 
 (defchapter "FONCTIONS"
   (write-documentation *task*
-                       "Voici la liste des fonctions disponibles.  
+                       "Voici la liste des fonctions disponibles.
 
 Taper DO)CUMENTATION <fonction> pour avoir la documentation de
 chaque fonction.

@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Exports a couple of macros to deal portably with unix signals.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -16,19 +16,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -39,7 +39,7 @@
   (:export
    "USER-INTERRUPT" "USER-INTERRUPT-SIGNAL"
    "YIELD-SIGNALS" "SIGNAL-HANDLER-BIND" "CATCHING-SIGNALS"
-   
+
    "+SIGHUP+" "+SIGINT+" "+SIGQUIT+" "+SIGILL+" "+SIGTRAP+"
    "+SIGABRT+" "+SIGBUS+" "+SIGFPE+" "+SIGKILL+" "+SIGUSR1+"
    "+SIGSEGV+" "+SIGUSR2+" "+SIGPIPE+" "+SIGALRM+" "+SIGTERM+"
@@ -314,7 +314,7 @@ NOTE:   current implementation only accepts as separators
     `(let* ((,vsignum ,signum)
             (,voldhan (linux:|set-signal-handler| ,vsignum ,handler))
             (,vsigset (second (multiple-value-list
-                               (linux:|sigaddset| 
+                               (linux:|sigaddset|
                                       (second (multiple-value-list
                                                (linux:|sigemptyset|)))
                                       ,vsignum)))))
@@ -329,8 +329,8 @@ NOTE:   current implementation only accepts as separators
 
 (defmacro with-sigchld-handler (&body body)
   #+(and clisp #.(cl:if (cl:find-package "LINUX") '(:and) '(:or)))
-  `(with-signal-handler linux:|SIGCHLD| 
-                        (lambda (signum) 
+  `(with-signal-handler linux:|SIGCHLD|
+                        (lambda (signum)
                           (declare (ignore signum))
                           (values))
                         ,@body)

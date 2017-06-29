@@ -5,7 +5,7 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Implements a unix terminal subclass,  specified by a terminfo
 ;;;;    entry, and using termios and unix fd I/O.
 ;;;;
@@ -14,7 +14,7 @@
 ;;;;    user interruption upon reception of certain characters, and
 ;;;;    doing so possibly on several terminals from the same
 ;;;;    application (server).
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -22,19 +22,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
@@ -165,7 +165,7 @@ termios with TERMIOS-FREE."
             :ixon
             ;; XSI features are #+xfi marked in sb-posix grovel file,
             ;; but (find xsi *features*) return NIL
-            ;; so i'm leaving xsi features unmarked 
+            ;; so i'm leaving xsi features unmarked
             :ixany
             :ixoff
             #-linux :imaxbel
@@ -300,7 +300,7 @@ RETURN: A sublist of options that didn't change successfully;
              ixon
              ;; XSI features are #+xfi marked in sb-posix grovel file,
              ;; but (find xsi *features*) return NIL
-             ;; so i'm leaving xsi features unmarked 
+             ;; so i'm leaving xsi features unmarked
              ixany
              ixoff
              #-linux imaxbel
@@ -320,8 +320,8 @@ RETURN: A sublist of options that didn't change successfully;
              #+(or linux bsd) bsdly  #+(or linux bsd) bs0 #+(or linux bsd) bs1
              #+(or linux bsd) vtdly  #+(or linux bsd) vt0 #+(or linux bsd) vt1
              #+(or linux bsd) ffdly  #+(or linux bsd) ff0 #+(or linux bsd) ff1
-             
-             ;; control characters             
+
+             ;; control characters
              vintr
              vquit
              verase
@@ -348,16 +348,16 @@ SERIAL:   can be a stream or a file descriptoro.
 OPTIONS:  should be p-list of termios keywords and values:
           NIL or T for flags or one of :RAW, :COOKED, :EVENP or :ODDP,
           or integers for control characters or :SPEED.
-EXAMPLES:  
+EXAMPLES:
 
    :inlcr t         set corresponding flag,
    :inlcr nil       reset it,
    :speed 115200    set corresponding speed,
    :vtime 0         setup corresponding control character value.
-   
+
    Setup for 8n1 mode:          (stty fd :evenp nil)
    Setup speed:                 (stty fd :speed 115200) or (stty my-stream :speed 115200)
-   Setup raw mode and speed:    (stty fd :speed 11520 :raw t) 
+   Setup raw mode and speed:    (stty fd :speed 11520 :raw t)
    Setup cooked mode:           (stty fd :raw nil)
 
 RETURN: A sublist of options that didn't change successfully;
@@ -521,17 +521,17 @@ Valid only when MODERN-MODE is false.
     #+debugging (progn
                   (format *trace-output* "~%TERMINAL MODE = ~:[OLD~;MODERN~]~%" new-mode)
                   (format *trace-output*  "~@{~12A ~A~%~}"
-                             :vintr    vintr    
-                             :vquit    vquit    
-                             :vsusp    vsusp    
-                             :vkill    vkill    
-                             :veof     veof     
-                             :veol     veol     
-                             :veol2    veol2    
-                             :verase   verase   
-                             :vwerase  vwerase  
-                             :vreprint vreprint 
-                             :vstart   vstart   
+                             :vintr    vintr
+                             :vquit    vquit
+                             :vsusp    vsusp
+                             :vkill    vkill
+                             :veof     veof
+                             :veol     veol
+                             :veol2    veol2
+                             :verase   verase
+                             :vwerase  vwerase
+                             :vreprint vreprint
+                             :vstart   vstart
                              :vstop    vstop))
     (setf modern-mode new-mode)))
 
@@ -568,11 +568,11 @@ Valid only when MODERN-MODE is false.
         (if output-stream
             (setf input-fd      (fd :input  input-stream)
                   output-fd     (fd :output output-stream))
-            (setf input-fd      (fd :input  input-stream) 
+            (setf input-fd      (fd :input  input-stream)
                   output-stream (make-stream :output output-fd)))
         (if output-stream
             (setf input-stream  (make-stream :inptu  input-fd)
-                  output-fd     (fd :output output-stream)) 
+                  output-fd     (fd :output output-stream))
             (if (= input-fd output-fd)
                 (setf output-stream (setf input-stream (make-stream :io input-fd)))
                 (setf input-stream  (make-stream :input  input-fd)
@@ -603,7 +603,7 @@ Valid only when MODERN-MODE is false.
                     :echo    t
                     :echoctl nil
                     ;; :echonl  nil
-                    
+
                     ;; ;; Input control:
                     ;; :istrip  nil ; strip off eigth bit (should be nil for utf-8 input)
                     ;; :igncr   nil ; ignore CR  on input
@@ -613,7 +613,7 @@ Valid only when MODERN-MODE is false.
                     ;; :iutf8   nil ; UTF-8 input (for character erase in cooked mode).
                     ;; ;; We don't process utf-8 on unix-terminal (we would have to
                     ;; ;; decode utf-8 to implement erase ourselves in raw).
-                    ;; 
+                    ;;
                     ;; ;; Output control:
                     ;; :opost   nil ; implementation defined output processing.
                     ;; :onlcr   nil ; map NL to CR-NL on output.
@@ -621,7 +621,7 @@ Valid only when MODERN-MODE is false.
                     ;; :onocr   t   ; output CR at column 0.
                     ;; :onlret  nil ; don't output CR.
                     ;; :ofill   nil ; send  fill characters for a delay (instead of timer).
-                    ;; 
+                    ;;
                     ;; ;; Line control:
                     ;; :isig    nil ; when the character INTR, QUIT, SUSP, or DSUSP are received, generate the signal.
                     ;; :echonl  nil ;             (and :icanon :echonl) => echo the NL  even when :echo is nil.
@@ -650,17 +650,17 @@ Valid only when MODERN-MODE is false.
                     :echoe   nil ;             (and :icanon :echoe) => ERASE and WERASE erase the previous character and word.
                     :echok   nil ;             (and :icanon :echok) => KILL  erase current line.
                     )))
-      (multiple-value-bind (diff same) 
+      (multiple-value-bind (diff same)
           (apply (function stty) input-file-descriptor
                  ;; Character control:
                  :vintr    0; vintr     ; it looks like codes configured as interrupts
                  :vquit    0; vquit     ; are not transmitted even with :isig nil.
-                 :vsusp    0; vsusp    
-                 :vkill    0; vkill    
-                 :veof     veof     
-                 :veol     veol     
-                 :verase   verase   
-                 :vstart   vstart   
+                 :vsusp    0; vsusp
+                 :vkill    0; vkill
+                 :veof     veof
+                 :veol     veol
+                 :verase   verase
+                 :vstart   vstart
                  :vstop    vstop
                  #+linux :veol2    #+linux veol2 ; yet additionnal end of line character     needs :icanon t (not POSIX)
                  #+linux :vwerase  #+linux vwerase ; (not POSIX) word erase                    needs :icanon t :iexten t
@@ -727,7 +727,7 @@ Valid only when MODERN-MODE is false.
   (with-slots (output-stream terminfo) terminal
     (let* ((terminfo:*terminfo* terminfo)
            ;; (lf-is-nl            terminfo:linefeed-is-newline)
-           (line-feed           (or terminfo:linefeed-if-not-lf 
+           (line-feed           (or terminfo:linefeed-if-not-lf
                                     #.(format nil "~C" (code-char LF)))))
       (if line-feed
           (loop
@@ -941,7 +941,7 @@ Valid only when MODERN-MODE is false.
   (let ((*term* (make-instance 'unix-terminal))
         (*task* (make-instance 'task)))
     (terminal-initialize *term*)
-    (handler-case 
+    (handler-case
         (unwind-protect
              (flet ((line ()
                       (terminal-new-line *term* 2)

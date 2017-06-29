@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    This file defines end-points.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -47,7 +47,7 @@
    "PIPE-END-POINT"
    "PIPE-END-POINT-READ-FILE-DESCRIPTOR"
    "PIPE-END-POINT-WRITE-FILE-DESCRIPTOR")
-  
+
   (:documentation "
 This package implements end-points, which are reifications of IP
 addresses, unix sockets and pipe pairs.  Methods are defined using
@@ -82,7 +82,7 @@ communucation channel).
 
 (defmethod print-object ((self tcp-ipv4-end-point) stream)
   "Prints a TCP-IPV4-END-POINT."
-  (if *print-escape* 
+  (if *print-escape*
       (print-unreadable-object (self stream :identity nil :type t)
         (ignore-errors
           (with-slots (interface port) self
@@ -152,19 +152,19 @@ communucation channel).
 
 
 (defgeneric end-point-address (end-point)
-  
+
   (:documentation "The IOLib address object corresponding to the END-POINT.")
-  
+
   (:method ((end-point tcp-ipv4-end-point))
     (ensure-address (tcp-ipv4-end-point-interface end-point)
                     :family :internet
                     :errorp t))
-  
+
   (:method ((end-point unix-socket-end-point))
     (ensure-address (unix-socket-end-point-pathname end-point)
                     :family :local
                     :errorp t))
-  
+
   (:method ((end-point pipe-end-point))
     (error "There's no iolib address for pipe end-points.")))
 
@@ -210,7 +210,7 @@ communucation channel).
 (defgeneric listen-to-local-end-point (end-point)
 
   (:documentation "Creates a new iolib socket to listen to the given local end-point.")
-  
+
   (:method ((end-point tcp-ipv4-end-point))
     (make-socket :address-family :internet ; ipv4
                  :type :stream ; tcp
@@ -226,10 +226,10 @@ communucation channel).
                  ;; :input-buffer-size 4096
                  ;; :output-buffer-size 4096
                  ))
-  
+
   (:method ((end-point unix-socket-end-point))
     (make-socket :address-family :local ; unix-socket
-                 :type :stream 
+                 :type :stream
                  :connect :passive ; listen
                  :local-filename (end-point-address end-point)
                  :backlog 5
@@ -248,7 +248,7 @@ communucation channel).
 (defgeneric connect-to-remote-end-point (end-point)
 
   (:documentation "Creates a new iolib socket to listen to the given local end-point.")
-  
+
   (:method ((end-point tcp-ipv4-end-point))
     (let ((socket (make-socket :address-family :internet ; ipv4
                                :type :stream             ; tcp
@@ -264,15 +264,15 @@ communucation channel).
                                ;; :input-buffer-size 4096
                                ;; :output-buffer-size 4096
                                )))
-      (connect socket (end-point-address end-point) 
+      (connect socket (end-point-address end-point)
                :port (tcp-ipv4-end-point-port end-point)
                :wait t
                :timeout 2)
       socket))
-  
+
   (:method ((end-point unix-socket-end-point))
     (make-socket :address-family :local ; unix-socket
-                 :type :stream 
+                 :type :stream
                  :connect :active ; connect
                  :remote-filename (end-point-address end-point)
                  ;; :reuse-address t

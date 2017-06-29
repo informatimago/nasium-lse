@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Defines the packages for the LSE system.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -42,7 +42,7 @@
    "RUN-SHELL-COMMAND"
    "MAKE-FD-STREAM" "FD-STREAM-P" "FD-STREAM-FD"
    "CHDIR" "GETCWD"
-   "SHELL" "RUN-PROGRAM" "QUIT" "ARGUMENTS" "PROGRAM-NAME" 
+   "SHELL" "RUN-PROGRAM" "QUIT" "ARGUMENTS" "PROGRAM-NAME"
    "UNAME" "STTY")
   (:documentation "A portability layer for a few OS operators."))
 
@@ -72,7 +72,7 @@
         "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.ASCII"
         "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.PMATCH"
         "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.PEEK-STREAM"
-        
+
         "COM.INFORMATIMAGO.COMMON-LISP.PARSER.SCANNER"
 
         "COM.INFORMATIMAGO.ENVIRONMENT"
@@ -98,7 +98,7 @@
    "GRAMMAR-START"
    "GRAMMAR-TERMINALS"
    "CLEAN-UP-RULE"
-   
+
    "TERMINAL" "TERMINAL-INITIALIZE" "TERMINAL-FINALIZE"
    "TERMINAL-COLUMNS" "TERMINAL-ROWS" "TERMINAL-INPUT-STREAM"
    "TERMINAL-ECHO"
@@ -106,10 +106,10 @@
    "TERMINAL-OUTPUT-STREAM" "TERMINAL-RING-BELL"
    "TERMINAL-CARRIAGE-RETURN" "TERMINAL-LINE-FEED" "TERMINAL-NEW-LINE"
    "TERMINAL-WRITE-STRING" "TERMINAL-FINISH-OUTPUT"
-   "TERMINAL-YIELD" 
-   "TERMINAL-GET-NEXT-CHAR" 
+   "TERMINAL-YIELD"
+   "TERMINAL-GET-NEXT-CHAR"
    "TERMINAL-SKIP-CHARACTERS" "TERMINAL-READ-BUFFERED-CHARACTER"
-   
+
    "STANDARD-TERMINAL"
    "INPUT-STREAM" "OUTPUT-STREAM"
    "WITH-TEMPORARY-ECHO"
@@ -165,7 +165,7 @@
    "VECTEUR" "VECTEURP"
    "TABLEAU" "TABLEAUP"
    "CHAINE" "CHAINEP")
-  
+
   (:documentation "The LSE language and system implementation."))
 
 (defpackage "COM.INFORMATIMAGO.LSE.UNIX-TERMINAL"

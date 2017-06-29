@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    Patches to the com.hp.zebu parser generator.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -98,14 +98,14 @@
                                             grammar))
                (unless (and junk-allowed
                             ;; assume that EOF was seen
-                            (setq action-entry 
+                            (setq action-entry
                                   (vec-bs-assoc
                                    end-symbol-index action-table-top)))
                  (funcall error-fn
                           (undef-action-error input-symbol-instantiation
                                               input-symbol-index
                                               action-table-top
-                                              grammar)))))	   
+                                              grammar)))))
          ;; there should always be a non null action-entry !!
          (let ((ae-cdr (cdr (the cons action-entry))))
            (case (car (the cons ae-cdr))
@@ -135,7 +135,7 @@
                   (0        ; Apply the client lambda and store the result.
                    (if-debugging (format t "~%; Calling ~S" client-lambda))
                    (push (funcall client-lambda) client-stack)
-                   (if-debugging 
+                   (if-debugging
                     (let ((R (car client-stack)))
                       (format t "~%; -> ~S : ~S" R (type-of R)))))
                   (1        ; Apply the client lambda and store the result.
@@ -144,7 +144,7 @@
                                            client-lambda (car client-stack)))
                      (setf (car client-stack)
                            (funcall client-lambda (car client-stack)))
-                     (if-debugging 
+                     (if-debugging
                       (let ((R (car client-stack)))
                         (format t "~%; -> ~S : ~S" R (type-of R)))))
                    (setq symbol-stack (cdr symbol-stack)
@@ -161,11 +161,11 @@
                        (setf (car client-stack) R)))
                    (setq symbol-stack (cddr symbol-stack)
                          state-stack  (cddr state-stack))
-                   (if-debugging 
+                   (if-debugging
                     (let ((R (car client-stack)))
                       (format t "~%; -> ~S : ~S" R (type-of R)))))
                   (t (let (constituents)
-                       (dotimes (i prod-ln) 
+                       (dotimes (i prod-ln)
                          (setq symbol-stack (cdr symbol-stack)
                                state-stack  (cdr state-stack))
                          (push (pop client-stack) constituents))
@@ -175,7 +175,7 @@
                        (push (apply client-lambda ; action
                                     constituents)
                              client-stack)
-                       (if-debugging 
+                       (if-debugging
                         (let ((R (car client-stack)))
                           (format t "~%; -> ~S : ~S" R (type-of R)))))))
                 (push prod-lhs symbol-stack) ; Push lhs of production.
@@ -183,7 +183,7 @@
                                    (vec-bs-assoc
                                     prod-lhs
                                     (svref goto-table (car state-stack)))))))
-                  (if (null goto) 
+                  (if (null goto)
                       (funcall error-fn (list :table-error-undefined-goto
                                               prod-lhs (car state-stack))))
                   (push goto state-stack)

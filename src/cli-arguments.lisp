@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    This file processes command line arguments for the lse cli.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -15,19 +15,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2012 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;**************************************************************************
@@ -131,7 +131,9 @@ RETURN: A new OPTIONS structure instance.
       (setf (terminal-modern-mode terminal) (or (member (getenv "TERM") '("emacs" "dumb")
                                                         :test (function string-equal))
                                                 (options-modern-mode options))
-            (terminal-cr-as-xoff terminal) (options-return-is-xoff options)))
+            ;; option-modern-mode implies terminal-cr-as-xoff
+            (terminal-cr-as-xoff terminal) (or (options-return-is-xoff options)
+                                               (options-modern-mode options))))
     task))
 
 
@@ -381,7 +383,7 @@ Variable d'environnement: LSE_UPCASE_OUTPUT=T
 
 (defoption ("--affichage-mixte" "--mixed-output") ()
   "
-Affiche en majuscules et minisucules. 
+Affiche en majuscules et minisucules.
 
 Variable d'environnement: LSE_UPCASE_OUTPUT=NIL
 C'est l'option par défaut.
@@ -401,7 +403,7 @@ Variable d'environnement: LSE_ACCENTED_OUTPUT=NIL
 
 (defoption ("--afficher-avec-accent" "--accented-output") ()
   "
-Assume que le terminal est capable d'afficher les accents. 
+Assume que le terminal est capable d'afficher les accents.
 
 Variable d'environnement: LSE_ACCENTED_OUTPUT=T
 C'est l'option par défaut.
@@ -433,7 +435,7 @@ Variable d'environnement: LSE_NO_BELL=NIL
 Dans le mode moderne, les caractères et codes de contrôle configurés
 par stty(1) sont utilisé (en général, [RETOUR] pour entrer une donnée,
 [EFFACEMENT] pour effacer un caractère, [CONTRÔLE-C] pour interrompre,
-etc). 
+etc).
 
 Variable d'environnement: LSE_MODERN_MODE=T
 C'est l'option par défaut.

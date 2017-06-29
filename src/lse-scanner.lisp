@@ -5,14 +5,14 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    EMULSE : L.S.E. [ EMULATION MITRA-15 ]
-;;;;    
-;;;;    An emultator of the CII MITRA-15 L.S.E. System 
+;;;;
+;;;;    An emultator of the CII MITRA-15 L.S.E. System
 ;;;;    and programming language interpreter.
-;;;;    
+;;;;
 ;;;;    A scanner for LSE.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -22,19 +22,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal Bourguignon 2005 - 2016
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see http://www.gnu.org/licenses/
 ;;;;****************************************************************************
@@ -218,6 +218,7 @@
 (defgeneric eolp (token)
   (:documentation "Returns whether the token is an end-of-line token.
 A end-of-file is also considered an end-of-line.")
+  ;; (:method ((token t))          (token-end-of-source-p token))
   (:method ((token t))          nil)
   (:method ((token tok-eol))    t)
   (:method ((token (eql 'eol))) t)
@@ -226,6 +227,7 @@ A end-of-file is also considered an end-of-line.")
 
 (defgeneric eofp (token)
   (:documentation "Returns whether the token is an end-of-file token")
+  ;; (:method ((token t))          (token-end-of-source-p token))
   (:method ((token t))          nil)
   (:method ((token tok-eof))    t)
   (:method ((token (eql 'eof))) t))
@@ -266,7 +268,7 @@ A end-of-file is also considered an end-of-line.")
 
             (scanner-error-format-control err)
             (scanner-error-format-arguments err)
-            
+
             (lse-source-error-buffer err)
             (1- (scanner-error-column err)) ""
             (make-string token-length :initial-element (character "^")))))
@@ -293,7 +295,7 @@ A end-of-file is also considered an end-of-line.")
 
             (parser-error-format-control err)
             (parser-error-format-arguments err)
-            
+
             (lse-source-error-buffer err)
             (1- (parser-error-column err)) ""
             (character "^"))))
@@ -544,7 +546,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
 
 
 (defparameter *tokens+format-specifiers*
-  (append '( ;; keyword or identifier:            
+  (append '( ;; keyword or identifier:
             (tok-x         . "X")
             (tok-C         . "C")
             (tok-L         . "L")
@@ -661,7 +663,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                        :column (scanner-column scanner)))))
              (token (tok)
                #+lse-scanner-debug (progn
-                                     (print `(tok ,tok ,(if (member tok '(tok-litchaine tok-commentaire)) 
+                                     (print `(tok ,tok ,(if (member tok '(tok-litchaine tok-commentaire))
                                                             (subseq buffer start index)
                                                             (if (task-case-insensitive *task*)
                                                                 (string-upcase (subseq buffer start index))
@@ -669,7 +671,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                                      (terpri) (finish-output))
                (make-instance tok
                    :kind tok
-                   :text (if (member tok '(tok-litchaine tok-commentaire)) 
+                   :text (if (member tok '(tok-litchaine tok-commentaire))
                              (subseq buffer start index)
                              (if (task-case-insensitive *task*)
                                  (string-upcase (subseq buffer start index))
@@ -716,7 +718,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
          ((concat specials dot signs)
           (start) (advance (motcle)) (produce (motcle)))
          (others       (invalid-character (code-char code))))
-       
+
         (not-commentaire                ; must be state 1
          ;; same as maybe-commentaire, but star goes to specials
          (spaces       (skip))
@@ -732,7 +734,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
          ((concat specials dot star signs)
           (start) (advance (motcle)) (produce (motcle)))
          (others       (invalid-character (code-char code))))
-       
+
         (in-format                      ; must be state 2
          ;; same as not-commentaire, but ident-first may be formatspec.
          (spaces       (skip))
@@ -749,7 +751,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
         (numero-in-format               ; 3
          (digits (advance (token 'tok-numero)))
          (others (shift in-format) (produce (token 'tok-numero))))
-       
+
         ;;    (tok-numero         "[0-9]+")
         ;;    (tok-nombre         "[0-9]+\\(\\.[0-9]*\\)?\\(E[-+]?[0-9]+\\)?")
         (numero-or-nombre               ; 4
@@ -777,7 +779,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
          (others   (invalid-character (code-char code)
                                       "INVALIDE DANS UN NOMBRE '~A'"
                                       (subseq buffer start (1+ index)))))
-       
+
         (nombre-mantissa                ; 6
          (digits   (advance (token 'tok-nombre)))
          (exponent (advance :not-eof  "IL MANQUE L'EXPOSANT APRES 'E'")
@@ -801,7 +803,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
          (others    (invalid-character (code-char code)
                                        "INVALIDE DANS UN NOMBRE '~A'"
                                        (subseq buffer start (1+ index)))))
-       
+
         ;;    (tok-identificateur "&?[A-Z][0-9A-Z]?[0-9A-Z]?[0-9A-Z]?[0-9A-Z]?")
         (identificateur-or-motcle       ; 9
          (ident-next (advance (or (motcle) (token 'tok-identificateur))))
@@ -836,7 +838,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
               (progn (incf index)
                      (shift not-commentaire)
                      (produce (token 'tok-litchaine)))))
-         (others 
+         (others
           (advance :error-on-eof "CHAINE NON-TERMINEE")))
 
         (litchaine/in-format            ; 13
@@ -864,7 +866,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
 (defun lse-advance-line (scanner)
   "RETURN: The new current token, old next token"
   (cond
-    ((eofp (scanner-current-token scanner)) #|End of File -- don't move.|#)   
+    ((eofp (scanner-current-token scanner)) #|End of File -- don't move.|#)
     ((setf (scanner-buffer scanner) (readline (slot-value scanner 'stream)))
                                         ; got a line -- advance a token.
      (setf (scanner-column scanner) 1
@@ -911,4 +913,3 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
 
 
 ;;;; THE END ;;;;
-

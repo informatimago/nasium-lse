@@ -5,14 +5,14 @@
 ;;SYSTEM:             POSIX
 ;;USER-INTERFACE:     POSIX
 ;;DESCRIPTION
-;;    
+;;
 ;;    EMULSE : L.S.E. [ EMULATION MITRA-15 ]
-;;    
-;;    An emultator of the CII MITRA-15 L.S.E. System 
+;;
+;;    An emultator of the CII MITRA-15 L.S.E. System
 ;;    and programming language interpreter.
-;;    
+;;
 ;;    This file describes the syntax and grammar of the L.S.E. language.
-;;    
+;;
 ;;AUTHORS
 ;;    <PJB> Pascal J. Bourguignon
 ;;MODIFICATIONS
@@ -90,7 +90,7 @@
             (tok-TABLEAU   "TABLEAU")
             (tok-TANT      "TANT")
             (tok-TERMINER  "TERMINER")
-            ;; keyword or identifier:            
+            ;; keyword or identifier:
             (tok-x         "X")
             (tok-C         "C")
             (tok-L         "L")
@@ -153,7 +153,7 @@
 ;; The LSE language is line based.  We parse sources line by line.
 ;; Program files (tapes) can contain both lines and commands.
 ;; The LSE compiler worked on punch cards, line by line too.
-(defrule start 
+(defrule start
     := liste-instruction :build (cons :liste-instructions liste-instruction)
     := affic             :build (list :liste-instructions affic)
     := ligne-programme
@@ -291,28 +291,28 @@
 
 
 (defrule decl
-    := decl-chaine 
+    := decl-chaine
     := decl-tableau)
 
 
 (defrule instruction
-    := liberation    
-    := affectation   
-    := lire          
-    := afficher      
-    := aller-en       
-    := si-alors-sinon  
-    := terminer      
-    := pause         
-    := debut-fin      
-    := faire-jusqu-a   
-    := faire-tant-que  
-    := retour        
-    := resultat      
-    := appel         
-    := garer         
-    := charger       
-    := supprimer     
+    := liberation
+    := affectation
+    := lire
+    := afficher
+    := aller-en
+    := si-alors-sinon
+    := terminer
+    := pause
+    := debut-fin
+    := faire-jusqu-a
+    := faire-tant-que
+    := retour
+    := resultat
+    := appel
+    := garer
+    := charger
+    := supprimer
     := executer)
 
 
@@ -344,7 +344,7 @@
     := (decl-tabl/1 tok-crodroite)
     :build (progn decl-tabl/1))
 
-(defrule decl-tabl/1    
+(defrule decl-tabl/1
     := (identificateur tok-crogauche expression)
     :build (list :adecl identificateur expression))
 
@@ -370,7 +370,7 @@
 (defrule decl-procedure/tete
     := (tok-PROCEDURE identificateur tok-pargauche)
     :build (list :procedure identificateur))
-    
+
 (defrule decl-local
     := (tok-LOCAL liste-identificateur) :build (progn liste-identificateur))
 
@@ -422,7 +422,7 @@
 
 (defrule afficher/format
     := (tok-AFFICHER format) :build (list :afficher format))
-    
+
 (defrule format
     := (tok-crogauche liste-spec tok-crodroite) :build (progn liste-spec))
 
@@ -466,7 +466,7 @@
     := tok-numero  :build (list :rep tok-numero))
 
 (defrule spec-rep
-    := spec-rep-num 
+    := spec-rep-num
     := tok-fois    :build (list :rep-var))
 
 
@@ -495,7 +495,7 @@
 (defrule faire-jusqu-a
     := (faire-pour-pas tok-JUSQUA expression)
     :build (cons :faire-jusqu-a  (snoc faire-pour-pas expression)))
-    
+
 
 (defrule faire-tant-que
     := (faire-pour-pas tok-TANT tok-QUE disjonction)
@@ -513,7 +513,7 @@
 (defrule retour
     := tok-RETOUR                      :build (list :retour)
     := (tok-RETOUR tok-EN expression)  :build (list :retour-en expression))
- 
+
 
 (defrule resultat
     := (tok-RESULTAT expression)       :build (list :resultat expression))

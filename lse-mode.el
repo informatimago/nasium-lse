@@ -5,9 +5,9 @@
 ;;;;SYSTEM:             POSIX
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    L.S.E. editing support package
-;;;;    
+;;;;
 ;;;;    A major mode for editing L.S.E. code.  It provides convenient
 ;;;;    abbrevs for L.S.E. keywords, knows about the standard layout
 ;;;;    rules, and supports a native compile command.
@@ -27,19 +27,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    GPL
-;;;;    
+;;;;
 ;;;;    Copyright Pascal Bourguignon 2005 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software; you can redistribute it and/or
 ;;;;    modify it under the terms of the GNU General Public License
 ;;;;    as published by the Free Software Foundation; either version
 ;;;;    2 of the License, or (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be
 ;;;;    useful, but WITHOUT ANY WARRANTY; without even the implied
 ;;;;    warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 ;;;;    PURPOSE.  See the GNU General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU General Public
 ;;;;    License along with this program; if not, write to the Free
 ;;;;    Software Foundation, Inc., 59 Temple Place, Suite 330,
@@ -101,7 +101,7 @@
 
 (setq lse-default-font-lock
       ;;"Font-lock for L.S.E. mode.")
-      (append 
+      (append
        '(
          ;; pretty chars:
          ("\\(_\\)" (1 (progn (compose-region (match-beginning 1) (match-end 1)
@@ -114,12 +114,12 @@
          ;; strings
          ("\\('[^'\n]*'\\)"
           (1 font-lock-string-face)))
-       
+
        (let ((lse-keywords
               '("AFFICHER" "ALLER" "ALORS" "CHAINE" "CHARGER" "DEBUT"
                 "EN" "ET" "EXECUTER" "FAIRE" "FIN" "GARER"
                 "JUSQUA" "LIBERER" "LIRE" "LOCAL" "NON" "OU" "PAS"
-                "PAUSE" "POUR" "PROCEDURE" "QUE" "RESULTAT" "RETOUR"  
+                "PAUSE" "POUR" "PROCEDURE" "QUE" "RESULTAT" "RETOUR"
                 "SI" "SINON" "SUPPRIMER" "TABLEAU" "TANT" "TERMINER" ))
              (lse-builtins
               '("ENT" "RAC" "ABS" "EXP" "LGN" "SIN" "COS" "ATG" "ALE"
@@ -142,7 +142,7 @@
           ;; Type names.
           (cons (concat "\\<\\(" (regexp-opt lse-types) "\\)\\>")
                 'font-lock-type-face)
-          ))   
+          ))
        '(
          ;; fonction
          ("\\(&[A-Z][A-Z0-9]\\{0,4\\}\\)\\>"
@@ -358,10 +358,10 @@ the changed lines."
       (lse-free-markers jumps))))
 
 
-;; (defparameter lse-assign-image  
-;;   (find-image 
+;; (defparameter lse-assign-image
+;;   (find-image
 ;;    (list
-;;     (list :type 'xbm 
+;;     (list :type 'xbm
 ;;           :width 8
 ;;           :height 12
 ;;           :ascent 91
@@ -369,12 +369,12 @@ the changed lines."
 ;;           :foreground nil
 ;;           :data
 ;;           (loop
-;;              with lines = (mapcar 
+;;              with lines = (mapcar
 ;;                            (lambda (line)
 ;;                              (loop
 ;;                                 with vec = (make-bool-vector (length line) nil)
 ;;                                 for bit in (mapcar
-;;                                             (lambda (char) (STRING/= char ".")) 
+;;                                             (lambda (char) (STRING/= char "."))
 ;;                                             (split-string line ""))
 ;;                                 for i from 0 below (length vec)
 ;;                                 do (setf (aref vec i) bit)
@@ -430,7 +430,7 @@ the changed lines."
 
 
 ;; (defun lse-assign ()
-;;   "Insert an assign operator (the ASCII code of the underline) 
+;;   "Insert an assign operator (the ASCII code of the underline)
 ;; but adding an overlay on it with the `lse-assign-image' (a left arrow)."
 ;;   (interactive)
 ;;   (lse-put-image lse-assign-image (point) "_"))
@@ -470,5 +470,3 @@ the changed lines."
 
 (provide 'lse-mode)
 ;;;; THE END ;;;;
-
-

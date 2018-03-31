@@ -301,7 +301,7 @@ character-bag stripped off the beginning and end.
    (goto-char (point-min))
    (let ((linos '()))
     (while (re-search-forward *lse-jumps-re* nil t)
-      (push (cons (parse-integer (match-string 3)) (match-beginning 3)) linos))
+      (push (cons (lse-parse-integer (match-string 3)) (match-beginning 3)) linos))
      linos)))
 
 
@@ -336,7 +336,7 @@ the changed lines."
            (while (< (point) end)
                   (beginning-of-line)
                   (when (looking-at " *\\([0-9]+\\) *")
-                    (push (cons (parse-integer (buffer-substring-no-properties
+                    (push (cons (lse-parse-integer (buffer-substring-no-properties
                                                 (match-beginning 1) (match-end 1)))
                                 linum)
                           renumbers)
@@ -441,7 +441,7 @@ the changed lines."
    (goto-char (point-min))
    (let ((linos '()))
     (while (re-search-forward "^ *\\([0-9]+\\)[* ]" nil t)
-      (push (cons (parse-integer (match-string 1)) (match-beginning 0)) linos))
+      (push (cons (lse-parse-integer (match-string 1)) (match-beginning 0)) linos))
      (nreverse linos))))
 
 (defun lse-goto-line (lino)
@@ -468,5 +468,50 @@ the changed lines."
 
 
 
+
+
+(defun lse-digit-char-p (char &optional radix)
+  (let ((radix (or radix 10)))
+    (let ((value (position (upcase char) "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")))
+      (and value (< value radix) value))))
+
+(defun lse-parse-integer (string)
+  (let ((start  0)
+        (end    (length string))
+        (radix  10)
+        (junk-allowed nil)
+        (n      0)
+        (sign   1)
+        (plus   (character "+"))
+        (minus  (character "-"))
+        (space  (character " ")))
+    (labels ((parse-integer-error ()
+               (error "Not an integer string %S (:start %d :end %d :radix %d)"
+                      string start end radix))
+             (check-range ()
+               (unless (< start end)
+                 (parse-integer-error)))
+             (eat-spaces (i)
+               (loop
+                 while (and (< i end) (char= space (aref string i)))
+                 do (incf i)
+                 finally (return i))))
+      (setf start (eat-spaces start))
+      (check-range)
+      (cond
+        ((char= plus  (aref string start)) (setf sign +1) (incf start) (check-range))
+        ((char= minus (aref string start)) (setf sign -1) (incf start) (check-range)))
+      (loop
+        for i from start below end
+        for digit = (lse-digit-char-p (aref string i) radix)
+        while digit
+        do (setf n (+ (* n radix) digit))
+        finally (when (< i end)
+                  (setf i (eat-spaces i)))
+                (when (and (not junk-allowed) (< i end))
+                  (parse-integer-error))
+                (return (values (* sign n) i))))))
+
 (provide 'lse-mode)
 ;;;; THE END ;;;;
+

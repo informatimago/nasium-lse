@@ -10,9 +10,8 @@ See ISSUES.txt for a current known bug list.
 
 doc/                Documentation.
 
-dependencies/       Dependencies.  (For now, we use quicklisp for
-                    dependencies, but eventually we'll have to freeze
-                    them and copy them here).
+dependencies/       Dependencies.  Use the get-depdencies script
+                    to clone them.
 
 src/                Sources of the LSE interpreter and system.
 

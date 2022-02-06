@@ -69,6 +69,10 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
            cd "${NASIUM_LSE}/dependencies/"
            ./get-dependencies
 
+         Note: this doesn't pull new versions when the repos are already cloned.
+         For now, erase the dependencies and run get-dependencies again,
+         or update the script.
+
     4.1- Compile and install libfixposix.  See libfixposix/README. ::
 
            cd "${NASIUM_LSE}/dependencies/libfixposix/"
@@ -79,36 +83,8 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
            make install # or sudo make install if you don't have write access to /usr/local
 
 
-    5- This step is optional, you may have to perform it only if
-       there's a problem with the informatimago library in the next
-       steps.  Usually, you may skip it.  Normally, the dependencies
-       in quicklisp are up-to-date (quicklisp updates monthly).
-       However, sometimes we need more recent versions are necessary.
-       In that case, they may be installed in
-       ~/quicklisp/local-projects/.  ::
-
-           cd ~/quicklisp/local-projects/
-           git clone https://framagit.org/com-informatimago/com-informatimago.git
-
-       There's a bug in the current quicklisp, so we need to remove
-       system-index.txt and rebuild it from $HOME. ::
-
-           cd ~/
-           rm ~/quicklisp/local-projects/system-index.txt
-           ccl --eval '(ql:quickload :alexandria)' --eval '(ccl:quit)'
-
-       Next month, just update quicklisp and remove the old copies in
-       ~/quicklisp/local-projects/:
-
-       Next month in lisp: ::
-
-           (ql:update-client)
-           (ql:update-all-dists)
-
-       Next month in shell: ::
-
-           rm -rf ~/quicklisp/local-projects/com-informatimago
-
+    5- com-informatimago is not in the quicklisp distribution anymore.
+       It is cloned by get-dependencies, see step 4.
 
     6- Compile the executables.
 
@@ -153,7 +129,7 @@ NASIUM-LSE: An Implementation of the L.S.E. programming language written in Comm
 
 
     8- Further questions may be addressed at mailto:pjb@informatimago.com
-       or bug reports may be posted at http://fossil.nasium-lse.ogamita.com/nasium-lse/reportlist
+       or bug reports may be posted at https://gitlab.com/nasium-lse/nasium-lse/-/issues
 
     9- Go to section '1- Installation from the binaries'.
 

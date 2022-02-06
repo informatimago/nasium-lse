@@ -1220,7 +1220,7 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                                           :return.line (vm-pc.line vm)
                                           :return.offset (vm-pc.offset vm))))
                 (loop
-                  :for n :from nargs :by -1
+                  :for n :from nargs :downto 1
                   :for (passage parameter) :in (procedure-parameters procedure)
                   :for argument = (stack-pop (vm-stack vm))
                   :do (ecase passage
@@ -1446,13 +1446,6 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
   (declare (ignore vm comment))
   (values))
 
-
-(defvar *vm* nil "Current LSE-VM.")
-
-(defvar *debug-vm* nil)
-;; (setf *debug-vm* '(:cop))
-;; (setf *debug-vm* '(:error))
-;; (setf *debug-vm* nil)
 
 (defun pret (task)
   (io-format task "    ~C~%PRET~%" #\Return)

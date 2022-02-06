@@ -267,21 +267,25 @@ PRE: (fd-stream-p stream)"
 (defun shell  (command &rest arguments)
   #+ccl   (ccl::os-command (format nil command arguments))
   #+clisp (ext:shell (format nil command arguments))
-  #-(or ccl clisp) (not-implemented-here 'shell))
+  #-(or ccl clisp)
+  (uiop:run-program (cons program arguments) :force-shell t))
 
 
 (defun run-program (program arguments &key (input :terminal) (output :terminal)
-                    (if-output-exists :error) (wait t))
+                                        (if-output-exists :error) (wait t))
   "
 RETURN:     The status returned by the command.
 SEE ALSO:   SHELL
 "
+  #-clisp (declare (ignore wait))
   #+clisp (ext:run-program program
                            :arguments arguments
                            :input input :output output
                            :if-output-exists if-output-exists
                            :wait wait)
-  #-clisp (not-implemented-here 'run-program))
+   #-clisp (uiop:run-program (cons program arguments)
+                             :input input :output output
+                             :if-output-exists if-output-exists))
 
 
 (defun getcwd ()

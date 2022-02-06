@@ -117,19 +117,15 @@ stdout in a string (going thru a file)."
                  :while line :do (write-line line out)))))
       (ignore-errors (delete-file path)))))
 
-(eval-when (:compile-topleve)
-  (warn "BUG: commit works when the current working directory is the git clone directory."))
-
-(defun commit ()
-  (string-trim #(#\Newline)
-               (shell-command-to-string "(git log -1|sed -n -e 's/^commit //p')")))
-(defvar *commit* (load-time-value (commit)))
+(defun current-commit ()
+  (string-trim #(#\Newline) (shell-command-to-string "git rev-parse HEAD")))
+(defvar *current-commit* (load-time-value (current-commit)))
 
 (defun long-version ()
   (multiple-value-bind (se mi ho da mo ye) (decode-universal-time (get-universal-time))
     (format nil "~A,~% commit ~A,~% compiled ~4,'0D-~2,'0D-~2,'0D ~2,'0D:~2,'0D:~2,'0D,~% ~
                  on ~A,~% with features ~A."
-            (version) *commit* ye mo da ho mi se
+            (version) *current-commit* ye mo da ho mi se
             (machine-instance)
             (list #+:lse-mitra-15 :lse-mitra-15
                   #+:lse-t1600 :lse-t1600

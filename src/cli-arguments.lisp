@@ -477,7 +477,7 @@ Variable d'environnement: LSE_DEBUG_ON_ERROR=NIL
       (cond
         ((string-equal resp "O") (return t))
         ((string-equal resp "N") (return nil))
-        (t (opt-format *query-io* "REPONSE INVALIDE: ~S; TAPEZ 'O' OU 'N'.~%" rep))))))
+        (t (opt-format *query-io* "REPONSE INVALIDE: ~S; TAPEZ 'O' OU 'N'.~%" resp))))))
 
 
 (defun show-key-bindings (stream terminal)

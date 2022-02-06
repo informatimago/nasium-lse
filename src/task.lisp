@@ -279,11 +279,6 @@ into the interactive REPL.")))
 (defun task-state-awake-p      (task)  (eq :active     (task-state task)))
 
 
-(defparameter *task-count*  0   "Fixed number of tasks.")
-(defparameter *tasks*       '() "The list of tasks.")
-(defparameter *task-mutex*  nil "pthread_mutex_t")
-(defparameter *task*        nil "The current task")
-
 
 (defun task-initialize (task-count)
   "Appeler une seule fois dans le programme."

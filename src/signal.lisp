@@ -364,6 +364,7 @@ or if the selected handler returns, the CONTINUE restart is invoked.
 NOTE:     Use CATCHING-SIGNALS to enable the reception of the wanted
           unix signals.
 "
+  #-ecl (declare (ignore bindings))
   `(handler-bind
        (#+ecl
         (ext::unix-signal-received
@@ -376,7 +377,7 @@ NOTE:     Use CATCHING-SIGNALS to enable the reception of the wanted
                                (funcall ,handler ,signum))))
                   bindings))
              (invoke-restart 'continue)))))
-     #-ecl  (cerror "Continue ignoring signals"
+     #-ecl (cerror "Continue, ignoring signals"
                 "~S is not implemented for ~A" 'signal-handler-bind (lisp-implementation-type))
      ,@body))
 
@@ -390,6 +391,7 @@ for the given list of SIGNUMS.
 
 SEE ALSO:   CATCHING-SIGNALS
 "
+  #-ecl (declare (ignore signums))
   #-ecl (cerror "Continue ignoring signals"
                 "~S is not implemented for ~A" 'call-catching-signals (lisp-implementation-type))
   (unwind-protect

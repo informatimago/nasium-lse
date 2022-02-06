@@ -59,7 +59,7 @@
 (defpackage "COM.INFORMATIMAGO.LSE"
   (:nicknames "LSE")
   (:use "COMMON-LISP"
-        "SPLIT-SEQUENCE" "BABEL"
+        "BABEL"
 
         "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.UTILITY"
         "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.SEQUENCE"
@@ -80,6 +80,8 @@
         "COM.INFORMATIMAGO.RDP"
 
         "COM.INFORMATIMAGO.LSE.OS")
+  (:shadowing-import-from "SPLIT-SEQUENCE"
+                          "SPLIT-SEQUENCE" "SPLIT-SEQUENCE-IF")
   (:shadow "DOCUMENTATION")
   (:export
    "LSE"

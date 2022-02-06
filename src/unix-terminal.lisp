@@ -254,94 +254,94 @@ RETURN: A sublist of options that didn't change successfully;
 
 
 (defun stty (serial &rest options &key
-             RAW COOKED EVENP ODDP speed input-speed output-speed
-             ;; cflags
-             #+(or linux bsd) cbaud
-             #+(or linux bsd) cbaudex
-             csize cs5 cs6 cs7 cs8
-             cstopb
-             cread
-             parenb
-             parodd
-             hupcl
-             clocal
-             #-linux loblk
-             #+(or linux bsd) cibaud
-             #+(or linux bsd) cmspar
-             #+(or linux bsd) crtscts
-             ;; lflags
-             isig
-             icanon
-             #-linux xcase
-             echo
-             echoe
-             echok
-             echonl
-             #+(or linux bsd) echoctl
-             #+(or linux bsd) echoprt
-             #+(or linux bsd) echoke
-             #-linux defecho
-             #+bsd flusho
-             noflsh
-             tostop
-             #+bsd pendin
-             iexten
-             ;; iflags
-             ignbrk
-             brkint
-             ignpar
-             parmrk
-             inpck
-             istrip
-             inlcr
-             igncr
-             icrnl
-             #+linux iuclc
-             ixon
-             ;; XSI features are #+xfi marked in sb-posix grovel file,
-             ;; but (find xsi *features*) return NIL
-             ;; so i'm leaving xsi features unmarked
-             ixany
-             ixoff
-             #-linux imaxbel
-             #+linux iutf8
-             ;; oflags
-             opost
-             #+linux olcuc
-             onlcr
-             ocrnl
-             onocr
-             onlret
-             ofill
-             #-linux ofdel
-             #+(or linux bsd) nldly  #+(or linux bsd) nl0 #+(or linux bsd) nl1
-             #+(or linux bsd) crdly  #+(or linux bsd) cr0 #+(or linux bsd) cr1 #+(or linux bsd) cr2 #+(or linux bsd) cr3
-             #+(or linux bsd) tabdly #+(or linux bsd) tab0 #+(or linux bsd) tab1 #+(or linux bsd) tab2 #+(or linux bsd) tab3
-             #+(or linux bsd) bsdly  #+(or linux bsd) bs0 #+(or linux bsd) bs1
-             #+(or linux bsd) vtdly  #+(or linux bsd) vt0 #+(or linux bsd) vt1
-             #+(or linux bsd) ffdly  #+(or linux bsd) ff0 #+(or linux bsd) ff1
+                                    RAW COOKED EVENP ODDP speed input-speed output-speed
+                                    ;; cflags
+                                    #+(or linux bsd) cbaud
+                                    #+(or linux bsd) cbaudex
+                                    csize cs5 cs6 cs7 cs8
+                                    cstopb
+                                    cread
+                                    parenb
+                                    parodd
+                                    hupcl
+                                    clocal
+                                    #-linux loblk
+                                    #+(or linux bsd) cibaud
+                                    #+(or linux bsd) cmspar
+                                    #+(or linux bsd) crtscts
+                                    ;; lflags
+                                    isig
+                                    icanon
+                                    #-linux xcase
+                                    echo
+                                    echoe
+                                    echok
+                                    echonl
+                                    #+(or linux bsd) echoctl
+                                    #+(or linux bsd) echoprt
+                                    #+(or linux bsd) echoke
+                                    #-linux defecho
+                                    #+bsd flusho
+                                    noflsh
+                                    tostop
+                                    #+bsd pendin
+                                    iexten
+                                    ;; iflags
+                                    ignbrk
+                                    brkint
+                                    ignpar
+                                    parmrk
+                                    inpck
+                                    istrip
+                                    inlcr
+                                    igncr
+                                    icrnl
+                                    #+linux iuclc
+                                    ixon
+                                    ;; XSI features are #+xfi marked in sb-posix grovel file,
+                                    ;; but (find xsi *features*) return NIL
+                                    ;; so i'm leaving xsi features unmarked
+                                    ixany
+                                    ixoff
+                                    #-linux imaxbel
+                                    #+linux iutf8
+                                    ;; oflags
+                                    opost
+                                    #+linux olcuc
+                                    onlcr
+                                    ocrnl
+                                    onocr
+                                    onlret
+                                    ofill
+                                    #-linux ofdel
+                                    #+(or linux bsd) nldly  #+(or linux bsd) nl0 #+(or linux bsd) nl1
+                                    #+(or linux bsd) crdly  #+(or linux bsd) cr0 #+(or linux bsd) cr1 #+(or linux bsd) cr2 #+(or linux bsd) cr3
+                                    #+(or linux bsd) tabdly #+(or linux bsd) tab0 #+(or linux bsd) tab1 #+(or linux bsd) tab2 #+(or linux bsd) tab3
+                                    #+(or linux bsd) bsdly  #+(or linux bsd) bs0 #+(or linux bsd) bs1
+                                    #+(or linux bsd) vtdly  #+(or linux bsd) vt0 #+(or linux bsd) vt1
+                                    #+(or linux bsd) ffdly  #+(or linux bsd) ff0 #+(or linux bsd) ff1
 
-             ;; control characters
-             vintr
-             vquit
-             verase
-             vkill
-             veof
-             vmin
-             veol
-             vtime
-             #+linux veol2
-             #-linux vswtch
-             vstart
-             vstop
-             vsusp
-             #-linux vdsusp
-             #+linux vlnext
-             #+linux vwerase
-             #+linux vreprint
-             #-linux vdiscard
-             #-linux vstatus
-             )
+                                    ;; control characters
+                                    vintr
+                                    vquit
+                                    verase
+                                    vkill
+                                    veof
+                                    vmin
+                                    veol
+                                    vtime
+                                    #+linux veol2
+                                    #-linux vswtch
+                                    vstart
+                                    vstop
+                                    vsusp
+                                    #-linux vdsusp
+                                    #+linux vlnext
+                                    #+linux vwerase
+                                    #+linux vreprint
+                                    #-linux vdiscard
+                                    #-linux vstatus
+                                    )
   "
 DO:       Implement stty(1) in a lispy way.
 SERIAL:   can be a stream or a file descriptoro.
@@ -363,6 +363,18 @@ EXAMPLES:
 RETURN: A sublist of options that didn't change successfully;
         A sublist of options successfully changed.
 "
+  (declare (ignore vstatus vdiscard vdsusp vsusp vstop vstart vswtch
+                   vtime veol vmin veof vkill verase vquit vintr ff1
+                   ff0 ffdly vt1 vt0 vtdly bs1 bs0 bsdly tab3 tab2
+                   tab1 tab0 tabdly cr3 cr2 cr1 cr0 crdly nl1 nl0
+                   nldly ofdel ofill onlret onocr ocrnl onlcr opost
+                   imaxbel ixoff ixany ixon icrnl igncr inlcr istrip
+                   inpck parmrk ignpar brkint ignbrk iexten pendin
+                   tostop noflsh flusho defecho echoke echoprt echoctl
+                   echonl echok echoe echo xcase icanon isig crtscts
+                   cmspar cibaud loblk clocal hupcl parodd parenb
+                   cread cstopb cs8 cs7 cs6 cs5 csize cbaudex cbaud
+                   output-speed input-speed oddp))
 
   ;; (progn (print (cons 'stty options)) (terpri) (finish-output))
   (let ((fd (etypecase serial
@@ -650,6 +662,7 @@ Valid only when MODERN-MODE is false.
                     :echoe   nil ;             (and :icanon :echoe) => ERASE and WERASE erase the previous character and word.
                     :echok   nil ;             (and :icanon :echok) => KILL  erase current line.
                     )))
+      (declare (ignore modern old)) ; for now.
       (multiple-value-bind (diff same)
           (apply (function stty) input-file-descriptor
                  ;; Character control:

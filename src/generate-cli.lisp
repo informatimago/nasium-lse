@@ -47,7 +47,7 @@
     :lse-case-insensitive
     :lse-unix
     :lse-extensions
-    #-(and)  :lse-mitra-15
+    #-(and) :lse-mitra-15
     #-(and) :lse-t1600
     ))
 

@@ -7,7 +7,5 @@ git clone https://github.com/sionescu/libfixposix.git
 git clone http://git.informatimago.com/public/iolib.termios
 # git clone ssh://pjb@git.informatimago.com/srv/git/public/iolib.termios
 
-
-# NOT YET; we may freeze the dependency on a specific version of com-informatimago…
-# git clone git@git.framasoft.org:com-informatimago/com-informatimago.git
+git clone git@git.framasoft.org:com-informatimago/com-informatimago.git
 # ( cd com-informatimago && git checkout 00911cca3266dac279f4cad960d6f11dad1b9dfa )

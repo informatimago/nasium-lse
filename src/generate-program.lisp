@@ -36,6 +36,21 @@
   (defvar *original-readtable* *readtable*)
   (setf *readtable* (copy-readtable nil)))
 
+
+;;; Script parameters:
+
+(defvar *program-name*    "unnamed"
+  "Name of the program.")
+(defvar *program-system*  :common-lisp-user
+  "Name of the root system of the program.")
+(defvar *program-main*    nil
+  "Main function (entry point of the program).")
+(defvar *program-features* '()
+  "A-list of program features.")
+
+;;;
+
+
 #+ccl (setf ccl:*default-external-format*           :unix
             ccl:*default-file-character-encoding*   :utf-8
             ccl:*default-line-termination*          :unix
@@ -72,6 +87,10 @@
 
 ;;; --------------------------------------------------
 
+(defpackage "COM.INFORMATIMAGO.LSE.BUILDER"
+  (:use "COMMON-LISP"))
+(in-package "COM.INFORMATIMAGO.LSE.BUILDER")
+
 (setf *print-right-margin* 80
       *print-pretty* t
       *print-case* :downcase)
@@ -80,20 +99,22 @@
 (defun wildpath (path) (make-pathname :name :wild :type :wild :version nil :defaults path))
 (defun fasldir  (system component)
   (first (asdf:output-files
-          (make-instance 'asdf:compile-op)
+          #-asdf3 (make-instance 'asdf:compile-op)
+          #+asdf3 (asdf/operation:make-operation 'asdf:compile-op)
           (asdf:find-component (asdf:find-system system) component))))
 
 (setf *default-pathname-defaults* (dirpath (or *load-truename*
                                                *compile-file-truename*)))
 (pushnew *default-pathname-defaults* asdf:*central-registry* :test 'equal)
-(push (truename (merge-pathnames "../dependencies/"
-                                 *default-pathname-defaults*))
-      ql:*local-project-directories*)
-;; NOT YET:
-;; (push (truename (merge-pathnames "../dependencies/com-informatimago/"
-;;                                  *default-pathname-defaults*))
-;;       ql:*local-project-directories*)
 
+(setf ql:*local-project-directories*
+      (list (truename (merge-pathnames "../dependencies/"
+                                       *default-pathname-defaults*))
+            (truename (merge-pathnames "../dependencies/com-informatimago/"
+                                       *default-pathname-defaults*))))
+
+
+(setf (uiop:getenv "PKG_CONFIG_PATH") "/usr/local/lib/pkgconfig")
 
 (defun boolean-enval (var default)
   (let ((val (ccl:getenv var)))
@@ -101,7 +122,7 @@
         (not (not (find val '("T" "Y" "TRUE" "YES" "O" "OUI" "1") :test (function string-equal))))
         default)))
 
-(dolist (feature *program-features*)
+(dolist (feature cl-user::*program-features*)
   (cond
     ((symbolp feature)
      (pushnew feature *features*))
@@ -124,7 +145,7 @@
   #+windows (mapc 'delete-file (directory dir))
   #-windows (asdf:run-shell-command "rm -rf ~S" (namestring dir)))
 
-(ql:quickload *program-system*)
+(ql:quickload cl-user::*program-system* :verbose t :explain t :silent nil)
 
 
 (defparameter *versions* (com.informatimago.lse:versions))
@@ -165,11 +186,11 @@
 ;;;---------------------------------------------------------------------
 ;;; Let's generate the target.
 
-(in-package "COMMON-LISP-USER")
-(format t "~%Generating ~A~%" (executable-filename *program-name*))
+(in-package "COM.INFORMATIMAGO.LSE.BUILDER")
+(format t "~%Generating ~A~%" (executable-filename cl-user::*program-name*))
 (finish-output)
 
-(write-manifest *program-name* *program-system*)
+(write-manifest cl-user::*program-name* cl-user::*program-system*)
 ;; (in-package :ccl)
 ;; (defun reopen-user-libraries ()
 ;;   (dolist (lib *shared-libraries*)
@@ -184,21 +205,21 @@
 ;;                                 :address)))
 ;;           (unless (%null-ptr-p handle)
 ;;             (setf (shlib.handle lib) handle)))))))
-;; (in-package "COMMON-LISP-USER")
+;; (in-package "COM.INFORMATIMAGO.LSE.BUILDER")
 
 
 #+ccl (dolist (lib ccl::*shared-libraries* (terpri))
         (print lib))
 #+ccl (progn (princ "ccl:save-application will exit.") (terpri) (finish-output))
 #+ccl (eval-when (:compile-toplevel :execute)
-        (setf *readtable* *original-readtable*))
+        (setf *readtable* cl-user::*original-readtable*))
 #+ccl (ccl:save-application
-       (executable-filename *program-name*)
+       (executable-filename cl-user::*program-name*)
        :toplevel-function (coerce (if (boolean-enval "LSE_USE_EXIT" nil)
                                       `(lambda ()
-                                         (#__exit (,(funcall *program-main*))))
+                                         (#__exit (,(funcall cl-user::*program-main*))))
                                       `(lambda ()
-                                         (ccl:quit (,(funcall *program-main*))
+                                         (ccl:quit (,(funcall cl-user::*program-main*))
                                                    :error-handler (lambda (err)
                                                                     (declare (ignore err))
                                                                     (#__exit -1)))))
@@ -217,13 +238,13 @@
         (setf *readtable* (copy-readtable nil)))
 
 #+clisp (ext:saveinitmem
-         (executable-filename *program-name*)
+         (executable-filename cl-user::*program-name*)
          :quiet t
          :verbose t
          :norc t
          :init-function (coerce `(lambda ()
                                    (ext:exit (handler-case
-                                                 (,(funcall *program-main*) ext:*args*)
+                                                 (,(funcall cl-user::*program-main*) ext:*args*)
                                                (error ()
                                                  1))))
                                 'function)

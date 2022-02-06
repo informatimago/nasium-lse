@@ -1559,14 +1559,24 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                :format-control "PAS DE PROGRAMME NOMME '~A' ACCESSIBLE"
                :format-arguments (list name)))))
 
+;;;---------------------------------------------------------------------
+;;; 3- Disassembler
+;;;---------------------------------------------------------------------
 
+
+(defparameter *cop-info*
+  (let ((table (make-hash-table)))
+    (dolist (c bc::*0*) (setf (gethash (symbol-value c) table) (cons c 0)))
+    (dolist (c bc::*1*) (setf (gethash (symbol-value c) table) (cons c 1)))
+    (dolist (c bc::*2*) (setf (gethash (symbol-value c) table) (cons c 2)))
+    table)
+  "Maps the code operation to a (cons symbol number-of-parameters).")
 
 (defun decompile-lse-line (lino code)
   (declare (ignore lino))
   ;; For now, we cheat, we don't decompile anything, we just return
   ;; the unparsed source kept along with the code vector.
   (code-source code))
-
 
 (defun decompile-lse-line-2 (lino byte-code)
   (with-output-to-string (source)
@@ -1612,7 +1622,6 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
                          (format t " ; @~A~%"  (+ pc (length line) (second line)))
                          (format t "~%"))
                      (incf pc (length line))))))))
-
 
 #-(and)
 (loop
@@ -1714,21 +1723,6 @@ POST:   (and (cons-position c l) (eq c (nthcdr (cons-position c l) l)))
     (cl:defparameter *2* '(CALL ; CALL identificateur-procedure nombre-d-argument
                            ))))
 
-
-
-
-;;;---------------------------------------------------------------------
-;;; 3- Disassembler
-;;;---------------------------------------------------------------------
-
-
-(defparameter *cop-info*
-  (let ((table (make-hash-table)))
-    (dolist (c bc::*0*) (setf (gethash (symbol-value c) table) (cons c 0)))
-    (dolist (c bc::*1*) (setf (gethash (symbol-value c) table) (cons c 1)))
-    (dolist (c bc::*2*) (setf (gethash (symbol-value c) table) (cons c 2)))
-    table)
-  "Maps the code operation to a (cons symbol number-of-parameters).")
 
 
 ;; (with-output-to-string (*standard-output*)

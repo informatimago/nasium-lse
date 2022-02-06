@@ -1939,7 +1939,7 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
              (error-format task err)
              (pret task))
 
-           (user-interrupt (condition)
+           (user-interrupt (#+debugging condition)
              #+debugging (io-format task "~%-Condition: ~A~%" condition)
              (reset-ready task))
 
@@ -1972,7 +1972,8 @@ Voir les commandes TABLE DES FICHIERS, SUPPRIMER."
 
         (lse-scanner-error-invalid-character (err) (invalid-character-error err))
         (error                               (err) (report-error err))
-        (user-interrupt                      (cnd) (user-interrupt cnd)))))
+        (user-interrupt (#+debugging cnd)
+          (user-interrupt #+debugging cnd)))))
 
 
 (defmacro with-error-reporting (task &body body)

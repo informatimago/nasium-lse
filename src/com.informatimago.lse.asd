@@ -34,80 +34,81 @@
 
 
 (asdf:defsystem :com.informatimago.lse
-    :description  "This system implements a L.S.E. interpreter."
-    :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
-    :version "1.2.0"
-    :licence "AGPL3"
-    :properties ((#:author-email                   . "pjb@informatimago.com")
-                 (#:date                           . "Winter 2012")
-                 ((#:albert #:output-dir)          . "/tmp/documentation/com.informatimago.lse/")
-                 ((#:albert #:formats)             . ("docbook"))
-                 ((#:albert #:docbook #:template)  . "book")
-                 ((#:albert #:docbook #:bgcolor)   . "white")
-                 ((#:albert #:docbook #:textcolor) . "black"))
+  :description  "This system implements a L.S.E. interpreter."
+  :author "<PJB> Pascal J. Bourguignon <pjb@informatimago.com>"
+  :version "1.2.0"
+  :licence "AGPL3"
+  :properties ((#:author-email                   . "pjb@informatimago.com")
+               (#:date                           . "Winter 2012")
+               ((#:albert #:output-dir)          . "/tmp/documentation/com.informatimago.lse/")
+               ((#:albert #:formats)             . ("docbook"))
+               ((#:albert #:docbook #:template)  . "book")
+               ((#:albert #:docbook #:bgcolor)   . "white")
+               ((#:albert #:docbook #:textcolor) . "black"))
 
-    #+asdf-unicode :encoding #+asdf-unicode :utf-8
+  #+asdf-unicode :encoding #+asdf-unicode :utf-8
 
-    :depends-on (
-                 "split-sequence"
-                 "alexandria"
-                 "babel"
+  :depends-on (
+               "split-sequence"
+               "alexandria"
+               "babel"
 
-                 "com.informatimago.common-lisp"
-                 "com.informatimago.rdp"
+               "com.informatimago.common-lisp"
+               "com.informatimago.rdp"
 
-                 )
+               )
 
-    :components (
-                 ;; Some generic utility
-                 (:file "logger")
-                 (:file "signal")
-                 (:file "environment")
+  :components (
+               ;; Some generic utility
+               (:file "logger")
+               (:file "signal")
+               (:file "environment")
 
-                 ;;---------------------
+               ;;---------------------
 
-                 ;; LSE language
-                 (:file "packages"            :depends-on ("signal" "logger"))
+               ;; LSE language
+               (:file "packages"            :depends-on ("signal" "logger"))
 
-                 (:file "os"                  :depends-on ("packages"))
-                 (:file "version"             :depends-on ("packages"))
-                 (:file "configuration"       :depends-on ("packages"))
-                 (:file "error"               :depends-on ("packages"))
+               (:file "os"                  :depends-on ("packages"))
+               (:file "version"             :depends-on ("packages"))
+               (:file "configuration"       :depends-on ("packages"))
+               (:file "error"               :depends-on ("packages"))
+               (:file "globals"             :depends-on ("packages"))
+               (:file "file"                :depends-on ("packages"
+                                                         "configuration" "error"
+                                                         "functions"))
 
-                 (:file "file"                :depends-on ("packages"
-                                                           "configuration" "error"
-                                                           "functions"))
+               (:file "documentation"       :depends-on ("packages" "globals" "terminal"))
+               (:file "chapters"            :depends-on ("packages" "globals" "version" "documentation"))
 
-                 (:file "documentation"       :depends-on ("packages" "terminal"))
-                 (:file "chapters"            :depends-on ("packages" "version" "documentation"))
+               (:file "catalog"             :depends-on ("packages" "configuration"))
+               (:file "variables"           :depends-on ("packages"))
+               (:file "functions"           :depends-on ("packages"
+                                                         "globals" "error"
+                                                         "documentation"
+                                                         "variables"))
 
-                 (:file "catalog"             :depends-on ("packages" "configuration"))
-                 (:file "variables"           :depends-on ("packages"))
-                 (:file "functions"           :depends-on ("packages"
-                                                           "error"
-                                                           "documentation"
-                                                           "variables"))
+               (:file "lse-scanner"         :depends-on ("packages" "globals" "error"))
+               (:file "lse-parser"          :depends-on ("packages" "lse-scanner"))
+               (:file "byte-code"           :depends-on ("packages"))
+               (:file "compiler"            :depends-on ("packages"
+                                                         "globals" "version"
+                                                         "lse-scanner" "lse-parser" "byte-code"))
+               (:file "vm"                  :depends-on ("packages"
+                                                         "globals" "error" "byte-code" "compiler"
+                                                         "variables" "functions" "file"))
 
-                 (:file "lse-scanner"         :depends-on ("packages" "error"))
-                 (:file "lse-parser"          :depends-on ("packages" "lse-scanner"))
-                 (:file "byte-code"           :depends-on ("packages"))
-                 (:file "compiler"            :depends-on ("packages"
-                                                           "version"
-                                                           "lse-scanner" "lse-parser" "byte-code"))
-                 (:file "vm"                  :depends-on ("packages"
-                                                           "error" "byte-code" "compiler"
-                                                           "variables" "functions" "file"))
+               (:file "task"                :depends-on ("packages" "globals" "file" "vm" "environment"))
+               (:file "terminal"            :depends-on ("packages" "globals" "error" "lse-parser"))
+               (:file "io"                  :depends-on ("packages" "file" "task" "terminal"))
+               (:file "commands"            :depends-on ("packages"
+                                                         "globals"
+                                                         "error" "version"
+                                                         "documentation"
+                                                         "catalog" "functions"
+                                                         "os" "io" "compiler" "task"))
 
-                 (:file "task"                :depends-on ("packages" "file" "vm" "environment"))
-                 (:file "terminal"            :depends-on ("packages" "error" "lse-parser"))
-                 (:file "io"                  :depends-on ("packages" "file" "task" "terminal"))
-                 (:file "commands"            :depends-on ("packages"
-                                                           "error" "version"
-                                                           "documentation"
-                                                           "catalog" "functions"
-                                                           "os" "io" "compiler" "task"))
-
-                 ))
+               ))
 
 
 ;;;; THE END ;;;;

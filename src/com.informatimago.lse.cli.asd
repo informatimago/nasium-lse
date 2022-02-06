@@ -58,7 +58,7 @@
                  "split-sequence"
 
                  #+(and unix (not clisp)) "iolib"
-                 ;; #+(and unix (not clisp)) "iolib/base"
+                 ;; #+(and unix (not clisp)) "iolib.base"
                  ;; #+(and unix (not clisp)) "iolib/os"
                  ;; #+(and unix (not clisp)) "iolib/syscalls"
                  #+(and unix (not clisp)) "iolib.termios"

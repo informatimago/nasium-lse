@@ -573,7 +573,7 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
   (defparameter dot                ".")
   (defparameter star               "*")
   (defparameter signs              "+-")
-  (defparameter specials           "!#(),/;=?[]^_←↑￩ ￪")
+  (defparameter specials           "!#(),/;=?[]^_←↑￩￪")
   (defparameter specials-2         "<>" "may take an additionnal '=' character.")
   (defparameter ident-first         letters)
   (defparameter ident-next          (concat letters digits))

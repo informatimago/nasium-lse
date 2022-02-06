@@ -132,14 +132,14 @@
   "Structure of the following *CATALOG-NAMES* list."
   type name catpath dirpath)
 
-(defun catalog-data (type)  (assoc type *catalog-names*))
-
 (defparameter *catalog-names*
   `((:program   "PROGRAMME"   ,*lse-fic-progr*  ,*lse-rep-progr*)
     (:permanent "PERMANENT"   ,*lse-fic-perma*  ,*lse-rep-perma*)
     (:temporary "TEMPORAIRE"  nil               ,*lse-rep-tempo*)
     (:tape      "RUBAN"       nil               ,*lse-rep-ruban*)
     (:shelf     "ETAGERE"     nil               ,*lse-rep-ruban*)))
+
+(defun catalog-data (type)  (assoc type *catalog-names*))
 
 
 (defparameter *catalog-permanent* (make-instance 'catalog))
@@ -741,8 +741,7 @@ extern void lse_catalogue_synchroniser(void);
 PRE:    (eql type :temporary) ==> console must be provided.
 RETURN: A pathname for the file named NAME in the catalog of type TYPE.
 "
-
-  );;catalog-make-path
+  (error "Not implemented yet ~S" (list 'catalog-make-path type name  :console console)));;catalog-make-path
 
 
 #||
@@ -843,7 +842,8 @@ RETURN: A pathname for the file named NAME in the catalog of type TYPE.
     }/*lse_catalogue_ajouter_fichier*/
 ||#
 
-
+(defconstant +suppression-impossible-pas-proprietaire+
+  '+suppression-impossible-pas-proprietaire+)
 (defun catalog-delete-file (type name &key (console *current-console-number*) (user *current-user-number*))
   "
 PRE:  (eql TYPE :temporary) ==> console must be provided.
@@ -853,7 +853,7 @@ DO:   if (member type '(:program :permanent :temporary))
       else panic.
 "
   (let ((catalog (case type
-                   ((:program)   *catalog-program*)
+                   ((:program)   *catalog-programme*)
                    ((:permanent) *catalog-permanent*)
                    ((:temporary) nil)
                    (otherwise

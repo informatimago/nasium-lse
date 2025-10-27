@@ -1,4 +1,5 @@
 1* starts a swank server
+5 afficher[/,'Démarre un serveur swank',2/,'(pour débogage)',2/]
 10 afficher[/,'Saisir le port: '];lire port
 12 port_ent(port);si 1024<port et port<65536 alors aller en 20
 14 afficher[/,'Port ',u,' invalide.',/]port;aller en 10

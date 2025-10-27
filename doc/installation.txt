@@ -163,5 +163,25 @@ will display: ::
 and further typing `TAB` `TAB` will display all the options starting with
 `--fleches-`.
 
+5- Features
+===========
+
+When compiling a LSE system, several features can be activated
+(push the keyword onto the `*FEATURE*` list variable).
+
+
+| :lse-mitra-15             | Activate MITRA-15 specific features.
+| :lse-t1600                | Activate T-1600 specific features.
+| :lse-unix                 | Activate Unix specific features.
+| :lse-extensions           | Activate Some LSE extensions.
+| :lse-server               | Compile a LSE server.
+| :lse-case-insensitive     | Configure case insensitive parser.
+| :debugging                | Activate debugging of the LSE system.
+| :lse-scanner-debug        | Activate debugging of the LSE scanner.
+| :use-standard-terminal    | Use the standard CL terminal, instead of the unix terminal.
+
+`make cl-cli` uses `:use-standard-terminal`. It avoids dependencies on
+unix-terminal, iolib.termios etc.
+
 
 .. comment: the end

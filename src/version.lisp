@@ -127,14 +127,15 @@ stdout in a string (going thru a file)."
                  on ~A,~% with features ~A."
             (version) *current-commit* ye mo da ho mi se
             (machine-instance)
-            (list #+:lse-mitra-15 :lse-mitra-15
-                  #+:lse-t1600 :lse-t1600
-                  #+:lse-unix :lse-unix
-                  #+:lse-extensions :lse-extensions
-                  #+lse-server :lse-server
-                  #+:lse-case-insensitive :lse-case-insensitive
-                  #+:debugging :debugging
-                  #+:lse-scanner-debug :lse-scanner-debug))))
+            (list #+:lse-mitra-15          :lse-mitra-15
+                  #+:lse-t1600             :lse-t1600
+                  #+:lse-unix              :lse-unix
+                  #+:lse-extensions        :lse-extensions
+                  #+:lse-server            :lse-server
+                  #+:lse-case-insensitive  :lse-case-insensitive
+                  #+:debugging             :debugging
+                  #+:lse-scanner-debug     :lse-scanner-debug
+                  #+:use-standard-terminal :use-standard-terminal))))
 
 
 (defun versions ()

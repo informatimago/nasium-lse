@@ -1,11 +1,15 @@
 #!/bin/bash
 
+if [ dependencies != $(basename $(pwd -L)) ] ; then
+    printf "ERROR: this script must be run in the dependencies/ subdirectory.\n"
+    exit 1
+fi
+
 # sudo apt-get install libfixposix-dev
 git clone https://github.com/sionescu/libfixposix.git
 
-# git clone https://github.com/marsijanin/iolib.termios.git
-git clone http://git.informatimago.com/public/iolib.termios
-# git clone ssh://pjb@git.informatimago.com/srv/git/public/iolib.termios
+git clone https://github.com/marsijanin/iolib.termios.git
 
-git clone git@git.framasoft.org:com-informatimago/com-informatimago.git
+git clone https://github.com/informatimago/lisp.git com-informatimago
+# git clone git@git.framasoft.org:com-informatimago/com-informatimago.git
 # ( cd com-informatimago && git checkout 00911cca3266dac279f4cad960d6f11dad1b9dfa )

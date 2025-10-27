@@ -323,6 +323,23 @@ RETURN: EX-OK
       (io-finish-output task)
       (task-close-all-files task))))
 
+(defun compute-terminal-class ()
+  (cond
+    ((and (uiop:featurep :swank)
+          (typep (stream-output-stream *terminal-io*)
+                 (if (find-package "SWANK/GRAY")
+                     (find-symbol "SLIME-OUTPUT-STREAM" "SWANK/GRAY")
+                     (find-symbol "SLIME-OUTPUT-STREAM" "SWANK-BACKEND"))))
+     'swank-terminal)
+    ((member (getenv "TERM") '("emacs" "dumb")
+             :test (function string=))
+     'standard-terminal)
+    ((and (not (uiop:featurep :use-standard-terminal))
+          (uiop:featurep :unix))
+     'unix-terminal)
+    (t
+     'standard-terminal)))
+
 
 (defun main (&optional args)
   (handler-case
@@ -333,27 +350,7 @@ RETURN: EX-OK
         (set-lse-root)
         (let ((encoding (locale-terminal-encoding)))
           (set-terminal-encoding encoding)
-          (let* ((terminal-class (progn
-                                   #+swank
-                                   (cond
-                                     ((typep (stream-output-stream *terminal-io*)
-                                             #+#.(cl:if (cl:find-package "SWANK/GRAY") '(:and) '(:or))
-                                             'swank/gray::slime-output-stream
-                                             #-#.(cl:if (cl:find-package "SWANK/GRAY") '(:and) '(:or))
-                                             'swank-backend::slime-output-stream)
-                                      'swank-terminal)
-                                     ((member (getenv "TERM") '("emacs" "dumb")
-                                              :test (function string=))
-                                      'standard-terminal)
-                                     (t #+unix 'unix-terminal
-                                        #-unix 'standard-terminal))
-                                   #-swank
-                                   (cond
-                                     ((member (getenv "TERM") '("emacs" "dumb")
-                                              :test (function string=))
-                                      'standard-terminal)
-                                     (t #+unix 'unix-terminal
-                                        #-unix 'standard-terminal))))
+          (let* ((terminal-class (compute-terminal-class))
                  (terminal (make-instance terminal-class
                                           :input-stream  (stream-input-stream  *terminal-io*)
                                           :output-stream (stream-output-stream *terminal-io*)))
@@ -424,24 +421,7 @@ RETURN: EX-OK
   (set-lse-root)
   (let ((encoding (locale-terminal-encoding)))
     (set-terminal-encoding encoding)
-    (let* ((terminal-class (progn
-                             #+swank
-                             (cond
-                               ((typep (stream-output-stream *terminal-io*)
-                                       'swank-backend::slime-output-stream)
-                                'swank-terminal)
-                               ((member (getenv "TERM") '("emacs" "dumb")
-                                        :test (function string=))
-                                'standard-terminal)
-                               (t #+unix 'unix-terminal
-                                  #-unix 'standard-terminal))
-                             #-swank
-                             (cond
-                               ((member (getenv "TERM") '("emacs" "dumb")
-                                        :test (function string=))
-                                'standard-terminal)
-                               (t #+unix 'unix-terminal
-                                  #-unix 'standard-terminal))))
+    (let* ((terminal-class (compute-terminal-class))
            (terminal (make-instance terminal-class
                          :input-stream  (stream-input-stream  *terminal-io*)
                          :output-stream (stream-output-stream *terminal-io*)))

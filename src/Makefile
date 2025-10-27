@@ -49,6 +49,7 @@ UID            = $(shell id -u)
 TMPDIR         = /tmp/lse$(UID)
 LOGFILE        = $(TMPDIR)/lse-build.log
 SYMLINK_CLI    = awk '/Generating/{print $$2}' < $(LOGFILE) | ( read executable ; rm -f lse ; ln -sf $$executable lse )
+SYMLINK_CL_CLI = awk '/Generating/{print $$2}' < $(LOGFILE) | ( read executable ; rm -f cl-lse ; ln -sf $$executable cl-lse )
 SYMLINK_SERVER = awk '/Generating/{print $$2}' < $(LOGFILE) | ( read executable ; rm -f lse-server ; ln -sf $$executable lse-server )
 
 LINE           = '================================================================'
@@ -95,6 +96,17 @@ cli:
 	-@mkdir -p $(TMPDIR)
 	$(LISP) $(LOAD) generate-cli.lisp | tee $(LOGFILE)
 	$(SYMLINK_CLI)
+
+help::
+	@printf $(HELPFORMAT) cl-cli 'builds the unix cli executable.'
+cl-lse:cl-cli
+cl-cli:
+	-@mkdir -p $(TMPDIR)
+	$(LISP) \
+		$(EVAL) '(PUSH :USE-STANDARD-TERMINAL *FEATURES*)' \
+		$(LOAD) generate-cli.lisp \
+	| tee $(LOGFILE)
+	$(SYMLINK_CL_CLI)
 
 help::
 	@printf $(HELPFORMAT) macosx 'builds the unix cli executable and the MacOSX application bundle.'

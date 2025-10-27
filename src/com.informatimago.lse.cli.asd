@@ -57,11 +57,11 @@
                  "trivial-gray-streams"
                  "split-sequence"
 
-                 #+(and unix (not clisp)) "iolib"
+                 #-USE-STANDARD-TERMINAL #+(and unix (not clisp)) "iolib"
                  ;; #+(and unix (not clisp)) "iolib.base"
                  ;; #+(and unix (not clisp)) "iolib/os"
                  ;; #+(and unix (not clisp)) "iolib/syscalls"
-                 #+(and unix (not clisp)) "iolib.termios"
+                 #-USE-STANDARD-TERMINAL #+(and unix (not clisp)) "iolib.termios"
 
                  "com.informatimago.common-lisp.unix"
                  "com.informatimago.lse"
@@ -76,21 +76,24 @@
                  #+swank
                  (:file "swank-terminal"      :depends-on ("cli-package"))
 
-                 #+(and unix (not clisp))
+                 #+(and (not USE-STANDARD-TERMINAL) unix (not clisp))
                  (:file "unix-terminal"       :depends-on ("cli-package"))
-                 #-(and unix (not clisp))
+                 #+(and (not USE-STANDARD-TERMINAL) unix (not clisp))
                  (:file "unix-terminal-stub"  :depends-on ("cli-package"))
-
+                 #-USE-STANDARD-TERMINAL
                  (:file "terminfo-terminal"   :depends-on ("cli-package"))
 
                  (:file "cli-arguments"       :depends-on ("cli-package"))
                  (:file "cli"
-                        :depends-on ("cli-package"
-                                     "cli-arguments"
-                                     "terminfo-terminal"
-                                     #+swank "swank-terminal"
-                                     #-(and unix (not clisp)) "unix-terminal-stub"
-                                     #+(and unix (not clisp)) "unix-terminal"))
+                  :depends-on ("cli-package"
+                               "cli-arguments"
+                               #+swank "swank-terminal"
+                               #+(and (not USE-STANDARD-TERMINAL) unix (not clisp))
+                               "terminfo-terminal"
+                               #+(and (not USE-STANDARD-TERMINAL) unix (not clisp))
+                               "unix-terminal-stub"
+                               #+(and (not USE-STANDARD-TERMINAL) unix (not clisp))
+                               "unix-terminal"))
                  ))
 
 

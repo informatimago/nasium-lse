@@ -127,6 +127,8 @@ RETURN: A new OPTIONS structure instance.
         (task-script-arguments  task) (options-script-arguments options)
         (task-script-debug      task) (options-script-debug options))
   (let ((terminal (task-terminal task)))
+    ;; TODO: set terminal-modern-mode in other cases too?
+    #-USE-STANDARD-TERMINAL
     (when (typep terminal 'unix-terminal)
       (setf (terminal-modern-mode terminal) (or (member (getenv "TERM") '("emacs" "dumb")
                                                         :test (function string-equal))
@@ -525,6 +527,7 @@ Variable d'environnement: LSE_DEBUG_ON_ERROR=NIL
                     :ascii)))
       (setf (options-output-no-bell options)
             (not (o-ou-n-p "Est ce que le terminal émet un bip quand il reçoit un code ASCII BEL?")))
+      #-USE-STANDARD-TERMINAL
       (when (and (typep terminal 'unix-terminal)
                  (not (member (getenv "TERM") '("emacs" "dumb")
                               :test (function string-equal))))
@@ -585,6 +588,7 @@ We have utf-8 and nasium-lse.terminal setup.
                 (t
                  :ascii))
               :ascii))
+    #-USE-STANDARD-TERMINAL
     (when (and (typep terminal 'unix-terminal)
                (not (member (getenv "TERM") '("emacs" "dumb")
                             :test (function string-equal))))

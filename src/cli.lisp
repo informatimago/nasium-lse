@@ -325,6 +325,8 @@ RETURN: EX-OK
 
 (defun compute-terminal-class ()
   (cond
+    ((uiop:featurep :use-standard-terminal)
+     'standard-terminal)
     ((and (uiop:featurep :swank)
           (typep (stream-output-stream *terminal-io*)
                  (if (find-package "SWANK/GRAY")
@@ -334,8 +336,7 @@ RETURN: EX-OK
     ((member (getenv "TERM") '("emacs" "dumb")
              :test (function string=))
      'standard-terminal)
-    ((and (not (uiop:featurep :use-standard-terminal))
-          (uiop:featurep :unix))
+    ((uiop:featurep :unix)
      'unix-terminal)
     (t
      'standard-terminal)))
@@ -346,7 +347,7 @@ RETURN: EX-OK
       (progn
         (push #P"/usr/local/lib/" cffi:*foreign-library-directories*)
         (setf *program-name* (or (program-name) *default-program-name*))
-        (print (setf *options* (make-default-options)))
+        (setf *options* (make-default-options))
         (set-lse-root)
         (let ((encoding (locale-terminal-encoding)))
           (set-terminal-encoding encoding)

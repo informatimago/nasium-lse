@@ -1,0 +1,13 @@
+#!/usr/local/bin/lse
+
+# Options:
+
+--mode-moderne
+--sans-bip
+
+# Programme:
+
+10 AFFICHER['Bonjour',/]
+20 AFFICHER['Les arguments sont: ',U]ARGC
+30 AFFICHER ARGV
+40 TERMINER

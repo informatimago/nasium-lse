@@ -316,8 +316,25 @@ When false, no automatic echo occurs.")
                       :initform      *standard-input*)
    (input-end-of-file :initform nil
                       :type   boolean
-                      :documentation "Weither an end-of-file condition has been detected on the terminal input stream.")))
+                      :documentation "Weither an end-of-file condition has been detected on the terminal input stream.")
+   (ansi              :initform nil
+                      :initarg :ansi
+                      :reader ansip
+                      :type boolean
+                      :documentation "Weither the terminal is an ANSI terminal.")))
 
+(defmethod terminal-keysym-character ((terminal standard-terminal) keysym)
+  (if (ansip terminal)
+      (call-next-method)
+      (case keysym
+        (:escape     nil)
+        (:attention  nil)
+        (:xoff       nil)
+        (:return     nil)
+        (:bell       nil)
+        (:backspace  nil)
+        (:page       nil)
+        (otherwise   (call-next-method)))))
 
 ;; terminal output functions:
 ;; --------------------------
@@ -333,7 +350,7 @@ When false, no automatic echo occurs.")
 (defmethod terminal-carriage-return ((terminal standard-terminal))
   (let ((output (terminal-output-stream terminal))
         (carret (terminal-keysym-character terminal :return)))
-    (princ (or carret #\Newline) output)
+    (when carret (princ carret output))
     (terminal-finish-output terminal)))
 
 (defmethod terminal-line-feed ((terminal standard-terminal) &optional (count 1))

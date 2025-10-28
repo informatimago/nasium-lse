@@ -5,10 +5,10 @@
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
-;;;;    
+;;;;
 ;;;;    An implementation of the programme MESG written in Lisp.
 ;;;;    The program mesg.lse is a translation from this program.
-;;;;    
+;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
@@ -16,19 +16,19 @@
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
-;;;;    
+;;;;
 ;;;;    Copyright Pascal J. Bourguignon 2014 - 2014
-;;;;    
+;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
 ;;;;    the Free Software Foundation, either version 3 of the License, or
 ;;;;    (at your option) any later version.
-;;;;    
+;;;;
 ;;;;    This program is distributed in the hope that it will be useful,
 ;;;;    but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;;;;    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;;;;    GNU Affero General Public License for more details.
-;;;;    
+;;;;
 ;;;;    You should have received a copy of the GNU Affero General Public License
 ;;;;    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;;**************************************************************************
@@ -66,7 +66,7 @@
 ;; * 2:[MAX-RECNO,FREE-LIST-RECNO,NUSER];; * 3:[[UID1,USER1-RECNO],[UID2,USER2-RECNO],[UID3,USER3-RECNO],…]
 ;; * 4:"U|uid|name|md5pass|MAIL+USER"
 ;; * 5:next-free
-;; * 
+;; *
 
 
 (defun intarray (array)
@@ -122,7 +122,7 @@
          (fields (split-sequence *us* header :remove-empty-subseqs t)))
     (if (null fields)
         (progn
-          (write-record *user-file* 1 (format nil "USERS~C1" *us*)) 
+          (write-record *user-file* 1 (format nil "USERS~C1" *us*))
           (write-record *user-file* 2 (coerce #(3.0 0.0 0.0) 'vecteur))
           (write-record *user-file* 3 (make-array (list *max-users* 2) :element-type 'nombre)))
         (progn
@@ -280,7 +280,7 @@
          (fields (split-sequence *us* header :remove-empty-subseqs t)))
     (if (null fields)
         (progn
-          (write-record *mesg-file* 1 (format nil "MESGS~C1" *us*)) 
+          (write-record *mesg-file* 1 (format nil "MESGS~C1" *us*))
           (write-record *mesg-file* 2 (coerce #(3.0 0.0 0.0) 'vecteur))
           (write-record *mesg-file* 3 (make-array (list *max-users* 2) :element-type 'nombre)))
         (progn
@@ -477,8 +477,8 @@
         (values))))
 
 
-;; 3* - CREATE A USER ACCOUNT 
-;; 4* - SELF CREATE A USER ACCOUNT 
+;; 3* - CREATE A USER ACCOUNT
+;; 4* - SELF CREATE A USER ACCOUNT
 ;; 5* - DELETE A USER ACCOUNT (AND ITS MAILBOX)
 ;; 6* - LIST THE USER ACCOUNTS
 
@@ -689,7 +689,7 @@
             (users/insert-user "TOTO" "POPOROPLO" "MAIL")
             (users/insert-user "TITI" "POPOROPLO" "MAIL")
             )
-          
+
           (users/delete-user "PJB")
           (users/delete-user "TOTO")
           (users/delete-user "LSE")
@@ -809,7 +809,7 @@ Un 10-40
                    :for operation :in menu
                    :initially  (format *query-io* "~2%")
                    :do (format *query-io* "~2D) ~A~%" i (second operation)))
-                 (handler-case 
+                 (handler-case
                      (let* ((choice (1- (query "Your choice: " 'integer)))
                             (cmd (nth choice menu)))
                        (when cmd

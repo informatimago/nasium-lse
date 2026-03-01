@@ -1,0 +1,26 @@
+Summary:
+- Implemented procedure/function-parameter handling for procident arguments in `src/vm.lisp` and added indirect call resolution.
+- Extended the parser to accept `&` identifiers in procedure parameter lists.
+- Added a test that covers both parsing/compilation and VM behavior for procident parameters.
+
+Changes:
+- Parser: `src/lse-parser.lisp`
+- VM: `src/vm.lisp`
+- Tests: `src/test-lse-parser.lisp`
+
+
+Summary:
+- Added a top-level `Makefile` that delegates build/doc/test targets to `src/Makefile`, matching `doc/installation.txt` and `src/README`.
+- Added ASDF test system `src/com.informatimago.lse.tests.asd` and a runner in `src/test-runner.lisp`.
+- Added `test` target to `src/Makefile` to load Quicklisp, quickload the test system, and run `asdf:test-system`.
+
+Files:
+- `Makefile`
+- `src/com.informatimago.lse.tests.asd`
+- `src/test-runner.lisp`
+- `src/Makefile`
+
+Notes:
+- I did not run tests.
+
+If you want, I can run `make test` from the repo root to validate the new target.

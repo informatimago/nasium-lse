@@ -1,22 +1,22 @@
 ;;;; -*- mode:lisp;coding:utf-8 -*-
 ;;;;**************************************************************************
-;;;;FILE:               test-packages.lisp
+;;;;FILE:               test-runner.lisp
 ;;;;LANGUAGE:           Common-Lisp
 ;;;;SYSTEM:             Common-Lisp
 ;;;;USER-INTERFACE:     NONE
 ;;;;DESCRIPTION
 ;;;;
-;;;;    Defines the packages for the LSE system tests.
+;;;;    Test runner for the LSE system.
 ;;;;
 ;;;;AUTHORS
 ;;;;    <PJB> Pascal J. Bourguignon <pjb@informatimago.com>
 ;;;;MODIFICATIONS
-;;;;    2016-02-06 <PJB> Created.
+;;;;    2026-03-01 <PJB> Created.
 ;;;;BUGS
 ;;;;LEGAL
 ;;;;    AGPL3
 ;;;;
-;;;;    Copyright Pascal J. Bourguignon 2016 - 2016
+;;;;    Copyright Pascal J. Bourguignon 2012 - 2016
 ;;;;
 ;;;;    This program is free software: you can redistribute it and/or modify
 ;;;;    it under the terms of the GNU Affero General Public License as published by
@@ -34,40 +34,17 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (setf *readtable* (copy-readtable nil)))
 
-(defpackage "COM.INFORMATIMAGO.LSE.TEST"
-  (:use "COMMON-LISP"
-        "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.SIMPLE-TEST"
-        "COM.INFORMATIMAGO.LSE")
-  (:import-from
-   "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.SIMPLE-TEST"
-   "DEFINE-TEST"
-   "TEST"
-   "CHECK"
-   "ASSERT-TRUE"
-   "ASSERT-FALSE")
+(in-package "COM.INFORMATIMAGO.LSE")
 
-  (:import-from
-   "COM.INFORMATIMAGO.LSE"
-   ;; tested internal symbols:
-   "AWAKE" "*COMMAND-GROUP*"
-   "STREAM-INPUT-STREAM" "STREAM-OUTPUT-STREAM")
+(defun run-tests ()
+  (format t "~&Running LSE tests...~%")
+  (test/scanner/comment-empty)
+  (test/scanner/tokens)
+  (test/parse-stream-linums)
+  (test/parse-simple-afficher-format)
+  (test/procedure-parameter-procident)
+  (format t "~&All LSE tests completed.~%")
+  (values))
 
-  (:export "INITIALIZE-DEBUGGING-TASK"
-           "TEST/ALL")
-  (:documentation "Tests the LSE system."))
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (mapc (lambda (name)
-          (let ((sym (find-symbol name "COM.INFORMATIMAGO.LSE")))
-            (when sym (unintern sym  "COM.INFORMATIMAGO.LSE")))
-          (import (find-symbol name "COM.INFORMATIMAGO.COMMON-LISP.CESARUM.SIMPLE-TEST")
-                  "COM.INFORMATIMAGO.LSE"))
-        '(
-          "DEFINE-TEST"
-          "TEST"
-          "CHECK"
-          "ASSERT-TRUE"
-          "ASSERT-FALSE")))
-
-;;; THE END ;;;;
-
+;;;; THE END ;;;;

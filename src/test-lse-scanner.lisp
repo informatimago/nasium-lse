@@ -35,8 +35,6 @@
   (setf *readtable* (copy-readtable nil)))
 
 (in-package "COM.INFORMATIMAGO.LSE")
-(import '(com.informatimago.common-lisp.cesarum.simple-test:define-test
-          com.informatimago.common-lisp.cesarum.simple-test:test))
 
 (defun initialize-debugging-task ()
   (unless (and (eql *command-group* awake)

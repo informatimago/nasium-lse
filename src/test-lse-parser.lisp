@@ -34,10 +34,7 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (setf *readtable* (copy-readtable nil)))
 (in-package "COM.INFORMATIMAGO.LSE")
-(import '(com.informatimago.common-lisp.cesarum.simple-test:define-test
-          com.informatimago.common-lisp.cesarum.simple-test:check
-          com.informatimago.common-lisp.cesarum.simple-test:assert-true
-          com.informatimago.common-lisp.cesarum.simple-test:assert-false))
+
 
 (defun test-parse-stream (src)
   (let ((*scanner* (make-instance 'lse-scanner :source src)))
@@ -59,18 +56,18 @@
 
 (define-test test/parse-stream-linums ()
   (let ((parsed (test-parse-string  "
-1 afficher 'hello'
-2 afficher 'world'
-3 afficher 'bonjour'
-4 afficher 'le monde'
-5 terminer
+1 AFFICHER 'hello'
+2 AFFICHER 'world'
+3 AFFICHER 'bonjour'
+4 AFFICHER 'le monde'
+5 TERMINER
 ")))
     (loop
       :for line :in parsed
       :for lino := (ignore-errors (numero-valeur (second line)))
       :for expected-lino :from 1
       :do (check eql lino expected-lino
-                 (lino expected)
+                 (lino expected-lino)
                  "Line number parsed: ~S~%Expected line number: ~S~%"
                  lino expected-lino))))
 
@@ -111,7 +108,7 @@
 ;; (test-parse-string "100 PROCEDURE &ATTEN(DELAI) LOCAL TEMPS,I,FINI,TRAIT;CHAINE TRAIT;AFFICHER 'ATTEN'")
 ;; (test-parse-line  "100 PROCEDURE &ATTEN(DELAI) LOCAL TEMPS,I,FINI,TRAIT;CHAINE TRAIT;AFFICHER 'ATTEN'")
 
-(string-tokens  "95 AFFICHER['Après la pause…',/]")
+;; (string-tokens  "95 AFFICHER['Après la pause…',/]")
 
 (defun parse-tree-equal (a b)
   (cond
@@ -131,12 +128,17 @@
     (check parse-tree-equal
            parse-tree
            '(:ligne-programme (token tok-numero "95")
-                  (:afficher ((:spec-chaine (:rep-1) (token tok-litchaine "'Après la pause…'"))
-                              (:spec-slash (:rep-1))))))
+             (:afficher ((:spec-chaine (:rep-1) (token tok-litchaine "'Après la pause…'"))
+                         (:spec-slash (:rep-1))))))
     (assert-true code-vector)
     (check equalp
            code-vector
-           #S(code :line 95 :vector #(49 1 49 "Après la pause…" 21 49 1 22 26) :procedure nil :source nil))))
+           (make-code
+            :line 95
+            :vector #(49 1 49 "Après la pause…" 21 49 1 22 26)
+            :procedure nil
+            :source nil))))
+
 
 
 (define-test test/procedure-parameter-procident ()

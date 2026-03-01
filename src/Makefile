@@ -137,6 +137,21 @@ html-doc:
 	if [ $(UPLOAD) -eq 1 ] ; then $(MAKE) $(MFLAGS) -C $(UPLOAD_DIR) upload ; fi
 
 
+help::
+	@printf $(HELPFORMAT) test 'runs the LSE test suite.'
+test:
+	$(LISP) \
+		$(LOAD) ~/quicklisp/setup.lisp \
+		$(EVAL) '(pushnew (truename ".") ql:*local-project-directories* :test (function equal))' \
+		$(EVAL) '(pushnew (truename "../dependencies/") ql:*local-project-directories* :test (function equal))' \
+		$(EVAL) '(quicklisp-client:register-local-projects)' \
+		$(EVAL) '(ql:quickload :cffi)' \
+		$(EVAL) '(cffi:load-foreign-library "/opt/local/lib/libfixposix.dylib")' \
+		$(EVAL) '(ql:quickload :com.informatimago.lse.tests)' \
+		$(EVAL) '(asdf:test-system :com.informatimago.lse.tests)' \
+		$(EVAL) '(quit)'
+
+
 
 help::
 	@printf $(HELPFORMAT) variables 'shows the variables.'
@@ -167,7 +182,7 @@ git-clean-version:
 	-rm -f VERSION macosx/VERSION macosx/VERSION_LONG macosx/VERSION_SHORT
 	git checkout VERSION macosx/VERSION macosx/VERSION_LONG macosx/VERSION_SHORT
 
-.PHONY: cli server html-doc help install macosx fuzz
+.PHONY: cli server html-doc help install macosx fuzz test
 
 
 fuzz:cli

@@ -1,0 +1,15 @@
+# -*- mode:shell-script -*-
+
+
+codex exec --full-auto "Scan this project which is written in Common Lisp, and implement a LSE (Langage Symbolique d'Enseignement) interpreter and system. Generate a CLAUDE.md file to record significant project level instructions."
+
+codex exec --full-auto 'Lookup the ISSUES.txt file. Debug the TODO 00027 issue. Check the comment in vm.lisp where I think the correction should be made. Write a test case to validate the correction.'
+
+codex exec --full-auto <<'EOF'
+Write a Makefile, 
+See doc/installation.txt for installation instructions. 
+See src/README for compilation instructions and current status. 
+and extract targets accordingly.
+Add in src test ASDF systems to load and run tests.
+Be sure to include a test target to run tests. The target may load test lisp scripts directly with ccl, or thru the test asdf systems.
+EOF

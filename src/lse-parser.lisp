@@ -226,8 +226,8 @@
           (--> decl-procedure
                (seq tok-PROCEDURE procident tok-pargauche
                     (alt
-                     (seq tok-pardroite                      (opt decl-local :action decl-local)  :action (list nil $2))
-                     (seq liste-identificateur tok-pardroite (opt decl-local :action decl-local)  :action (list $1 $3)))
+                     (seq tok-pardroite                     (opt decl-local :action decl-local)  :action (list nil $2))
+                     (seq liste-parametres tok-pardroite    (opt decl-local :action decl-local)  :action (list $1 $3)))
                     :action (list* :decl-procedure $2 $4))
                :action $1)
 
@@ -526,6 +526,16 @@
 
           (--> liste-identificateur
                (seq identificateur (rep tok-virgule identificateur :action $2)
+                    :action (cons $1 $2))
+               :action $1)
+
+          (--> identificateur-ou-procident
+               (alt identificateur procident)
+               :action $1)
+
+          (--> liste-parametres
+               (seq identificateur-ou-procident
+                    (rep tok-virgule identificateur-ou-procident :action $2)
                     :action (cons $1 $2))
                :action $1)
 

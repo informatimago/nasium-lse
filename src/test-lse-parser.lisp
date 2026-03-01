@@ -139,6 +139,57 @@
            #S(code :line 95 :vector #(49 1 49 "Après la pause…" 21 49 1 22 26) :procedure nil :source nil))))
 
 
+(define-test test/procedure-parameter-procident ()
+  (initialize-debugging-task)
+  (let ((id-package (find-package "COM.INFORMATIMAGO.LSE.IDENTIFIERS")))
+    (multiple-value-bind (parse-tree code)
+        (test-parse-line "201 PROCEDURE &COURB(&F,N,X,Y,P) LOCAL P,N,YMI,YMA,I")
+      (declare (ignore parse-tree))
+      (assert-true code)
+      (let* ((proc (code-procedure code))
+             (param-f (intern "&F" id-package))
+             (param-n (intern "N" id-package))
+             (param-p (intern "P" id-package)))
+        (assert-true proc)
+        (assert-true (member `(:par-reference ,param-f)
+                             (procedure-parameters proc)
+                             :test (function equal)))
+        (assert-true (member `(:par-valeur ,param-n)
+                             (procedure-parameters proc)
+                             :test (function equal)))
+        (assert-true (member `(:par-valeur ,param-p)
+                             (procedure-parameters proc)
+                             :test (function equal))))))
+  (let* ((vm (make-instance 'lse-vm))
+         (id-package (find-package "COM.INFORMATIMAGO.LSE.IDENTIFIERS"))
+         (caller (intern "&CALL" id-package))
+         (param (intern "&F" id-package))
+         (target (intern "&G" id-package))
+         (caller-proc (make-procedure :name caller
+                                      :parameters `((:par-reference ,param))
+                                      :local-variables nil
+                                      :line 10
+                                      :offset 1))
+         (target-proc (make-procedure :name target
+                                      :parameters nil
+                                      :local-variables nil
+                                      :line 20
+                                      :offset 1)))
+    (setf (gethash caller (vm-procedures vm)) caller-proc
+          (gethash target (vm-procedures vm)) target-proc
+          (gethash 10 (vm-code-vectors vm)) (make-code :line 10 :vector (make-array 0))
+          (gethash 20 (vm-code-vectors vm)) (make-code :line 20 :vector (make-array 0)))
+    (pushi vm target)
+    (callp vm caller 1)
+    (multiple-value-bind (var frame) (find-variable vm param)
+      (declare (ignore frame))
+      (assert-true var)
+      (check eq (variable-type var) 'procedure)
+      (check eq (variable-value var) target))
+    (callf vm param 0)
+    (check eql (vm-pc.line vm) 20)))
+
+
 ;; (compile-lse-line "95 AFFICHER['Après la pause…',/]")
 ;; #S(code :line 95 :vector #(49 1 49 "Après la pause…" 21 49 1 22 26) :procedure nil :source "95 AFFICHER['Après la pause…',/]")
 
@@ -168,6 +219,7 @@
 
 (define-test test/all ()
   (test/parse-stream-linums)
-  (test/parse-simple-afficher-format))
+  (test/parse-simple-afficher-format)
+  (test/procedure-parameter-procident))
 
 ;;;; THE END ;;;;

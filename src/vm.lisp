@@ -1184,9 +1184,26 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
 
 
 
+(defun procidentp (ident)
+  (and (identificateurp ident)
+       (let ((name (symbol-name ident)))
+         (and (plusp (length name))
+              (char= (aref name 0) #\&)))))
+
+(defun resolve-procident (vm procident)
+  (multiple-value-bind (var frame) (find-variable vm procident)
+    (declare (ignore frame))
+    (if (and var (eq (variable-type var) 'procedure))
+        (let ((target (variable-value var)))
+          (if (identificateurp target)
+              target
+              procident))
+        procident)))
+
 (defun call (vm call-type procident nargs)
   (check-type procident identificateur)
   (check-type nargs (integer 0))
+  (setf procident (resolve-procident vm procident))
   (let ((entry (gethash procident *primitive-functions*)))
     (if entry
         ;; primitive functions
@@ -1247,13 +1264,22 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                                  ;; also indirect references (for calls).
                                  (typecase argument
                                    (identificateur
-                                    (let ((var (find-variable vm argument)))
-                                      (if var
-                                          var
-                                          (add-global-variable vm
-                                                               (make-instance 'lse-variable
-                                                                              :name argument
-                                                                              :type 'nombre)))))
+                                    (multiple-value-bind (var frame) (find-variable vm argument)
+                                      (declare (ignore frame))
+                                      (cond
+                                        (var (if (typep var 'reference-parameter)
+                                                 (referenced-variable var)
+                                                 var))
+                                        ((procidentp argument)
+                                         (make-instance 'lse-variable
+                                                        :name argument
+                                                        :type 'procedure
+                                                        :value argument))
+                                        (t
+                                         (add-global-variable vm
+                                                              (make-instance 'lse-variable
+                                                                             :name argument
+                                                                             :type 'nombre))))))
                                    ((or lse-variable vecteur-ref tableau-ref)
                                     argument)
                                    (otherwise

@@ -1240,6 +1240,11 @@ Voir: FAIREJUSQUA, FAIRETANTQUE"
                                                                    argument)))))
                         (:par-reference
                          (let ((reference
+                                 ;; TODO 00027: It seems it's here we should process function/procedure parameters.
+                                 ;; We'd have an argument that is an identificateur with &, not a variable.
+                                 ;; and we should have a parameter that is also a &ident, by reference.
+                                 ;; Some provision for the reference to the function/procedure has to be made
+                                 ;; also indirect references (for calls).
                                  (typecase argument
                                    (identificateur
                                     (let ((var (find-variable vm argument)))

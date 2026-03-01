@@ -13,3 +13,8 @@ and extract targets accordingly.
 Add in src test ASDF systems to load and run tests.
 Be sure to include a test target to run tests. The target may load test lisp scripts directly with ccl, or thru the test asdf systems.
 EOF
+
+codex exec --full-auto <<'EOF'
+Run the test (make test), and diagnose the failures.
+Add TODO entries in the ISSUES.txt file to correct those failures.
+EOF

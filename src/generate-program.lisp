@@ -116,6 +116,10 @@
 
 (setf (uiop:getenv "PKG_CONFIG_PATH") "/usr/local/lib/pkgconfig")
 
+;; TODO: find a better way to deal with this libfixposix automatically:
+(ql:quickload :cffi)
+(cffi:load-foreign-library "/opt/local/lib/libfixposix.dylib")
+
 (defun boolean-enval (var default)
   (let ((val (ccl:getenv var)))
     (if val
@@ -140,7 +144,7 @@
 
 
 (let ((dir (funcall (function #+windows wildpath #-windows dirpath)
-                    (fasldir :com.informatimago.manifest "manifest"))))
+                    (fasldir :com.informatimago.tools.manifest "manifest"))))
   (format t "~%~A~%" dir) (finish-output)
   #+windows (mapc 'delete-file (directory dir))
   #-windows (asdf:run-shell-command "rm -rf ~S" (namestring dir)))
@@ -154,9 +158,9 @@
   :for file :in '("macosx/VERSION" "macosx/VERSION_SHORT" "macosx/VERSION_LONG")
   :do (setf (com.informatimago.common-lisp.cesarum.file:text-file-contents file) version))
 
-(ql:quickload :com.informatimago.manifest)
-(shadow 'date)
-(use-package "COM.INFORMATIMAGO.MANIFEST")
+(ql:quickload :com.informatimago.tools.manifest)
+(shadow '(date version))
+(use-package "COM.INFORMATIMAGO.TOOLS.MANIFEST")
 
 
 

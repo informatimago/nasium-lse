@@ -5,12 +5,12 @@ https://gitlab.com/nasium-lse/nasium-lse/issues&sort=created_asc&state=opened
 
 LSE2000: https://sites.google.com/site/phoenixlse2000/
 
-** TODO [#A] Move nasium-lse/manifest.lisp to com.informatimago
+** DONE [#A] Move nasium-lse/manifest.lisp to com.informatimago
+- State "DONE"       from "TODO"       [2026-03-01 Sun 17:33] \\
+  Switched to com.informatimago.tools.manifest and removed the local copy.
+CLOSED: [2026-03-01 Sun 17:33]
 
-It's copied, but we'd need to use now the tools/manifest.lisp instead
-of nasium-lse/manifest.lisp
-
-** TODO [5/5] Tests / Debug
+** DONE [5/5] Tests / Debug
 *** DONE [#A] make test fails: scanner adds leading EOL before first line
 - State "DONE"       from "TODO"       [2026-03-01 Sun 17:26] \\
   Fixed scanner test token collection to start after scanner priming token.

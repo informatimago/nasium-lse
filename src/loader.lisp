@@ -135,7 +135,7 @@
 
 
 (let ((dir (funcall (function #+windows wildpath #-windows dirpath)
-                    (fasldir :com.informatimago.manifest "manifest"))))
+                    (fasldir :com.informatimago.tools.manifest "manifest"))))
   (format t "~%~A~%" dir) (finish-output)
   #+windows (mapc 'delete-file (directory dir))
   #-windows (asdf:run-shell-command "rm -rf ~S" (namestring dir)))
@@ -154,7 +154,7 @@
 
 (quick-reload :com.informatimago.lse.cli)
 (quick-reload :com.informatimago.lse.server)
-(quick-reload :com.informatimago.manifest)
+(quick-reload :com.informatimago.tools.manifest)
 
 (com.informatimago.common-lisp.cesarum.package:add-nickname
  :COM.INFORMATIMAGO.LSE.IDENTIFIERS :id)

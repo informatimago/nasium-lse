@@ -455,6 +455,24 @@ Variable d'environnement: LSE_MODERN_MODE=NIL
 "
   (setf (options-modern-mode *options*) nil))
 
+(defoption ("--pas-de-pagination" "--no-pager") ()
+  "
+Inhibe la pagination.
+
+Variable d'environnement: LSE_PAGER=NIL
+"
+  (setf (options-pager *options*) nil))
+
+(defoption ("--pagination" "--pager") (nblines)
+  "
+Active la pagination. Le paramètre peut être T
+ou un nombre de lignes.
+
+Variable d'environnement: LSE_PAGER=$NBLINE
+"
+  (check-type nblines (or (member T) (integer 1)))
+  (setf (options-pager *options*) nblines))
+
 
 (defoption ("--deboguer-sur-erreur" "--debug-on-error") ()
   "

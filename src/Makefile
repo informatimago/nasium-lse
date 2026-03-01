@@ -144,7 +144,7 @@ test:
 		$(LOAD) ~/quicklisp/setup.lisp \
 		$(EVAL) '(pushnew (truename ".") ql:*local-project-directories* :test (function equal))' \
 		$(EVAL) '(pushnew (truename "../dependencies/") ql:*local-project-directories* :test (function equal))' \
-		$(EVAL) '(quicklisp-client:register-local-projects)' \
+		$(EVAL) '(ignore-errors (quicklisp-client:register-local-projects))' \
 		$(EVAL) '(ql:quickload :cffi)' \
 		$(EVAL) '(cffi:load-foreign-library "/opt/local/lib/libfixposix.dylib")' \
 		$(EVAL) '(ql:quickload :com.informatimago.lse.tests)' \

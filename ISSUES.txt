@@ -10,7 +10,25 @@ LSE2000: https://sites.google.com/site/phoenixlse2000/
 It's copied, but we'd need to use now the tools/manifest.lisp instead
 of nasium-lse/manifest.lisp
 
-** TODO [#A] Tests / Debug
+** TODO [2/2] Tests / Debug
+*** DONE [#A] make test fails: Quicklisp cannot write system-index.txt
+- State "DONE"       from "TODO"       [2026-03-01 Sun 17:11] \\
+  Use (IGNORE-ERRORS …) in src/Makefile.
+CLOSED: [2026-03-01 Sun 17:11]
+Error: Operation not permitted writing:
+/Users/pjb/quicklisp/local-projects/system-index.txt
+This occurs during (quicklisp-client:register-local-projects) while running
+`make test` in `src` via CCL. Investigate permissions or alternate
+local-projects directory.
+
+*** DONE [#B] make test noise: XQuartz defaults write error
+- State "DONE"       from "TODO"       [2026-03-01 Sun 17:11] \\
+  Non-blocking. Ignore the warning.
+CLOSED: [2026-03-01 Sun 17:11]
+Running `make test` logs:
+Could not write domain org.macosxforge.xquartz.X11; exiting
+Consider suppressing or fixing the defaults write for XQuartz.
+
 ** TODO [#B] complete telnet and options
    - State "TODO"       from "TODO"       [2012-12-12 Wed 23:56]
 ** TODO [#B] paypal / download?

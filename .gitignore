@@ -3,4 +3,17 @@
 .\#*
 .DS_Store
 ._*
+
 system-index.txt
+
+src/macosx/NASIUM-LSE.app
+src/lse-server*
+src/lse-ccl*
+src/lse
+src/cl-lse
+
+dependencies/com-informatimago/
+dependencies/iolib.termios/
+dependencies/libfixposix/
+dependencies/marsijanin-iolib.termios/
+

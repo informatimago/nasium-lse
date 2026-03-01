@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+<head>
+<title>NASIUM L.S.E. - Options</title>
+<link rel="shortcut icon" href="http://www.ogamita.com/favicon.ico">
+<link rel="icon" href="http://www.ogamita.com/favicon.ico" type="image/vnd.microsoft.icon">
+<link rel="icon" href="http://www.ogamita.com/favicon.png" type="image/png">
+<link rel="stylesheet" href="http://www.ogamita.com/default.css" type="text/css">
+<meta HTTP-EQUIV="Content-Type" content="text/html; charset=utf-8">
+<meta name="author" content="Pascal J. Bourguignon">
+<meta name="Reply-To" content="pjb@informatimago.com">
+<meta name="Keywords" content="NASIUM, LSE, L.S.E, Langage Symbolique d'Enseignement, Langage de programmation, Français, options"></head>
+<body><img src="../nasium-lse-2.png" alt="NASIUM L.S.E.">
+<hr>
+<div class="navigation"><a href="../">Maison</a> | <a href="lse-generalites.html">Page précédente</a> | <a href="index.html">Index</a> | <a href="lse-commandes.html">Page suivante</a></div>
+<hr>
+<h2>Options</h2>
+<p>lse est une commande unix interactive implémentant un système L.S.E. avec son interpréteur. </p>
+<p>lse accepte les options décrites dans ce chapitre. </p>
+<p>Selon le compilateur Common Lisp utilisé pour compiler cette commande, ces options peuvent devoir s'écrire après une option '--'. (Les options précédant '--' étant interprétées par l'implémentation Common Lisp). </p>
+<p><kbd>[AFAIRE]</kbd> Établir la liste exacte des implémentations nécessitant '--'. </p>
+<p>Ces options permettent de configurer le terminal, et les touches utilisées. Sur le systèmes L.S.E. MITRA-15 et T1600 des années 1970, les terminaux était trés simples, et on tapait <kbd>[CONTRÔLE-S]</kbd> pour envoyer les données saisies à l'ordinateur, la touche <kbd>[ÉCHAPPEMENT]</kbd> pour interrompre un programme, la touche <kbd>[\]</kbd> pour annuler le caractère précédent, et la touche <kbd>[CONTRÔLE-A]</kbd> pour envoyer un signal d'attention au programme. La touche <kbd>[ENTRÉE]</kbd> pouvait être utilisée pour saisir une chaîne, mais alors le code CARRIAGE RETURN était ajouté en fin de chaîne. Les consoles et télétypes n'étaient capable d'afficher et d'encoder seulement des caractères majuscules, et les accents étaient totalement inconnus. </p>
+<p>Sur un terminal unix, on utilise <kbd>[ENTRÉE]</kbd> pour la saisie des données, <kbd>[EFFACEMENT]</kbd> pour supprimer le caractère précédent, généralement, <kbd>[CONTRÔLE-C]</kbd> pour interrompre un programme, et d'autres touches configurées avec stty(1). Les minuscules sont la norme. </p>
+<p>On peut donc configurer lse avec des options sur la ligne de commande, ou interactivement, pour utiliser le mode ancien ou un mode moderne. </p>
+<p><kbd>[AFAIRE]</kbd> établir un fichier de configuration pour éviter d'avoir à refaire ces configurations à chaque fois. </p>
+<p>lse tient compte des variables d'environnement suivantes: </p>
+<p>LC_ALL, ou sinon LC_CTYPE, ou sinon LANG donnent l'encodage du terminal. </p>
+<p>TERM indiquent le type de terminal. </p>
+<p>LSE←REJECT←LOWCASE←INPUT (NIL ou T, défaut: NIL) Indique s'il faut accepter ou rejeter les caractères minuscules saisis. Correspond aux options --rejeter-minuscules --reject-lowcase --accepter-minuscules --accept-lowcase. </p>
+<p>LSE←UPCASE←OUTPUT (NIL ou T, défaut: NIL) Indique s'il faut imprimer tous les messages seulement en majuscules, ou s'il est possible d'imprimer des minuscules. Correspond aux options --afficher-en-majuscules --upcase-output --affichage-mixte --mixed-output. </p>
+<p>LSE←OUTPUT←ARROWS (ASCII, DECTECH, UNICODE ou UNICODE-HALFWIDTH, défaut: ASCII) Indique comment afficher les caractères flêche vers la gauche et flêche vers le haut. Correspond aux options --fleches-ascii --ascii-arrows --fleches-dectech --dectech-arrows --fleches-unicode --unicode-arrows --fleches-unicode-halfwidth --unicode-halfwidth-arrows. </p>
+<p>LSE←ACCENTED←OUTPUT (NIL ou T, défaut: T) Indique s'il est possible d'afficher des lettres accentuées. Correspond aux options --afficher-avec-accent --accented-output --afficher-sans-accent --no-accent-output. </p>
+<p>LSE←MODERN←MODE (NIL ou T, défaut: T) Indique s'il faut utiliser le mode moderne de saisi, ou le mode ancien ([ENTRÉE] ou <kbd>[X-OFF]</kbd>). Correspond aux options --mode-moderne --modern-mode --mode-ancien --old-mode. </p>
+<p>LSE←RETURN←IS←XOFF (NIL ou T, défaut: NIL) Indique comment traiter la touche <kbd>[ENTRÉE]</kbd> dans le mode ancien. Correspond aux options --entree-comme-xoff --return-is-xoff. </p>
+<p>LSE←PAGER (NIL, T, ou un nombre de lignes; défaut: T) Indique s'il faut pager les sorties sur le terminal. NIL indique pas de pagination; T active la pagination en fonction de la taille du terminal; un nombre active la pagination sur ce nombre de ligne. </p>
+<div class="toc">
+<p>Table des options :</p>
+<ul>
+<li><a href="#--accepter-minuscules">--accepter-minuscules</a></li>
+<li><a href="#--affichage-mixte">--affichage-mixte</a></li>
+<li><a href="#--afficher-avec-accent">--afficher-avec-accent</a></li>
+<li><a href="#--afficher-en-majuscules">--afficher-en-majuscules</a></li>
+<li><a href="#--afficher-sans-accent">--afficher-sans-accent</a></li>
+<li><a href="#--aide">--aide</a></li>
+<li><a href="#--avec-bip">--avec-bip</a></li>
+<li><a href="#--configuration-interactive">--configuration-interactive</a></li>
+<li><a href="#--configuration-macosx-terminal">--configuration-macosx-terminal</a></li>
+<li><a href="#--entree-comme-xoff">--entree-comme-xoff</a></li>
+<li><a href="#--fleches-ascii">--fleches-ascii</a></li>
+<li><a href="#--fleches-dectech">--fleches-dectech</a></li>
+<li><a href="#--fleches-unicode">--fleches-unicode</a></li>
+<li><a href="#--fleches-unicode-halfwidth">--fleches-unicode-halfwidth</a></li>
+<li><a href="#--mode-ancien">--mode-ancien</a></li>
+<li><a href="#--mode-moderne">--mode-moderne</a></li>
+<li><a href="#--montrer-touches">--montrer-touches</a></li>
+<li><a href="#--rejeter-minuscules">--rejeter-minuscules</a></li>
+<li><a href="#--sans-bip">--sans-bip</a></li>
+<li><a href="#--version">--version</a></li></ul></div><a name="--accepter-minuscules"></a>
+<h3>--accepter-minuscules</h3>
+<p>Accepte les caractères minuscules. (Défaut). Note: les mots clés et identificateurs sont toujours mis en majuscules, mais les chaînes peuvent contenir des minuscules. </p>
+<p>Variable d'environnement: LSE←REJECT←LOWCASE←INPUT=NIL C'est l'option par défaut. </p><a name="--affichage-mixte"></a>
+<h3>--affichage-mixte</h3>
+<p>Affiche en majuscules et minisucules. </p>
+<p>Variable d'environnement: LSE←UPCASE←OUTPUT=NIL C'est l'option par défaut. </p><a name="--afficher-avec-accent"></a>
+<h3>--afficher-avec-accent</h3>
+<p>Assume que le terminal est capable d'afficher les accents. </p>
+<p>Variable d'environnement: LSE←ACCENTED←OUTPUT=T C'est l'option par défaut. </p><a name="--afficher-en-majuscules"></a>
+<h3>--afficher-en-majuscules</h3>
+<p>Fait afficher tout en majuscules, comme sur les anciens terminaux. </p>
+<p>Variable d'environnement: LSE←UPCASE←OUTPUT=T </p><a name="--afficher-sans-accent"></a>
+<h3>--afficher-sans-accent</h3>
+<p>Si le terminal n'est pas capable d'afficher les accents, cette option permet de convertir les lettres accentuees en lettres sans accent. </p>
+<p>Variable d'environnement: LSE←ACCENTED←OUTPUT=NIL </p><a name="--aide"></a>
+<h3>--aide</h3>
+<p>Affiche la liste des options. </p><a name="--avec-bip"></a>
+<h3>--avec-bip</h3>
+<p>Si le terminal est capable de biper, cette option permet d'autoriser l'envoi des codes ASCII BEL (↑G). </p>
+<p>Variable d'environnement: LSE←NO←BELL=NIL </p><a name="--configuration-interactive"></a>
+<h3>--configuration-interactive</h3>
+<p>Permet d'effectuer la saisie des options de ligne de commande de manière interactive. </p><a name="--configuration-macosx-terminal"></a>
+<h3>--configuration-macosx-terminal</h3>
+<p>Permet d'effectuer la saisie des options de ligne de commande de manière interactive, en pré-supposant l'usage avec Terminal.app et la configuration nasium-lse.terminal. </p><a name="--entree-comme-xoff"></a>
+<h3>--entree-comme-xoff</h3>
+<p>Dans le mode ancien, traite la touche ENTRÉE comme la touche X-OFF. </p>
+<p>Variable d'environnement: LSE←RETURN←IS←XOFF=T </p>
+<p>Par défaut le mode ancien traite la touche ENTRÉE différement de la touche X-OFF: les données sont validées, mais un code RETOUR est inclus en fin de chaîne lue. </p>
+<p>Variable d'environnement: LSE←RETURN←IS←XOFF=NIL </p><a name="--fleches-ascii"></a>
+<h3>--fleches-ascii</h3>
+<p>Les caractères _ et ^ sont affichés tels quels. </p>
+<p>Variable d'environnement: LSE←OUTPUT←ARROWS=ASCII C'est l'option par défaut. </p><a name="--fleches-dectech"></a>
+<h3>--fleches-dectech</h3>
+<p>Le terminal est configuré avec une police de caractères DecTech. Les caractères _ et ^ sont alors mappés sur flêche vers la gauche et flêche vers le haut. </p>
+<p>Variable d'environnement: LSE←OUTPUT←ARROWS=DECTECH </p><a name="--fleches-unicode"></a>
+<h3>--fleches-unicode</h3>
+<p>Le terminal est configuré avec une police de caractères Unicode incorporant les flêches LEFTWARD_ARROW and UPWARD_ARROW (codes 8592 et 8593). Les caractères _ et ^ sont alors mappés sur ces caractères. </p>
+<p>Variable d'environnement: LSE←OUTPUT←ARROWS=UNICODE </p><a name="--fleches-unicode-halfwidth"></a>
+<h3>--fleches-unicode-halfwidth</h3>
+<p>Le terminal est configuré avec une police de caractères Unicode incorporant les flêches HALFWIDTH_LEFTWARD_ARROW and HALFWIDTH_UPWARD_ARROW (codes 65513 et 65514). Les caractères _ et ^ sont alors mappés sur ces caractères. </p>
+<p>Variable d'environnement: LSE←OUTPUT←ARROWS=UNICODE-HAFLWIDTH </p><a name="--mode-ancien"></a>
+<h3>--mode-ancien</h3>
+<p>Dans le mode ancien, on utilise <kbd>[CONTRÔLE-S]</kbd> (X-OFF) pour entrer une donnée, <kbd>[\]</kbd> pour effacer un caractère, et <kbd>[INTERRUPTION]</kbd> pour interrompre, entre autres. </p>
+<p>Variable d'environnement: LSE←MODERN←MODE=NIL </p><a name="--mode-moderne"></a>
+<h3>--mode-moderne</h3>
+<p>Dans le mode moderne, les caractères et codes de contrôle configurés par stty(1) sont utilisé (en général, <kbd>[RETOUR]</kbd> pour entrer une donnée, <kbd>[EFFACEMENT]</kbd> pour effacer un caractère, <kbd>[CONTRÔLE-C]</kbd> pour interrompre, etc). </p>
+<p>Variable d'environnement: LSE←MODERN←MODE=T C'est l'option par défaut. </p><a name="--montrer-touches"></a>
+<h3>--montrer-touches</h3>
+<p>Affiche les touches à utiliser. </p><a name="--rejeter-minuscules"></a>
+<h3>--rejeter-minuscules</h3>
+<p>Rejette tout caractère minuscule comme caractère invalide, ce qui force l'utilisateur à ne saisir que des caractères majuscules. </p>
+<p>Variable d'environnement: LSE←REJECT←LOWCASE←INPUT=T </p><a name="--sans-bip"></a>
+<h3>--sans-bip</h3>
+<p>Si le terminal n'est pas capable de biper,cette option permet d'éviter d'envoyer des codes ASCII BEL (↑G). </p>
+<p>Variable d'environnement: LSE←NO←BELL=T </p><a name="--version"></a>
+<h3>--version</h3>
+<p>Affiche la version. </p></body></html>

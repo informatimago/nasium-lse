@@ -1,0 +1,177 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+<head>
+<title>NASIUM L.S.E. - Commandes</title>
+<link rel="shortcut icon" href="http://www.ogamita.com/favicon.ico">
+<link rel="icon" href="http://www.ogamita.com/favicon.ico" type="image/vnd.microsoft.icon">
+<link rel="icon" href="http://www.ogamita.com/favicon.png" type="image/png">
+<link rel="stylesheet" href="http://www.ogamita.com/default.css" type="text/css">
+<meta HTTP-EQUIV="Content-Type" content="text/html; charset=utf-8">
+<meta name="author" content="Pascal J. Bourguignon">
+<meta name="Reply-To" content="pjb@informatimago.com">
+<meta name="Keywords" content="NASIUM, LSE, L.S.E, Langage Symbolique d'Enseignement, Langage de programmation, Français, commandes"></head>
+<body><img src="../nasium-lse-2.png" alt="NASIUM L.S.E.">
+<hr>
+<div class="navigation"><a href="../">Maison</a> | <a href="lse-options.html">Page précédente</a> | <a href="index.html">Index</a> | <a href="lse-instructions.html">Page suivante</a></div>
+<hr>
+<h2>Commandes</h2>
+<p>Ce chapitre présente une description succinte des commandes du système L.S.E. Pour plus de détails, voir les références. </p>
+<p>Une fois démarré le système L.S.E. affiche le mot: PRET. Il est alors prêt à recevoir une commande, une instruction à exécuter en mode machine de bureau, ou une ligne de programme. </p>
+<p>On donne une commande au système L.S.E. en saisissant les deux premiers caractères de la commande et en les envoyant au système en tapant sur la touche <kbd>[X-OFF]</kbd>. Le système complète alors le nom de la commande, et éventuellement attend la saisie des arguments, puis il exécute la commande. </p>
+<p>Chacune des sections suivantes décrivent une commande, selon le format suivant: </p>
+<ul>
+<li>nom de la commande, </li>
+<li>syntaxe: les deux lettres initiales à taper, ), le reste du nom de la commande, suivit éventuellement des arguments attendus. </li>
+<li>description, </li>
+<li>exemples (optionels), </li>
+<li>références (optionelles). </li></ul>
+<p>Description de la syntaxe des arguments: </p>
+<ul>
+<li>&lt;N&gt; : un numéro de ligne. </li>
+<li>&lt;N1&gt;,&lt;N2&gt; : deux numéros de ligne, séparés par une virgule. </li>
+<li><kbd>[&lt;N1&gt;[,&lt;N2&gt;]</kbd>] : deux numéros de ligne optionnels séparés par une virgule. On peut saisir aucun numéro, un numéro, ou deux numéro séparés par une virgule. </li>
+<li>* | &lt;N1&gt;[,&lt;N2&gt;[...,&lt;Nn&gt;]...] | &lt;N1&gt; A &lt;N2&gt; : une étoile représente toutes les lignes; sinon on peut écrire une liste de numéros de ligne, ou d'intervale (deux numéros de lignes séparés par le mot A), séparés par une virgule. </li>
+<li>&lt;NOMPG&gt; : un nom de programme. C'est normalement un identificateur, composé d'une lettre, suivi d'au plus quatre lettres ou chiffres. Le nom es mis en minuscule et une extension '.lse' est ajoutée pour former le nom du fichier unix. </li>
+<li>&lt;NOMFI&gt; : un nom de fichier. C'est normalement un identificateur, composé d'une lettre, suivi d'au plus quatre lettres ou chiffres. Le nom es mis en minuscule et une extension '.don' est ajoutée pour former le nom du fichier unix. </li>
+<li>&lt;NOMF1&gt;,&lt;NOMF2&gt; : deux noms de fichier, séparés par une virgule. </li>
+<li>&lt;NOMFI&gt;[,&lt;N1&gt;[,&lt;N2&gt;]] : un nom de fichier, suivit de deux numéros de lignes optionnels. </li>
+<li>&lt;TEXTE&gt; : une ligne de texte. </li>
+<li>* | &lt;NOMFI&gt;,P|D|T : soit une étoile signifiant tous les fichiers temporaires, soit un nom de fichier, suivit d'une virgule et d'une lettre P, D, ou T, signifiant: P = fichier programme, D = fichier donnée permanent, T = fichier temporaire. </li></ul>
+<div class="toc">
+<p>Table des commandes :</p>
+<ul>
+<li><a href="#ABREGER">ABREGER</a></li>
+<li><a href="#AFFICHER REPERTOIRE">AFFICHER REPERTOIRE</a></li>
+<li><a href="#AIDER">AIDER</a></li>
+<li><a href="#APPELER">APPELER</a></li>
+<li><a href="#ARCHIVER RUBAN">ARCHIVER RUBAN</a></li>
+<li><a href="#AU REVOIR">AU REVOIR</a></li>
+<li><a href="#CATALOGUER">CATALOGUER</a></li>
+<li><a href="#CHANGER REPERTOIRE">CHANGER REPERTOIRE</a></li>
+<li><a href="#CONTINUER">CONTINUER</a></li>
+<li><a href="#DECODER">DECODER</a></li>
+<li><a href="#DOCUMENTATION">DOCUMENTATION</a></li>
+<li><a href="#ECHO">ECHO</a></li>
+<li><a href="#EFFACER LIGNES">EFFACER LIGNES</a></li>
+<li><a href="#ENCODER">ENCODER</a></li>
+<li><a href="#ETAGERE DE RUBANS">ETAGERE DE RUBANS</a></li>
+<li><a href="#EXECUTER A PARTIR DE">EXECUTER A PARTIR DE</a></li>
+<li><a href="#IN EXTENSO">IN EXTENSO</a></li>
+<li><a href="#LD DESASSEMBLER A PARTIR DE">LD DESASSEMBLER A PARTIR DE</a></li>
+<li><a href="#LE EVALUER UNE EXPRESSION LISP">LE EVALUER UNE EXPRESSION LISP</a></li>
+<li><a href="#LISTER A PARTIR DE">LISTER A PARTIR DE</a></li>
+<li><a href="#LP DEASSEMBLER/PERFORER A PARTIR DE">LP DEASSEMBLER/PERFORER A PARTIR DE</a></li>
+<li><a href="#MODIFIER">MODIFIER</a></li>
+<li><a href="#NORMAL">NORMAL</a></li>
+<li><a href="#NUMERO A PARTIR DE">NUMERO A PARTIR DE</a></li>
+<li><a href="#PAS A PAS">PAS A PAS</a></li>
+<li><a href="#PERFORER A PARTIR DE">PERFORER A PARTIR DE</a></li>
+<li><a href="#POURSUIVRE JUSQU'EN">POURSUIVRE JUSQU'EN</a></li>
+<li><a href="#RANGER">RANGER</a></li>
+<li><a href="#REPRENDRE A PARTIR DE">REPRENDRE A PARTIR DE</a></li>
+<li><a href="#RUBAN">RUBAN</a></li>
+<li><a href="#SELECTIONNER RUBAN">SELECTIONNER RUBAN</a></li>
+<li><a href="#SILENCE">SILENCE</a></li>
+<li><a href="#SUPPRIMER">SUPPRIMER</a></li>
+<li><a href="#TABLE DES FICHIERS">TABLE DES FICHIERS</a></li>
+<li><a href="#TOUCHES">TOUCHES</a></li>
+<li><a href="#UTILISATION DISQUE">UTILISATION DISQUE</a></li></ul></div><a name="ABREGER"></a><code><b>AB</b>)REGER </code>
+<blockquote>
+<p>Ne complète pas l'affichage des commandes. </p>Voir la commande <code><a href="#IN EXTENSO">IN EXTENSO</a></code>.</blockquote><a name="AFFICHER REPERTOIRE"></a><code><b>AF</b>)FICHER REPERTOIRE </code>
+<blockquote>
+<p>Affiche le répertoire courant. </p>Voir les commandes <code><a href="#CHANGER REPERTOIRE">CHANGER REPERTOIRE</a></code>,  <code><a href="#TABLE DES FICHIER">TABLE DES FICHIER</a></code>,  <code><a href="#UTILISATION DISQUE">UTILISATION DISQUE</a></code>.</blockquote><a name="AIDER"></a><code><b>AI</b>)DER </code>
+<blockquote>
+<p>Affiche la liste des commandes disponibles. </p>Voir la commande: <code><a href="#DOCUMENTATION">DOCUMENTATION</a></code>.</blockquote><a name="APPELER"></a><code><b>AP</b>)PELER &lt;NOMPG&gt;</code>
+<blockquote>
+<p>Commande d'appel d'un programme déjà sur le disque. </p>
+<p>Le fichier programme dont le nom NOMPG est indiqué dans le répertoire courant est chargé en mémoire, remplaçant le programme courant. L'utilisateur peut alors l'exécuter, le lister, le modifier, etc. </p>Voir les commandes <code><a href="#AFFICHER REPERTOIRE">AFFICHER REPERTOIRE</a></code>,  <code><a href="#CHANGER REPERTOIRE">CHANGER REPERTOIRE</a></code>,  <code><a href="#RANGER">RANGER</a></code>,  <code><a href="#MODIFIER">MODIFIER</a></code>.</blockquote><a name="ARCHIVER RUBAN"></a><code><b>AR</b>)CHIVER RUBAN &lt;NOMFI&gt;</code>
+<blockquote>
+<p>Nomme le ruban qui vient d'être perforé et l'archive sur l'étagère. </p>Voir les commandes <code><a href="#ETAGERE DE RUBAN">ETAGERE DE RUBAN</a></code>,  <code><a href="#SELECTIONNER RUBAN">SELECTIONNER RUBAN</a></code>,  <code><a href="#RUBAN">RUBAN</a></code>,  <code><a href="#PERFORER A PARTIR DE">PERFORER A PARTIR DE</a></code>.</blockquote><a name="AU REVOIR"></a><code><b>AU</b>) REVOIR </code>
+<blockquote>
+<p>La commande AU REVOIR annonce au système qu'il peut effacer les fichiers temporaires, et quitter le système L.S.E. </p></blockquote><a name="CATALOGUER"></a><code><b>CA</b>)TALOGUER &lt;NOMF1&gt;,&lt;NOMF2&gt;</code>
+<blockquote>
+<p>NOMF1 est un fichier temporaire existant. NOMF2 est un fichier permanent. </p>
+<p>Cette commande permet de mettre en bibliothèque sous le nom NOMF2 le fichier données NOMF1 qui devient donc un fichier permanent. </p>
+<p>Les fichiers permanents sont garés dans le répertoire courant. </p>Voir les commandes <code><a href="#AFFICHER REPERTOIRE">AFFICHER REPERTOIRE</a></code>,  <code><a href="#CHANGER REPERTOIRE">CHANGER REPERTOIRE</a></code>,  <code><a href="#TABLE DES FICHIERS">TABLE DES FICHIERS</a></code>.</blockquote><a name="CHANGER REPERTOIRE"></a><code><b>CH</b>)ANGER REPERTOIRE &lt;TEXTE&gt;</code>
+<blockquote>
+<p>Change le répertoire courant. Le TEXTE donné désigne un chemin unix absolu, ou relatif à l'ancien répertoire courant. </p>Voir les commandes <code><a href="#AFFICHER REPERTOIRE">AFFICHER REPERTOIRE</a></code>,  <code><a href="#TABLE DES FICHIER">TABLE DES FICHIER</a></code>,  <code><a href="#UTILISATION DISQUE">UTILISATION DISQUE</a></code>.</blockquote><a name="CONTINUER"></a><code><b>CO</b>)NTINUER </code>
+<blockquote>
+<p>Permet de relancer l'exécution d'un programme momentanément interroompu par l'instruction PAUSE ou la touche d'interruption escape. L'exécution reprend à l'endroit où elle fut arrêtée. </p>Voir les commandes <code><a href="#PAS A PAS">PAS A PAS</a></code>,  <code><a href="#NORMAL">NORMAL</a></code>,  <code><a href="#EXECUTER A PARTIR DE">EXECUTER A PARTIR DE</a></code>,  <code><a href="#REPRENDRE A PARTIR DE">REPRENDRE A PARTIR DE</a></code>,  <code><a href="#POURSUIVRE JUSQU'EN">POURSUIVRE JUSQU'EN</a></code>.</blockquote><a name="DECODER"></a><code><b>DE</b>)CODER &lt;NOMFI&gt;[,&lt;N1&gt;[,&lt;N2&gt;]]</code>
+<blockquote>
+<p>Le programme courant est garé en fichier temporaire sous le nom NOMFI, depuis la ligne N1 jusqu'à la ligne N2. </p>
+<p>Si N2 est omis, on rangera de la ligne N1 jusqu'à la dernière ligne du programme. </p>
+<p>Si N1 et N2 sont omis, on rangera tout le programme de l'utilisateur. </p>
+<p>Le programme est rangé sous forme de chaîne de caractères, chaque ligne étant terminé par un code X-OFF (19) et avec un code NUL (0) à la fin, dans des enregistrements consécutifs partant du numéro 1. </p>Voir les commandes <code><a href="#ENCODER">ENCODER</a></code>,  <code><a href="#APPELER">APPELER</a></code>,  <code><a href="#RANGER">RANGER</a></code>,  <code><a href="#MODIFIER">MODIFIER</a></code>.</blockquote><a name="DOCUMENTATION"></a><code><b>DO</b>)CUMENTATION &lt;TEXTE&gt;</code>
+<blockquote>
+<p>Affiche la documentation d'une commande ou d'une instruction. </p>Voir la commande: <code><a href="#AIDER">AIDER</a></code></blockquote><a name="ECHO"></a><code><b>EC</b>)HO </code>
+<blockquote>
+<p>Active l'affichage de tout ce que l'utilisateur tape au clavier. </p>Voir les commandes <code><a href="#SILENCE">SILENCE</a></code>,  <code><a href="#RUBAN">RUBAN</a></code>.</blockquote><a name="EFFACER LIGNES"></a><code><b>EF</b>)FACER LIGNES * | &lt;N1&gt;[,&lt;N2&gt;[...,&lt;Nn&gt;]...] | &lt;N1&gt; A &lt;N2&gt;</code>
+<blockquote>
+<p>Si * est donné, efface tout le programme courant de l'utilisateur. Sinon supprime les lignes dont les numéros sont indiqués par N1, N2, ... Nn, ou les lignes de numéro N1 à N2 inclus, dans le programme courant de l'utilisateur. </p>Voir les commandes <code><a href="#LISTER A PARTIR DE">LISTER A PARTIR DE</a></code>,  <code><a href="#NUMERO A PARTIR DE">NUMERO A PARTIR DE</a></code>,  <code><a href="#PERFORER A PARTIR DE">PERFORER A PARTIR DE</a></code>.</blockquote><a name="ENCODER"></a><code><b>EN</b>)CODER &lt;NOMFI&gt;[,&lt;N1&gt;[,&lt;N2&gt;]]</code>
+<blockquote>
+<p>Cette commande est la commande symétrique de DECODER, les parametres NOMFI, N1 et N2 on la même signfication. </p>
+<p>Cette commande consiste à lire les instructions contenues dans le fichier à décoder et à les compiler. </p>Voir les commandes <code><a href="#DECODER">DECODER</a></code>,  <code><a href="#APPELER">APPELER</a></code>,  <code><a href="#RANGER">RANGER</a></code>,  <code><a href="#MODIFIER">MODIFIER</a></code>.</blockquote><a name="ETAGERE DE RUBANS"></a><code><b>ET</b>)AGERE DE RUBANS &lt;TEXTE&gt;</code>
+<blockquote>
+<p>Les rubans perforés sont simulés par des fichiers. Ils sont conservés sur des "étagère", c'est à dire, enregistrés dans des répertoires. </p>
+<p>Cette commande permet de sélectionner le répertoire où les rubans perforés sont enregistrés. </p>Voir les commandes <code><a href="#SELECTIONNER RUBAN">SELECTIONNER RUBAN</a></code>,  <code><a href="#RUBAN">RUBAN</a></code>,  <code><a href="#PERFORER A PARTIR DE">PERFORER A PARTIR DE</a></code>,  <code><a href="#ARCHIVER RUBAN">ARCHIVER RUBAN</a></code>.</blockquote><a name="EXECUTER A PARTIR DE"></a><code><b>EX</b>)ECUTER A PARTIR DE [&lt;N1&gt;[,&lt;N2&gt;]]</code>
+<blockquote>
+<p>Fait passer la console de l'état «moniteur» à l'état «exécution». </p>
+<p>Fait exécuter le programme courant de l'utilisateur à partir de la ligne de numéro N1 (si aucune ligne de numéro N1 existe, une erreur sera détectée). </p>
+<p>L'exécution se poursuivra jusqu'à ce qu'on arrive : </p>
+<ul>
+<li>soit à la ligne de numéro N2 ; cette ligne ne sera pas exécutée, la console repassera dans l'état «mooniteur» et affichera N2. </li>
+<li>soit à l'une des instructions LSE : PAUSE ou TERMINER ou à une erreur. La console repassera dans l'état «moniteur» et affichera un message indiquant la cause de l'arrêt et le numéro de la ligne où il s'est produit. Éventuellement, en cas d'arrêt dans une procédure, le numéro de la ligne où l'on avait appelé cette procédure. </li>
+<li>L'utilisation de la touche d'interruption escape arrête également l'exécution. </li></ul>Voir les commandes <code><a href="#PAS A PAS">PAS A PAS</a></code>,  <code><a href="#NORMAL">NORMAL</a></code>,  <code><a href="#CONTINUER">CONTINUER</a></code>,  <code><a href="#REPRENDRE A PARTIR DE">REPRENDRE A PARTIR DE</a></code>,  <code><a href="#POURSUIVRE JUSQU'EN">POURSUIVRE JUSQU'EN</a></code>.</blockquote><a name="IN EXTENSO"></a><code><b>IN</b>) EXTENSO </code>
+<blockquote>
+<p>Annule la commande ABREGER: complète l'affichage des commandes. </p>Voir la commande <code><a href="#ABREGER">ABREGER</a></code>.</blockquote><a name="LD DESASSEMBLER A PARTIR DE"></a><code><b>LD</b>) DESASSEMBLER A PARTIR DE [&lt;N1&gt;[,&lt;N2&gt;]]</code>
+<blockquote>
+<p>Commande de deboguage: Désassemble les lignes de programme. </p></blockquote><a name="LE EVALUER UNE EXPRESSION LISP"></a><code><b>LE</b>) EVALUER UNE EXPRESSION LISP &lt;TEXTE&gt;</code>
+<blockquote>
+<p>Commande de déboguage: évaluation d'une expression LISP. </p></blockquote><a name="LISTER A PARTIR DE"></a><code><b>LI</b>)STER A PARTIR DE [&lt;N1&gt;[,&lt;N2&gt;]]</code>
+<blockquote>
+<p>Fait afficher le programme courant de l'utilisateur, à partir de la ligne N1 jusqu'à la ligne N2, si N2 est présent, sinon jusqu'à la fin. En cours de listage, la touche d'interruption escape peut être utilisée pour l'arrêter. </p>Voir les commandes <code><a href="#NUMERO A PARTIR DE">NUMERO A PARTIR DE</a></code>,  <code><a href="#EFFACER LIGNES">EFFACER LIGNES</a></code>,  <code><a href="#PERFORER A PARTIR DE">PERFORER A PARTIR DE</a></code>.</blockquote><a name="LP DEASSEMBLER/PERFORER A PARTIR DE"></a><code><b>LP</b>) DEASSEMBLER/PERFORER A PARTIR DE [&lt;N1&gt;[,&lt;N2&gt;]]</code>
+<blockquote>
+<p>Commande de deboguage: Désassemble les lignes de programme en perforant un ruban. </p></blockquote><a name="MODIFIER"></a><code><b>MO</b>)DIFIER &lt;NOMPG&gt;</code>
+<blockquote>
+<p>Permet de ranger sur le disque un programme utilisateur. </p>
+<p>Le programme courant est enregistré dans un fichier de nom NOMPG indiqué, dans le répertoire courant. Le fichier doit exister préalablement, et il est mis à jour par le nouveau programme. </p>Voir les commandes <code><a href="#AFFICHER REPERTOIRE">AFFICHER REPERTOIRE</a></code>,  <code><a href="#CHANGER REPERTOIRE">CHANGER REPERTOIRE</a></code>,  <code><a href="#TABLE DES FICHIERS">TABLE DES FICHIERS</a></code>,  <code><a href="#APPELER">APPELER</a></code>,  <code><a href="#RANGER">RANGER</a></code>.</blockquote><a name="NORMAL"></a><code><b>NO</b>)RMAL </code>
+<blockquote>
+<p>Annule la commande PAS A PAS. </p>Voir les commandes <code><a href="#PAS A PAS">PAS A PAS</a></code>,  <code><a href="#CONTINUER">CONTINUER</a></code>,  <code><a href="#REPRENDRE A PARTIR DE">REPRENDRE A PARTIR DE</a></code>,  <code><a href="#POURSUIVRE JUSQU'EN">POURSUIVRE JUSQU'EN</a></code>.</blockquote><a name="NUMERO A PARTIR DE"></a><code><b>NU</b>)MERO A PARTIR DE [&lt;N1&gt;[,&lt;N2&gt;]]</code>
+<blockquote>
+<p>Fait afficher les numéros de lignes utilisés à partir du numéro N1 jusqu'au numéro N2, si N2 est présent, sinon jusqu'à la fin. </p>Voir les commandes <code><a href="#LISTER A PARTIR DE">LISTER A PARTIR DE</a></code>,  <code><a href="#EFFACER LIGNES">EFFACER LIGNES</a></code>,  <code><a href="#PERFORER A PARTIR DE">PERFORER A PARTIR DE</a></code>.</blockquote><a name="PAS A PAS"></a><code><b>PA</b>)S A PAS </code>
+<blockquote>
+<p>Peut être utilisée avant EXECUTER, CONTINUER, REPRENDRE. </p>
+<p>Fait arrêter l'exécution au début de chaque ligne. La console repasse alors dans l'état «moniteur» et affiche le numéro de la ligne atteinte. </p>
+<p>Pour faire continuer l'exécution il suffit de frapper RET mais on peut aussi utiliser toute autre commande ou le mode «machine de bureau»; pour revenir à l'exécution du programme, il faudra alors utiliser la commande CONTINUER. </p>Voir les commandes <code><a href="#NORMAL">NORMAL</a></code>,  <code><a href="#CONTINUER">CONTINUER</a></code>,  <code><a href="#REPRENDRE A PARTIR DE">REPRENDRE A PARTIR DE</a></code>,  <code><a href="#POURSUIVRE JUSQU'EN">POURSUIVRE JUSQU'EN</a></code>.</blockquote><a name="PERFORER A PARTIR DE"></a><code><b>PE</b>)RFORER A PARTIR DE [&lt;N1&gt;[,&lt;N2&gt;]]</code>
+<blockquote>
+<p>Permet d'obtenir un ruban perforé comme support du programme L.S.E. rentré à la console. </p>
+<p>Cette commande simule le ruban perforé en écrivant sur un fichier temporaire. Le ruban ainsi perforé peut alors être archivé sur une étagère avec la commande ARCHIVER RUBAN. </p>
+<p>Le programme est perforé à partir de la ligne N1 jusqu'à la ligne N2, si N2 est présent sinon jusqu'à la fin. </p>Voir les commandes <code><a href="#ETAGERE DE RUBAN">ETAGERE DE RUBAN</a></code>,  <code><a href="#SELECTIONNER RUBAN">SELECTIONNER RUBAN</a></code>,  <code><a href="#RUBAN">RUBAN</a></code>,  <code><a href="#ARCHIVER RUBAN">ARCHIVER RUBAN</a></code>.</blockquote><a name="POURSUIVRE JUSQU'EN"></a><code><b>PO</b>)URSUIVRE JUSQU'EN &lt;N&gt;</code>
+<blockquote>
+<p>Relance l'exécution comme CONTINUER, mais avec un arrêt en ligne N. </p>Voir les commandes <code><a href="#PAS A PAS">PAS A PAS</a></code>,  <code><a href="#NORMAL">NORMAL</a></code>,  <code><a href="#EXECUTER A PARTIR DE">EXECUTER A PARTIR DE</a></code>,  <code><a href="#CONTINUER">CONTINUER</a></code>,  <code><a href="#REPRENDRE A PARTIR DE">REPRENDRE A PARTIR DE</a></code>.</blockquote><a name="RANGER"></a><code><b>RA</b>)NGER &lt;NOMPG&gt;</code>
+<blockquote>
+<p>Permet de ranger sur le disque un programme utilisateur. </p>
+<p>Le programme courant est enregistré dans un fichier de nom NOMPG indiqué, dans le répertoire courant. Le fichier doit préalablement ne pas exister, et sera créé. </p>Voir les commandes <code><a href="#AFFICHER REPERTOIRE">AFFICHER REPERTOIRE</a></code>,  <code><a href="#CHANGER REPERTOIRE">CHANGER REPERTOIRE</a></code>,  <code><a href="#TABLE DES FICHIERS">TABLE DES FICHIERS</a></code>,  <code><a href="#APPELER">APPELER</a></code>,  <code><a href="#MODIFIER">MODIFIER</a></code>.</blockquote><a name="REPRENDRE A PARTIR DE"></a><code><b>RE</b>)PRENDRE A PARTIR DE [&lt;N1&gt;[,&lt;N2&gt;]]</code>
+<blockquote>
+<p>Permet de reprendre l'exécution sur une ligne différente de celle où elle fut interrompue. </p>
+<ul>
+<li>Les parametres N1 et N2 ont la même signification que ceux de la commande EXECUTER, mais la commande REPRENDRE ne change pas l'affectatioon des indentificateurs. Toutes les valeurs antérieures à l'interruption sont conservées. </li></ul>
+<p>L'exécution du programme est toujours reprise au niveau principal (même si le programme avait été interrompu dans une procédure). </p>Voir les commandes <code><a href="#PAS A PAS">PAS A PAS</a></code>,  <code><a href="#NORMAL">NORMAL</a></code>,  <code><a href="#EXECUTER A PARTIR DE">EXECUTER A PARTIR DE</a></code>,  <code><a href="#CONTINUER">CONTINUER</a></code>,  <code><a href="#POURSUIVRE JUSQU'EN">POURSUIVRE JUSQU'EN</a></code>.</blockquote><a name="RUBAN"></a><code><b>RU</b>)BAN </code>
+<blockquote>
+<p>Cette commande déclenche le lecteur de ruban de la télétype. </p>Voir les commandes <code><a href="#ETAGERE DE RUBAN">ETAGERE DE RUBAN</a></code>,  <code><a href="#SELECTIONNER RUBAN">SELECTIONNER RUBAN</a></code>,  <code><a href="#PERFORER A PARTIR DE">PERFORER A PARTIR DE</a></code>,  <code><a href="#ARCHIVER RUBAN">ARCHIVER RUBAN</a></code>.</blockquote><a name="SELECTIONNER RUBAN"></a><code><b>SE</b>)LECTIONNER RUBAN &lt;NOMFI&gt;</code>
+<blockquote>
+<p>Selectionne un ruban de l'étagère et le place dans le lecteur de ruban. </p>
+<p>Un fichier ruban doit commencer par un titre sur la première ligne, suivi des données. </p>
+<p>Le titre est lu et affiché par cette commande; le reste des données est lu par les commandes et instructions données par l'utilisateur ou le programme. </p>Voir les commandes <code><a href="#ETAGERE DE RUBAN">ETAGERE DE RUBAN</a></code>,  <code><a href="#RUBAN">RUBAN</a></code>,  <code><a href="#PERFORER A PARTIR DE">PERFORER A PARTIR DE</a></code>,  <code><a href="#ARCHIVER RUBAN">ARCHIVER RUBAN</a></code>.</blockquote><a name="SILENCE"></a><code><b>SI</b>)LENCE </code>
+<blockquote>
+<p>Supprime l'affichage de tout ce que l'utilisateur tape au clavier. L'effet de cette commande est annulé par la touche escape ou par commande ECHO. </p>Voir les commandes <code><a href="#ECHO">ECHO</a></code>,  <code><a href="#RUBAN">RUBAN</a></code>.</blockquote><a name="SUPPRIMER"></a><code><b>SU</b>)PPRIMER * | &lt;NOMFI&gt;,P|D|T</code>
+<blockquote>
+<p>SUPPRIMER * supprime tous les fichiers temporaires. </p>
+<p>SUPPRIMER NOMFI,P|D|T supprime le fichier Programme, Donnée permanent, ou Temporaire indiqué. </p>Voir les commandes <code><a href="#TABLE DES FICHIERS">TABLE DES FICHIERS</a></code>,  <code><a href="#UTILISATION DISQUE">UTILISATION DISQUE</a></code>.</blockquote><a name="TABLE DES FICHIERS"></a><code><b>TA</b>)BLE DES FICHIERS </code>
+<blockquote>
+<p>Cette comamnde liste tous les fichiers programmes et donnée du répertoire courant, et les fichiers temporaires. </p>Voir les commandes <code><a href="#UTILISATION DISQUE">UTILISATION DISQUE</a></code>,  <code><a href="#SUPPRIMER">SUPPRIMER</a></code>.</blockquote><a name="TOUCHES"></a><code><b>TO</b>)UCHES </code>
+<blockquote>
+<p>Montre les touches. </p></blockquote><a name="UTILISATION DISQUE"></a><code><b>UT</b>)ILISATION DISQUE </code>
+<blockquote>
+<p>Cette comamnde liste tous les fichiers programmes et donnée du répertoire courant, et les fichiers temporaires. </p>Voir les commandes <code><a href="#TABLE DES FICHIERS">TABLE DES FICHIERS</a></code>,  <code><a href="#SUPPRIMER">SUPPRIMER</a></code>.</blockquote></body></html>

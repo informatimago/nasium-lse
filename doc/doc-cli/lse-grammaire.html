@@ -1,0 +1,158 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+<head>
+<title>NASIUM L.S.E. - Grammaire</title>
+<link rel="shortcut icon" href="http://www.ogamita.com/favicon.ico">
+<link rel="icon" href="http://www.ogamita.com/favicon.ico" type="image/vnd.microsoft.icon">
+<link rel="icon" href="http://www.ogamita.com/favicon.png" type="image/png">
+<link rel="stylesheet" href="http://www.ogamita.com/default.css" type="text/css">
+<meta HTTP-EQUIV="Content-Type" content="text/html; charset=utf-8">
+<meta name="author" content="Pascal J. Bourguignon">
+<meta name="Reply-To" content="pjb@informatimago.com">
+<meta name="Keywords" content="NASIUM, LSE, L.S.E, Langage Symbolique d'Enseignement, Langage de programmation, Français, grammaire"></head>
+<body><img src="../nasium-lse-2.png" alt="NASIUM L.S.E.">
+<hr>
+<div class="navigation"><a href="../">Maison</a> | <a href="lse-fonctions.html">Page précédente</a> | <a href="index.html">Index</a> | <a href="lse-legal.html">Page suivante</a></div>
+<hr>
+<h2>Grammaire</h2>
+<p>Les symboles terminaux peuvent être nommés ou anonymes. Les symboles terminaux nommés sont écrits en majuscules, et sont décrits par une expression régulière écrite entre cotices. Les symboles terminaux anonymes sont écrits dans les règles de grammaire entre apostrophes. </p>
+<p>Exemple: un symbole terminal nommé: </p>
+<pre>    IDENTIFICATEUR       = /[A-Z][0-9A-Z]*/. 
+</pre>
+<p>Exemple: un symbole terminal anonyme: </p>
+<pre>    'AFFICHER' 
+</pre>
+<p>Les symboles non-terminaux sont écrits en minuscules. </p>
+<p>Les règles de grammaire ont la forme : </p>
+<pre>    symbole-non-terminal ::= partie-droite . 
+</pre>
+<p>La partie droite peut être (a et b sont des parties droites) : </p>
+<ul>
+<li>une séquence : a b </li>
+<li>une alternative (éventuellement entre parenthèse pour éviter les ambiguités) : a | b </li>
+<li>une optionelle (0 ou 1) : [ a ] </li>
+<li>une répetitive (0 ou plus) : { a } </li>
+<li>un symbole non-terminal ; </li>
+<li>un symbole terminal. </li></ul>
+<p>Le symbole initial de la grammaire est debut. </p>
+<p>nil représente le vide. </p>
+<pre class="grammar">
+Symboles terminaux : 
+
+    NOMBRE               = /[-+]?[0-9]+\.[0-9]+[Ee][-+]?[0-9]+?/.
+
+    NUMERO               = /[0-9]+/.
+
+    LITCHAINE            = /'(('')?[^']*)*'/.
+
+    PROCIDENT            = /&amp;[A-Z][0-9A-Z]*/.
+
+    IDENTIFICATEUR       = /[A-Z][0-9A-Z]*/.
+
+    COMMENTAIRE          = /\*.*$/.
+
+
+Règles de grammaire : 
+
+    debut                ::= ligne-programme | liste-inst-ou-decl | affic | nil.
+
+    ligne-programme      ::= NUMERO (liste-inst-ou-decl | decl-procedure [';' liste-inst-ou-decl]).
+
+    decl-procedure       ::= 'PROCEDURE' procident '(' (')' [decl-local] | liste-identificateur ')' [decl-local]).
+
+    decl-local           ::= 'LOCAL' liste-identificateur.
+
+    liste-inst-ou-decl   ::= instruction [';' liste-inst-ou-decl] | decl [';' liste-inst-ou-decl] | COMMENTAIRE.
+
+    decl                 ::= decl-chaine | decl-tableau.
+
+    decl-chaine          ::= 'CHAINE' liste-identificateur.
+
+    decl-tableau         ::= 'TABLEAU' liste-decl-tabl.
+
+    liste-decl-tabl      ::= decl-tabl {',' decl-tabl}.
+
+    decl-tabl            ::= identificateur '[' expression [',' expression] ']'.
+
+    instruction          ::= liberation | affectation | appel | lire | afficher | aller-en | si-alors-sinon | terminer | pause | debut-fin | faire | retour | resultat | garer | charger | supprimer | executer.
+
+    liberation           ::= 'LIBERER' liste-identificateur.
+
+    affectation          ::= reference '_' expression.
+
+    appel                ::= procident '(' [liste-argument] ')'.
+
+    lire                 ::= 'LIRE' liste-reference.
+
+    affic                ::= '?' (format [liste-expression] | liste-expression).
+
+    afficher             ::= 'AFFICHER' (format [liste-expression] | liste-expression).
+
+    format               ::= '[' liste-spec ']'.
+
+    liste-spec           ::= specification {',' specification}.
+
+    specification        ::= LITCHAINE | '/' | 'X' | 'C' | 'L' | 'U' | 'F' NUMERO '.' NUMERO | 'E' NUMERO '.' NUMERO | spec-rep-fois (LITCHAINE | '/' | 'X' | 'C' | 'L') | spec-rep-num (LITCHAINE | '/' | 'X' | 'C' | 'L' | 'U' | 'F' NUMERO '.' NUMERO | 'E' NUMERO '.' NUMERO).
+
+    spec-rep-num         ::= NUMERO.
+
+    spec-rep-fois        ::= '*'.
+
+    aller-en             ::= 'ALLER' 'EN' expression.
+
+    si-alors-sinon       ::= 'SI' disjonction 'ALORS' instruction ['SINON' instruction].
+
+    terminer             ::= 'TERMINER'.
+
+    pause                ::= 'PAUSE'.
+
+    debut-fin            ::= 'DEBUT' liste-inst-ou-decl 'FIN'.
+
+    faire                ::= 'FAIRE' expression 'POUR' identificateur '_' expression ['PAS' expression] ('JUSQUA' expression | 'TANT' 'QUE' disjonction).
+
+    retour               ::= 'RETOUR' ['EN' expression].
+
+    resultat             ::= 'RESULTAT' expression.
+
+    garer                ::= 'GARER' identificateur ',' expression ',' expression.
+
+    charger              ::= 'CHARGER' identificateur ',' expression ',' expression [',' identificateur].
+
+    supprimer            ::= 'SUPPRIMER' expression [',' expression].
+
+    executer             ::= 'EXECUTER' expression [',' expression].
+
+    expression           ::= terme-signe {('-' terme | '+' terme | '!' terme)}.
+
+    terme-signe          ::= ['-'] terme.
+
+    terme                ::= facteur {('*' facteur | '/' facteur)}.
+
+    facteur              ::= simple {'^' simple}.
+
+    simple               ::= 'SI' disjonction 'ALORS' expression 'SINON' expression | procident ['(' [liste-argument] ')'] | '(' disjonction ')' | reference | at | LITCHAINE | NOMBRE | NUMERO.
+
+    liste-argument       ::= expression {',' expression}.
+
+    liste-expression     ::= expression {',' expression}.
+
+    liste-identificateur ::= identificateur {',' identificateur}.
+
+    disjonction          ::= conjonction {'OU' conjonction}.
+
+    conjonction          ::= condition {'ET' condition}.
+
+    condition            ::= 'NON' condition | expression [('=' | '&lt;' | '&lt;=' | '#' | '&gt;' | '&gt;=') expression].
+
+    reference            ::= identificateur [('[' expression [',' expression] ']' | '(' [liste-argument] ')')].
+
+    liste-reference      ::= reference {',' reference}.
+
+    identificateur       ::= IDENTIFICATEUR.
+
+    at                   ::= '@'.
+
+    procident            ::= PROCIDENT.
+
+</pre></body></html>

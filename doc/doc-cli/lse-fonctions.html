@@ -1,0 +1,199 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+<head>
+<title>NASIUM L.S.E. - Fonctions</title>
+<link rel="shortcut icon" href="http://www.ogamita.com/favicon.ico">
+<link rel="icon" href="http://www.ogamita.com/favicon.ico" type="image/vnd.microsoft.icon">
+<link rel="icon" href="http://www.ogamita.com/favicon.png" type="image/png">
+<link rel="stylesheet" href="http://www.ogamita.com/default.css" type="text/css">
+<meta HTTP-EQUIV="Content-Type" content="text/html; charset=utf-8">
+<meta name="author" content="Pascal J. Bourguignon">
+<meta name="Reply-To" content="pjb@informatimago.com">
+<meta name="Keywords" content="NASIUM, LSE, L.S.E, Langage Symbolique d'Enseignement, Langage de programmation, Français, fonctions"></head>
+<body><img src="../nasium-lse-2.png" alt="NASIUM L.S.E.">
+<hr>
+<div class="navigation"><a href="../">Maison</a> | <a href="lse-instructions.html">Page précédente</a> | <a href="index.html">Index</a> | <a href="lse-grammaire.html">Page suivante</a></div>
+<hr>
+<h2>Fonctions</h2>
+<p>Ce chapitre présente une description succinte des fonctions du système L.S.E. Pour plus de détails, voir les références. </p>
+<p>On inclu également les opérateurs. Les expressions peuvent combiner plusieurs opérations et appels de fonctions. Voir la section PRIORITE, pour l'ordre d'évaluation des opérateurs, lorsqu'ils ne sont pas groupés avec des parenthèses. </p>
+<p>Les appels peuvent se faire aux fonctions primitives décrite dans ce chapitre, ou à des procédure fonctions déclarée dans le programme (voir instructions PROCEDURE et RESULTAT). Les procédure fonctions ont un identificateur començant par un caractère '&amp;'. </p>
+<p>Chacune des sections suivantes décrivent une commande, selon le format suivant: </p>
+<ul>
+<li>nom de la fonction, description succinte, </li>
+<li>syntaxe, </li>
+<li>description, </li>
+<li>exemples (optionels), </li>
+<li>références (optionelles). </li></ul>
+<div class="toc">
+<p>Table des fonctions :</p>
+<ul>
+<li><a href="#!">!</a></li>
+<li><a href="#ABS">ABS</a></li>
+<li><a href="#ALE">ALE</a></li>
+<li><a href="#ATG">ATG</a></li>
+<li><a href="#ATT">ATT</a></li>
+<li><a href="#CCA">CCA</a></li>
+<li><a href="#CNB">CNB</a></li>
+<li><a href="#COMPARAISON">COMPARAISON</a></li>
+<li><a href="#CONJONCTION">CONJONCTION</a></li>
+<li><a href="#COS">COS</a></li>
+<li><a href="#DAT">DAT</a></li>
+<li><a href="#DISJONCTION">DISJONCTION</a></li>
+<li><a href="#DIVISE">DIVISE</a></li>
+<li><a href="#ENT">ENT</a></li>
+<li><a href="#ENV">ENV</a></li>
+<li><a href="#EQC">EQC</a></li>
+<li><a href="#EQN">EQN</a></li>
+<li><a href="#ETL">ETL</a></li>
+<li><a href="#EXP">EXP</a></li>
+<li><a href="#FOIS">FOIS</a></li>
+<li><a href="#GRL">GRL</a></li>
+<li><a href="#LGN">LGN</a></li>
+<li><a href="#LGR">LGR</a></li>
+<li><a href="#LISP">LISP</a></li>
+<li><a href="#MOINS">MOINS</a></li>
+<li><a href="#NEGATION">NEGATION</a></li>
+<li><a href="#OPPOSÉ">OPPOSÉ</a></li>
+<li><a href="#OUL">OUL</a></li>
+<li><a href="#OUX">OUX</a></li>
+<li><a href="#PLUS">PLUS</a></li>
+<li><a href="#POS">POS</a></li>
+<li><a href="#PRIORITE">PRIORITE</a></li>
+<li><a href="#PTR">PTR</a></li>
+<li><a href="#PUISSANCE">PUISSANCE</a></li>
+<li><a href="#RAC">RAC</a></li>
+<li><a href="#SCH">SCH</a></li>
+<li><a href="#SIN">SIN</a></li>
+<li><a href="#SITERNAIRE">SITERNAIRE</a></li>
+<li><a href="#SKP">SKP</a></li>
+<li><a href="#TEM">TEM</a></li>
+<li><a href="#XIT">XIT</a></li></ul></div><a name="!"></a>
+<h3>! - Concaténation de deux chaînes</h3><code>A!B</code>
+<p>Résultat: La concatenation des chaînes A et B. </p><a name="ABS"></a>
+<h3>ABS - Valeur absolue</h3><code>ABS(A)</code>
+<p>Résultat: La valeur absolue de A. </p><a name="ALE"></a>
+<h3>ALE - Valeur pseudo-aléatoire</h3><code>ALE(A)</code>
+<p>Résultat: Une valeur pseudo-aléatoire comprise entre 0 et 1 (bornes exclues). </p>
+<p>Si A=0 alors le résultat est vraiment aléatoire (différent à chaque appel). </p>
+<p>Si 0&lt;A&lt;1 alors le résultat dépent de A, ce qui permet de calculer des séries pseudo-aléatoire reproduisibles. </p><a name="ATG"></a>
+<h3>ATG - Arc tangente</h3><code>ATG(A)</code>
+<p>Résultat: L'arc tangente de A, exprimé en radian. </p><a name="ATT"></a>
+<h3>ATT - Signal d'attention utilisateur</h3><code>ATT()</code>
+<p>Cette fonction retourne normalement 0. </p>
+<p>Lorsque l'utilisateur tape <kbd>[ATTENTION]</kbd>, ATT() retourne transitoirement 1. </p><a name="CCA"></a>
+<h3>CCA - Conversion en caractère</h3><code>CCA(A)</code>
+<p>Résultat: une chaîne de caractère contenant la représentation du nombre A au format U. </p><a name="CNB"></a>
+<h3>CNB - Conversion en nombre</h3><code>CNB(CH,DE) ou CNB(CH,DE,VA)</code>
+<p>Résultat: un nombre converti de la sous-chaîne de CH commençant à la position DE. (Les espaces initiaux sont ignorés). </p>
+<p>Si VA est présent, ce doit être une variable arithmétique à laquelle la fonction CNB affecte la position du premier caractère qui n'est pas utilisé dans la représentation. </p><a name="COMPARAISON"></a>
+<h3>COMPARAISON</h3><code>A&lt;B, A&lt;=B, A&gt;B, A&gt;=B, A=B, A#B</code>
+<p>A et B doivent être du même type, soit tous les deux nombres, soit tous les deux chaînes. </p>
+<p>Résultat: vrai ou faux, selon l'ordre de A et B. </p><a name="CONJONCTION"></a>
+<h3>CONJONCTION</h3><code>comparaison1 ET comparaison2</code>
+<p>Résultat: conjonction des deux comparaisons. </p><a name="COS"></a>
+<h3>COS - Cosinus</h3><code>COS(A)</code>
+<p>Résultat: Le Cosinus de l'angle A exprimé en radian. </p><a name="DAT"></a>
+<h3>DAT - Chaîne date</h3><code>DAT()</code>
+<p>Résultat: une chaîne au format AA/MM/DD HH:MM:SS représentant la date et l'heure courante. </p>
+<p>Note: Cette fonction n'est pas conforme Y2K, elle retourne 00 pour 2000. </p><a name="DISJONCTION"></a>
+<h3>DISJONCTION</h3><code>conjonction1 OU conjonction2</code>
+<p>Résultat: disjonction des deux conjonctions. </p><a name="DIVISE"></a>
+<h3>DIVISE - Quotient de deux nombres</h3><code>A/B</code>
+<p>Résultat: Le produit de la multiplication entre A et B. </p>
+<p>B doit être non-nul, sinon un erreur est détectée. </p><a name="ENT"></a>
+<h3>ENT - Partie entière</h3><code>ENT(A)</code>
+<p>Résultat: La partie entière de A. </p><a name="ENV"></a>
+<h3>ENV - Variable d'environement</h3><code>ENV(NOM)</code>
+<p>Résultat: une chaîne contenant la valeur de la variable d'environement POSIX du nom indiqué. Si la variable d'environement n'existe pas, une chaîne vide est retournée. </p>
+<p>Exemple: ENV('USERNAME') --&gt; 'pjb' </p><a name="EQC"></a>
+<h3>EQC - Équivalent caractère</h3><code>EQC(CO)</code>
+<p>Résultat: une chaîne de 1 caractère dont l'équivalent numérique en code ASCII est CO. </p><a name="EQN"></a>
+<h3>EQN - Équivalent numérique</h3><code>EQN(CH) ou EQN(CH,PO)</code>
+<p>Résultat: l'équivalent numérique en code ASCII du caractère de la chaine CH qui se trouve en position PO, ou en première position si PO est omis. </p><a name="ETL"></a>
+<h3>ETL - ET logique bit-à-bit</h3><code>ETL(A,B)</code>
+<p>Résultat: le ET logique bit-à-bit entre les bits de A et ceux de B. </p><a name="EXP"></a>
+<h3>EXP - exponentiation e↑A</h3><code>EXP(A)</code>
+<p>Résultat: e à la puissance A. </p>
+<p>e=2.7182817 </p>
+<p>LGN est l'inverse de EXP. </p><a name="FOIS"></a>
+<h3>FOIS - Produit de deux nombres</h3><code>A*B</code>
+<p>Résultat: Le produit de la multiplication entre A et B. </p><a name="GRL"></a>
+<h3>GRL - Groupe de lettres</h3><code>GRL(CH,DE) ou GRL(CH,DE,VA)</code>
+<p>Résultat: la sous-chaîne composée de la première séquence continue de lettres à partir de la position DE. </p>
+<p>Si VA est présent, ce doit être une variable arithmétique à laquelle la fonction SCH affecte soit la position du premier caractère qui n'est pas une lettre, soit LGR(CH)+1 si le dernier caractère de la sous-chaîne est le dernier caractère de la chaîne. </p><a name="LGN"></a>
+<h3>LGN - Logarithme népérien</h3><code>LGN(A)</code>
+<p>Résultat: Le logarithme népérien de A. </p>
+<p>L'argument A doit être un nombre strictement positif, sinon une erreur est détectée. </p><a name="LGR"></a>
+<h3>LGR - Longueur d'une chaîne</h3><code>LGR(A)</code>
+<p>Résultat: la longueur de la chaîne A. </p><a name="LISP"></a>
+<h3>LISP - Evaluation d'une expression LISP</h3><code>LISP(EXPR,PRINT,NOERR)</code>
+<p>Cette fonction évalue l'expression Common Lisp EXPR. </p>
+<pre>1* FONCTION LISP(EXPR,PRINT,NOERR) 
+2* PRINT=0 =&gt; LISP() N'AFFICHE RIEN; 
+3* PRINT=1 =&gt; LISP() AFFICHE LES RESULTATS DE L'EXPRESSION LISP. 
+4 PRINT←1 
+5* NOERR=0 =&gt; SI UNE ERREUR EST DETECTEE ELLE EST RAPPORTEE NORMALEMENT. 
+6* NOERR=1 =&gt; SI UNE ERREUR EST DETECTEE, LISP() RETOURNE 0.0. 
+7 NOERR←1 
+8 A←LISP('(TRUNCATE 10 3)',PRINT,NOERR) 
+9 TERMINER 
+</pre><a name="MOINS"></a>
+<h3>MOINS - Différence de deux nombres</h3><code>A-B</code>
+<p>Résultat: La difference entre A et B. </p><a name="NEGATION"></a>
+<h3>NEGATION</h3><code>NON condition</code>
+<p>Résultat: La négation logique de la condition. </p><a name="OPPOSÉ"></a>
+<h3>OPPOSÉ - Changement de signe</h3><code>-A</code>
+<p>Résultat: L'opposé de A. </p><a name="OUL"></a>
+<h3>OUL - OU logique bit-à-bit</h3><code>OUL(A,B)</code>
+<p>Résultat le OU logique bit-à-bit entre les bits de A et ceux de B. </p><a name="OUX"></a>
+<h3>OUX - OU exclusif bit-à-bit</h3><code>OUX(A,B)</code>
+<p>Résultat le OU exclusif bit-à-bit entre les bits de A et ceux de B. </p><a name="PLUS"></a>
+<h3>PLUS - Somme de deux nombres</h3><code>A+B</code>
+<p>Résultat: La somme des deux nombres. </p><a name="POS"></a>
+<h3>POS - Position d'une sous-chaîne</h3><code>POS(CH,DE,SC)</code>
+<p>Résultat: la position de la première occurence de la sous-chaîne SC dans la chaîne CH, après la position DE, ou 0 si SC n'est pas une sous-chaîne de CH. </p>
+<p>DE doit être un nombre entier supérieur ou égal à 1. </p><a name="PRIORITE"></a>
+<h3>PRIORITE</h3><code>Priorité des opérateurs</code>
+<p>Hors présence de parenthèses, les opérations sont évaluées par ordre de priorité décroissante: </p>
+<ul>
+<li>SI ternaire, appel de fonction, référence à une variable ou un tableau. </li>
+<li>A↑B Élévation à la puissance. </li>
+<li>A*B et A/B, multiplication et division. </li>
+<li>-A. opposé. </li>
+<li>A+B, A-B et C!D, addition et soustraction de nombres, et concaténation de chaînes. </li>
+<li>A&lt;B, A&lt;=B, A&gt;B, A&gt;=B, A=B et A#B, comparaisons. </li>
+<li>NON EB, négation logique. </li>
+<li>A ET B, conjonction. </li>
+<li>A OU B, disjonction. </li></ul><a name="PTR"></a>
+<h3>PTR - Pointeur</h3><code>PTR(CH,DE) ou PTR(CH,DE,EV)</code>
+<p>Résultat: la position dans la chaîne CH, à partir de la position DE, soit du premier caractère qui n'est pas une lettre si EV n'est pas donné, soit du premier caractère qui est n'est pas dans la chaîne EV; ou bien LGR(CH)+1 si tous les caractères sont des lettres, ou si tous les caractères sont dans la chaine EV. </p><a name="PUISSANCE"></a>
+<h3>PUISSANCE - Élévation à la puissance</h3><code>A↑B</code>
+<p>Résultat: A à la puissance B. </p>
+<p>Si A est négatif, alors B doit être entier. </p>
+<p>Note sur un terminal Unicode, ↑ s'affiche comme une flêche vers le haut. Sur un terminal ASCII, c'est un chapeau, AltGr-9 ou chapeau espace sur un clavier AZERTY, Shift-6 sur un clavier QWERTY. </p><a name="RAC"></a>
+<h3>RAC - Racine carrée</h3><code>RAC(A)</code>
+<p>Résultat: La racine carrée de A. </p>
+<p>L'argument A doit être un nombre positif ou nul, sinon une erreur est détectée. </p><a name="SCH"></a>
+<h3>SCH - Sous-chaîne</h3><code>SCH(CH,DE,LO[,VA]) ou SCH(CH,DE,SC[,VA])</code>
+<p>CH est une chaîne d'où SCH va extraire une sous-chaîne. </p>
+<p>DE est la position de départ de la sous-chaîne. </p>
+<p>LO est la longueur de la sous-chaîne. </p>
+<p>SC est une chaîne contenant les caractères d'arrêt de la sous-chaîne. </p>
+<p>Résultat: une sous-chaîne de CH, commençant à la position DE, de longueur LO ou allant jusqu'à la première occurence d'un des caractères de SC. </p>
+<p>Si VA est présent, ce doit être une variable arithmétique à laquelle la fonction SCH affecte soit la position du premier caractère qui n'est pas utilisé dans la représentation, soit LGR(CH)+1 si le dernier caractère de la sous-chaîne est le dernier caractère de la chaîne. </p><a name="SIN"></a>
+<h3>SIN - Sinus</h3><code>SIN(A)</code>
+<p>Résultat: Le Sinus de l'angle A exprimé en radian. </p><a name="SITERNAIRE"></a>
+<h3>SITERNAIRE</h3><code>SI condition ALORS expr1 SINON expr2</code>
+<p>Résultat: si condition est vrai alors le résultat de l'expression expr1, sinon le résultat de l'expression expr2. </p><a name="SKP"></a>
+<h3>SKP - Saut</h3><code>SKP(CH,DE) ou SKP(CH,DE,EV)</code>
+<p>Résultat: la position dans la chaîne CH, à partir de la position DE, de la première lettre si EV n'est pas donné, ou du premier caractère qui n'est pas dans la chaîne EV; ou bien LGR(CH)+1 si aucune lettre, ou si tous les caractères sont dans la chaine EV. </p><a name="TEM"></a>
+<h3>TEM - Temps en seconde écoulé depuis minuit.</h3><code>TEM(A)</code>
+<p>Résultat: Le nombre de secondes écoulées depuis le début du jour (minuit). </p><a name="XIT"></a>
+<h3>XIT - Sortie de boucles</h3><code>XIT(N)</code>
+<p>Cette procédure permet de sortir d'un ou de plusieurs niveaux de boucles. </p>
+<p>Si N=0 alors cet procédure ne fait rien. </p>
+<p>Si N=1 alors on sort de la boucle courante. </p>
+<p>Si N&gt;1 alors on sort de N boucle imbriquées. </p>
+<p>Si N est supérieur au nombre de boucles imbriquées, on sort de toutes les boucles. </p>Voir: <code><a href="#FAIREJUSQUA">FAIREJUSQUA</a></code>,  <code><a href="#FAIRETANTQUE">FAIRETANTQUE</a></code></body></html>

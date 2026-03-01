@@ -10,7 +10,37 @@ LSE2000: https://sites.google.com/site/phoenixlse2000/
 It's copied, but we'd need to use now the tools/manifest.lisp instead
 of nasium-lse/manifest.lisp
 
-** TODO [2/2] Tests / Debug
+** TODO [5/5] Tests / Debug
+*** DONE [#A] make test fails: scanner adds leading EOL before first line
+- State "DONE"       from "TODO"       [2026-03-01 Sun 17:26] \\
+  Fixed scanner test token collection to start after scanner priming token.
+CLOSED: [2026-03-01 Sun 17:26]
+Test `COM.INFORMATIMAGO.LSE::TEST/SCANNER/COMMENT-EMPTY` expects tokens:
+  (TOK-NUMERO TOK-COMMENTAIRE EOL)
+but actual tokens include a leading EOL:
+  (EOL TOK-NUMERO TOK-COMMENTAIRE EOL)
+Token texts similarly include a leading "<END OF LINE>".
+Likely scanner initialization or input handling is emitting an extra EOL
+before the first line; investigate tokenization of blank/empty comment lines.
+
+*** DONE [#A] make test fails: string tokenization includes extra initial EOL
+- State "DONE"       from "TODO"       [2026-03-01 Sun 17:26] \\
+  Removed unintended leading newline from test fixture source.
+CLOSED: [2026-03-01 Sun 17:26]
+Test `COM.INFORMATIMAGO.LSE::TEST/SCANNER/TOKENS` shows the first two tokens
+are EOL/EOL before the initial line-number token. The expected stream should
+start with the first line-number token without a leading blank line. Check
+the test source `*TEST-TOKENS-SOURCE*` vs scanner behavior, and fix the
+scanner to not emit a spurious initial EOL.
+
+*** DONE [#A] make test fails: parse-stream line numbers off by +1
+- State "DONE"       from "TODO"       [2026-03-01 Sun 17:26] \\
+  Aligned parse-stream test helper with compile-lse-stream parse/expect loop.
+CLOSED: [2026-03-01 Sun 17:26]
+Test `COM.INFORMATIMAGO.LSE::TEST/PARSE-STREAM-LINUMS` reports parsed line
+numbers 2 and 4 where 1 and 2 are expected. This looks consistent with the
+extra leading EOL from the scanner; fix line number accounting so the first
+line is 1 and increments once per real line.
 *** DONE [#A] make test fails: Quicklisp cannot write system-index.txt
 - State "DONE"       from "TODO"       [2026-03-01 Sun 17:11] \\
   Use (IGNORE-ERRORS …) in src/Makefile.

@@ -871,8 +871,10 @@ TRANSITION: (state-name (string-expr body-expr...)...) ...
                                         ; got a line -- advance a token.
      (setf (scanner-column scanner) 1
            (scanner-state  scanner) +maybe-commentaire+)
-     (when (plusp (scanner-line scanner))
-       (incf (scanner-line scanner)))
+     ;; First physical source line is line 1.
+     (if (plusp (scanner-line scanner))
+         (incf (scanner-line scanner))
+         (setf (scanner-line scanner) 1))
      (setf (scanner-current-token scanner) nil)
      (scan-next-token scanner))
     (t                                  ; Just got EOF

@@ -41,7 +41,8 @@
     (loop
       :with result := '()
       :until (eofp (scanner-current-token *scanner*))
-      :do (let ((parsed-line (lse-parse-one-line *scanner*)))
+      :do (let ((parsed-line (prog1 (parse-lse *scanner*)
+                               (expect *scanner* 'eol))))
             (when parsed-line
               (push parsed-line result)))
       :finally (return (nreverse result)))))
@@ -55,8 +56,7 @@
     (test-parse-stream src)))
 
 (define-test test/parse-stream-linums ()
-  (let ((parsed (test-parse-string  "
-1 AFFICHER 'hello'
+  (let ((parsed (test-parse-string  "1 AFFICHER 'hello'
 2 AFFICHER 'world'
 3 AFFICHER 'bonjour'
 4 AFFICHER 'le monde'

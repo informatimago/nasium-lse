@@ -89,6 +89,7 @@
 (defun stream-tokens (src)
   (loop
     :with scanner = (make-instance 'lse-scanner :source src :state 0)
+    :initially (scan-next-token scanner)
     :collect (scanner-current-token scanner)
     :do (scan-next-token scanner)
     :until (eofp (scanner-current-token scanner))))
@@ -107,8 +108,7 @@
 ;; (initialize-debugging-task)
 ;; (test/scan-file #P"~/src/pjb/nasium-lse/SYNTERR.LSE")
 
-(defparameter *test-tokens-source* "
-1*BOURGUIGNON PASCAL 4*6 25-05-78
+(defparameter *test-tokens-source* "1*BOURGUIGNON PASCAL 4*6 25-05-78
 2*CEFAK
 3*TRANSFORMATION DE DEGRES C EN DEGRES F ET K ET INVERSEMENT
 4*
@@ -148,10 +148,9 @@
 ")
 
 (defparameter *test-tokens-expected*
-  '((eol . #1="<END OF LINE>")
-    (tok-numero . "1")
+  '((tok-numero . "1")
     (tok-commentaire . "*BOURGUIGNON PASCAL 4*6 25-05-78")
-    (eol . #1#)
+    (eol . #1="<END OF LINE>")
     (tok-numero . "2")
     (tok-commentaire . "*CEFAK")
     (eol . #1#)

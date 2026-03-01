@@ -25,6 +25,8 @@
 ## Tests/Diagnostics
 - Parser/scanner tests exist as Lisp files in `src/` (e.g. `test-lse-parser.lisp`, `test-lse-scanner.lisp`). They are run manually from a Lisp REPL.
 
+If you run a temp home, make it specific to you, and to the project, to avoid collision with parallel instances in other projects. eg. XDG_CACHE_HOME=/tmp/codex/nasium-lse
+
 ## Notes
 - The repository includes example programs in `progr/` and `tapes-xoff/`.
 - Documentation lives in `doc/` and is generated via `generate-documentation.lisp` / `make documentation`.
